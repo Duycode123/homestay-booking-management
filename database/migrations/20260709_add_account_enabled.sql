@@ -1,0 +1,7 @@
+ALTER TABLE account
+    ADD COLUMN IF NOT EXISTS enabled BOOLEAN NOT NULL DEFAULT TRUE;
+
+UPDATE account
+SET enabled = TRUE
+WHERE enabled IS NULL;
+

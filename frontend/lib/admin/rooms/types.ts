@@ -1,0 +1,85 @@
+export type RoomCategory = 'standard' | 'band' | 'recording' | 'premium'
+
+export type RoomStatus = 'active' | 'occupied' | 'maintenance' | 'inactive'
+
+export type AdminRoom = {
+  id: string
+  code: string
+  name: string
+  roomTypeId?: number | null
+  roomTypeName?: string
+  category: RoomCategory
+  categoryLabel: string
+  capacity: number
+  pricePerHour: number
+  status: RoomStatus
+  image: string
+  imageUrl?: string
+  equipmentCount: number
+  equipments: string[]
+  todaySchedule: string
+  lastUpdated: string
+  description: string
+  occupancyRateToday: number
+  monthlyRevenue: number
+  averageRating: number
+  latestMaintenance: string
+}
+
+export type RoomFilters = {
+  query: string
+  roomTypeId: number | 'ALL'
+  category: RoomCategory | 'ALL'
+  status: RoomStatus | 'ALL'
+  sortBy: 'updated' | 'price-asc' | 'price-desc' | 'capacity'
+}
+
+export type RoomFormData = {
+  name: string
+  code: string
+  roomTypeId: number | null
+  category: RoomCategory | ''
+  capacity: number
+  pricePerHour: number
+  status: RoomStatus | ''
+  description: string
+  equipments: string
+  image: string
+}
+
+export type RoomFormErrors = Partial<Record<keyof RoomFormData, string>>
+
+export type AdminRoomTypeOption = {
+  id: number
+  label: string
+  description: string
+  category: RoomCategory
+  pricePerHour: number
+  capacity: number
+}
+
+export type RoomTypeFormData = {
+  typeName: string
+  description: string
+  pricePerHour: number
+}
+
+export type RoomTypeFormErrors = Partial<Record<keyof RoomTypeFormData, string>>
+
+export const roomCategoryOptions: RoomCategory[] = ['standard', 'band', 'recording', 'premium']
+
+export const roomStatusOptions: RoomStatus[] = ['active', 'occupied', 'maintenance', 'inactive']
+
+export const roomCategoryLabels: Record<RoomCategory, string> = {
+  standard: 'Phòng homestay tiêu chuẩn',
+  band: 'Phòng homestay',
+  recording: 'Phòng nghỉ dưỡng',
+  premium: 'Homestay cao cấp',
+}
+
+export const roomStatusLabels: Record<RoomStatus, string> = {
+  active: 'Đang hoạt động',
+  occupied: 'Đang sử dụng',
+  maintenance: 'Bảo trì',
+  inactive: 'Tạm ngưng',
+}

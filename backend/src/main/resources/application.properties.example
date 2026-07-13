@@ -1,0 +1,100 @@
+spring.application.name=homestay-booking-backend
+
+# ===== Database =====
+# Either set the DB_* environment variables, or replace the values after the colon.
+spring.datasource.url=${DB_URL:jdbc:postgresql://localhost:6789/homestaydb}
+spring.datasource.username=${DB_USERNAME:postgres}
+spring.datasource.password=${DB_PASSWORD:your_postgres_password}
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+spring.jpa.hibernate.ddl-auto=validate
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+spring.sql.init.mode=always
+spring.sql.init.platform=postgresql
+
+# ===== Mail (Gmail SMTP) =====
+# Use a Gmail App Password (https://myaccount.google.com/apppasswords), NOT your account password.
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=your_email@gmail.com
+spring.mail.password=your_gmail_app_password
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+spring.mail.properties.mail.smtp.connectiontimeout=5000
+spring.mail.properties.mail.smtp.timeout=5000
+spring.mail.properties.mail.smtp.writetimeout=5000
+
+server.port=8080
+
+# Keep false for local HTTP development; override to true behind HTTPS in production.
+app.cookie.secure=false
+app.frontend.base-url=${APP_FRONTEND_BASE_URL:http://localhost:3000}
+app.cors.allowed-origin-patterns=${APP_CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:3000,http://127.0.0.1:3000,https://*.ngrok-free.dev,https://*.ngrok-free.app}
+
+# ===== Cloudinary =====
+# Keep the API secret server-side only. The frontend uploads images through the backend.
+cloudinary.cloud-name=${CLOUDINARY_CLOUD_NAME:your_cloud_name}
+cloudinary.api-key=${CLOUDINARY_API_KEY:your_api_key}
+cloudinary.api-secret=${CLOUDINARY_API_SECRET:your_api_secret}
+cloudinary.folder=${CLOUDINARY_FOLDER:homestay-booking-management/rooms}
+cloudinary.avatar-folder=${CLOUDINARY_AVATAR_FOLDER:homestay-booking-management/avatars}
+
+# ===== VNPay =====
+# Keep credentials in environment variables for local development and production.
+payment.vnpay.tmn-code=${VNPAY_TMN_CODE:}
+payment.vnpay.hash-secret=${VNPAY_HASH_SECRET:}
+payment.vnpay.payment-url=${VNPAY_PAYMENT_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
+payment.vnpay.return-url=${VNPAY_RETURN_URL:http://localhost:3000/payment/return}
+payment.vnpay.version=2.1.0
+payment.vnpay.command=pay
+payment.vnpay.currency-code=VND
+payment.vnpay.locale=vn
+
+# ===== Gemini AI Chatbot =====
+# Get a free developer API key from https://aistudio.google.com/app/apikey
+gemini.ai.api-key=${GEMINI_AI_API_KEY:}
+gemini.ai.model=${GEMINI_AI_MODEL:gemini-2.5-flash}
+gemini.ai.base-url=${GEMINI_AI_BASE_URL:https://generativelanguage.googleapis.com/v1beta}
+gemini.ai.max-output-tokens=${GEMINI_AI_MAX_OUTPUT_TOKENS:1200}
+gemini.ai.temperature=${GEMINI_AI_TEMPERATURE:0.35}
+
+# ===== SePay =====
+# Online deposit flow redirects customers to the configured SePay/VietQR checkout URL.
+# Configure the SePay webhook URL as: ${APP_PUBLIC_BACKEND_URL}/api/payments/sepay/webhook
+# Payment Gateway IPN (dashboard: Payment Gateway -> Configuration -> IPN): choose auth type
+# SECRET_KEY and set the same value in SEPAY_IPN_SECRET; SePay then sends it as X-Secret-Key.
+# Prefer HMAC-SHA256 in production. API key is supported as a fallback for simpler setups.
+# If checkout-url is blank, backend builds a VietQR image URL from the bank settings below.
+# Sandbox portal: https://pay-sandbox.sepay.vn/v1/checkout/init | Production: https://pay.sepay.vn/v1/checkout/init
+payment.sepay.checkout-url=${SEPAY_CHECKOUT_URL:}
+payment.sepay.qr-bank-account=${SEPAY_QR_BANK_ACCOUNT:}
+payment.sepay.qr-bank-code=${SEPAY_QR_BANK_CODE:}
+payment.sepay.qr-template=${SEPAY_QR_TEMPLATE:compact}
+# Frontend renders the VietQR image returned by POST /api/payments/sessions, then polls
+# GET /api/payments/transactions/{paymentId}. When api-access-token is configured, that
+# poll queries SePay userapi Transactions API v2 first, then falls back to the legacy v1
+# endpoint, and syncs booking/payment status immediately.
+payment.sepay.api-access-token=${SEPAY_API_ACCESS_TOKEN:}
+# Optional: only set this to the v2 UUID bank_account_id. Leave blank when you only have
+# the legacy numeric id; account-number is enough for matching.
+payment.sepay.api-bank-account-id=${SEPAY_API_BANK_ACCOUNT_ID:}
+payment.sepay.api-account-number=${SEPAY_API_ACCOUNT_NUMBER:}
+payment.sepay.merchant-id=${SEPAY_MERCHANT_ID:}
+payment.sepay.secret-key=${SEPAY_SECRET_KEY:}
+payment.sepay.success-url=${SEPAY_SUCCESS_URL:http://localhost:3000/payment/return}
+payment.sepay.error-url=${SEPAY_ERROR_URL:http://localhost:3000/payment/return}
+payment.sepay.cancel-url=${SEPAY_CANCEL_URL:http://localhost:3000/payment/return}
+payment.sepay.currency=${SEPAY_CURRENCY:VND}
+payment.sepay.operation=${SEPAY_OPERATION:}
+payment.sepay.method=${SEPAY_METHOD:}
+payment.sepay.transaction-type=${SEPAY_TRANSACTION_TYPE:}
+payment.sepay.portal-signature-param=${SEPAY_PORTAL_SIGNATURE_PARAM:signature}
+# HMAC secret for the bank-transfer ("bien dong so du") webhook, which signs requests
+# with X-SePay-Signature / X-SePay-Timestamp headers.
+payment.sepay.webhook-hmac-secret=${SEPAY_WEBHOOK_HMAC_SECRET:}
+payment.sepay.webhook-timestamp-tolerance-seconds=${SEPAY_WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS:300}
+# Secret for the Payment Gateway IPN (SePay portal: Payment Gateway -> Configuration -> IPN,
+# auth type SECRET_KEY, sent back via the X-Secret-Key header). Must match the portal value,
+# otherwise ORDER_PAID/ORDER_FAILED notifications are rejected and paid bookings never update.
+payment.sepay.ipn-secret=${SEPAY_IPN_SECRET:}

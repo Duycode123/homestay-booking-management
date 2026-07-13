@@ -1,0 +1,14 @@
+name = "homestay-booking-ai-worker"
+main = "src/index.ts"
+compatibility_date = "2026-06-29"
+
+[ai]
+binding = "AI"
+
+[vars]
+# Local demo: Spring Boot backend must run at this URL.
+BACKEND_BASE_URL = "http://localhost:8080"
+
+# Cloudflare Workers AI model.
+# Good for demo chatbot: fast, cheap, Vietnamese is acceptable.
+MODEL_NAME = "@cf/meta/llama-3.1-8b-instruct-fast"

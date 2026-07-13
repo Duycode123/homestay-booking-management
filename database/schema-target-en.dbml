@@ -1,0 +1,310 @@
+// ====== Homestay - Band Practice Room Booking System ======
+
+Enum role {
+  CUSTOMER
+  STAFF
+  ADMIN
+}
+
+Enum room_status {
+  AVAILABLE
+  IN_USE
+  MAINTENANCE
+  NEED_CLEANING
+}
+
+Enum facility_condition {
+  GOOD
+  NEED_CLEANING
+  NEED_CHECK
+  BROKEN
+}
+
+Enum booking_status {
+  PENDING_PAYMENT
+  PAID
+  CHECKED_IN
+  COMPLETED
+  CANCELLED
+}
+
+Enum payment_method {
+  CASH
+  ONLINE
+}
+
+Enum payment_provider {
+  VNPAY
+  SEPAY
+  COUNTER
+}
+
+Enum payment_transaction_status {
+  INITIALIZED
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+Enum discount_type {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+Enum shift_status {
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+}
+
+Enum shift_registration_status {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+Enum attendance_status {
+  WORKING
+  DONE
+  MISSING_CHECKOUT
+}
+
+Enum equipment_type {
+  WIFI
+  AIR_CONDITIONER
+  TV
+  WATER_HEATER
+  OTHER
+}
+
+Enum equipment_status {
+  GOOD
+  BROKEN
+  MAINTENANCE
+}
+
+Table account {
+  id                              int       [pk, increment]
+  email                           varchar   [unique, not null]
+  password_hash                   varchar   [not null]
+  role                            role      [not null]
+  email_verified                  boolean   [not null, default: false]
+  enabled                         boolean   [not null, default: true, note: 'False disables login while preserving account history']
+  email_verification_token_hash   varchar   [unique, note: 'SHA-256 hash of active email verification token']
+  email_verification_expires_at   timestamp
+  email_verification_sent_at      timestamp
+  avatar_url                      varchar   [note: 'Current avatar image URL for the authenticated account']
+  created_at                      timestamp [default: `now()`]
+}
+
+Table customer {
+  id              int       [pk, increment]
+  account_id      int       [unique, not null, ref: - account.id]
+  full_name       varchar   [not null]
+  phone_number    varchar
+  email           varchar
+  date_of_birth   date
+}
+
+Table staff {
+  id              int       [pk, increment]
+  account_id      int       [unique, not null, ref: - account.id]
+  full_name       varchar   [not null]
+  phone_number    varchar
+  email           varchar
+  date_of_birth   date
+}
+
+Table room_tier {
+  id              int       [pk, increment]
+  name            varchar   [not null]
+  hourly_rate     decimal   [not null, note: 'Price per hour']
+  description     text
+}
+
+Table room {
+  id              int         [pk, increment]
+  name            varchar     [not null]
+  room_tier_id    int         [not null, ref: > room_tier.id]
+  max_people      int         [not null, note: 'Maximum people this room can hold']
+  status          room_status [not null, default: 'AVAILABLE']
+  image_url       varchar     [note: 'Cloudinary or externally hosted room image URL']
+}
+
+Table equipment {
+  id              int              [pk, increment]
+  room_id         int              [not null, ref: > room.id]
+  type            equipment_type   [not null]
+  name            varchar          [not null, note: 'Amenity name, e.g. Wi-Fi 5G, Smart TV 50 inch']
+  status          equipment_status [not null, default: 'GOOD']
+  notes           text
+
+  indexes {
+    (room_id, type)
+  }
+}
+
+Table discount_code {
+  id                int           [pk, increment]
+  code              varchar       [unique, not null]
+  type              discount_type [not null]
+  value             decimal       [not null]
+  min_order_value   decimal       [note: 'Minimum order value to apply']
+  expires_at        date
+}
+
+Table booking {
+  id                  int             [pk, increment]
+  customer_id         int             [not null, ref: > customer.id]
+  room_id             int             [not null, ref: > room.id]
+  discount_code_id    int             [ref: > discount_code.id, note: 'Nullable']
+  checkin_staff_id    int             [ref: > staff.id, note: 'Staff who handled check-in, nullable']
+
+  start_time          timestamp       [not null]
+  end_time            timestamp       [not null]
+  checkin_time        timestamp
+  checkout_time       timestamp
+
+  payment_method      payment_method  [not null]
+  applied_hourly_rate decimal         [not null, note: 'Hourly rate at the time of booking']
+  total_price         decimal         [not null]
+  status              booking_status  [not null, default: 'PENDING_PAYMENT']
+
+  equipment_notes     varchar(500)    [note: 'Equipment/instruments the customer wants prepared']
+  notes               varchar(500)    [note: 'Other notes from customer or staff']
+
+  created_at          timestamp       [default: `now()`]
+
+  indexes {
+    (room_id, start_time, end_time) [note: 'Supports conflict checking']
+    (status, start_time) [note: 'Supports report time slicing by booking status and start time']
+  }
+}
+
+Table booking_status_history {
+  id              int            [pk, increment]
+  booking_id      int            [not null, ref: > booking.id]
+  old_status      booking_status
+  new_status      booking_status [not null]
+  notes           varchar(500)
+  changed_at      timestamp      [not null, default: `now()`]
+  changed_by      int            [not null, ref: > account.id, note: 'account.id of the user who made the change']
+}
+
+Table payment_transaction {
+  id                      bigint                     [pk, increment]
+  booking_id              int                        [not null, ref: > booking.id]
+  provider                payment_provider           [not null]
+  transaction_reference   varchar                    [unique, not null]
+  provider_transaction_id varchar                    [unique]
+  amount                  decimal                    [not null]
+  status                  payment_transaction_status [not null, default: 'INITIALIZED']
+  response_code           varchar(20)
+  paid_at                 timestamp
+  created_at              timestamp                  [not null, default: `now()`]
+  updated_at              timestamp                  [not null, default: `now()`]
+
+  indexes {
+    (status, paid_at) [note: 'Supports paid transaction reporting slices']
+  }
+}
+
+Table app_notification {
+  id            bigint    [pk, increment]
+  recipient_id  int       [not null, ref: > account.id]
+  type          varchar   [not null]
+  title         varchar   [not null]
+  content       text      [not null]
+  is_read       boolean   [not null, default: false]
+  created_at    timestamp [not null, default: `now()`]
+
+  indexes {
+    (recipient_id, created_at)
+  }
+}
+
+Table review {
+  id              int       [pk, increment]
+  booking_id      int       [unique, not null, ref: - booking.id]
+  rating          int       [not null, note: '1-5']
+  content         text
+  approved        boolean   [not null, default: false]
+  created_at      timestamp [default: `now()`]
+}
+
+Table review_response {
+  id              int       [pk, increment]
+  review_id       int       [unique, not null, ref: - review.id, note: 'One admin response per review']
+  responder_id    int       [not null, ref: > account.id]
+  content         text      [not null]
+  created_at      timestamp [default: `now()`]
+  updated_at      timestamp [default: `now()`]
+}
+
+Table shift {
+  id              int          [pk, increment]
+  staff_id        int          [not null, ref: > staff.id]
+  date            date         [not null]
+  start_time      time         [not null]
+  end_time        time         [not null]
+  status          shift_status [not null, default: 'ASSIGNED']
+  quality_rating  int          [note: 'Admin rating for the shift, 1-5']
+}
+
+Table staff_shift_registration {
+  id                     bigint                    [pk, increment]
+  staff_id               int                       [not null, ref: > staff.id]
+  work_date              date                      [not null]
+  start_time             time                      [not null]
+  end_time               time                      [not null]
+  status                 shift_registration_status [not null, default: 'PENDING']
+  reviewed_by_account_id int                       [ref: > account.id, note: 'Admin account that approved or rejected the request']
+  reviewed_at            timestamp
+  rejection_reason       varchar(500)
+  created_at             timestamp                 [not null, default: `now()`]
+  updated_at             timestamp                 [not null, default: `now()`]
+
+  indexes {
+    (staff_id, work_date, start_time)
+    (status, work_date, start_time)
+    (staff_id, work_date, start_time, end_time) [unique, note: 'Exact duplicate active slots are prevented for PENDING/APPROVED rows in PostgreSQL']
+  }
+}
+
+Table staff_attendance {
+  id                  uuid              [pk]
+  staff_id            int               [not null, ref: > staff.id]
+  shift_id            int               [ref: > shift.id, note: 'Assigned shift linked during check-in, nullable for future manual records']
+  check_in_time       timestamp         [not null]
+  check_out_time      timestamp
+  work_duration_hours decimal           [note: 'Calculated as check_out_time - check_in_time, in hours']
+  status              attendance_status [not null, default: 'WORKING']
+  created_at          timestamp         [not null, default: `now()`]
+  updated_at          timestamp         [not null, default: `now()`]
+
+  indexes {
+    (staff_id, check_in_time)
+    (status)
+  }
+}
+
+Table facility_condition_report {
+  id                       uuid               [pk]
+  staff_id                 int                [not null, ref: > staff.id]
+  room_id                  int                [not null, ref: > room.id]
+  equipment_id             int                [ref: > equipment.id]
+  condition                facility_condition [not null]
+  note                     varchar(500)
+  image_url                varchar(500)
+  maintenance_suggested    boolean            [not null, default: false]
+  room_status_after_update room_status
+  created_at               timestamp          [not null, default: `now()`]
+
+  indexes {
+    (room_id, created_at)
+    (equipment_id, created_at)
+    (staff_id, created_at)
+    (maintenance_suggested, created_at)
+  }
+}

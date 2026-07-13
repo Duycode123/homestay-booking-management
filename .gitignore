@@ -1,0 +1,93 @@
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor and IDE files
+/.idea/
+/.vscode/
+*.iml
+*.iws
+*.ipr
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Logs and runtime output
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.pid
+*.hprof
+*.dump
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+!.env.local.example
+*.local
+backend/src/main/resources/application.properties
+backend/src/main/resources/application-*.properties
+!backend/src/main/resources/application-example.properties
+
+# Spring Boot backend
+*.class
+target/
+build/
+out/
+.apt_generated/
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache/
+hs_err_pid*
+replay_pid*
+.mvn/wrapper/maven-wrapper.jar
+
+# Frontend
+node_modules/
+dist/
+dist-ssr/
+coverage/
+*.tsbuildinfo
+.vite/
+.eslintcache
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+
+# Keep hexagonal source packages named out/ tracked under backend source trees
+!backend/src/main/java/**/out/
+!backend/src/main/java/**/out/**
+!backend/src/test/java/**/out/
+!backend/src/test/java/**/out/**
+
+# Package archives
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Local tunneling tools
+.tools/
+tools/ngrok/
+Tools/
+backend/src/main/resources/application.properties
+task.md
+
+# Local report artifacts from the legacy template (not part of this project)
+.codex-report-work/
+Bao_cao_thuc_tap_BandHub_Studio.docx
