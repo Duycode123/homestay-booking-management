@@ -1,4 +1,4 @@
-export type RoomCategory = 'standard' | 'band' | 'recording' | 'premium'
+export type RoomCategory = 'standard' | 'deluxe' | 'family'
 
 export type RoomStatus = 'active' | 'occupied' | 'maintenance' | 'inactive'
 
@@ -66,15 +66,14 @@ export type RoomTypeFormData = {
 
 export type RoomTypeFormErrors = Partial<Record<keyof RoomTypeFormData, string>>
 
-export const roomCategoryOptions: RoomCategory[] = ['standard', 'band', 'recording', 'premium']
+export const roomCategoryOptions: RoomCategory[] = ['standard', 'deluxe', 'family']
 
 export const roomStatusOptions: RoomStatus[] = ['active', 'occupied', 'maintenance', 'inactive']
 
 export const roomCategoryLabels: Record<RoomCategory, string> = {
   standard: 'Phòng homestay tiêu chuẩn',
-  band: 'Phòng homestay',
-  recording: 'Phòng nghỉ dưỡng',
-  premium: 'Homestay cao cấp',
+  deluxe: 'Phòng Deluxe',
+  family: 'Phòng Family',
 }
 
 export const roomStatusLabels: Record<RoomStatus, string> = {

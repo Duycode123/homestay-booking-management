@@ -31,7 +31,7 @@ type StaffCustomer = {
   bookingCount: number
   lastBookingAt?: string
   favoriteRoom?: string
-  favoriteEquipment: string[]
+  favoriteAmenities: string[]
   hasTodayBooking?: boolean
   notes: {
     id: string
@@ -54,38 +54,38 @@ const initialCustomers: StaffCustomer[] = [
     id: 'c1',
     name: 'Gia đình Nguyễn',
     phone: '0908 123 456',
-    email: 'blue.river@example.com',
+    email: 'nguyen.family@example.com',
     type: 'VIP',
     bookingCount: 28,
     lastBookingAt: todayKey,
     favoriteRoom: 'Deluxe Balcony 201',
-    favoriteEquipment: ['Wi-Fi tốc độ cao', 'Amp guitar'],
+    favoriteAmenities: ['Wi-Fi tốc độ cao', 'Điều hòa'],
     hasTodayBooking: true,
     notes: [{ id: 'n1', content: 'Ưu tiên kiểm tra tiện nghi trước 15 phút, khách thường đến sớm.', priority: 'IMPORTANT', createdAt: '08:00 hôm nay' }],
   },
   {
     id: 'c2',
-    name: 'Mộc Session',
+    name: 'Gia đình Trần',
     phone: '0912 567 890',
-    email: 'moc.session@example.com',
+    email: 'tran.family@example.com',
     type: 'RETURNING',
     bookingCount: 12,
     lastBookingAt: todayKey,
     favoriteRoom: 'Family Garden 302',
-    favoriteEquipment: ['Smart TV'],
+    favoriteAmenities: ['Smart TV'],
     hasTodayBooking: true,
-    notes: [{ id: 'n2', content: 'Không thuê tiện nghi thêm nếu phòng đã có đủ monitor.', priority: 'NORMAL', createdAt: 'Hôm qua' }],
+    notes: [{ id: 'n2', content: 'Ưu tiên phòng yên tĩnh và chuẩn bị thêm khăn tắm.', priority: 'NORMAL', createdAt: 'Hôm qua' }],
   },
   {
     id: 'c3',
-    name: 'The Monday Jam',
+    name: 'Lê Thu Hà',
     phone: '0987 444 221',
-    email: 'monday.jam@example.com',
+    email: 'le.thu.ha@example.com',
     type: 'RETURNING',
     bookingCount: 9,
     lastBookingAt: todayKey,
     favoriteRoom: 'Standard Garden 102',
-    favoriteEquipment: ['Micro drum', 'Cable pack'],
+    favoriteAmenities: ['Máy nước nóng', 'Ấm đun nước'],
     hasTodayBooking: true,
     notes: [],
   },
@@ -93,37 +93,37 @@ const initialCustomers: StaffCustomer[] = [
     id: 'c4',
     name: 'Hải Đăng',
     phone: '0933 880 112',
-    email: 'haidang.music@example.com',
+    email: 'hai.dang@example.com',
     type: 'VIP',
     bookingCount: 34,
     lastBookingAt: todayKey,
-    favoriteRoom: 'Homestay VIP',
-    favoriteEquipment: ['Tủ lạnh mini'],
+    favoriteRoom: 'Family Suite 301',
+    favoriteAmenities: ['Tủ lạnh mini'],
     hasTodayBooking: true,
     notes: [{ id: 'n3', content: 'Có voucher thành viên, kiểm tra ưu đãi trước khi thanh toán.', priority: 'IMPORTANT', createdAt: 'Tuần này' }],
   },
   {
     id: 'c5',
-    name: 'Noise Lab',
+    name: 'Phạm Minh Anh',
     phone: '0901 777 222',
-    email: 'noise.lab@example.com',
+    email: 'pham.minh.anh@example.com',
     type: 'RETURNING',
     bookingCount: 7,
     lastBookingAt: '2026-06-30',
     favoriteRoom: 'Deluxe City View 202',
-    favoriteEquipment: ['Smart TV'],
+    favoriteAmenities: ['Smart TV'],
     notes: [],
   },
   {
     id: 'c6',
-    name: 'Indie Kids',
+    name: 'Gia đình Võ',
     phone: '0978 112 334',
-    email: 'indiekids@example.com',
+    email: 'vo.family@example.com',
     type: 'NEW',
     bookingCount: 1,
     lastBookingAt: '2026-06-29',
-    favoriteRoom: 'Homestay C',
-    favoriteEquipment: ['Amp bass'],
+    favoriteRoom: 'Standard Garden 101',
+    favoriteAmenities: ['Điều hòa'],
     notes: [],
   },
 ]
@@ -132,10 +132,10 @@ const initialBookingHistory: StaffBooking[] = [
   { id: 'b1', code: 'BK-0701-60', customerId: 'c1', roomName: 'Deluxe Balcony 201', date: todayKey, startTime: '08:00', endTime: '09:30', totalPrice: 520000, status: 'CONFIRMED' },
   { id: 'b2', code: 'BK-0701-61', customerId: 'c2', roomName: 'Family Garden 302', date: todayKey, startTime: '09:00', endTime: '10:30', totalPrice: 720000, status: 'PENDING' },
   { id: 'b3', code: 'BK-0701-62', customerId: 'c3', roomName: 'Standard Garden 102', date: todayKey, startTime: '10:00', endTime: '11:30', totalPrice: 430000, status: 'CHECKED_IN' },
-  { id: 'b4', code: 'BK-0701-63', customerId: 'c4', roomName: 'Homestay VIP', date: todayKey, startTime: '11:00', endTime: '12:30', totalPrice: 900000, status: 'IN_PROGRESS' },
+  { id: 'b4', code: 'BK-0701-63', customerId: 'c4', roomName: 'Family Suite 301', date: todayKey, startTime: '11:00', endTime: '12:30', totalPrice: 900000, status: 'IN_PROGRESS' },
   { id: 'b5', code: 'BK-0630-22', customerId: 'c1', roomName: 'Deluxe Balcony 201', date: '2026-06-30', startTime: '18:00', endTime: '20:00', totalPrice: 680000, status: 'COMPLETED' },
   { id: 'b6', code: 'BK-0630-25', customerId: 'c5', roomName: 'Deluxe City View 202', date: '2026-06-30', startTime: '13:00', endTime: '15:00', totalPrice: 610000, status: 'COMPLETED' },
-  { id: 'b7', code: 'BK-0629-18', customerId: 'c6', roomName: 'Homestay C', date: '2026-06-29', startTime: '19:00', endTime: '21:00', totalPrice: 420000, status: 'CANCELLED' },
+  { id: 'b7', code: 'BK-0629-18', customerId: 'c6', roomName: 'Standard Garden 101', date: '2026-06-29', startTime: '19:00', endTime: '21:00', totalPrice: 420000, status: 'CANCELLED' },
 ]
 
 const filters: Array<{ value: CustomerFilter; label: string }> = [
@@ -244,7 +244,7 @@ export default function StaffCustomersPage() {
                   {kpis.map((kpi) => <KpiCard key={kpi.label} {...kpi} />)}
                 </section>
 
-                <section className="rounded-3xl border border-outline-variant bg-white p-4 shadow-[var(--band-shadow-card)]">
+                <section className="rounded-3xl border border-outline-variant bg-white p-4 shadow-[var(--homestay-shadow-card)]">
                   <div className="grid gap-3 lg:grid-cols-[minmax(280px,1fr)_260px_auto]">
                     <SearchInput value={query} onChange={setQuery} />
                     <select value={filter} onChange={(event) => setFilter(event.target.value as CustomerFilter)} className="h-12 rounded-2xl border border-outline-variant bg-surface-container-low px-4 font-display text-sm font-bold text-on-surface outline-none transition focus:border-brand-orange focus:bg-white">
@@ -288,7 +288,7 @@ export default function StaffCustomersPage() {
 
 function CustomerCard({ customer, onView, onAddNote }: { customer: StaffCustomer; onView: () => void; onAddNote: () => void }) {
   return (
-    <article className="rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--band-shadow-card)] transition hover:-translate-y-0.5 hover:shadow-[var(--band-shadow-elevated)]">
+    <article className="rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--homestay-shadow-card)] transition hover:-translate-y-0.5 hover:shadow-[var(--homestay-shadow-elevated)]">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -308,7 +308,7 @@ function CustomerCard({ customer, onView, onAddNote }: { customer: StaffCustomer
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        {customer.favoriteEquipment.length ? customer.favoriteEquipment.map((item) => (
+        {customer.favoriteAmenities.length ? customer.favoriteAmenities.map((item) => (
           <span key={item} className="rounded-full border border-outline-variant bg-surface-container-low px-3 py-1 text-xs font-semibold text-on-surface-variant">{item}</span>
         )) : <span className="rounded-full border border-outline-variant bg-surface-container-low px-3 py-1 text-xs font-semibold text-on-surface-variant">Chưa có tiện nghi thường thuê</span>}
       </div>
@@ -324,7 +324,7 @@ function CustomerCard({ customer, onView, onAddNote }: { customer: StaffCustomer
 function CustomerDetailPanel({ customer, bookings, onClose, onAddNote }: { customer: StaffCustomer; bookings: StaffBooking[]; onClose: () => void; onAddNote: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-[#042A16]/45 backdrop-blur-sm" onClick={onClose}>
-      <aside className="h-full w-full overflow-y-auto border-l border-outline-variant bg-white p-5 shadow-[var(--band-shadow-elevated)] sm:max-w-2xl sm:p-6" onClick={(event) => event.stopPropagation()}>
+      <aside className="h-full w-full overflow-y-auto border-l border-outline-variant bg-white p-5 shadow-[var(--homestay-shadow-elevated)] sm:max-w-2xl sm:p-6" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="font-display text-sm font-bold uppercase tracking-wide text-brand-orange">Hồ sơ khách hàng</p>
@@ -339,12 +339,12 @@ function CustomerDetailPanel({ customer, bookings, onClose, onAddNote }: { custo
           <Metric label="Tổng booking" value={`${customer.bookingCount}`} />
           <Metric label="Lần đặt gần nhất" value={customer.lastBookingAt ? formatDisplayDate(customer.lastBookingAt) : 'Chưa có'} />
           <Metric label="Phòng hay đặt" value={customer.favoriteRoom ?? 'Chưa có'} />
-          <Metric label="Tiện nghi thường thuê" value={customer.favoriteEquipment.length ? `${customer.favoriteEquipment.length} món` : 'Chưa có'} />
+          <Metric label="Tiện nghi yêu thích" value={customer.favoriteAmenities.length ? `${customer.favoriteAmenities.length} mục` : 'Chưa có'} />
         </div>
 
         <PanelSection title="Tiện nghi thường thuê">
           <div className="flex flex-wrap gap-2">
-            {customer.favoriteEquipment.length ? customer.favoriteEquipment.map((item) => (
+            {customer.favoriteAmenities.length ? customer.favoriteAmenities.map((item) => (
               <span key={item} className="rounded-full border border-outline-variant bg-surface-container-low px-3 py-1 text-xs font-semibold text-on-surface-variant">{item}</span>
             )) : <p className="text-sm text-on-surface-variant">Chưa có dữ liệu tiện nghi.</p>}
           </div>
@@ -404,7 +404,7 @@ function NoteModal({ customer, onCancel, onSubmit }: { customer: StaffCustomer; 
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end bg-[#042A16]/45 p-0 backdrop-blur-sm sm:items-center sm:justify-center sm:p-6" onClick={onCancel}>
-      <div className="w-full rounded-t-3xl border border-outline-variant bg-white p-5 shadow-[var(--band-shadow-elevated)] sm:max-w-xl sm:rounded-3xl sm:p-6" onClick={(event) => event.stopPropagation()}>
+      <div className="w-full rounded-t-3xl border border-outline-variant bg-white p-5 shadow-[var(--homestay-shadow-elevated)] sm:max-w-xl sm:rounded-3xl sm:p-6" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="font-display text-sm font-bold uppercase tracking-wide text-brand-orange">Ghi chú nội bộ</p>
@@ -434,11 +434,11 @@ function NoteModal({ customer, onCancel, onSubmit }: { customer: StaffCustomer; 
 }
 
 function KpiCard({ label, value, helper, icon, className }: { label: string; value: number; helper: string; icon: ReactNode; className: string }) {
-  return <article className="rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--band-shadow-card)]"><div className="flex items-start justify-between gap-4"><div><p className="font-display text-sm font-bold text-on-surface-variant">{label}</p><p className="mt-3 font-display text-4xl font-bold leading-none text-on-surface">{value}</p></div><span className={['flex h-12 w-12 items-center justify-center rounded-2xl', className].join(' ')}>{icon}</span></div><p className="mt-4 text-sm text-on-surface-variant">{helper}</p></article>
+  return <article className="rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--homestay-shadow-card)]"><div className="flex items-start justify-between gap-4"><div><p className="font-display text-sm font-bold text-on-surface-variant">{label}</p><p className="mt-3 font-display text-4xl font-bold leading-none text-on-surface">{value}</p></div><span className={['flex h-12 w-12 items-center justify-center rounded-2xl', className].join(' ')}>{icon}</span></div><p className="mt-4 text-sm text-on-surface-variant">{helper}</p></article>
 }
 
 function SearchInput({ value, onChange }: { value: string; onChange: (value: string) => void }) {
-  return <label className="relative block"><span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant"><IconSearch /></span><input value={value} onChange={(event) => onChange(event.target.value)} placeholder="Tìm tên khách/band, email, số điện thoại..." className="h-12 w-full rounded-2xl border border-outline-variant bg-surface-container-low pl-11 pr-4 text-sm text-on-surface outline-none transition placeholder:text-on-surface-variant/70 focus:border-brand-orange focus:bg-white" /></label>
+  return <label className="relative block"><span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant"><IconSearch /></span><input value={value} onChange={(event) => onChange(event.target.value)} placeholder="Tìm tên khách hàng, email, số điện thoại..." className="h-12 w-full rounded-2xl border border-outline-variant bg-surface-container-low pl-11 pr-4 text-sm text-on-surface outline-none transition placeholder:text-on-surface-variant/70 focus:border-brand-orange focus:bg-white" /></label>
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
@@ -454,15 +454,15 @@ function StatusBadge({ meta }: { meta: Meta }) {
 }
 
 function EmptyState({ onReset }: { onReset: () => void }) {
-  return <div className="rounded-3xl border border-dashed border-outline bg-white px-5 py-14 text-center shadow-[var(--band-shadow-card)]"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-container text-brand-orange"><IconSearch /></div><h2 className="mt-5 font-display text-xl font-bold text-on-surface">Không tìm thấy khách hàng</h2><p className="mx-auto mt-2 max-w-md text-sm leading-6 text-on-surface-variant">Thử đổi từ khóa tìm kiếm hoặc bộ lọc.</p><button type="button" onClick={onReset} className="btn-warm mx-auto mt-6">Đặt lại bộ lọc</button></div>
+  return <div className="rounded-3xl border border-dashed border-outline bg-white px-5 py-14 text-center shadow-[var(--homestay-shadow-card)]"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-container text-brand-orange"><IconSearch /></div><h2 className="mt-5 font-display text-xl font-bold text-on-surface">Không tìm thấy khách hàng</h2><p className="mx-auto mt-2 max-w-md text-sm leading-6 text-on-surface-variant">Thử đổi từ khóa tìm kiếm hoặc bộ lọc.</p><button type="button" onClick={onReset} className="btn-warm mx-auto mt-6">Đặt lại bộ lọc</button></div>
 }
 
 function PageSkeleton() {
-  return <div className="space-y-6"><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-36 animate-pulse rounded-3xl border border-outline-variant bg-white shadow-[var(--band-shadow-card)]" />)}</div><div className="h-20 animate-pulse rounded-3xl border border-outline-variant bg-white shadow-[var(--band-shadow-card)]" /><div className="grid gap-4 xl:grid-cols-2">{Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-64 animate-pulse rounded-3xl border border-outline-variant bg-white shadow-[var(--band-shadow-card)]" />)}</div></div>
+  return <div className="space-y-6"><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-36 animate-pulse rounded-3xl border border-outline-variant bg-white shadow-[var(--homestay-shadow-card)]" />)}</div><div className="h-20 animate-pulse rounded-3xl border border-outline-variant bg-white shadow-[var(--homestay-shadow-card)]" /><div className="grid gap-4 xl:grid-cols-2">{Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-64 animate-pulse rounded-3xl border border-outline-variant bg-white shadow-[var(--homestay-shadow-card)]" />)}</div></div>
 }
 
 function Toast({ message }: { message: string }) {
-  return <div className="fixed bottom-5 left-1/2 z-[70] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-2xl border border-secondary-container bg-secondary px-4 py-3 text-sm font-semibold text-on-secondary shadow-[var(--band-shadow-elevated)]">{message}</div>
+  return <div className="fixed bottom-5 left-1/2 z-[70] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-2xl border border-secondary-container bg-secondary px-4 py-3 text-sm font-semibold text-on-secondary shadow-[var(--homestay-shadow-elevated)]">{message}</div>
 }
 
 function getCustomerTypeMeta(type: CustomerType): Meta {
@@ -506,7 +506,7 @@ function mapBackendCustomer(customer: BackendStaffCustomerSummary): StaffCustome
     bookingCount: customer.bookingCount,
     lastBookingAt: customer.lastBookingAt ?? undefined,
     favoriteRoom: customer.favoriteRoom ?? undefined,
-    favoriteEquipment: [],
+    favoriteAmenities: [],
     hasTodayBooking: customer.hasTodayBooking,
     notes: [],
   }

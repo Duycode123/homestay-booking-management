@@ -4,6 +4,13 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import AuthGuard from '@/components/AuthGuard'
 import { EmptyState, StaffPageShell, Toast } from '@/components/staff/StaffShared'
 import {
+  STAFF_LOCATION,
+  calculateDistanceMeters,
+  formatDistance,
+  getCurrentPosition,
+  isWithinStaffLocation,
+} from '@/components/staff/staff-location'
+import {
   checkInCurrentShift,
   checkOutCurrentShift,
   fetchCurrentAttendance,
@@ -78,14 +85,6 @@ type StatusMeta = {
 
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback
-}
-
-const STUDIO_LOCATION = {
-  name: 'Homestay Booking',
-  address: '123 Âu Cơ, Tân Bình',
-  lat: 21.0285,
-  lng: 105.8542,
-  radiusMeters: 100,
 }
 
 const CHECK_IN_EARLY_MINUTES = 30
@@ -371,12 +370,12 @@ export default function StaffSchedulePage() {
       const distance = calculateDistanceMeters(
         position.coords.latitude,
         position.coords.longitude,
-        STUDIO_LOCATION.lat,
-        STUDIO_LOCATION.lng,
+        STAFF_LOCATION.lat,
+        STAFF_LOCATION.lng,
       )
 
       setLocationDistance(distance)
-      if (isWithinStudioRadius(distance)) {
+      if (isWithinStaffLocation(distance)) {
         setLocationStatus('VALID')
         return
       }
@@ -499,7 +498,7 @@ export default function StaffSchedulePage() {
                 Lịch làm việc
               </h1>
               <div className="mt-3 flex flex-wrap items-center gap-3">
-                <div className="inline-flex rounded-full border border-outline-variant bg-white p-1 shadow-[var(--band-shadow-card)]">
+                <div className="inline-flex rounded-full border border-outline-variant bg-white p-1 shadow-[var(--homestay-shadow-card)]">
                   <button
                     type="button"
                     onClick={() => setScheduleView('CURRENT_WEEK')}
@@ -672,7 +671,7 @@ function ScheduleGrid({
   onOpenShiftDetails: (cell: StaffShiftCell) => void
 }) {
   return (
-    <section className="border border-outline-variant bg-white p-4 shadow-[var(--band-shadow-card)] sm:p-7">
+    <section className="border border-outline-variant bg-white p-4 shadow-[var(--homestay-shadow-card)] sm:p-7">
       <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="font-display text-xl font-bold text-on-surface">{title}</h2>
@@ -965,7 +964,7 @@ function AttendanceModal({
               <div>
                 <h3 className="font-display text-base font-bold text-on-surface">Xác minh vị trí</h3>
                 <p className="mt-1 text-sm text-on-surface-variant">
-                  {STUDIO_LOCATION.name} · {STUDIO_LOCATION.address} · bán kính {STUDIO_LOCATION.radiusMeters}m
+                  {STAFF_LOCATION.name} · {STAFF_LOCATION.address} · bán kính {STAFF_LOCATION.radiusMeters}m
                 </p>
                 {locationDistance !== null && (
                   <p className="mt-1 text-sm font-semibold text-on-surface">
@@ -1156,7 +1155,7 @@ function SummaryCard({
   helper: string
 }) {
   return (
-    <article className="rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--band-shadow-card)]">
+    <article className="rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--homestay-shadow-card)]">
       <p className="font-display text-sm font-bold text-on-surface-variant">{label}</p>
       <p className="mt-3 font-display text-3xl font-bold leading-none text-on-surface">{value}</p>
       <p className="mt-4 text-sm text-on-surface-variant">{helper}</p>
@@ -1181,7 +1180,7 @@ function ModalFrame({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1A1C1E]/35 p-3 sm:p-4">
       <section
         className={[
-          'flex max-h-[calc(100vh-1.5rem)] w-full flex-col overflow-hidden rounded-xl border border-outline-variant bg-white shadow-[var(--band-shadow-elevated)]',
+          'flex max-h-[calc(100vh-1.5rem)] w-full flex-col overflow-hidden rounded-xl border border-outline-variant bg-white shadow-[var(--homestay-shadow-elevated)]',
           size === 'lg' ? 'max-w-[760px]' : 'max-w-xl',
         ].join(' ')}
       >
@@ -1538,43 +1537,6 @@ function createDateFromTime(time: string, baseDate: Date) {
 function parseTimeToMinutes(time: string) {
   const [hours, minutes] = normalizeTime(time).split(':').map(Number)
   return hours * 60 + minutes
-}
-
-function calculateDistanceMeters(fromLat: number, fromLng: number, toLat: number, toLng: number) {
-  const earthRadiusMeters = 6371000
-  const fromPhi = toRadians(fromLat)
-  const toPhi = toRadians(toLat)
-  const deltaPhi = toRadians(toLat - fromLat)
-  const deltaLambda = toRadians(toLng - fromLng)
-  const a =
-    Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
-    Math.cos(fromPhi) * Math.cos(toPhi) * Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2)
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-
-  return earthRadiusMeters * c
-}
-
-function isWithinStudioRadius(distanceMeters: number) {
-  return distanceMeters <= STUDIO_LOCATION.radiusMeters
-}
-
-function getCurrentPosition() {
-  return new Promise<GeolocationPosition>((resolve, reject) => {
-    navigator.geolocation.getCurrentPosition(resolve, reject, {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 0,
-    })
-  })
-}
-
-function toRadians(value: number) {
-  return (value * Math.PI) / 180
-}
-
-function formatDistance(distanceMeters: number) {
-  if (distanceMeters < 1000) return `${Math.round(distanceMeters)}m`
-  return `${(distanceMeters / 1000).toFixed(1)}km`
 }
 
 function IconCalendarCheck() {

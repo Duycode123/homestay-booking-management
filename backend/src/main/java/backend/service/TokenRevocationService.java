@@ -1,9 +1,7 @@
 package backend.service;
 
-import backend.entity.RevokedToken;
-import backend.repository.RevokedTokenRepository;
-import backend.security.JwtService;
-import io.jsonwebtoken.JwtException;
+import backend.auth.application.port.out.ParseTokenExpirationPort;
+import backend.auth.application.port.out.RevokedTokenStorePort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,14 +10,13 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 
 @Service
 @RequiredArgsConstructor
 public class TokenRevocationService {
 
-    private final RevokedTokenRepository revokedTokenRepository;
-    private final JwtService jwtService;
+    private final RevokedTokenStorePort revokedTokenStorePort;
+    private final ParseTokenExpirationPort parseTokenExpirationPort;
 
     @Transactional
     public void revoke(String token) {
@@ -27,37 +24,26 @@ public class TokenRevocationService {
             return;
         }
 
-        try {
-            LocalDateTime expiresAt = LocalDateTime.ofInstant(
-                    jwtService.extractExpiration(token).toInstant(),
-                    ZoneOffset.UTC
-            );
-            LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
-
-            if (!expiresAt.isAfter(now)) {
-                return;
-            }
-
-            revokedTokenRepository.deleteByExpiresAtBefore(now);
-            String tokenHash = hash(token);
-
-            if (!revokedTokenRepository.existsByTokenHash(tokenHash)) {
-                revokedTokenRepository.save(RevokedToken.builder()
-                        .tokenHash(tokenHash)
-                        .expiresAt(expiresAt)
-                        .createdAt(now)
-                        .build());
-            }
-        } catch (JwtException | IllegalArgumentException ignored) {
-            // Invalid or expired tokens are already unusable, so logout stays idempotent.
-        }
+        parseTokenExpirationPort.parseExpiration(token).ifPresent(expiresAt -> revokeUntil(token, expiresAt));
     }
 
     @Transactional(readOnly = true)
     public boolean isRevoked(String token) {
         return token != null
                 && !token.isBlank()
-                && revokedTokenRepository.existsByTokenHash(hash(token));
+                && revokedTokenStorePort.containsHash(hash(token));
+    }
+
+    private void revokeUntil(String token, LocalDateTime expiresAt) {
+        LocalDateTime now = LocalDateTime.now(java.time.ZoneOffset.UTC);
+        if (!expiresAt.isAfter(now)) {
+            return;
+        }
+        revokedTokenStorePort.deleteExpiredBefore(now);
+        String tokenHash = hash(token);
+        if (!revokedTokenStorePort.containsHash(tokenHash)) {
+            revokedTokenStorePort.save(tokenHash, expiresAt, now);
+        }
     }
 
     private String hash(String token) {

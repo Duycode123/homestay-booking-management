@@ -178,7 +178,7 @@ export async function getCheckoutBookingFromParams(searchParams: URLSearchParams
   const image = getSafeImageUrl(room?.imageUrl)
   const pricePerHour = room?.pricePerHour ?? inferPricePerHour(booking.totalAmount, duration)
   const capacity = room ? `Tối đa ${room.capacity} người` : 'Chưa rõ sức chứa'
-  const location = room?.location || 'Homestay Booking Studio'
+  const location = room?.location || 'Homestay Booking'
   const equipments = room?.equipment?.length ? room.equipment : [categoryLabel]
 
   return {
@@ -239,7 +239,7 @@ async function buildCheckoutBookingFromPending(
     endTime: pending.endTime,
     duration,
     capacity: `Tối đa ${room.capacity} người`,
-    location: room.location || 'Homestay Booking Studio',
+    location: room.location || 'Homestay Booking',
     pricePerHour,
     equipments: room.equipment?.length ? room.equipment : [categoryLabel],
     addons: [],
@@ -254,9 +254,8 @@ function inferCategoryLabel(roomType?: string | null) {
   if (roomType?.trim()) return roomType.trim()
 
   const category = detectRoomCategory(roomType)
-  if (category === 'recording') return 'Recording Room'
-  if (category === 'premium') return 'Premium Room'
-  if (category === 'band') return 'Deluxe Room'
+  if (category === 'family') return 'Family Room'
+  if (category === 'deluxe') return 'Deluxe Room'
   return 'Practice Room'
 }
 

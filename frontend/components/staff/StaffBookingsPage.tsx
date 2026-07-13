@@ -15,7 +15,8 @@ type ConfirmAction =
       description: string
       confirmLabel: string
       variant?: 'primary' | 'danger'
-      run: () => Promise<void>
+      requiresReason?: boolean
+      run: (reason?: string) => Promise<void>
     }
   | null
 
@@ -112,8 +113,8 @@ export default function StaffBookingsPage() {
     setSelectedBooking(updated)
   }
 
-  const performCancel = async (booking: AdminBooking) => {
-    const updated = await cancelAdminBooking(booking.bookingId, 'Staff hủy trên màn hình vận hành')
+  const performCancel = async (booking: AdminBooking, reason: string) => {
+    const updated = await cancelAdminBooking(booking.bookingId, reason)
     if (!updated) {
       throw new Error('Không tìm thấy booking cần hủy.')
     }
@@ -135,8 +136,9 @@ export default function StaffBookingsPage() {
         description: `${booking.bookingCode} sẽ chuyển sang trạng thái đã hủy trên backend.`,
         confirmLabel: 'Hủy booking',
         variant: 'danger',
-        run: async () => {
-          await performCancel(booking)
+        requiresReason: true,
+        run: async (reason) => {
+          await performCancel(booking, reason?.trim() || '')
         },
       })
       return
@@ -212,7 +214,7 @@ export default function StaffBookingsPage() {
             />
           </section>
 
-          <section className="rounded-3xl border border-outline-variant bg-white p-4 shadow-[var(--band-shadow-card)]">
+          <section className="rounded-3xl border border-outline-variant bg-white p-4 shadow-[var(--homestay-shadow-card)]">
             <div className="grid gap-3 xl:grid-cols-[minmax(260px,1fr)_220px_220px_180px_auto]">
               <SearchInput
                 value={filters.query}
@@ -223,7 +225,7 @@ export default function StaffBookingsPage() {
                 onChange={(value) => setFilters((current) => ({ ...current, bookingStatus: value as BookingStatus | 'ALL' }))}
               >
                 <option value="ALL">Tất cả trạng thái booking</option>
-                {(['PENDING_PAYMENT', 'PAID', 'CHECKED_IN', 'COMPLETED', 'CANCELLED'] as BookingStatus[]).map((status) => (
+                {(['PENDING_PAYMENT', 'DEPOSIT_PAID', 'PAID', 'CHECKED_IN', 'COMPLETED', 'CANCELLED'] as BookingStatus[]).map((status) => (
                   <option key={status} value={status}>
                     {BOOKING_STATUS_LABELS[status]}
                   </option>
@@ -309,8 +311,17 @@ type StaffBookingAction =
       description: (booking: AdminBooking) => string
     }
 
-function getAvailableActions(status: BookingStatus): StaffBookingAction[] {
+function getAvailableActions(booking: AdminBooking): StaffBookingAction[] {
+  const status = booking.bookingStatus
+
   if (status === 'PENDING_PAYMENT') {
+    if (booking.paymentMethodCode !== 'CASH') {
+      return [
+        { kind: 'cancel', label: 'Hủy booking' },
+        { kind: 'detail', label: 'Xem chi tiết' },
+      ]
+    }
+
     return [
       {
         kind: 'status',
@@ -318,6 +329,20 @@ function getAvailableActions(status: BookingStatus): StaffBookingAction[] {
         title: 'Đánh dấu đã thanh toán?',
         nextStatus: 'PAID',
         description: (booking) => `${booking.bookingCode} sẽ chuyển sang trạng thái đã thanh toán.`,
+      },
+      { kind: 'cancel', label: 'Hủy booking' },
+      { kind: 'detail', label: 'Xem chi tiết' },
+    ]
+  }
+
+  if (status === 'DEPOSIT_PAID') {
+    return [
+      {
+        kind: 'status',
+        label: 'Xác nhận thu đủ tiền',
+        title: 'Xác nhận khách đã thanh toán đủ?',
+        nextStatus: 'PAID',
+        description: (selectedBooking) => `${selectedBooking.bookingCode} sẽ chuyển sang trạng thái đã thanh toán đủ.`,
       },
       { kind: 'cancel', label: 'Hủy booking' },
       { kind: 'detail', label: 'Xem chi tiết' },
@@ -361,12 +386,12 @@ function BookingCard({
   booking: AdminBooking
   onAction: (action: StaffBookingAction) => void
 }) {
-  const actions = getAvailableActions(booking.bookingStatus)
+  const actions = getAvailableActions(booking)
   const primaryAction = actions.find((action) => action.kind === 'status') ?? actions[0]
   const secondaryActions = actions.filter((action) => action !== primaryAction)
 
   return (
-    <article className="rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--band-shadow-card)]">
+    <article className="rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--homestay-shadow-card)]">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -420,7 +445,7 @@ function BookingDetailPanel({
   onClose: () => void
   onAction: (action: StaffBookingAction) => void
 }) {
-  const actions = getAvailableActions(booking.bookingStatus)
+  const actions = getAvailableActions(booking)
 
   return (
     <>
@@ -431,7 +456,7 @@ function BookingDetailPanel({
         className="fixed inset-0 z-[60] bg-[#042A16]/50 backdrop-blur-sm"
       />
 
-      <aside className="fixed inset-y-0 right-0 z-[70] flex w-full max-w-xl flex-col border-l border-outline-variant bg-white shadow-[var(--band-shadow-elevated)]">
+      <aside className="fixed inset-y-0 right-0 z-[70] flex w-full max-w-xl flex-col border-l border-outline-variant bg-white shadow-[var(--homestay-shadow-elevated)]">
         <header className="border-b border-outline-variant bg-white px-5 py-5">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -545,6 +570,7 @@ function SelectField({ value, onChange, children }: { value: string; onChange: (
 function BookingStatusBadge({ status }: { status: BookingStatus }) {
   const className = {
     PENDING_PAYMENT: 'border-primary-container bg-primary-container text-on-primary-container',
+    DEPOSIT_PAID: 'border-secondary-container bg-secondary-container text-on-secondary-container',
     PAID: 'border-on-secondary-container/40 bg-on-secondary-container text-[#001A0D]',
     CHECKED_IN: 'border-tertiary-container bg-tertiary-container text-on-tertiary-container',
     COMPLETED: 'border-outline-variant bg-surface-container-high text-on-surface-variant',
@@ -583,13 +609,14 @@ function ConfirmDialog({
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [reason, setReason] = useState('')
 
   const handleConfirm = async () => {
     setIsSubmitting(true)
     setError('')
 
     try {
-      await action.run()
+      await action.run(reason)
       onDone()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Không thể cập nhật booking.')
@@ -599,20 +626,33 @@ function ConfirmDialog({
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#042A16]/50 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-3xl border border-outline-variant bg-white p-6 shadow-[var(--band-shadow-elevated)]">
+      <div className="w-full max-w-md rounded-3xl border border-outline-variant bg-white p-6 shadow-[var(--homestay-shadow-elevated)]">
         <div className={['flex h-12 w-12 items-center justify-center rounded-2xl', action.variant === 'danger' ? 'bg-error-container text-error' : 'bg-primary-container text-brand-orange'].join(' ')}>
           <IconAlert />
         </div>
         <h2 className="mt-5 font-display text-xl font-bold text-on-surface">{action.title}</h2>
         <p className="mt-2 text-sm leading-6 text-on-surface-variant">{action.description}</p>
+        {action.requiresReason && (
+          <label className="mt-4 block text-sm font-semibold text-on-surface">
+            Lý do hủy
+            <textarea
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              rows={3}
+              maxLength={500}
+              placeholder="Nhập lý do cụ thể để lưu vào lịch sử booking"
+              className="mt-2 w-full resize-none rounded-2xl border border-outline-variant bg-surface-container-low px-4 py-3 text-sm font-normal outline-none focus:border-brand-orange"
+            />
+          </label>
+        )}
         {error && <p className="mt-4 rounded-2xl border border-error/30 bg-error-container/30 px-4 py-3 text-xs text-error">{error}</p>}
         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <button type="button" onClick={onCancel} disabled={isSubmitting} className="btn-secondary disabled:cursor-not-allowed disabled:opacity-70">Hủy</button>
           <button
             type="button"
             onClick={() => void handleConfirm()}
-            disabled={isSubmitting}
-            className={['inline-flex min-h-11 items-center justify-center rounded-[14px] px-5 font-display text-sm font-bold text-white shadow-[var(--band-shadow-card)] transition disabled:cursor-not-allowed disabled:opacity-70', action.variant === 'danger' ? 'bg-error hover:bg-[#A61F1F]' : 'bg-brand-orange hover:bg-brand-orangeHover'].join(' ')}
+            disabled={isSubmitting || (action.requiresReason === true && !reason.trim())}
+            className={['inline-flex min-h-11 items-center justify-center rounded-[14px] px-5 font-display text-sm font-bold text-white shadow-[var(--homestay-shadow-card)] transition disabled:cursor-not-allowed disabled:opacity-70', action.variant === 'danger' ? 'bg-error hover:bg-[#A61F1F]' : 'bg-brand-orange hover:bg-brand-orangeHover'].join(' ')}
           >
             {isSubmitting ? 'Đang xử lý...' : action.confirmLabel}
           </button>
@@ -626,10 +666,10 @@ function PageSkeleton() {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-36 animate-pulse rounded-3xl border border-outline-variant bg-white shadow-[var(--band-shadow-card)]" />)}
+        {Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-36 animate-pulse rounded-3xl border border-outline-variant bg-white shadow-[var(--homestay-shadow-card)]" />)}
       </div>
-      <div className="h-20 animate-pulse rounded-3xl border border-outline-variant bg-white shadow-[var(--band-shadow-card)]" />
-      {Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-48 animate-pulse rounded-3xl border border-outline-variant bg-white shadow-[var(--band-shadow-card)]" />)}
+      <div className="h-20 animate-pulse rounded-3xl border border-outline-variant bg-white shadow-[var(--homestay-shadow-card)]" />
+      {Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-48 animate-pulse rounded-3xl border border-outline-variant bg-white shadow-[var(--homestay-shadow-card)]" />)}
     </div>
   )
 }

@@ -4,90 +4,22 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import AuthGuard from '@/components/AuthGuard'
 import { StaffPageShell } from './StaffShared'
 import { fetchAdminEquipment } from '@/lib/admin/equipment/adminEquipmentApi'
-import type {
-  AdminEquipment,
-  EquipmentStatus as BackendEquipmentStatus,
-  EquipmentType as BackendEquipmentType,
-} from '@/lib/admin/equipment/types'
-import { fetchRooms, type BackendRoom } from '@/lib/rooms-api'
+import { fetchRooms } from '@/lib/rooms-api'
 import {
   parseBackendId,
   recordStaffEquipmentCondition,
   recordStaffRoomCondition,
   updateStaffRoomStatus,
-  type BackendRoomStatus,
-  type FacilityCondition,
 } from '@/lib/staff-facility-service'
-
-type RoomStatus = 'AVAILABLE' | 'IN_USE' | 'CLEANING' | 'MAINTENANCE' | 'ISSUE'
-type RoomCategory = 'STANDARD' | 'DELUXE' | 'FAMILY'
-type EquipmentStatus = 'AVAILABLE' | 'IN_USE' | 'INSPECTION' | 'MAINTENANCE' | 'BROKEN'
-type EquipmentType = 'WIFI' | 'AIR_CONDITIONER' | 'TV' | 'WATER_HEATER' | 'OTHER'
-type IssueStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED'
-type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
-type IssueType = 'AUDIO' | 'POWER' | 'DEVICE' | 'CLEANING' | 'OTHER'
-type StaffRoomsTab = 'ROOMS' | 'EQUIPMENT' | 'ISSUES'
-
-type StaffRoom = {
-  id: string
-  name: string
-  category: RoomCategory
-  capacity: number
-  status: RoomStatus
-  currentBooking?: {
-    bookingId: string
-    customerName: string
-    timeRange: string
-  }
-  equipment: string[]
-  updatedAt: string
-  assignedStaff?: string
-  note?: string
-}
-
-type StaffEquipment = {
-  id: string
-  code: string
-  name: string
-  type: EquipmentType
-  location: string
-  status: EquipmentStatus
-  quantity?: number
-  lastCheckedAt: string
-  currentBookingId?: string
-  note?: string
-}
-
-type StaffIssue = {
-  id: string
-  title: string
-  targetType: 'ROOM' | 'EQUIPMENT'
-  targetId: string
-  targetName: string
-  issueType: IssueType
-  priority: Priority
-  status: IssueStatus
-  reporter: string
-  createdAt: string
-  description: string
-}
-
-type Meta = {
-  label: string
-  className: string
-  dotClassName?: string
-}
-
-type ReportIssueDraft = {
-  targetType: 'ROOM' | 'EQUIPMENT'
-  targetId: string
-  issueType: IssueType
-  priority: Priority
-  title: string
-  description: string
-}
-
-type ReportIssueErrors = Partial<Record<keyof ReportIssueDraft, string>>
+import {
+  createIssueId, getEquipmentStatusMeta, getEquipmentTypeLabel, getIssueStatusMeta, getPriorityMeta,
+  getRoomCategoryLabel, getRoomStatusMeta, getTargetName, mapBackendEquipmentToStaffEquipment,
+  mapBackendRoomsToStaffRooms, mapEquipmentStatusToCondition, mapIssueTypeToCondition,
+  mapRoomStatusToBackend, normalizeText,
+  type EquipmentStatus, type EquipmentType, type IssueStatus, type IssueType, type Meta, type Priority,
+  type ReportIssueDraft, type ReportIssueErrors, type RoomCategory, type RoomStatus, type StaffEquipment,
+  type StaffIssue, type StaffRoom, type StaffRoomsTab,
+} from './staff-rooms-domain'
 
 const initialRooms: StaffRoom[] = [
   {
@@ -114,19 +46,19 @@ const initialRooms: StaffRoom[] = [
     note: 'Sẵn sàng nhận booking walk-in.',
   },
   {
-    id: 'live-room',
+    id: 'family-garden-302',
     name: 'Family Garden 302',
     category: 'FAMILY',
     capacity: 10,
     status: 'CLEANING',
-    currentBooking: { bookingId: 'BK-0702-61', customerName: 'Mộc Session', timeRange: '10:00 - 11:30' },
+    currentBooking: { bookingId: 'BK-0702-61', customerName: 'Gia đình Trần', timeRange: '10:00 - 11:30' },
     equipment: ['Wi-Fi gia đình', 'Hai điều hòa inverter', 'Smart TV 55 inch'],
     updatedAt: '08:05 hôm nay',
     assignedStaff: 'Nhân viên',
     note: 'Khách yêu cầu kiểm tra TV trước khi vào phòng.',
   },
   {
-    id: 'drum-booth',
+    id: 'standard-garden-102',
     name: 'Standard Garden 102',
     category: 'STANDARD',
     capacity: 3,
@@ -137,7 +69,7 @@ const initialRooms: StaffRoom[] = [
     note: 'Máy nước nóng có tiếng lạ, cần kỹ thuật kiểm tra.',
   },
   {
-    id: 'vip-suite',
+    id: 'family-suite-301',
     name: 'Family Suite 301',
     category: 'FAMILY',
     capacity: 8,
@@ -148,7 +80,7 @@ const initialRooms: StaffRoom[] = [
     note: 'Đang bảo trì điều hòa và ổ điện khu TV.',
   },
   {
-    id: 'room-c',
+    id: 'standard-garden-101',
     name: 'Standard Garden 101',
     category: 'STANDARD',
     capacity: 5,
@@ -162,8 +94,8 @@ const initialRooms: StaffRoom[] = [
 
 const initialEquipment: StaffEquipment[] = [
   {
-    id: 'eq-mic-001',
-    code: 'EQ-MIC-001',
+    id: 'eq-wifi-001',
+    code: 'EQ-WIFI-001',
     name: 'Wi-Fi tốc độ cao',
     type: 'WIFI',
     location: 'Deluxe Balcony 201',
@@ -173,8 +105,8 @@ const initialEquipment: StaffEquipment[] = [
     note: 'Kết nối ổn định trong toàn bộ phòng.',
   },
   {
-    id: 'eq-amp-014',
-    code: 'EQ-AMP-014',
+    id: 'eq-ac-014',
+    code: 'EQ-AC-014',
     name: 'Điều hòa Daikin',
     type: 'AIR_CONDITIONER',
     location: 'Deluxe Balcony 201',
@@ -185,8 +117,8 @@ const initialEquipment: StaffEquipment[] = [
     note: 'Đang sử dụng trong phòng có khách.',
   },
   {
-    id: 'eq-mix-006',
-    code: 'EQ-MIX-006',
+    id: 'eq-tv-006',
+    code: 'EQ-TV-006',
     name: 'Smart TV 50 inch',
     type: 'TV',
     location: 'Deluxe City View 202',
@@ -196,8 +128,8 @@ const initialEquipment: StaffEquipment[] = [
     note: 'Kết nối Internet đôi lúc không ổn định.',
   },
   {
-    id: 'eq-drum-002',
-    code: 'EQ-DRUM-002',
+    id: 'eq-water-heater-002',
+    code: 'EQ-WH-002',
     name: 'Máy nước nóng Ariston',
     type: 'WATER_HEATER',
     location: 'Standard Garden 102',
@@ -207,8 +139,8 @@ const initialEquipment: StaffEquipment[] = [
     note: 'Cần kiểm tra bộ chống giật.',
   },
   {
-    id: 'eq-key-003',
-    code: 'EQ-KEY-003',
+    id: 'eq-fridge-003',
+    code: 'EQ-FRIDGE-003',
     name: 'Tủ lạnh mini',
     type: 'OTHER',
     location: 'Kho tiện nghi',
@@ -218,8 +150,8 @@ const initialEquipment: StaffEquipment[] = [
     note: 'Đã kiểm tra nguồn và nhiệt độ.',
   },
   {
-    id: 'eq-cab-018',
-    code: 'EQ-CAB-018',
+    id: 'eq-kettle-018',
+    code: 'EQ-KETTLE-018',
     name: 'Ấm đun nước',
     type: 'OTHER',
     location: 'Đang cho thuê',
@@ -236,34 +168,34 @@ const initialIssues: StaffIssue[] = [
     id: 'ISS-0701-01',
     title: 'Smart TV Deluxe City View 202 mất kết nối',
     targetType: 'EQUIPMENT',
-    targetId: 'eq-mix-006',
-    targetName: 'Smart TV MG12XU',
-    issueType: 'AUDIO',
+    targetId: 'eq-tv-006',
+    targetName: 'Smart TV 50 inch',
+    issueType: 'AMENITY',
     priority: 'HIGH',
     status: 'IN_PROGRESS',
     reporter: 'Nhân viên',
     createdAt: '08:10 hôm nay',
-    description: 'Channel 3 bị rè khi tăng gain, cần kỹ thuật kiểm tra trước ca chiều.',
+    description: 'TV thường xuyên mất kết nối Internet, cần kỹ thuật kiểm tra trước giờ khách nhận phòng.',
   },
   {
     id: 'ISS-0701-02',
-    title: 'Standard Garden 102 cần xử lý pedal',
+    title: 'Standard Garden 102 cần kiểm tra máy nước nóng',
     targetType: 'ROOM',
-    targetId: 'drum-booth',
+    targetId: 'standard-garden-102',
     targetName: 'Standard Garden 102',
     issueType: 'DEVICE',
     priority: 'MEDIUM',
     status: 'OPEN',
     reporter: 'Gia Hân',
     createdAt: '07:32 hôm nay',
-    description: 'Pedal kick trả lực yếu, khách phản ánh khó giữ tempo.',
+    description: 'Nước nóng không ổn định, khách phản ánh nhiệt độ giảm nhanh khi sử dụng.',
   },
   {
     id: 'ISS-0630-04',
-    title: 'Homestay VIP bảo trì ổ điện',
+    title: 'Family Suite 301 bảo trì ổ điện',
     targetType: 'ROOM',
-    targetId: 'vip-suite',
-    targetName: 'Homestay VIP',
+    targetId: 'family-suite-301',
+    targetName: 'Family Suite 301',
     issueType: 'POWER',
     priority: 'URGENT',
     status: 'RESOLVED',
@@ -287,7 +219,7 @@ const issueStatuses: Array<IssueStatus | 'ALL'> = ['ALL', 'OPEN', 'IN_PROGRESS',
 const issuePriorities: Array<Priority | 'ALL'> = ['ALL', 'LOW', 'MEDIUM', 'HIGH', 'URGENT']
 
 const issueTypeLabels: Record<IssueType, string> = {
-  AUDIO: 'Âm thanh',
+  AMENITY: 'Tiện nghi',
   POWER: 'Điện',
   DEVICE: 'Tiện nghi',
   CLEANING: 'Vệ sinh',
@@ -562,7 +494,7 @@ export default function StaffRoomsPage() {
                 <button
                   type="button"
                   onClick={refreshData}
-                  className="inline-flex h-11 items-center gap-2 rounded-xl border border-outline bg-white px-4 font-display text-sm font-bold text-on-surface shadow-[var(--band-shadow-card)] transition hover:bg-surface-container-low"
+                  className="inline-flex h-11 items-center gap-2 rounded-xl border border-outline bg-white px-4 font-display text-sm font-bold text-on-surface shadow-[var(--homestay-shadow-card)] transition hover:bg-surface-container-low"
                 >
                   <IconRefresh />
                   Làm mới
@@ -588,7 +520,7 @@ export default function StaffRoomsPage() {
                   ))}
                 </section>
 
-                <section className="rounded-3xl border border-outline-variant bg-white p-3 shadow-[var(--band-shadow-card)]">
+                <section className="rounded-3xl border border-outline-variant bg-white p-3 shadow-[var(--homestay-shadow-card)]">
                   <div className="flex gap-2 overflow-x-auto [scrollbar-width:none]">
                     {tabs.map((tab) => {
                       const active = activeTab === tab.id
@@ -719,7 +651,7 @@ function KpiCard({
   className: string
 }) {
   return (
-    <article className="rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--band-shadow-card)]">
+    <article className="rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--homestay-shadow-card)]">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="font-display text-sm font-bold text-on-surface-variant">{label}</p>
@@ -958,7 +890,7 @@ function RoomCard({
   const status = getRoomStatusMeta(room.status)
 
   return (
-    <article className="rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--band-shadow-card)] transition hover:-translate-y-0.5 hover:shadow-[var(--band-shadow-elevated)]">
+    <article className="rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--homestay-shadow-card)] transition hover:-translate-y-0.5 hover:shadow-[var(--homestay-shadow-elevated)]">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -1041,7 +973,7 @@ function EquipmentCard({
   const status = getEquipmentStatusMeta(equipment.status)
 
   return (
-    <article className="rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--band-shadow-card)] transition hover:-translate-y-0.5 hover:shadow-[var(--band-shadow-elevated)]">
+    <article className="rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--homestay-shadow-card)] transition hover:-translate-y-0.5 hover:shadow-[var(--homestay-shadow-elevated)]">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <p className="font-display text-xs font-bold uppercase tracking-wide text-brand-orange">{equipment.code}</p>
@@ -1103,7 +1035,7 @@ function IssueCard({
   onUpdateStatus: (status: IssueStatus) => void
 }) {
   return (
-    <article className="rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--band-shadow-card)]">
+    <article className="rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--homestay-shadow-card)]">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <p className="font-display text-xs font-bold uppercase tracking-wide text-brand-orange">{issue.id}</p>
@@ -1194,7 +1126,7 @@ function ReportIssueModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end bg-[#042A16]/45 p-0 backdrop-blur-sm sm:items-center sm:justify-center sm:p-6" onClick={onCancel}>
-      <div className="max-h-[92vh] w-full overflow-y-auto rounded-t-3xl border border-outline-variant bg-white p-5 shadow-[var(--band-shadow-elevated)] sm:max-w-2xl sm:rounded-3xl sm:p-6" onClick={(event) => event.stopPropagation()}>
+      <div className="max-h-[92vh] w-full overflow-y-auto rounded-t-3xl border border-outline-variant bg-white p-5 shadow-[var(--homestay-shadow-elevated)] sm:max-w-2xl sm:rounded-3xl sm:p-6" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="font-display text-sm font-bold uppercase tracking-wide text-brand-orange">Báo cáo vận hành</p>
@@ -1466,7 +1398,7 @@ function IssueDetailPanel({
 function SidePanel({ title, eyebrow, children, onClose }: { title: string; eyebrow: string; children: ReactNode; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-40 flex justify-end bg-[#042A16]/45 backdrop-blur-sm" onClick={onClose}>
-      <aside className="h-full w-full overflow-y-auto border-l border-outline-variant bg-white p-5 shadow-[var(--band-shadow-elevated)] sm:max-w-xl sm:p-6" onClick={(event) => event.stopPropagation()}>
+      <aside className="h-full w-full overflow-y-auto border-l border-outline-variant bg-white p-5 shadow-[var(--homestay-shadow-elevated)] sm:max-w-xl sm:p-6" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="font-display text-sm font-bold uppercase tracking-wide text-brand-orange">{eyebrow}</p>
@@ -1484,7 +1416,7 @@ function SidePanel({ title, eyebrow, children, onClose }: { title: string; eyebr
 
 function Toolbar({ children }: { children: ReactNode }) {
   return (
-    <div className="rounded-3xl border border-outline-variant bg-white p-4 shadow-[var(--band-shadow-card)]">
+    <div className="rounded-3xl border border-outline-variant bg-white p-4 shadow-[var(--homestay-shadow-card)]">
       <div className="grid gap-3 lg:grid-cols-[minmax(260px,1fr)_220px_220px]">{children}</div>
     </div>
   )
@@ -1584,7 +1516,7 @@ function EmptyState({
   onAction?: () => void
 }) {
   return (
-    <div className="rounded-3xl border border-dashed border-outline bg-white px-5 py-14 text-center shadow-[var(--band-shadow-card)]">
+    <div className="rounded-3xl border border-dashed border-outline bg-white px-5 py-14 text-center shadow-[var(--homestay-shadow-card)]">
       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-container text-brand-orange">
         <IconEmpty />
       </div>
@@ -1604,17 +1536,17 @@ function RoomsSkeleton() {
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className="h-36 animate-pulse rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--band-shadow-card)]">
+          <div key={index} className="h-36 animate-pulse rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--homestay-shadow-card)]">
             <div className="h-4 w-28 rounded bg-surface-container-high" />
             <div className="mt-6 h-9 w-16 rounded bg-surface-container-high" />
             <div className="mt-5 h-3 w-40 rounded bg-surface-container-high" />
           </div>
         ))}
       </div>
-      <div className="h-20 animate-pulse rounded-3xl border border-outline-variant bg-white shadow-[var(--band-shadow-card)]" />
+      <div className="h-20 animate-pulse rounded-3xl border border-outline-variant bg-white shadow-[var(--homestay-shadow-card)]" />
       <div className="grid gap-4 xl:grid-cols-2">
         {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className="h-72 animate-pulse rounded-3xl border border-outline-variant bg-white shadow-[var(--band-shadow-card)]" />
+          <div key={index} className="h-72 animate-pulse rounded-3xl border border-outline-variant bg-white shadow-[var(--homestay-shadow-card)]" />
         ))}
       </div>
     </div>
@@ -1623,238 +1555,10 @@ function RoomsSkeleton() {
 
 function Toast({ message }: { message: string }) {
   return (
-    <div className="fixed bottom-5 left-1/2 z-[60] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-2xl border border-secondary-container bg-secondary px-4 py-3 text-sm font-semibold text-on-secondary shadow-[var(--band-shadow-elevated)]">
+    <div className="fixed bottom-5 left-1/2 z-[60] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-2xl border border-secondary-container bg-secondary px-4 py-3 text-sm font-semibold text-on-secondary shadow-[var(--homestay-shadow-elevated)]">
       {message}
     </div>
   )
-}
-
-function mapBackendRoomsToStaffRooms(rooms: BackendRoom[], equipment: AdminEquipment[]): StaffRoom[] {
-  return rooms.map((room) => {
-    const roomEquipment = equipment.filter((item) => item.roomId === room.id)
-
-    return {
-      id: String(room.id),
-      name: room.roomName || `Room ${room.id}`,
-      category: mapRoomTypeToCategory(room.roomType?.typeName),
-      capacity: Number(room.maxPeople ?? room.roomType?.capacity ?? 0),
-      status: mapBackendRoomStatusToStaff(room.status),
-      equipment: roomEquipment.map((item) => item.equipmentName),
-      updatedAt: 'Backend',
-      assignedStaff: undefined,
-      note: room.description ?? undefined,
-    }
-  })
-}
-
-function mapBackendEquipmentToStaffEquipment(item: AdminEquipment): StaffEquipment {
-  return {
-    id: String(item.equipmentId),
-    code: `EQ-${String(item.equipmentId).padStart(3, '0')}`,
-    name: item.equipmentName,
-    type: mapBackendEquipmentType(item.equipmentType),
-    location: item.roomName,
-    status: mapBackendEquipmentStatus(item.status),
-    quantity: 1,
-    lastCheckedAt: 'Backend',
-    note: item.notes,
-  }
-}
-
-function mapRoomStatusToBackend(status: RoomStatus): BackendRoomStatus {
-  if (status === 'CLEANING') return 'NEED_CLEANING'
-  if (status === 'ISSUE') return 'MAINTENANCE'
-  return status
-}
-
-function mapBackendRoomStatusToStaff(status?: string | null): RoomStatus {
-  if (status === 'NEED_CLEANING') return 'CLEANING'
-  if (status === 'MAINTENANCE') return 'MAINTENANCE'
-  if (status === 'IN_USE') return 'IN_USE'
-  return 'AVAILABLE'
-}
-
-function mapEquipmentStatusToCondition(status: EquipmentStatus): FacilityCondition {
-  if (status === 'BROKEN') return 'BROKEN'
-  if (status === 'INSPECTION') return 'NEED_CHECK'
-  if (status === 'MAINTENANCE') return 'NEED_CHECK'
-  return 'GOOD'
-}
-
-function mapIssueTypeToCondition(issueType: IssueType): FacilityCondition {
-  if (issueType === 'CLEANING') return 'NEED_CLEANING'
-  if (issueType === 'DEVICE' || issueType === 'AUDIO' || issueType === 'POWER') return 'NEED_CHECK'
-  return 'NEED_CHECK'
-}
-
-function mapBackendEquipmentStatus(status: BackendEquipmentStatus): EquipmentStatus {
-  if (status === 'BROKEN') return 'BROKEN'
-  if (status === 'MAINTENANCE') return 'MAINTENANCE'
-  return 'AVAILABLE'
-}
-
-function mapBackendEquipmentType(type: BackendEquipmentType): EquipmentType {
-  return type
-}
-
-function mapRoomTypeToCategory(typeName?: string | null): RoomCategory {
-  const normalized = normalizeText(typeName ?? '')
-  if (normalized.includes('family')) return 'FAMILY'
-  if (normalized.includes('deluxe')) return 'DELUXE'
-  return 'STANDARD'
-}
-
-function getRoomStatusMeta(status: RoomStatus): Meta {
-  const meta: Record<RoomStatus, Meta> = {
-    AVAILABLE: {
-      label: 'Sẵn sàng',
-      className: 'border-on-secondary-container/40 bg-on-secondary-container text-[#001A0D]',
-      dotClassName: 'bg-secondary-container',
-    },
-    IN_USE: {
-      label: 'Đang sử dụng',
-      className: 'border-secondary-container bg-secondary text-on-secondary',
-      dotClassName: 'bg-on-secondary-container',
-    },
-    CLEANING: {
-      label: 'Cần vệ sinh',
-      className: 'border-primary-container bg-primary-container text-on-primary-container',
-      dotClassName: 'bg-brand-orange',
-    },
-    MAINTENANCE: {
-      label: 'Bảo trì',
-      className: 'border-tertiary-container bg-tertiary-container text-on-tertiary-container',
-      dotClassName: 'bg-tertiary',
-    },
-    ISSUE: {
-      label: 'Có sự cố',
-      className: 'border-error-container bg-error-container text-on-error-container',
-      dotClassName: 'bg-error',
-    },
-  }
-
-  return meta[status]
-}
-
-function getEquipmentStatusMeta(status: EquipmentStatus): Meta {
-  const meta: Record<EquipmentStatus, Meta> = {
-    AVAILABLE: {
-      label: 'Sẵn sàng',
-      className: 'border-on-secondary-container/40 bg-on-secondary-container text-[#001A0D]',
-      dotClassName: 'bg-secondary-container',
-    },
-    IN_USE: {
-      label: 'Đang sử dụng',
-      className: 'border-secondary-container bg-secondary text-on-secondary',
-      dotClassName: 'bg-on-secondary-container',
-    },
-    INSPECTION: {
-      label: 'Cần kiểm tra',
-      className: 'border-primary-container bg-primary-container text-on-primary-container',
-      dotClassName: 'bg-brand-orange',
-    },
-    MAINTENANCE: {
-      label: 'Bảo trì',
-      className: 'border-tertiary-container bg-tertiary-container text-on-tertiary-container',
-      dotClassName: 'bg-tertiary',
-    },
-    BROKEN: {
-      label: 'Hỏng',
-      className: 'border-error-container bg-error-container text-on-error-container',
-      dotClassName: 'bg-error',
-    },
-  }
-
-  return meta[status]
-}
-
-function getIssueStatusMeta(status: IssueStatus): Meta {
-  const meta: Record<IssueStatus, Meta> = {
-    OPEN: {
-      label: 'Mới tạo',
-      className: 'border-primary-container bg-primary-container text-on-primary-container',
-      dotClassName: 'bg-brand-orange',
-    },
-    IN_PROGRESS: {
-      label: 'Đang xử lý',
-      className: 'border-tertiary-container bg-tertiary-container text-on-tertiary-container',
-      dotClassName: 'bg-tertiary',
-    },
-    RESOLVED: {
-      label: 'Đã xử lý',
-      className: 'border-on-secondary-container/40 bg-on-secondary-container text-[#001A0D]',
-      dotClassName: 'bg-secondary-container',
-    },
-    CLOSED: {
-      label: 'Đã đóng',
-      className: 'border-outline-variant bg-surface-container-high text-on-surface-variant',
-      dotClassName: 'bg-on-surface-variant',
-    },
-  }
-
-  return meta[status]
-}
-
-function getPriorityMeta(priority: Priority): Meta {
-  const meta: Record<Priority, Meta> = {
-    LOW: {
-      label: 'Thấp',
-      className: 'border-outline-variant bg-surface-container-low text-on-surface-variant',
-      dotClassName: 'bg-on-surface-variant',
-    },
-    MEDIUM: {
-      label: 'Trung bình',
-      className: 'border-primary-container bg-primary-container text-on-primary-container',
-      dotClassName: 'bg-brand-orange',
-    },
-    HIGH: {
-      label: 'Cao',
-      className: 'border-tertiary-container bg-tertiary-container text-on-tertiary-container',
-      dotClassName: 'bg-tertiary',
-    },
-    URGENT: {
-      label: 'Khẩn cấp',
-      className: 'border-error-container bg-error-container text-on-error-container',
-      dotClassName: 'bg-error',
-    },
-  }
-
-  return meta[priority]
-}
-
-function getEquipmentTypeLabel(type: EquipmentType) {
-  const labels: Record<EquipmentType, string> = {
-    WIFI: 'Wi-Fi',
-    AIR_CONDITIONER: 'Điều hòa',
-    TV: 'TV',
-    WATER_HEATER: 'Máy nước nóng',
-    OTHER: 'Khác',
-  }
-
-  return labels[type]
-}
-
-function getRoomCategoryLabel(category: RoomCategory) {
-  const labels: Record<RoomCategory, string> = {
-    STANDARD: 'Standard',
-    DELUXE: 'Deluxe',
-    FAMILY: 'Family',
-  }
-
-  return labels[category]
-}
-
-function getTargetName(targetType: 'ROOM' | 'EQUIPMENT', targetId: string, rooms: StaffRoom[], equipment: StaffEquipment[]) {
-  const targets = targetType === 'ROOM' ? rooms : equipment
-  return targets.find((target) => target.id === targetId)?.name ?? 'Chưa xác định'
-}
-
-function createIssueId(sequence: number) {
-  return `ISS-0701-${String(sequence).padStart(2, '0')}`
-}
-
-function normalizeText(value: string) {
-  return value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 }
 
 function IconLogo() {

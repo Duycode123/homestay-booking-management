@@ -1,5 +1,5 @@
 import api from '@/lib/api'
-import type { PracticeRoom, SlotStatus, TimeSlot } from './types'
+import type { HomestayRoom, SlotStatus, TimeSlot } from './types'
 
 const OPEN_HOUR = 8
 const CLOSE_HOUR = 24
@@ -128,12 +128,12 @@ function buildRoomTags(room: RoomResponse): string[] {
           : undefined,
   ].filter((value): value is string => Boolean(value))
 
-  return tags.length > 0 ? tags : ['Studio']
+  return tags.length > 0 ? tags : ['Phòng Standard']
 }
 
-function mapRoomToPracticeRoom(room: RoomResponse): PracticeRoom {
+function mapRoomToHomestayRoom(room: RoomResponse): HomestayRoom {
   const pricePerHour = parseAmount(room.roomType?.pricePerHour)
-  const roomTypeName = room.roomType?.typeName?.trim() || 'Studio'
+  const roomTypeName = room.roomType?.typeName?.trim() || 'Standard'
 
   return {
     id: String(room.id),
@@ -234,13 +234,13 @@ function resolveSlotStatus(
   return availableRanges.some((range) => isSlotCoveredByRange(date, slot, range)) ? 'available' : 'booked'
 }
 
-export async function fetchRooms(): Promise<PracticeRoom[]> {
+export async function fetchRooms(): Promise<HomestayRoom[]> {
   const response = await api.get<ApiResponse<RoomResponse[]>>('/api/rooms')
   const rooms = response.data.data ?? []
 
   return rooms
     .filter((room) => room.status !== 'MAINTENANCE')
-    .map(mapRoomToPracticeRoom)
+    .map(mapRoomToHomestayRoom)
 }
 
 export async function fetchAvailableSlots(roomId: string, date: string): Promise<TimeSlot[]> {

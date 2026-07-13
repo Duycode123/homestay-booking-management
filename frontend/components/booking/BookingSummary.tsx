@@ -1,11 +1,11 @@
 import type { TimeSlot } from '@/lib/booking/types'
-import type { PracticeRoom } from '@/lib/booking/types'
+import type { HomestayRoom } from '@/lib/booking/types'
 import { formatPrice } from '@/lib/booking/bookingApi'
 import { formatDateLong } from '@/lib/booking/dateUtils'
 import { formatSlotRange } from '@/lib/booking/slotSelection'
 
 type BookingSummaryProps = {
-  room: PracticeRoom | null
+  room: HomestayRoom | null
   selectedDate: string
   selectedSlots: TimeSlot[]
   message: string

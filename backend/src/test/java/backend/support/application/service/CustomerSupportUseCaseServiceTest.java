@@ -1,14 +1,13 @@
 package backend.support.application.service;
 
-import backend.entity.Booking;
-import backend.entity.Customer;
-import backend.entity.CustomerIssueReport;
-import backend.entity.CustomerIssueType;
-import backend.entity.User;
 import backend.support.application.model.CustomerIssueReportResult;
-import backend.repository.BookingRepository;
-import backend.repository.CustomerIssueReportRepository;
-import backend.repository.CustomerRepository;
+import backend.support.application.port.out.CustomerIssueReportPort;
+import backend.support.application.port.out.LoadCustomerSupportContextPort;
+import backend.support.domain.model.CustomerIssueReport;
+import backend.support.domain.model.IssueStatus;
+import backend.support.domain.model.IssueType;
+import backend.support.domain.model.SupportBooking;
+import backend.support.domain.model.SupportCustomer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,6 +15,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,44 +28,36 @@ import static org.mockito.Mockito.when;
 class CustomerSupportUseCaseServiceTest {
 
     @Mock
-    private CustomerRepository customerRepository;
+    private LoadCustomerSupportContextPort customerContextPort;
 
     @Mock
-    private BookingRepository bookingRepository;
-
-    @Mock
-    private CustomerIssueReportRepository customerIssueReportRepository;
+    private CustomerIssueReportPort issueReportPort;
 
     private CustomerSupportUseCaseService customerSupportUseCaseService;
 
     @BeforeEach
     void setUp() {
-        customerSupportUseCaseService = new CustomerSupportUseCaseService(
-                customerRepository,
-                bookingRepository,
-                customerIssueReportRepository
-        );
+        customerSupportUseCaseService = new CustomerSupportUseCaseService(customerContextPort, issueReportPort);
     }
 
     @Test
     void createsIssueReportForOwnedBooking() {
-        Customer customer = Customer.builder()
-                .id(7)
-                .account(User.builder().id(7).email("customer@example.com").build())
-                .build();
-        Booking booking = Booking.builder()
-                .id(12)
-                .customer(customer)
-                .build();
-
-        when(customerRepository.findByAccount_Email("customer@example.com")).thenReturn(Optional.of(customer));
-        when(bookingRepository.findByIdAndCustomer_Account_Email(12, "customer@example.com"))
-                .thenReturn(Optional.of(booking));
-        when(customerIssueReportRepository.save(any(CustomerIssueReport.class))).thenAnswer(invocation -> {
-            CustomerIssueReport saved = invocation.getArgument(0);
-            saved.setId(99L);
-            saved.prePersist();
-            return saved;
+        SupportCustomer customer = new SupportCustomer(7, "Customer", "customer@example.com", "0900000000");
+        SupportBooking booking = new SupportBooking(12, "BR00000012", 3, "Garden Room");
+        when(customerContextPort.loadCustomerByEmail("customer@example.com")).thenReturn(Optional.of(customer));
+        when(customerContextPort.loadOwnedBooking(12, "customer@example.com")).thenReturn(Optional.of(booking));
+        when(issueReportPort.save(any(CustomerIssueReport.class))).thenAnswer(invocation -> {
+            CustomerIssueReport draft = invocation.getArgument(0);
+            return new CustomerIssueReport(
+                    99L,
+                    draft.customer(),
+                    draft.booking(),
+                    draft.issueType(),
+                    draft.description(),
+                    draft.adminNote(),
+                    IssueStatus.OPEN,
+                    LocalDateTime.of(2026, 7, 13, 10, 0)
+            );
         });
 
         CustomerIssueReportResult result = customerSupportUseCaseService.createIssueReport(
@@ -76,11 +68,9 @@ class CustomerSupportUseCaseServiceTest {
         );
 
         ArgumentCaptor<CustomerIssueReport> reportCaptor = ArgumentCaptor.forClass(CustomerIssueReport.class);
-        verify(customerIssueReportRepository).save(reportCaptor.capture());
-
-        CustomerIssueReport savedReport = reportCaptor.getValue();
-        assertEquals(CustomerIssueType.EQUIPMENT, savedReport.getIssueType());
-        assertEquals(booking, savedReport.getBooking());
+        verify(issueReportPort).save(reportCaptor.capture());
+        assertEquals(IssueType.EQUIPMENT, reportCaptor.getValue().issueType());
+        assertEquals(booking, reportCaptor.getValue().booking());
         assertEquals(99L, result.reportId());
         assertEquals("OPEN", result.status());
         assertEquals("BR00000012", result.bookingCode());
@@ -88,19 +78,13 @@ class CustomerSupportUseCaseServiceTest {
 
     @Test
     void rejectsInvalidBookingCodeFormat() {
-        Customer customer = Customer.builder()
-                .id(7)
-                .account(User.builder().id(7).email("customer@example.com").build())
-                .build();
-        when(customerRepository.findByAccount_Email("customer@example.com")).thenReturn(Optional.of(customer));
+        SupportCustomer customer = new SupportCustomer(7, "Customer", "customer@example.com", "0900000000");
+        when(customerContextPort.loadCustomerByEmail("customer@example.com")).thenReturn(Optional.of(customer));
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
                 () -> customerSupportUseCaseService.createIssueReport(
-                        "customer@example.com",
-                        "payment",
-                        "BOOK-12",
-                        "Khong tim thay giao dich"
+                        "customer@example.com", "payment", "BOOK-12", "Khong tim thay giao dich"
                 )
         );
 

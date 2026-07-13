@@ -53,7 +53,7 @@ export default function ForgotPasswordPage() {
             Đặt phòng homestay <span className="text-brand-orange">đẳng cấp</span>, trải nghiệm âm nhạc tối ưu.
           </h2>
           <p className="text-gray-300 text-sm leading-relaxed">
-            Hơn 6 phòng homestay chuyên nghiệp, đầy đủ trang tiện nghi tiện nghi hiện đại cùng hệ thống cách âm tiêu chuẩn quốc tế.
+            Hơn 6 phòng homestay sạch sẽ, đầy đủ tiện nghi hiện đại và dịch vụ hỗ trợ chu đáo.
           </p>
           <div className="space-y-3 pt-2 text-sm text-gray-200">
             {['Đặt phòng nhanh chóng trong vòng 30 giây', 'Hệ thống ưu đãi và mã giảm giá thành viên hàng tuần', 'Đội ngũ kỹ thuật viên hỗ trợ vận hành liên tục 24/7'].map((text) => (

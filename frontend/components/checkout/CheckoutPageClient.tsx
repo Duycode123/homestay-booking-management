@@ -188,8 +188,14 @@ export default function CheckoutPageClient() {
               ? { ...current, status: transaction.status }
               : current,
           )
+          if (transaction.status === 'cancelled') {
+            setPaymentError(
+              'Phiên thanh toán đã hết hạn hoặc bị hủy. Nếu bạn đã chuyển khoản sau thời hạn, vui lòng liên hệ hỗ trợ để đối soát và hoàn tiền; không chuyển thêm lần nữa.',
+            )
+            return
+          }
           setPaymentError(
-            transaction.status === 'cancelled'
+            String(transaction.status) === 'cancelled'
               ? 'Phiên thanh toán đã hết hạn hoặc đã bị hủy. Vui lòng tạo lại giao dịch.'
               : 'Giao dịch thanh toán thất bại. Vui lòng tạo lại giao dịch.',
           )

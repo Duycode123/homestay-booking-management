@@ -1,6 +1,6 @@
 export type SlotStatus = 'available' | 'booked' | 'past' | 'selected'
 
-export type PracticeRoom = {
+export type HomestayRoom = {
   id: string
   name: string
   capacity: number

@@ -26,7 +26,7 @@ class RevenueUsageReportServiceTest {
                         new RevenueUsagePeriod(from, new BigDecimal("500000.00"), 2, new BigDecimal("4.50")),
                         new RevenueUsagePeriod(from.plusDays(1), new BigDecimal("250000.00"), 1, new BigDecimal("2.00"))
                 ),
-                List.of(new RoomUsageSummary(1, "Deluxe Balcony 201", "Band", new BigDecimal("750000.00"), 3, new BigDecimal("6.50")))
+                List.of(new RoomUsageSummary(1, "Deluxe Balcony 201", "Deluxe", new BigDecimal("750000.00"), 3, new BigDecimal("6.50")))
         ));
 
         RevenueUsageReport report = service.getRevenueUsageReport(

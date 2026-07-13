@@ -89,7 +89,7 @@ export function StaffSidebar() {
 
       {isLogoutConfirmOpen && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#1A1C1E]/45 p-4" onClick={() => setIsLogoutConfirmOpen(false)}>
-          <section className="w-full max-w-md rounded-xl border border-outline-variant bg-white p-6 shadow-[var(--band-shadow-elevated)]" onClick={(event) => event.stopPropagation()}>
+          <section className="w-full max-w-md rounded-xl border border-outline-variant bg-white p-6 shadow-[var(--homestay-shadow-elevated)]" onClick={(event) => event.stopPropagation()}>
             <h2 className="font-display text-xl font-bold text-on-surface">Đăng xuất tài khoản?</h2>
             <p className="mt-2 text-sm leading-6 text-on-surface-variant">
               Bạn sẽ cần đăng nhập lại để tiếp tục sử dụng trang nhân viên.
@@ -131,7 +131,7 @@ export function StatusBadge({ label, className, dotClassName }: { label: string;
 
 export function StatCard({ label, value, helper, icon, className }: { label: string; value: string | number; helper: string; icon: ReactNode; className: string }) {
   return (
-    <article className="rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--band-shadow-card)]">
+    <article className="rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--homestay-shadow-card)]">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="font-display text-sm font-bold text-on-surface-variant">{label}</p>
@@ -146,7 +146,7 @@ export function StatCard({ label, value, helper, icon, className }: { label: str
 
 export function EmptyState({ title, description, actionLabel, onAction }: { title: string; description: string; actionLabel?: string; onAction?: () => void }) {
   return (
-    <div className="rounded-3xl border border-dashed border-outline bg-white px-5 py-14 text-center shadow-[var(--band-shadow-card)]">
+    <div className="rounded-3xl border border-dashed border-outline bg-white px-5 py-14 text-center shadow-[var(--homestay-shadow-card)]">
       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-container text-brand-orange">
         <IconEmpty />
       </div>
@@ -159,7 +159,7 @@ export function EmptyState({ title, description, actionLabel, onAction }: { titl
 
 export function Toast({ message }: { message: string }) {
   return (
-    <div className="fixed bottom-5 left-1/2 z-[70] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-2xl border border-secondary-container bg-secondary px-4 py-3 text-sm font-semibold text-on-secondary shadow-[var(--band-shadow-elevated)]">
+    <div className="fixed bottom-5 left-1/2 z-[70] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-2xl border border-secondary-container bg-secondary px-4 py-3 text-sm font-semibold text-on-secondary shadow-[var(--homestay-shadow-elevated)]">
       {message}
     </div>
   )

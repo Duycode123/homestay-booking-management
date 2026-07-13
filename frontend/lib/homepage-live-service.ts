@@ -1,6 +1,6 @@
 import api from '@/lib/api'
 import { fetchAvailableSlots, fetchRooms } from '@/lib/booking/bookingApi'
-import type { PracticeRoom, TimeSlot } from '@/lib/booking/types'
+import type { HomestayRoom, TimeSlot } from '@/lib/booking/types'
 
 export type AvailabilityTone = 'success' | 'warning' | 'muted'
 
@@ -35,12 +35,12 @@ type ApiResponse<T> = {
   data: T
 }
 
-type StudioBusinessHours = {
+type HomestayBusinessHours = {
   openTime: string
   closeTime: string
 }
 
-const businessHours: StudioBusinessHours = {
+const businessHours: HomestayBusinessHours = {
   openTime: '08:00',
   closeTime: '24:00',
 }
@@ -73,7 +73,7 @@ function getMinutesNow(now = new Date()) {
   return now.getHours() * 60 + now.getMinutes()
 }
 
-export function isStudioOpenNow(openTime: string, closeTime: string, now = new Date()) {
+export function isHomestayOpenNow(openTime: string, closeTime: string, now = new Date()) {
   const currentMinutes = getMinutesNow(now)
   return currentMinutes >= timeToMinutes(openTime) && currentMinutes < timeToMinutes(closeTime)
 }
@@ -82,10 +82,10 @@ export function getMinutesUntilClose(closeTime: string, now = new Date()) {
   return Math.max(0, timeToMinutes(closeTime) - getMinutesNow(now))
 }
 
-function createAvailabilityStatus(availableCount: number, hours: StudioBusinessHours, now = new Date()): AvailabilityStatus {
+function createAvailabilityStatus(availableCount: number, hours: HomestayBusinessHours, now = new Date()): AvailabilityStatus {
   const minutesUntilClose = getMinutesUntilClose(hours.closeTime, now)
 
-  if (!isStudioOpenNow(hours.openTime, hours.closeTime, now)) {
+  if (!isHomestayOpenNow(hours.openTime, hours.closeTime, now)) {
     return {
       status: 'CLOSED',
       label: `Đã đóng cửa · Mở lại lúc ${hours.openTime} ngày mai`,
@@ -192,7 +192,7 @@ export function getFallbackNextAvailableSlot() {
   return null
 }
 
-function isRoomOperational(room: PracticeRoom) {
+function isRoomOperational(room: HomestayRoom) {
   return room.status !== 'MAINTENANCE'
 }
 
@@ -204,7 +204,7 @@ function getSlotTimestamp(date: string, time: string) {
   return new Date(`${date}T${time === '24:00' ? '23:59:59' : `${time}:00`}`).getTime()
 }
 
-function buildNextAvailableCandidate(room: PracticeRoom, date: string, slots: TimeSlot[]): NextAvailableSlot | null {
+function buildNextAvailableCandidate(room: HomestayRoom, date: string, slots: TimeSlot[]): NextAvailableSlot | null {
   const firstAvailableIndex = slots.findIndex((slot) => slot.status === 'available')
   if (firstAvailableIndex < 0) return null
 

@@ -7,6 +7,7 @@ const overlayToneClass = 'border-white/35 bg-black/45 text-white backdrop-blur-s
 
 const bookingStyles: Record<BookingStatus, string> = {
   PENDING_PAYMENT: 'border-tertiary/25 bg-tertiary-container text-on-tertiary-container',
+  DEPOSIT_PAID: 'border-secondary/25 bg-secondary-container/35 text-secondary',
   PAID: 'border-brand-orange/25 bg-primary-container text-on-primary-container',
   CHECKED_IN: 'border-secondary/25 bg-secondary-container/35 text-secondary',
   COMPLETED: 'border-secondary/20 bg-secondary-container/50 text-on-secondary-container',

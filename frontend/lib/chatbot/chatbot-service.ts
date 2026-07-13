@@ -60,7 +60,7 @@ const RESPONSE_RULES: Array<{ keywords: string[]; reply: ChatbotReply }> = [
     keywords: ['hủy', 'huy', 'cancel', 'đổi lịch', 'doi lich'],
     reply: {
       content:
-        'Bạn có thể hủy hoặc đổi lịch trước giờ nhận phòng theo chính sách từng phòng (thường trước 2 giờ). Vào **Lịch của tôi** hoặc liên hệ hotline nếu cần hỗ trợ gấp.',
+        'Bạn có thể tự hủy trước giờ nhận phòng ít nhất 24 giờ để được hoàn 100% số tiền đã thanh toán. Vào **Booking của tôi** hoặc liên hệ hỗ trợ nếu cần xử lý trường hợp đặc biệt.',
     },
   },
   {
@@ -258,7 +258,7 @@ async function buildPriceDbFallbackReply(): Promise<ChatbotReply | null> {
       `Giá thuê hiện dao động khoảng **${formatMoney(cheapest.roomType?.pricePerHour)} đến ${formatMoney(highest.roomType?.pricePerHour)}** tùy loại phòng. Một vài mức tham khảo: ${typeLines}. Nếu bạn cho mình số người, ngân sách và khung giờ, mình sẽ gợi ý phòng hợp nhất.`,
     quickReplies: [
       { id: 'qr-price-budget', label: 'Dưới 300k', message: 'Có phòng nào dưới 300k một giờ không?' },
-      { id: 'qr-price-people', label: 'Cho 4 người', message: 'Band 4 người nên chọn phòng nào?' },
+      { id: 'qr-price-people', label: 'Cho 4 người', message: 'Nhóm 4 người nên chọn phòng nào?' },
     ],
     mode: 'FRONTEND_DB_FALLBACK',
   }
@@ -270,9 +270,9 @@ async function buildRoomDbFallbackReply(message: string): Promise<ChatbotReply |
   const maxPrice = extractMaxPrice(normalized)
   const asksRoom =
     normalized.includes('phong') ||
-    normalized.includes('band') ||
-    normalized.includes('studio') ||
-    normalized.includes('tap') ||
+    normalized.includes('homestay') ||
+    normalized.includes('luu tru') ||
+    normalized.includes('dat phong') ||
     peopleCount != null ||
     maxPrice != null
 

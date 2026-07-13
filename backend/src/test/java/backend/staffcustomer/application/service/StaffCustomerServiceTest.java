@@ -29,7 +29,7 @@ class StaffCustomerServiceTest {
                 List.of(
                         row(1, "Blue River", booking(101, 1, "Deluxe Balcony 201", LocalDate.of(2026, 7, 8))),
                         row(1, "Blue River", booking(100, 1, "Deluxe Balcony 201", LocalDate.of(2026, 7, 1))),
-                        row(2, "New Band", booking(102, 2, "Deluxe City View 202", LocalDate.of(2026, 7, 7)))
+                        row(2, "New Guest", booking(102, 2, "Deluxe City View 202", LocalDate.of(2026, 7, 7)))
                 )
         );
         StaffCustomerService service = new StaffCustomerService(port);

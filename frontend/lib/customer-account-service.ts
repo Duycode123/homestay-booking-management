@@ -1,7 +1,7 @@
 import axios from 'axios'
 import api from '@/lib/api'
 
-export type CustomerBookingStatus = 'PENDING_PAYMENT' | 'PAID' | 'CHECKED_IN' | 'COMPLETED' | 'CANCELLED'
+export type CustomerBookingStatus = 'PENDING_PAYMENT' | 'DEPOSIT_PAID' | 'PAID' | 'CHECKED_IN' | 'COMPLETED' | 'CANCELLED'
 
 export type CustomerBookingSummary = {
   id: string
@@ -87,6 +87,7 @@ function mapBooking(booking: BackendBooking): CustomerBookingSummary {
 
 export function formatBookingStatus(status: CustomerBookingStatus) {
   const labels: Record<CustomerBookingStatus, string> = {
+    DEPOSIT_PAID: 'Đã đặt cọc',
     PENDING_PAYMENT: 'Chờ thanh toán',
     PAID: 'Đã thanh toán',
     CHECKED_IN: 'Đã check-in',

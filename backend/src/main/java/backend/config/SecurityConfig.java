@@ -85,6 +85,10 @@ public class SecurityConfig {
                                 "/api/ai/suggested-questions"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/rooms/**", "/api/room-types/**", "/api/reviews", "/api/reviews/rooms/**", "/api/homepage/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/rooms/**", "/api/room-types/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/rooms/**", "/api/room-types/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/rooms/**", "/api/room-types/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/rooms/**", "/api/room-types/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/bookings/calculate-cost").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/coupons/validate").permitAll()
                         .requestMatchers("/api/auth/session").authenticated()

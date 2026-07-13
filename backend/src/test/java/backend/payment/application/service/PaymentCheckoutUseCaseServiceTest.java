@@ -13,6 +13,7 @@ import backend.payment.application.model.PaymentSessionResult;
 import backend.payment.application.model.SePayCheckoutForm;
 import backend.payment.application.port.out.FindSePayIncomingPaymentPort;
 import backend.payment.application.port.out.model.SePayIncomingPayment;
+import backend.payment.adapter.out.sepay.SePayCheckoutAdapter;
 import backend.repository.BookingRepository;
 import backend.repository.PaymentTransactionRepository;
 import backend.service.CouponUsageTrackingService;
@@ -69,7 +70,7 @@ class PaymentCheckoutUseCaseServiceTest {
         paymentCheckoutUseCaseService = new PaymentCheckoutUseCaseService(
                 bookingRepository,
                 paymentTransactionRepository,
-                sePayProperties,
+                new SePayCheckoutAdapter(sePayProperties),
                 findSePayIncomingPaymentPort,
                 couponUsageTrackingService
         );
@@ -296,6 +297,47 @@ class PaymentCheckoutUseCaseServiceTest {
         assertEquals("PAYMENT_TIMEOUT", transaction.getResponseCode());
         assertEquals(BookingStatus.CANCELLED, booking.getStatus());
         verify(bookingRepository).save(booking);
+        verify(paymentTransactionRepository).save(transaction);
+        verify(couponUsageTrackingService, never()).recordPaidBookingUsage(booking);
+    }
+
+    @Test
+    void pollingRetainsLateIncomingMoneyForRefundReconciliation() {
+        Booking booking = booking(12, PaymentMethod.ONLINE);
+        booking.setStatus(BookingStatus.CANCELLED);
+        PaymentTransaction transaction = PaymentTransaction.builder()
+                .booking(booking)
+                .provider(PaymentProvider.SEPAY)
+                .transactionReference("PAYLATE1234567890")
+                .amount(new BigDecimal("50000.00"))
+                .status(PaymentTransactionStatus.CANCELLED)
+                .responseCode("PAYMENT_TIMEOUT")
+                .createdAt(LocalDateTime.now().minusSeconds(301))
+                .build();
+        LocalDateTime paidAt = LocalDateTime.now();
+
+        when(paymentTransactionRepository
+                .findByTransactionReferenceAndBooking_Customer_Account_Email("PAYLATE1234567890", "customer@example.com"))
+                .thenReturn(Optional.of(transaction));
+        when(findSePayIncomingPaymentPort.findIncomingPayment(any()))
+                .thenReturn(Optional.of(new SePayIncomingPayment(
+                        "late-provider-id",
+                        new BigDecimal("50000.00"),
+                        "Thanh toan PAYLATE1234567890",
+                        "PAYLATE1234567890",
+                        paidAt
+                )));
+
+        var detail = paymentCheckoutUseCaseService.getPaymentTransactionDetail(
+                "PAYLATE1234567890",
+                "customer@example.com"
+        );
+
+        assertEquals("cancelled", detail.status());
+        assertEquals(PaymentTransactionStatus.SUCCEEDED, transaction.getStatus());
+        assertEquals("LATE_PAYMENT_REQUIRES_REFUND", transaction.getResponseCode());
+        assertEquals(BookingStatus.CANCELLED, booking.getStatus());
+        verify(bookingRepository, never()).save(booking);
         verify(paymentTransactionRepository).save(transaction);
         verify(couponUsageTrackingService, never()).recordPaidBookingUsage(booking);
     }

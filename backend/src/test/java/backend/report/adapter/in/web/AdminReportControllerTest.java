@@ -158,7 +158,7 @@ class AdminReportControllerTest {
                 List.of(
                         new RoomPerformanceSummary(1, "Deluxe Balcony 201", "Premium", 5),
                         new RoomPerformanceSummary(2, "Deluxe City View 202", "Standard", 2),
-                        new RoomPerformanceSummary(3, "Studio C", "Standard", 0)
+                        new RoomPerformanceSummary(3, "Family Suite 301", "Standard", 0)
                 )
         );
 

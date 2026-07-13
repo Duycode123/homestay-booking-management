@@ -69,7 +69,7 @@ class EquipmentUseCaseServiceTest {
                 EquipmentType.WIFI,
                 "  Shure SM58  ",
                 null,
-                "  Vocal microphone  ",
+                "  Wi-Fi router  ",
                 "staff@example.com"
         ));
 
@@ -79,7 +79,7 @@ class EquipmentUseCaseServiceTest {
         assertEquals(11, createdEquipment.getId());
         assertEquals(EquipmentStatus.GOOD, createdEquipment.getStatus());
         assertEquals("Shure SM58", equipmentCaptor.getValue().getName());
-        assertEquals("Vocal microphone", equipmentCaptor.getValue().getNotes());
+        assertEquals("Wi-Fi router", equipmentCaptor.getValue().getNotes());
         assertNull(equipmentCaptor.getValue().getRoomName());
     }
 

@@ -1,18 +1,20 @@
 package backend.support.application.service;
 
-import backend.entity.Booking;
-import backend.entity.Customer;
-import backend.entity.CustomerIssueReport;
-import backend.entity.CustomerIssueReportStatus;
-import backend.entity.CustomerIssueType;
 import backend.exception.ResourceNotFoundException;
-import backend.repository.BookingRepository;
-import backend.repository.CustomerIssueReportRepository;
-import backend.repository.CustomerRepository;
 import backend.support.application.model.AdminCustomerIssueReportResult;
 import backend.support.application.model.CustomerIssueReportResult;
+import backend.support.application.port.in.CreateCustomerIssueReportUseCase;
+import backend.support.application.port.in.GetCustomerIssueReportUseCase;
+import backend.support.application.port.in.ListCustomerIssueReportsUseCase;
+import backend.support.application.port.in.UpdateCustomerIssueReportUseCase;
+import backend.support.application.port.out.CustomerIssueReportPort;
+import backend.support.application.port.out.LoadCustomerSupportContextPort;
+import backend.support.domain.model.CustomerIssueReport;
+import backend.support.domain.model.IssueStatus;
+import backend.support.domain.model.IssueType;
+import backend.support.domain.model.SupportBooking;
+import backend.support.domain.model.SupportCustomer;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,12 +25,16 @@ import java.util.Locale;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class CustomerSupportUseCaseService {
+public class CustomerSupportUseCaseService implements
+        CreateCustomerIssueReportUseCase,
+        ListCustomerIssueReportsUseCase,
+        GetCustomerIssueReportUseCase,
+        UpdateCustomerIssueReportUseCase {
 
-    private final CustomerRepository customerRepository;
-    private final BookingRepository bookingRepository;
-    private final CustomerIssueReportRepository customerIssueReportRepository;
+    private final LoadCustomerSupportContextPort customerContextPort;
+    private final CustomerIssueReportPort issueReportPort;
 
+    @Override
     @Transactional
     public CustomerIssueReportResult createIssueReport(
             String customerEmail,
@@ -36,33 +42,28 @@ public class CustomerSupportUseCaseService {
             String rawBookingCode,
             String rawDescription
     ) {
-        Customer customer = customerRepository.findByAccount_Email(customerEmail)
+        SupportCustomer customer = customerContextPort.loadCustomerByEmail(customerEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay ho so khach hang"));
+        SupportBooking booking = resolveBooking(customerEmail, rawBookingCode);
 
-        CustomerIssueType issueType = normalizeIssueType(rawIssueType);
-        String description = normalizeDescription(rawDescription);
-        Booking booking = resolveBooking(customerEmail, rawBookingCode);
-
-        CustomerIssueReport savedReport = customerIssueReportRepository.save(
-                CustomerIssueReport.builder()
-                        .customer(customer)
-                        .booking(booking)
-                        .issueType(issueType)
-                        .description(description)
-                        .status(CustomerIssueReportStatus.OPEN)
-                        .build()
-        );
+        CustomerIssueReport savedReport = issueReportPort.save(CustomerIssueReport.open(
+                customer,
+                booking,
+                normalizeIssueType(rawIssueType),
+                normalizeDescription(rawDescription)
+        ));
 
         return new CustomerIssueReportResult(
-                savedReport.getId(),
-                savedReport.getIssueType().name(),
-                savedReport.getStatus().name(),
-                booking == null ? null : booking.getId(),
-                booking == null ? null : booking.getBookingCode(),
-                savedReport.getCreatedAt()
+                savedReport.id(),
+                savedReport.issueType().name(),
+                savedReport.status().name(),
+                booking == null ? null : booking.id(),
+                booking == null ? null : booking.bookingCode(),
+                savedReport.createdAt()
         );
     }
 
+    @Override
     public List<AdminCustomerIssueReportResult> getAdminIssueReports(
             String rawQuery,
             String rawStatus,
@@ -75,7 +76,7 @@ public class CustomerSupportUseCaseService {
         String priority = normalizeOptional(rawPriority);
         String roomId = normalizeOptional(rawRoomId);
 
-        return customerIssueReportRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"))
+        return issueReportPort.findAllNewestFirst()
                 .stream()
                 .filter(report -> matchesQuery(report, query))
                 .filter(report -> matchesStatus(report, status))
@@ -86,58 +87,59 @@ public class CustomerSupportUseCaseService {
                 .toList();
     }
 
+    @Override
     public AdminCustomerIssueReportResult getAdminIssueReport(Long reportId) {
-        return customerIssueReportRepository.findById(reportId)
+        return issueReportPort.findById(reportId)
                 .map(this::toAdminResponse)
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay bao cao su co"));
     }
 
+    @Override
     @Transactional
     public AdminCustomerIssueReportResult updateAdminIssueReportStatus(
             Long reportId,
             String rawStatus,
             String rawAdminNote
     ) {
-        CustomerIssueReport report = customerIssueReportRepository.findById(reportId)
+        CustomerIssueReport report = issueReportPort.findById(reportId)
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay bao cao su co"));
-
-        report.setStatus(normalizeAdminStatus(rawStatus));
-        report.setAdminNote(normalizeAdminNote(rawAdminNote));
-
-        return toAdminResponse(customerIssueReportRepository.save(report));
+        CustomerIssueReport updatedReport = report.updateStatus(
+                normalizeAdminStatus(rawStatus),
+                normalizeAdminNote(rawAdminNote)
+        );
+        return toAdminResponse(issueReportPort.save(updatedReport));
     }
 
-    private CustomerIssueType normalizeIssueType(String rawIssueType) {
+    private IssueType normalizeIssueType(String rawIssueType) {
         if (rawIssueType == null || rawIssueType.trim().isBlank()) {
             throw new IllegalArgumentException("Loai su co khong duoc de trong");
         }
-
         try {
-            return CustomerIssueType.valueOf(rawIssueType.trim().toUpperCase());
+            return IssueType.valueOf(rawIssueType.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException exception) {
             throw new IllegalArgumentException("Loai su co khong hop le");
         }
     }
 
     private AdminCustomerIssueReportResult toAdminResponse(CustomerIssueReport report) {
-        Booking booking = report.getBooking();
-        Customer customer = report.getCustomer();
+        SupportBooking booking = report.booking();
+        SupportCustomer customer = report.customer();
 
         return new AdminCustomerIssueReportResult(
-                String.valueOf(report.getId()),
-                "IR-%04d".formatted(report.getId()),
-                customer.getFullName(),
-                customer.getEmail(),
-                customer.getPhone(),
-                booking == null || booking.getRoom() == null ? "none" : String.valueOf(booking.getRoom().getId()),
-                booking == null || booking.getRoom() == null ? "Khong gan phong" : booking.getRoom().getRoomName(),
-                booking == null ? null : booking.getBookingCode(),
-                titleFor(report.getIssueType()),
-                report.getDescription(),
-                priorityFor(report.getIssueType()),
-                toUiStatus(report.getStatus()),
-                report.getCreatedAt(),
-                report.getAdminNote() == null ? "" : report.getAdminNote()
+                String.valueOf(report.id()),
+                "IR-%04d".formatted(report.id()),
+                customer.fullName(),
+                customer.email(),
+                customer.phone(),
+                booking == null || booking.roomId() == null ? "none" : String.valueOf(booking.roomId()),
+                booking == null || booking.roomName() == null ? "Khong gan phong" : booking.roomName(),
+                booking == null ? null : booking.bookingCode(),
+                titleFor(report.issueType()),
+                report.description(),
+                priorityFor(report.issueType()),
+                toUiStatus(report.status()),
+                report.createdAt(),
+                report.adminNote() == null ? "" : report.adminNote()
         );
     }
 
@@ -145,48 +147,43 @@ public class CustomerSupportUseCaseService {
         if (query.isBlank()) {
             return true;
         }
-
-        Booking booking = report.getBooking();
-        Customer customer = report.getCustomer();
+        SupportBooking booking = report.booking();
+        SupportCustomer customer = report.customer();
         String value = String.join(" ",
-                "IR-%04d".formatted(report.getId()),
-                safe(customer.getFullName()),
-                safe(customer.getEmail()),
-                safe(customer.getPhone()),
-                booking == null ? "" : safe(booking.getBookingCode()),
-                booking == null || booking.getRoom() == null ? "" : safe(booking.getRoom().getRoomName()),
-                titleFor(report.getIssueType()),
-                safe(report.getDescription())
+                "IR-%04d".formatted(report.id()),
+                safe(customer.fullName()),
+                safe(customer.email()),
+                safe(customer.phone()),
+                booking == null ? "" : safe(booking.bookingCode()),
+                booking == null ? "" : safe(booking.roomName()),
+                titleFor(report.issueType()),
+                safe(report.description())
         ).toLowerCase(Locale.ROOT);
-
         return value.contains(query);
     }
 
     private boolean matchesStatus(CustomerIssueReport report, String status) {
-        return status.isBlank() || "ALL".equals(status) || toUiStatus(report.getStatus()).equals(status);
+        return status.isBlank() || "ALL".equals(status) || toUiStatus(report.status()).equals(status);
     }
 
     private boolean matchesPriority(CustomerIssueReport report, String priority) {
-        return priority.isBlank() || "ALL".equals(priority) || priorityFor(report.getIssueType()).equals(priority);
+        return priority.isBlank() || "ALL".equals(priority) || priorityFor(report.issueType()).equals(priority);
     }
 
     private boolean matchesRoom(CustomerIssueReport report, String roomId) {
         if (roomId.isBlank() || "ALL".equals(roomId)) {
             return true;
         }
-
-        Booking booking = report.getBooking();
-        return booking != null
-                && booking.getRoom() != null
-                && String.valueOf(booking.getRoom().getId()).equals(roomId);
+        SupportBooking booking = report.booking();
+        return booking != null && booking.roomId() != null && String.valueOf(booking.roomId()).equals(roomId);
     }
 
     private boolean matchesSubmittedDate(CustomerIssueReport report, LocalDate submittedDate) {
         return submittedDate == null
-                || report.getCreatedAt() != null && submittedDate.equals(report.getCreatedAt().toLocalDate());
+                || report.createdAt() != null && submittedDate.equals(report.createdAt().toLocalDate());
     }
 
-    private String titleFor(CustomerIssueType issueType) {
+    private String titleFor(IssueType issueType) {
         return switch (issueType) {
             case ROOM -> "Su co phong homestay";
             case EQUIPMENT -> "Su co thiet bi";
@@ -196,7 +193,7 @@ public class CustomerSupportUseCaseService {
         };
     }
 
-    private String priorityFor(CustomerIssueType issueType) {
+    private String priorityFor(IssueType issueType) {
         return switch (issueType) {
             case PAYMENT, ROOM -> "HIGH";
             case EQUIPMENT -> "MEDIUM";
@@ -204,22 +201,20 @@ public class CustomerSupportUseCaseService {
         };
     }
 
-    private String toUiStatus(CustomerIssueReportStatus status) {
-        return status == CustomerIssueReportStatus.OPEN ? "NEW" : status.name();
+    private String toUiStatus(IssueStatus status) {
+        return status == IssueStatus.OPEN ? "NEW" : status.name();
     }
 
-    private CustomerIssueReportStatus normalizeAdminStatus(String rawStatus) {
+    private IssueStatus normalizeAdminStatus(String rawStatus) {
         String status = normalizeOptional(rawStatus);
         if (status.isBlank()) {
             throw new IllegalArgumentException("Trang thai khong duoc de trong");
         }
-
         if ("NEW".equals(status)) {
-            return CustomerIssueReportStatus.OPEN;
+            return IssueStatus.OPEN;
         }
-
         try {
-            return CustomerIssueReportStatus.valueOf(status);
+            return IssueStatus.valueOf(status);
         } catch (IllegalArgumentException exception) {
             throw new IllegalArgumentException("Trang thai bao cao khong hop le");
         }
@@ -230,7 +225,6 @@ public class CustomerSupportUseCaseService {
         if (adminNote.length() > 1000) {
             throw new IllegalArgumentException("Ghi chu xu ly khong duoc vuot qua 1000 ky tu");
         }
-
         return adminNote;
     }
 
@@ -250,33 +244,28 @@ public class CustomerSupportUseCaseService {
         if (rawDescription == null || rawDescription.trim().isBlank()) {
             throw new IllegalArgumentException("Noi dung mo ta khong duoc de trong");
         }
-
         String description = rawDescription.trim();
         if (description.length() > 1000) {
             throw new IllegalArgumentException("Noi dung mo ta khong duoc vuot qua 1000 ky tu");
         }
-
         return description;
     }
 
-    private Booking resolveBooking(String customerEmail, String rawBookingCode) {
+    private SupportBooking resolveBooking(String customerEmail, String rawBookingCode) {
         if (rawBookingCode == null || rawBookingCode.trim().isBlank()) {
             return null;
         }
-
         Integer bookingId = parseBookingId(rawBookingCode);
-        return bookingRepository.findByIdAndCustomer_Account_Email(bookingId, customerEmail)
+        return customerContextPort.loadOwnedBooking(bookingId, customerEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay don dat phong cua ban voi ma nay"));
     }
 
     private Integer parseBookingId(String rawBookingCode) {
-        String normalized = rawBookingCode.trim().toUpperCase();
+        String normalized = rawBookingCode.trim().toUpperCase(Locale.ROOT);
         String numericPart = normalized.startsWith("BR") ? normalized.substring(2) : normalized;
-
         if (!numericPart.matches("\\d+")) {
             throw new IllegalArgumentException("Ma dat phong khong hop le");
         }
-
         try {
             return Integer.valueOf(numericPart);
         } catch (NumberFormatException exception) {

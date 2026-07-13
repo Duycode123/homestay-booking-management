@@ -1,6 +1,6 @@
-import type { PracticeRoom } from '@/lib/booking/types'
+import type { HomestayRoom } from '@/lib/booking/types'
 
-export type RoomCategory = 'standard' | 'band' | 'recording' | 'premium'
+export type RoomCategory = 'standard' | 'deluxe' | 'family'
 export type RoomAvailabilityStatus = 'AVAILABLE' | 'ALMOST_FULL' | 'FULL_TODAY'
 export type RoomOperationalStatus = 'AVAILABLE' | 'IN_USE' | 'MAINTENANCE' | 'INACTIVE' | 'UNAVAILABLE' | 'DISABLED' | 'CLOSED'
 
@@ -81,34 +81,28 @@ export const roomCategories: RoomCategoryOption[] = [
     description: 'Phòng tiện nghi cơ bản, phù hợp cho 1-2 khách.',
   },
   {
-    id: 'band',
+    id: 'deluxe',
     label: 'Deluxe',
     description: 'Phòng rộng rãi, có ban công và tiện nghi nâng cấp.',
   },
   {
-    id: 'recording',
+    id: 'family',
     label: 'Family',
     description: 'Phòng gia đình có không gian sinh hoạt và sức chứa lớn.',
-  },
-  {
-    id: 'premium',
-    label: 'Family',
-    description: 'Lựa chọn rộng rãi cho gia đình hoặc nhóm đông người.',
   },
 ]
 
 const roomCategoryLabels: Record<RoomCategory, string> = {
   standard: 'Standard',
-  band: 'Deluxe',
-  recording: 'Family',
-  premium: 'Family',
+  deluxe: 'Deluxe',
+  family: 'Family',
 }
 
 export function detectRoomCategory(typeName?: string | null): RoomCategory {
   const normalized = typeName?.trim().toLowerCase() || ''
 
-  if (normalized.includes('family')) return 'recording'
-  if (normalized.includes('deluxe')) return 'band'
+  if (normalized.includes('family')) return 'family'
+  if (normalized.includes('deluxe')) return 'deluxe'
   return 'standard'
 }
 
@@ -140,7 +134,7 @@ function getRoomImage(imageUrl?: string) {
 }
 
 export function mapPracticeRoomToBookingRoom(
-  room: PracticeRoom,
+  room: HomestayRoom,
   options: {
     reviewSummary?: BookingRoomReviewSummary
     availabilitySummary?: BookingRoomAvailabilitySummary
@@ -227,7 +221,7 @@ export const bookingRooms: BookingRoom[] = [
     availabilityStatus: 'AVAILABLE', remainingSlots: 3, nextAvailableSlot: 'Hôm nay, 16:00', isAvailable: true, nextAvailableTime: '16:00',
   },
   {
-    id: 'deluxe-balcony-201', code: 'HS-DLX-201', name: 'Deluxe Balcony 201', category: 'band',
+    id: 'deluxe-balcony-201', code: 'HS-DLX-201', name: 'Deluxe Balcony 201', category: 'deluxe',
     categoryLabel: 'Deluxe', type: 'Deluxe', badge: 'Có ban công', rating: 4.9, reviews: 214,
     capacity: 'Tối đa 3 người', location: 'Tầng 2, Homestay Booking', image, imageClassName: 'object-center',
     pricePerHour: 550000, equipments: ['Wi-Fi 5G', 'Điều hòa âm trần', 'Smart TV 50 inch', 'Máy nước nóng'],
@@ -236,7 +230,7 @@ export const bookingRooms: BookingRoom[] = [
     availabilityStatus: 'ALMOST_FULL', remainingSlots: 1, nextAvailableSlot: 'Ngày mai, 09:00', isAvailable: true, nextAvailableTime: '09:00',
   },
   {
-    id: 'deluxe-city-view-202', code: 'HS-DLX-202', name: 'Deluxe City View 202', category: 'band',
+    id: 'deluxe-city-view-202', code: 'HS-DLX-202', name: 'Deluxe City View 202', category: 'deluxe',
     categoryLabel: 'Deluxe', type: 'Deluxe', badge: 'View thành phố', rating: 4.8, reviews: 175,
     capacity: 'Tối đa 3 người', location: 'Tầng 2, Homestay Booking', image, imageClassName: 'object-center',
     pricePerHour: 550000, equipments: ['Wi-Fi 5G', 'Điều hòa âm trần', 'Smart TV 50 inch', 'Máy nước nóng'],
@@ -245,7 +239,7 @@ export const bookingRooms: BookingRoom[] = [
     availabilityStatus: 'FULL_TODAY', remainingSlots: 0, nextAvailableSlot: 'Ngày mai, 12:00', isAvailable: false, nextAvailableTime: '12:00',
   },
   {
-    id: 'family-suite-301', code: 'HS-FAM-301', name: 'Family Suite 301', category: 'recording',
+    id: 'family-suite-301', code: 'HS-FAM-301', name: 'Family Suite 301', category: 'family',
     categoryLabel: 'Family', type: 'Family', badge: 'Gia đình', rating: 4.9, reviews: 246,
     capacity: 'Tối đa 6 người', location: 'Tầng 3, Homestay Booking', image, imageClassName: 'object-center',
     pricePerHour: 750000, equipments: ['Wi-Fi gia đình', 'Hai điều hòa', 'Smart TV 55 inch', 'Bình nước nóng'],
@@ -254,7 +248,7 @@ export const bookingRooms: BookingRoom[] = [
     availabilityStatus: 'AVAILABLE', remainingSlots: 2, nextAvailableSlot: 'Hôm nay, 15:00', isAvailable: true, nextAvailableTime: '15:00',
   },
   {
-    id: 'family-garden-302', code: 'HS-FAM-302', name: 'Family Garden 302', category: 'premium',
+    id: 'family-garden-302', code: 'HS-FAM-302', name: 'Family Garden 302', category: 'family',
     categoryLabel: 'Family', type: 'Family', badge: 'Sân vườn', rating: 4.8, reviews: 192,
     capacity: 'Tối đa 5 người', location: 'Tầng 3, Homestay Booking', image, imageClassName: 'object-center',
     pricePerHour: 750000, equipments: ['Wi-Fi gia đình', 'Hai điều hòa', 'Smart TV 55 inch', 'Bình nước nóng'],

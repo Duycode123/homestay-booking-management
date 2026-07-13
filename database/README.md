@@ -6,11 +6,18 @@ This folder contains the repository-owned database documentation and migrations.
 
 Use the following order when reasoning about schema:
 
-1. SQL migrations in `database/migrations/`
-2. this document
-3. JPA entity mappings in `backend/src/main/java/backend/entity/`
-4. use case docs under `docs/use-cases/`
-5. external SRS or backlog documents
+1. `database/Homestay_Database.sql` for a fresh English core schema
+2. SQL migrations in `database/migrations/` for incremental/legacy upgrades
+3. `database/schema-target-en.dbml` and this document
+4. JPA/JDBC persistence mappings in `backend/src/main/java/backend/`
+5. use case docs under `docs/use-cases/`
+6. external SRS or backlog documents
+
+## Setup Paths
+
+- Fresh database: run `database/Homestay_Database.sql`. It contains the current runtime tables, constraints, indexes, and homestay enum values; do not replay the historical rename/content migrations on top of it. Apply only future migrations created after this canonical snapshot.
+- Existing Vietnamese-named database: apply `20260628_rename_vn_schema_to_en.sql`, `20260630_complete_vn_schema_to_en.sql`, the remaining dated feature migrations, and finally `20260713_convert_legacy_to_homestay.sql`.
+- Never run the Vietnamese-to-English rename migrations against a fresh database created from the current canonical schema.
 
 ## Current Schema Areas Visible In Source
 
@@ -127,7 +134,7 @@ psql -h 127.0.0.1 -p 5432 -U <user> -d homestaydb -f database/sample-data/seed_b
 
 ## Target Naming Direction
 
-The long-term naming direction for this project is:
+The enforced naming direction for this project is:
 
 - English names
 - `snake_case` for tables and columns
@@ -138,7 +145,7 @@ The backend JPA mappings now target the English schema. Existing PostgreSQL data
 
 Do not mix new Vietnamese names into new schema work unless a task is strictly limited to keeping a legacy area stable.
 
-## Current To Target Mapping
+## Legacy To Current Mapping
 
 This is the intended conceptual mapping for the core schema:
 
@@ -199,7 +206,7 @@ If the change is part of the Vietnamese-to-English rename:
 - Booking is already a lifecycle-heavy aggregate and should be documented carefully whenever status semantics change.
 - Review moderation keeps `approved = false` by default until an admin approves the review.
 - Each review can have at most one admin response stored in `review_response`.
-- Payment and booking timeout behavior should stay aligned with booking-expiry logic in the backend. Checkout sessions expire after `app.booking.payment-expiration-seconds` seconds by default (`300`), cancelling both the pending `payment_transaction` and its still-pending booking. The customer payment-status polling endpoint also applies this timeout so a VietQR checkout can release the held slot without waiting for the scheduled sweep.
+- Payment and booking timeout behavior should stay aligned with booking-expiry logic in the backend. Checkout sessions expire after `app.booking.payment-expiration-seconds` seconds by default (`900`, or 15 minutes), cancelling both the pending `payment_transaction` and its still-pending booking. The customer payment-status polling endpoint also applies this timeout so a VietQR checkout can release the held slot without waiting for the scheduled sweep.
 - `payment_transaction.response_code` is `varchar(50)` and stores application-level outcome codes (`PAYMENT_TIMEOUT`, `PAYMENT_SESSION_REPLACED`, `SEPAY_SUCCESS`, `SEPAY_ORDER_FAILED`, `SEPAY_TRANSACTION_VOID`, VNPay numeric codes). Keep new codes within 50 characters.
 - Enum-backed statuses deserve explicit documentation because they affect filters, transitions, and reporting.
 - `booking_status.DEPOSIT_PAID` means the customer paid only the online deposit. Full online payment still uses `PAID`.
@@ -353,7 +360,7 @@ Current repository status:
 
 - JPA mappings: English
 - target DBML: English
-- legacy production-like SQL base: still contains Vietnamese names until the rename migrations are applied
+- fresh-install SQL base: English and homestay-oriented
 - rename rollout SQL: phase 1 (`20260628_rename_vn_schema_to_en.sql`) plus completion pass (`20260630_complete_vn_schema_to_en.sql`)
 
 If a task is only about documentation, do not pretend the runtime schema has already been renamed.
@@ -362,7 +369,7 @@ If a task is only about documentation, do not pretend the runtime schema has alr
 
 The source SRS and backlog mention additional domains that are not yet represented consistently across the current backend source tree, including:
 
-- instrument rental details
+- optional amenity/service add-on details
 - customer review flows
 - maintenance workflow
 - notifications

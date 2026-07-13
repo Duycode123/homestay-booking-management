@@ -46,7 +46,7 @@ public class AiConsultantServiceImpl implements AiConsultantService {
             "Phòng rẻ nhất hiện tại là phòng nào?",
             "Tôi muốn phòng rộng cho nhóm đông người thì nên chọn phòng nào?",
             "Cho tôi xem tất cả phòng đang có",
-            "Phòng nào phù hợp để tập band trong 2 giờ?",
+            "Phòng nào phù hợp cho gia đình 4 người?",
             "Tư vấn giúp tôi phòng phù hợp với ngân sách 300k"
     );
 

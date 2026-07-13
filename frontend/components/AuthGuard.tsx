@@ -36,7 +36,7 @@ export default function AuthGuard({ allowedRoles, children }: AuthGuardProps) {
     return (
       <div className="min-h-screen bg-background px-4 py-6 text-on-surface">
         <div className="mx-auto flex min-h-[60vh] max-w-6xl items-center justify-center">
-          <div className="w-full max-w-sm rounded-3xl border border-outline-variant bg-white p-6 shadow-[var(--band-shadow-card)]">
+          <div className="w-full max-w-sm rounded-3xl border border-outline-variant bg-white p-6 shadow-[var(--homestay-shadow-card)]">
             <div className="h-3 w-24 rounded-full bg-primary-container" />
             <div className="mt-5 h-7 w-40 rounded-full bg-surface-container-high" />
             <div className="mt-4 h-3 w-full rounded-full bg-surface-container-high" />

@@ -45,44 +45,44 @@ const initialNotifications: StaffNotification[] = [
     customerName: 'Gia đình Nguyễn',
     roomName: 'Deluxe Balcony 201',
     bookingTime: '08:00 - 09:30',
-    equipment: ['Wi-Fi tốc độ cao', 'Amp guitar', 'Smart TV'],
+    equipment: ['Wi-Fi tốc độ cao', 'Điều hòa', 'Smart TV'],
   },
   {
     id: 'n2',
     type: 'NEW_BOOKING',
     title: 'Booking mới cần xác nhận',
-    message: 'Mộc Session vừa đặt Family Garden 302 cho ca 09:00.',
+    message: 'Gia đình Trần vừa đặt Family Garden 302 cho ca 09:00.',
     createdAt: '12 phút trước',
     priority: 'MEDIUM',
     isRead: false,
     isResolved: false,
     bookingId: 'BK-0701-61',
-    customerName: 'Mộc Session',
+    customerName: 'Gia đình Trần',
     roomName: 'Family Garden 302',
     bookingTime: '09:00 - 10:30',
   },
   {
     id: 'n3',
     type: 'ROOM_STATUS',
-    title: 'Homestay VIP cần vệ sinh',
+    title: 'Family Suite 301 cần vệ sinh',
     message: 'Phòng vừa kết thúc ca trước, cần kiểm tra sàn và khu TV.',
     createdAt: '25 phút trước',
     priority: 'MEDIUM',
     isRead: true,
     isResolved: false,
-    roomName: 'Homestay VIP',
+    roomName: 'Family Suite 301',
   },
   {
     id: 'n4',
     type: 'EQUIPMENT_ISSUE',
     title: 'Smart TV Deluxe City View 202 mất kết nối',
-    message: 'Channel 3 có tiếng rè nhẹ khi tăng gain. Ưu tiên kiểm tra trước ca chiều.',
+    message: 'TV không kết nối được Wi-Fi. Ưu tiên kiểm tra trước ca chiều.',
     createdAt: '40 phút trước',
     priority: 'URGENT',
     isRead: false,
     isResolved: false,
     roomName: 'Deluxe City View 202',
-    equipment: ['Smart TV MG12XU'],
+    equipment: ['Smart TV 50 inch'],
   },
   {
     id: 'n5',
@@ -207,7 +207,7 @@ export default function StaffNotificationsPage() {
           <SummaryCard label="Cần xử lý" value={notifications.filter((item) => !item.isResolved).length} />
         </section>
 
-        <section className="rounded-3xl border border-outline-variant bg-white p-4 shadow-[var(--band-shadow-card)]">
+        <section className="rounded-3xl border border-outline-variant bg-white p-4 shadow-[var(--homestay-shadow-card)]">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex gap-2 overflow-x-auto [scrollbar-width:none]">
               {tabs.map((tab) => (
@@ -282,7 +282,7 @@ function NotificationCard({
   const priority = getPriorityMeta(notification.priority)
 
   return (
-    <article className={['rounded-3xl border bg-white p-5 shadow-[var(--band-shadow-card)]', notification.isRead ? 'border-outline-variant' : 'border-brand-orange/40'].join(' ')}>
+    <article className={['rounded-3xl border bg-white p-5 shadow-[var(--homestay-shadow-card)]', notification.isRead ? 'border-outline-variant' : 'border-brand-orange/40'].join(' ')}>
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex gap-4">
           <span className={['flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl', type.iconClass].join(' ')}>{type.icon}</span>
@@ -308,7 +308,7 @@ function NotificationCard({
 
       {notification.type === 'BOOKING_REMINDER' && (
         <div className="mt-4 grid gap-3 rounded-2xl border border-primary-container bg-primary-container/55 p-4 sm:grid-cols-2 xl:grid-cols-4">
-          <MiniMetric label="Khách/band" value={notification.customerName ?? 'Chưa rõ'} />
+          <MiniMetric label="Khách hàng" value={notification.customerName ?? 'Chưa rõ'} />
           <MiniMetric label="Phòng" value={notification.roomName ?? 'Chưa rõ'} />
           <MiniMetric label="Giờ booking" value={notification.bookingTime ?? 'Chưa rõ'} />
           <MiniMetric label="Tiện nghi" value={notification.equipment?.join(', ') ?? 'Không có'} />
@@ -329,7 +329,7 @@ function NotificationCard({
 function NotificationDetail({ notification, onClose }: { notification: StaffNotification; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-[#042A16]/45 backdrop-blur-sm" onClick={onClose}>
-      <aside className="h-full w-full overflow-y-auto border-l border-outline-variant bg-white p-5 shadow-[var(--band-shadow-elevated)] sm:max-w-xl sm:p-6" onClick={(event) => event.stopPropagation()}>
+      <aside className="h-full w-full overflow-y-auto border-l border-outline-variant bg-white p-5 shadow-[var(--homestay-shadow-elevated)] sm:max-w-xl sm:p-6" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="font-display text-sm font-bold uppercase tracking-wide text-brand-orange">Chi tiết thông báo</p>
@@ -341,7 +341,7 @@ function NotificationDetail({ notification, onClose }: { notification: StaffNoti
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           <MiniMetric label="Thời gian" value={notification.createdAt} />
           <MiniMetric label="Mức độ" value={getPriorityMeta(notification.priority).label} />
-          <MiniMetric label="Khách/band" value={notification.customerName ?? 'Không liên quan'} />
+          <MiniMetric label="Khách hàng" value={notification.customerName ?? 'Không liên quan'} />
           <MiniMetric label="Phòng" value={notification.roomName ?? 'Không liên quan'} />
         </div>
       </aside>
@@ -351,7 +351,7 @@ function NotificationDetail({ notification, onClose }: { notification: StaffNoti
 
 function SummaryCard({ label, value }: { label: string; value: number }) {
   return (
-    <article className="rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--band-shadow-card)]">
+    <article className="rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--homestay-shadow-card)]">
       <p className="font-display text-sm font-bold text-on-surface-variant">{label}</p>
       <p className="mt-3 font-display text-4xl font-bold text-on-surface">{value}</p>
     </article>

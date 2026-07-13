@@ -2,7 +2,7 @@ package backend.homepage.adapter.in.web;
 
 import backend.common.ApiResponse;
 import backend.homepage.application.model.HomepageRecentActivity;
-import backend.homepage.application.service.HomepageQueryService;
+import backend.homepage.application.port.in.GetRecentHomepageActivitiesUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,11 +16,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class HomepageController {
 
-    private final HomepageQueryService homepageQueryService;
+    private final GetRecentHomepageActivitiesUseCase getRecentHomepageActivitiesUseCase;
 
     @GetMapping("/recent-activities")
     public ResponseEntity<ApiResponse<List<HomepageRecentActivity>>> getRecentActivities() {
-        List<HomepageRecentActivity> data = homepageQueryService.getRecentActivities();
+        List<HomepageRecentActivity> data = getRecentHomepageActivitiesUseCase.getRecentActivities();
 
         return ResponseEntity.ok(ApiResponse.<List<HomepageRecentActivity>>builder()
                 .success(true)

@@ -40,8 +40,8 @@ class RoomImageUploadUseCaseServiceTest {
         );
         byte[] content = new byte[]{1, 2, 3};
         RoomImageUploadResult expected = new RoomImageUploadResult(
-                "homestay-booking-management/rooms/studio-a",
-                "https://res.cloudinary.com/lkkmflxm/image/upload/v1/studio-a.jpg"
+                "homestay-booking-management/rooms/family-suite-301",
+                "https://res.cloudinary.com/lkkmflxm/image/upload/v1/family-suite-301.jpg"
         );
 
         when(roomActorPort.loadUserByEmail("admin@example.com")).thenReturn(Optional.of(user(Role.ADMIN)));
@@ -49,7 +49,7 @@ class RoomImageUploadUseCaseServiceTest {
 
         RoomImageUploadResult result = service.uploadRoomImage(new UploadRoomImageAssetCommand(
                 "admin@example.com",
-                "studio-a.jpg",
+                "family-suite-301.jpg",
                 "image/jpeg",
                 content
         ));
@@ -58,7 +58,7 @@ class RoomImageUploadUseCaseServiceTest {
                 ArgumentCaptor.forClass(backend.room.application.model.RoomImageFile.class);
         verify(roomImageStoragePort).uploadRoomImage(imageCaptor.capture());
         assertEquals(expected, result);
-        assertEquals("studio-a.jpg", imageCaptor.getValue().fileName());
+        assertEquals("family-suite-301.jpg", imageCaptor.getValue().fileName());
         assertEquals("image/jpeg", imageCaptor.getValue().contentType());
         assertArrayEquals(content, imageCaptor.getValue().content());
     }
@@ -74,7 +74,7 @@ class RoomImageUploadUseCaseServiceTest {
 
         assertThrows(ForbiddenException.class, () -> service.uploadRoomImage(new UploadRoomImageAssetCommand(
                 "staff@example.com",
-                "studio-a.jpg",
+                "family-suite-301.jpg",
                 "image/jpeg",
                 new byte[]{1}
         )));

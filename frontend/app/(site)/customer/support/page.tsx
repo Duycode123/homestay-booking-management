@@ -14,7 +14,7 @@ const faqs = [
   },
   {
     question: 'Tôi có thể hủy lịch không?',
-    answer: 'Bạn có thể hủy trước 2 giờ theo chính sách của từng phòng.',
+    answer: 'Bạn có thể tự hủy trước giờ nhận phòng ít nhất 24 giờ để được hoàn 100% số tiền đã thanh toán.',
     icon: '02',
   },
   {

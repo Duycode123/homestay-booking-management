@@ -42,14 +42,16 @@ Allow operational staff to inspect bookings, review details, update booking stat
 
 1. Manager chooses a new status.
 2. Backend validates role and target booking.
-3. Backend updates the booking status.
-4. Backend returns the updated booking.
+3. Backend validates the requested state transition against the booking lifecycle.
+4. When checking in, backend validates the time window and records actual check-in time plus the staff profile when applicable.
+5. When completing, backend records actual checkout time.
+6. Backend returns the updated booking.
 
 ### Cancel Booking
 
 1. Manager chooses cancel action.
 2. Backend validates role and target booking.
-3. Backend blocks invalid cancellation for completed bookings.
+3. Backend blocks cancellation for cancelled, checked-in, or completed bookings. A reason is mandatory after any payment/deposit has been collected.
 4. Backend updates status to cancelled and appends cancellation reason when provided.
 
 ## Alternate and Error Flows
@@ -62,7 +64,10 @@ Allow operational staff to inspect bookings, review details, update booking stat
 ## Business Rules
 
 - Only admin/staff management roles can use the admin booking endpoints.
-- Completed bookings cannot be cancelled through the current management flow.
+- Allowed forward transitions are `PENDING_PAYMENT -> PAID` for cash bookings, `DEPOSIT_PAID -> PAID`, `PAID -> CHECKED_IN`, and `CHECKED_IN -> COMPLETED`.
+- Online `PENDING_PAYMENT` bookings are confirmed only by the payment integration, not manually through booking management.
+- Check-in is accepted from 30 minutes before the planned start until before the planned end.
+- Cancelled, checked-in, and completed bookings cannot be cancelled through the management flow.
 - Cancellation reason, if provided, is appended into booking note history.
 
 ## Data Touched
@@ -78,12 +83,12 @@ Allow operational staff to inspect bookings, review details, update booking stat
 - Filtering runs as a JPA specification inside `BookingPersistenceAdapter` behind the `SearchBookingsForManagementPort`; the application layer sees only `BookingManagementSearchCriteria` and `PageResult`. This replaced the old `findAllByOrderByCreatedAtDesc` / `findByStatusOrderByCreatedAtDesc` repository methods.
 - Current detail endpoint returns one booking detail record.
 - Status update uses query param `status`.
-- Current management cancel flow records a refund transaction (see UC010) but does not move money.
+- Current management cancel flow changes booking state and records the reason; it does not automatically create or move refund money.
 
 ## Known Gaps / Follow-up
 
-- Payment-status synchronization and a structured audit log should still be formalized.
-- Explicit state-transition rules should move into domain/application policy during hexagonal refactor.
+- Payment-status synchronization and a structured status-history audit log should still be formalized.
+- State transitions are now enforced by `BookingStatusTransitionPolicy` at the application boundary. Moving the policy away from the legacy JPA booking model remains part of the incremental hexagonal migration.
 - The customer/room search is a leading-wildcard LIKE; acceptable at current volume, revisit indexing (e.g. `pg_trgm`) if booking volume grows large.
 
 ## Hexagonal Notes

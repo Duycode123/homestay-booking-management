@@ -1,6 +1,7 @@
 /** Aligns with backend BookingStatus for future API integration. */
 export type BookingStatus =
   | 'PENDING_PAYMENT'
+  | 'DEPOSIT_PAID'
   | 'PAID'
   | 'CHECKED_IN'
   | 'COMPLETED'
@@ -26,6 +27,7 @@ export type AdminBooking = {
   bookingStatus: BookingStatus
   note?: string
   paymentMethod?: string
+  paymentMethodCode?: 'CASH' | 'ONLINE'
 }
 
 export type BookingFilters = {

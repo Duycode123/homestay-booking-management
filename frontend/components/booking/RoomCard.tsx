@@ -1,9 +1,9 @@
-import type { PracticeRoom } from '@/lib/booking/types'
+import type { HomestayRoom } from '@/lib/booking/types'
 import { formatPrice } from '@/lib/booking/bookingApi'
 import { getRoomMeta } from '@/lib/booking/roomMeta'
 
 type RoomCardProps = {
-  room: PracticeRoom
+  room: HomestayRoom
   selected: boolean
   onSelect: () => void
 }

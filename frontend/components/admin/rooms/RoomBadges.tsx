@@ -10,9 +10,8 @@ const statusStyles: Record<RoomStatus, string> = {
 
 const categoryStyles: Record<RoomCategory, string> = {
   standard: 'border-outline-variant bg-surface-container-low text-on-surface-variant',
-  band: 'border-primary-container bg-primary-container/25 text-on-primary-container',
-  recording: 'border-secondary-container/50 bg-secondary-container/20 text-secondary',
-  premium: 'border-tertiary-container bg-tertiary-container/35 text-on-tertiary-container',
+  deluxe: 'border-primary-container bg-primary-container/25 text-on-primary-container',
+  family: 'border-secondary-container/50 bg-secondary-container/20 text-secondary',
 }
 
 type BadgeSize = 'sm' | 'md'

@@ -29,19 +29,19 @@ const stats = [
 
 const equipmentCategories = [
   {
-    icon: 'music',
+    icon: 'wifi',
     title: 'Wi-Fi tốc độ cao',
     description: 'Kết nối ổn định trong toàn bộ phòng, phù hợp làm việc và giải trí.',
     items: ['Wi-Fi riêng', 'Tốc độ cao', 'Phủ sóng tốt'],
   },
   {
-    icon: 'amp',
+    icon: 'air',
     title: 'Điều hòa',
     description: 'Điều hòa inverter được vệ sinh và kiểm tra định kỳ.',
     items: ['Làm lạnh nhanh', 'Tiết kiệm điện', 'Điều khiển riêng'],
   },
   {
-    icon: 'mic',
+    icon: 'tv',
     title: 'Smart TV',
     description: 'TV kết nối Internet với các ứng dụng giải trí phổ biến.',
     items: ['YouTube', 'Trình chiếu', 'Màn hình lớn'],
@@ -53,7 +53,7 @@ const equipmentCategories = [
     items: ['Nước nóng ổn định', 'Chống giật', 'Phòng tắm riêng'],
   },
   {
-    icon: 'cable',
+    icon: 'amenities',
     title: 'Tiện nghi bổ sung',
     description: 'Tủ lạnh mini, ấm đun nước và vật dụng cá nhân cơ bản có sẵn trong phòng.',
     items: ['Tủ lạnh mini', 'Ấm đun nước', 'Đồ dùng cá nhân'],
@@ -86,7 +86,7 @@ const steps = [
 
 const homestayStandards = [
   {
-    icon: 'music' as const,
+    icon: 'bed' as const,
     title: 'Không gian nghỉ dưỡng',
     description: 'Phòng sạch sẽ, yên tĩnh và được chuẩn bị kỹ trước mỗi lượt khách.',
   },
@@ -119,7 +119,7 @@ const testimonials = [
 
 type IconName =
   | (typeof equipmentCategories)[number]['icon']
-  | 'music'
+  | 'bed'
   | 'users'
   | 'clock'
   | 'star'
@@ -130,7 +130,12 @@ type IconName =
 
 function Icon({ name, className = 'h-5 w-5' }: { name: IconName; className?: string }) {
   const paths: Record<IconName, ReactNode> = {
-    music: (
+    bed: (
+      <>
+        <path d="M3 18v-7M21 18v-5a3 3 0 0 0-3-3H9v8M3 14h18M6 10V7h5a3 3 0 0 1 3 3" />
+      </>
+    ),
+    wifi: (
       <>
         <path d="M9 18V5l10-2v13" />
         <path d="M9 9l10-2" />
@@ -154,20 +159,20 @@ function Icon({ name, className = 'h-5 w-5' }: { name: IconName; className?: str
       </>
     ),
     shield: <path d="M12 3 20 6v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3zM9 12l2 2 4-5" />,
-    mic: (
+    tv: (
       <>
         <rect x="9" y="3" width="6" height="11" rx="3" />
         <path d="M6 11a6 6 0 0 0 12 0M12 17v4M8 21h8" />
       </>
     ),
-    amp: (
+    air: (
       <>
         <rect x="4" y="7" width="16" height="12" rx="2" />
         <circle cx="9" cy="13" r="2" />
         <path d="M14 11v4M17 10v6" />
       </>
     ),
-    cable: (
+    amenities: (
       <>
         <path d="M7 7a5 5 0 0 1 10 0v4a3 3 0 0 1-3 3h-1" />
         <path d="M10 14v3M14 14v3M8 20h8" />
@@ -536,7 +541,7 @@ export default function HomePage() {
       <section className="relative flex min-h-[720px] items-center overflow-hidden bg-secondary pt-6 text-white md:min-h-screen md:pt-8">
         <Image
           src="/images/homestay-room-hero.png"
-          alt="Phòng homestay band chuyên nghiệp với trống, ampli guitar và micro"
+          alt="Phòng homestay tiện nghi với giường, điều hòa và không gian thư giãn"
           fill
           priority
           sizes="100vw"
@@ -573,7 +578,7 @@ export default function HomePage() {
             </h1>
 
             <p className="mt-7 max-w-2xl text-lg leading-8 text-white/70">
-              Phòng homestay chuyên nghiệp dành cho nhạc sĩ, khách lưu trú và người sáng tạo. Đặt chỗ nhanh,
+              Phòng homestay tiện nghi dành cho khách cá nhân, cặp đôi và gia đình. Đặt chỗ nhanh,
               tiện nghi sẵn sàng, lịch đặt phòng rõ ràng trên trang Phòng homestay riêng.
             </p>
 
@@ -675,10 +680,10 @@ export default function HomePage() {
                 Tiện nghi homestay
               </p>
               <h2 className="mt-3 font-display text-3xl font-bold leading-tight text-on-surface sm:text-4xl">
-                Tiện nghi &amp; tiện nghi có sẵn trong phòng
+                Dịch vụ &amp; tiện nghi có sẵn trong phòng
               </h2>
               <p className="mt-4 text-base leading-7 text-on-surface-variant">
-                Tiện nghi đi kèm khi đặt phòng — không cần mang cả dàn nhạc. Ghi chú nhu cầu khi đặt để homestay chuẩn bị
+                Tiện nghi thiết yếu đi kèm khi đặt phòng. Ghi chú nhu cầu khi đặt để homestay chuẩn bị
                 trước giờ nhận phòng.
               </p>
             </div>

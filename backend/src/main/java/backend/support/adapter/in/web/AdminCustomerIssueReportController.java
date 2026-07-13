@@ -3,7 +3,9 @@ package backend.support.adapter.in.web;
 import backend.common.ApiResponse;
 import backend.support.adapter.in.web.dto.request.UpdateCustomerIssueReportStatusRequest;
 import backend.support.application.model.AdminCustomerIssueReportResult;
-import backend.support.application.service.CustomerSupportUseCaseService;
+import backend.support.application.port.in.GetCustomerIssueReportUseCase;
+import backend.support.application.port.in.ListCustomerIssueReportsUseCase;
+import backend.support.application.port.in.UpdateCustomerIssueReportUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -23,7 +25,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AdminCustomerIssueReportController {
 
-    private final CustomerSupportUseCaseService customerSupportUseCaseService;
+    private final ListCustomerIssueReportsUseCase listCustomerIssueReportsUseCase;
+    private final GetCustomerIssueReportUseCase getCustomerIssueReportUseCase;
+    private final UpdateCustomerIssueReportUseCase updateCustomerIssueReportUseCase;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<AdminCustomerIssueReportResult>>> getIssueReports(
@@ -33,7 +37,7 @@ public class AdminCustomerIssueReportController {
             @RequestParam(required = false) String roomId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate submittedDate
     ) {
-        List<AdminCustomerIssueReportResult> data = customerSupportUseCaseService.getAdminIssueReports(
+        List<AdminCustomerIssueReportResult> data = listCustomerIssueReportsUseCase.getAdminIssueReports(
                 query,
                 status,
                 priority,
@@ -50,7 +54,7 @@ public class AdminCustomerIssueReportController {
     ) {
         return ResponseEntity.ok(success(
                 "Lay chi tiet bao cao su co thanh cong",
-                customerSupportUseCaseService.getAdminIssueReport(reportId)
+                getCustomerIssueReportUseCase.getAdminIssueReport(reportId)
         ));
     }
 
@@ -59,7 +63,7 @@ public class AdminCustomerIssueReportController {
             @PathVariable Long reportId,
             @RequestBody UpdateCustomerIssueReportStatusRequest request
     ) {
-        AdminCustomerIssueReportResult data = customerSupportUseCaseService.updateAdminIssueReportStatus(
+        AdminCustomerIssueReportResult data = updateCustomerIssueReportUseCase.updateAdminIssueReportStatus(
                 reportId,
                 request == null ? null : request.getStatus(),
                 request == null ? null : request.getAdminNote()

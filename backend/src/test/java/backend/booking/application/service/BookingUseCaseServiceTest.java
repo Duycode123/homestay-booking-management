@@ -2,6 +2,8 @@ package backend.booking.application.service;
 
 import backend.booking.application.model.PageResult;
 import backend.booking.application.port.in.command.CreateBookingCommand;
+import backend.booking.application.port.in.command.CancelCustomerBookingCommand;
+import backend.booking.application.port.in.command.UpdateBookingStatusCommand;
 import backend.booking.application.port.in.query.CustomerBookingHistoryQuery;
 import backend.booking.application.port.in.query.GetCustomerBookingDetailQuery;
 import backend.booking.application.port.in.query.GetRoomAvailabilityQuery;
@@ -10,12 +12,15 @@ import backend.booking.application.port.out.LoadCustomerPort;
 import backend.booking.application.port.out.LoadDiscountCodeForBookingPort;
 import backend.booking.application.port.out.LoadReviewPort;
 import backend.booking.application.port.out.LoadRoomPort;
+import backend.booking.application.port.out.LoadStaffForBookingPort;
+import backend.booking.application.port.out.LoadSuccessfulPaymentAmountPort;
 import backend.booking.application.port.out.LoadUserPort;
 import backend.booking.application.port.out.SaveBookingPort;
 import backend.booking.application.port.out.SearchBookingsForManagementPort;
 import backend.booking.application.port.out.SearchCustomerBookingsPort;
 import backend.booking.application.port.in.query.ListBookingsForManagementQuery;
 import backend.booking.application.port.out.model.BookingManagementSearchCriteria;
+import backend.booking.application.policy.BookingStatusTransitionPolicy;
 import backend.coupon.domain.model.CouponValidationResult;
 import backend.coupon.domain.model.DiscountType;
 import backend.coupon.domain.port.in.ValidateCouponUseCase;
@@ -31,6 +36,7 @@ import backend.entity.Role;
 import backend.entity.Room;
 import backend.entity.RoomStatus;
 import backend.entity.RoomType;
+import backend.entity.Staff;
 import backend.entity.User;
 import backend.exception.BookingConflictException;
 import backend.exception.ForbiddenException;
@@ -42,7 +48,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -85,12 +94,23 @@ class BookingUseCaseServiceTest {
     private LoadReviewPort loadReviewPort;
 
     @Mock
+    private LoadStaffForBookingPort loadStaffForBookingPort;
+
+    @Mock
+    private LoadSuccessfulPaymentAmountPort loadSuccessfulPaymentAmountPort;
+
+    @Mock
     private BookingCancellationNotificationService bookingCancellationNotificationService;
 
     @Mock
     private ValidateCouponUseCase validateCouponUseCase;
 
     private BookingUseCaseService bookingUseCaseService;
+
+    private final Clock clock = Clock.fixed(
+            Instant.parse("2026-01-01T03:00:00Z"),
+            ZoneId.of("Asia/Ho_Chi_Minh")
+    );
 
     @BeforeEach
     void setUp() {
@@ -104,9 +124,125 @@ class BookingUseCaseServiceTest {
                 searchCustomerBookingsPort,
                 searchBookingsForManagementPort,
                 loadReviewPort,
+                loadStaffForBookingPort,
+                loadSuccessfulPaymentAmountPort,
                 bookingCancellationNotificationService,
-                validateCouponUseCase
+                validateCouponUseCase,
+                new BookingStatusTransitionPolicy(),
+                clock
         );
+    }
+
+    @Test
+    void rejectsSkippingFromPaidDirectlyToCompleted() {
+        User staffUser = User.builder().id(3).email("staff@example.com").role(Role.STAFF).build();
+        Booking booking = bookingAt(
+                LocalDateTime.of(2026, 1, 1, 10, 0),
+                LocalDateTime.of(2026, 1, 1, 12, 0)
+        );
+        booking.setId(12);
+
+        when(loadUserPort.loadUserByEmail(staffUser.getEmail())).thenReturn(Optional.of(staffUser));
+        when(loadBookingPort.loadBooking(12)).thenReturn(Optional.of(booking));
+
+        assertThrows(IllegalStateException.class, () -> bookingUseCaseService.updateBookingStatus(
+                new UpdateBookingStatusCommand(12, BookingStatus.COMPLETED, staffUser.getEmail())
+        ));
+        verify(saveBookingPort, never()).save(any());
+    }
+
+    @Test
+    void rejectsManualPaymentConfirmationForOnlinePendingBooking() {
+        User admin = User.builder().id(1).email("admin@example.com").role(Role.ADMIN).build();
+        Booking booking = bookingAt(
+                LocalDateTime.of(2026, 1, 2, 10, 0),
+                LocalDateTime.of(2026, 1, 2, 12, 0)
+        );
+        booking.setId(13);
+        booking.setStatus(BookingStatus.PENDING_PAYMENT);
+        booking.setPaymentMethod(PaymentMethod.ONLINE);
+
+        when(loadUserPort.loadUserByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+        when(loadBookingPort.loadBooking(13)).thenReturn(Optional.of(booking));
+
+        assertThrows(IllegalStateException.class, () -> bookingUseCaseService.updateBookingStatus(
+                new UpdateBookingStatusCommand(13, BookingStatus.PAID, admin.getEmail())
+        ));
+        verify(saveBookingPort, never()).save(any());
+    }
+
+    @Test
+    void allowsCashPaymentConfirmationForPendingBooking() {
+        User admin = User.builder().id(1).email("admin@example.com").role(Role.ADMIN).build();
+        Booking booking = bookingAt(
+                LocalDateTime.of(2026, 1, 2, 10, 0),
+                LocalDateTime.of(2026, 1, 2, 12, 0)
+        );
+        booking.setId(14);
+        booking.setStatus(BookingStatus.PENDING_PAYMENT);
+        booking.setPaymentMethod(PaymentMethod.CASH);
+
+        when(loadUserPort.loadUserByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+        when(loadBookingPort.loadBooking(14)).thenReturn(Optional.of(booking));
+        when(saveBookingPort.save(booking)).thenReturn(booking);
+
+        BookingResponse response = bookingUseCaseService.updateBookingStatus(
+                new UpdateBookingStatusCommand(14, BookingStatus.PAID, admin.getEmail())
+        );
+
+        assertEquals(BookingStatus.PAID, response.getStatus());
+    }
+
+    @Test
+    void recordsActualCheckInTimeAndStaff() {
+        User staffUser = User.builder().id(3).email("staff@example.com").role(Role.STAFF).build();
+        Staff staff = Staff.builder().id(8).account(staffUser).fullName("Nhan vien A").build();
+        Booking booking = bookingAt(
+                LocalDateTime.of(2026, 1, 1, 10, 15),
+                LocalDateTime.of(2026, 1, 1, 12, 0)
+        );
+        booking.setId(15);
+
+        when(loadUserPort.loadUserByEmail(staffUser.getEmail())).thenReturn(Optional.of(staffUser));
+        when(loadBookingPort.loadBooking(15)).thenReturn(Optional.of(booking));
+        when(loadStaffForBookingPort.loadStaffByAccountEmail(staffUser.getEmail())).thenReturn(Optional.of(staff));
+        when(saveBookingPort.save(booking)).thenReturn(booking);
+
+        BookingResponse response = bookingUseCaseService.updateBookingStatus(
+                new UpdateBookingStatusCommand(15, BookingStatus.CHECKED_IN, staffUser.getEmail())
+        );
+
+        assertEquals(BookingStatus.CHECKED_IN, response.getStatus());
+        assertEquals(LocalDateTime.of(2026, 1, 1, 10, 0), response.getCheckinTime());
+        assertEquals(8, response.getCheckinStaffId());
+    }
+
+    @Test
+    void refundsOnlyCollectedAmountForDepositCancellation() {
+        User account = User.builder().id(7).email("customer@example.com").role(Role.CUSTOMER).build();
+        Customer customer = Customer.builder().id(7).account(account).build();
+        Booking booking = bookingAt(
+                LocalDateTime.of(2026, 1, 3, 10, 0),
+                LocalDateTime.of(2026, 1, 3, 12, 0)
+        );
+        booking.setId(16);
+        booking.setCustomer(customer);
+        booking.setStatus(BookingStatus.DEPOSIT_PAID);
+        booking.setPaymentMethod(PaymentMethod.ONLINE);
+        booking.setTotalAmount(new BigDecimal("300000.00"));
+
+        when(loadCustomerPort.loadCustomerByAccountEmail(account.getEmail())).thenReturn(Optional.of(customer));
+        when(loadBookingPort.loadBooking(16)).thenReturn(Optional.of(booking));
+        when(loadSuccessfulPaymentAmountPort.loadSuccessfulPaymentAmount(16))
+                .thenReturn(new BigDecimal("50000.00"));
+        when(saveBookingPort.save(booking)).thenReturn(booking);
+
+        var response = bookingUseCaseService.cancelCustomerBooking(
+                new CancelCustomerBookingCommand(16, "Thay doi ke hoach", account.getEmail())
+        );
+
+        assertEquals(BookingStatus.CANCELLED, response.booking().getStatus());
+        assertEquals(new BigDecimal("50000.00"), response.refundAmount());
     }
 
     @Test

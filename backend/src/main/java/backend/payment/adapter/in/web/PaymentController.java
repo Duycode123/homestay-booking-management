@@ -5,7 +5,9 @@ import backend.payment.adapter.in.web.dto.request.CreatePaymentSessionRequest;
 import backend.payment.application.model.PaymentSessionResult;
 import backend.payment.application.model.PaymentTransactionDetail;
 import backend.payment.application.model.SePayCheckoutForm;
-import backend.payment.application.service.PaymentCheckoutUseCaseService;
+import backend.payment.application.port.in.CreatePaymentSessionUseCase;
+import backend.payment.application.port.in.GetPaymentTransactionUseCase;
+import backend.payment.application.port.in.GetSePayCheckoutFormUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -19,14 +21,16 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class PaymentController {
 
-    private final PaymentCheckoutUseCaseService paymentCheckoutUseCaseService;
+    private final CreatePaymentSessionUseCase createPaymentSessionUseCase;
+    private final GetPaymentTransactionUseCase getPaymentTransactionUseCase;
+    private final GetSePayCheckoutFormUseCase getSePayCheckoutFormUseCase;
 
     @PostMapping("/sessions")
     public ResponseEntity<ApiResponse<PaymentSessionResult>> createPaymentSession(
             @RequestBody CreatePaymentSessionRequest request,
             Authentication authentication
     ) {
-        PaymentSessionResult data = paymentCheckoutUseCaseService.createPaymentSession(
+        PaymentSessionResult data = createPaymentSessionUseCase.createPaymentSession(
                 request.getBookingId(),
                 request.getMethod(),
                 request.getPaymentOption(),
@@ -41,7 +45,7 @@ public class PaymentController {
             @PathVariable String paymentId,
             Authentication authentication
     ) {
-        PaymentTransactionDetail data = paymentCheckoutUseCaseService.getPaymentTransactionDetail(
+        PaymentTransactionDetail data = getPaymentTransactionUseCase.getPaymentTransactionDetail(
                 paymentId,
                 authentication.getName()
         );
@@ -54,7 +58,7 @@ public class PaymentController {
             @PathVariable String paymentId,
             Authentication authentication
     ) {
-        SePayCheckoutForm form = paymentCheckoutUseCaseService.getSePayCheckoutForm(
+        SePayCheckoutForm form = getSePayCheckoutFormUseCase.getSePayCheckoutForm(
                 paymentId,
                 authentication.getName()
         );

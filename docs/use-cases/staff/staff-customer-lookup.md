@@ -2,7 +2,7 @@
 
 ## Business Goal
 
-Give staff a quick view of customers who have booking history, including contact details, recent bookings, and simple service context before supporting them at the studio.
+Give staff a quick view of customers who have booking history, including contact details, recent bookings, and simple service context before supporting them at the homestay.
 
 ## Actors
 

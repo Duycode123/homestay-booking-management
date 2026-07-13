@@ -7,6 +7,7 @@ import type { BookingHistoryItem } from '@/lib/customer-booking-service'
 
 const accentClassName = {
   PENDING_PAYMENT: 'from-brand-orange via-brand-orange/70 to-primary-fixed',
+  DEPOSIT_PAID: 'from-brand-greenLight via-brand-greenLight/70 to-secondary-container/40',
   PAID: 'from-brand-greenLight via-brand-greenLight/70 to-secondary-container/40',
   CHECKED_IN: 'from-brand-greenLight via-brand-greenLight/70 to-secondary-container/40',
   COMPLETED: 'from-brand-greenLight via-brand-greenLight/70 to-secondary-container/40',

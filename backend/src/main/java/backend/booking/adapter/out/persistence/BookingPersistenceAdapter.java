@@ -6,6 +6,8 @@ import backend.booking.application.port.out.LoadCustomerPort;
 import backend.booking.application.port.out.LoadDiscountCodeForBookingPort;
 import backend.booking.application.port.out.LoadReviewPort;
 import backend.booking.application.port.out.LoadRoomPort;
+import backend.booking.application.port.out.LoadStaffForBookingPort;
+import backend.booking.application.port.out.LoadSuccessfulPaymentAmountPort;
 import backend.booking.application.port.out.LoadUserPort;
 import backend.booking.application.port.out.SaveBookingPort;
 import backend.booking.application.port.out.SavePaymentTransactionPort;
@@ -25,6 +27,7 @@ import backend.repository.DiscountCodeRepository;
 import backend.repository.PaymentTransactionRepository;
 import backend.repository.ReviewRepository;
 import backend.repository.RoomRepository;
+import backend.repository.StaffRepository;
 import backend.repository.UserRepository;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
@@ -48,6 +51,8 @@ public class BookingPersistenceAdapter implements
         LoadCustomerPort,
         LoadDiscountCodeForBookingPort,
         LoadUserPort,
+        LoadStaffForBookingPort,
+        LoadSuccessfulPaymentAmountPort,
         LoadBookingPort,
         LoadReviewPort,
         SaveBookingPort,
@@ -59,6 +64,7 @@ public class BookingPersistenceAdapter implements
     private final RoomRepository roomRepository;
     private final UserRepository userRepository;
     private final CustomerRepository customerRepository;
+    private final StaffRepository staffRepository;
     private final DiscountCodeRepository discountCodeRepository;
     private final ReviewRepository reviewRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
@@ -76,6 +82,17 @@ public class BookingPersistenceAdapter implements
     @Override
     public Optional<Customer> loadCustomerByAccountEmail(String email) {
         return customerRepository.findByAccount_Email(email);
+    }
+
+    @Override
+    public Optional<backend.entity.Staff> loadStaffByAccountEmail(String email) {
+        return staffRepository.findByAccount_Email(email);
+    }
+
+    @Override
+    public java.math.BigDecimal loadSuccessfulPaymentAmount(Integer bookingId) {
+        java.math.BigDecimal amount = paymentTransactionRepository.sumSuccessfulAmountByBookingId(bookingId);
+        return amount == null ? java.math.BigDecimal.ZERO : amount;
     }
 
     @Override

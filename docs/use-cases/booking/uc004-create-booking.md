@@ -55,7 +55,8 @@ Allow an authenticated customer to select a valid room/time range, see the expec
 - Invalid, expired, or ineligible coupon: backend rejects the request with the coupon validation reason.
 - Customer cancels on the SePay portal: backend accepts the SePay cancel/void notification, marks the pending transaction as `CANCELLED`, and marks the held booking as `CANCELLED` to release the slot.
 - Portal payment fails: backend marks the pending transaction as `FAILED` and marks the held booking as `CANCELLED`.
-- Payment timeout: pending checkout sessions older than `app.booking.payment-expiration-seconds` (default `300`) are marked `CANCELLED` by the poll endpoint or scheduled expiry job; their still-pending bookings are also marked `CANCELLED` so availability is released.
+- Payment timeout: pending checkout sessions older than `app.booking.payment-expiration-seconds` (default `900`, or 15 minutes) are marked `CANCELLED` by the poll endpoint or scheduled expiry job; their still-pending bookings are also marked `CANCELLED` so availability is released.
+- If SePay reports that money arrived after session expiry, the transaction is retained as `SUCCEEDED` with response code `LATE_PAYMENT_REQUIRES_REFUND`, while the booking stays cancelled to avoid reclaiming a room that may already have been released. The customer must contact support for reconciliation instead of paying again.
 
 ## Business Rules
 
@@ -82,11 +83,14 @@ Allow an authenticated customer to select a valid room/time range, see the expec
 
 ## Current Implementation Notes
 
+- Payment HTTP endpoints depend on focused inbound use-case ports. SePay QR/portal construction, callback URL composition, and HMAC signing are isolated in the outbound `SePayCheckoutAdapter`.
+- The scheduled expiry service delegates database state changes through `ExpireStalePendingBookingsPort`, keeping scheduling policy separate from JPA persistence.
+
 - Availability is calculated through `GET /api/rooms/{id}/available-slots`.
 - Cost calculation is exposed as a separate endpoint before creation.
 - Booking creation uses room locking plus overlap checks to reduce race conditions.
 - The service catches persistence conflicts and converts them into booking conflict errors.
-- A scheduled expiry job exists to auto-cancel stale unpaid payment sessions after the configured timeout (`app.booking.payment-expiration-seconds`, default `300`).
+- A scheduled expiry job exists to auto-cancel stale unpaid payment sessions after the configured timeout (`app.booking.payment-expiration-seconds`, default `900`, or 15 minutes).
 - Checkout now asks the backend to create a `payment_transaction` record instead of simulating payment only in the frontend.
 - Customer checkout only supports online payment through SePay: either a 50,000 VND deposit or the full amount, both via VietQR plus SePay transaction lookup. `cash` is rejected by `POST /api/payments/sessions`; the booking payment method is always set to `ONLINE` by checkout. (`PaymentProvider.COUNTER` remains only for reading historical counter transactions.)
 - Cost calculation and booking creation now reuse the coupon validation use case so the same coupon rules apply before and during booking creation.
@@ -99,7 +103,7 @@ Allow an authenticated customer to select a valid room/time range, see the expec
 ## Known Gaps / Follow-up
 
 - Live SePay polling requires an active API Access token in `payment.sepay.api-access-token`. Local tests validate QR generation and status sync behavior, not live money movement.
-- Instrument add-ons and richer checkout breakdown from backlog are not yet covered in this backend path.
+- Homestay service/equipment add-ons and a richer checkout breakdown from the backlog are not yet covered in this backend path.
 - Deposit vs full-payment booking statuses are modelled, but remaining-balance tracking after `DEPOSIT_PAID` is not yet a first-class booking field.
 
 ## Hexagonal Refactor Notes

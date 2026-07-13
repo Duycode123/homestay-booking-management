@@ -16,7 +16,7 @@ type RoomDetailModalProps = {
 }
 
 const roomPolicies = [
-  'Có thể hủy trước 2 giờ',
+  'Hoàn tiền khi hủy trước ít nhất 24 giờ',
   'Đến đúng giờ để giữ lịch',
   'Có thể thuê thêm tiện nghi khi đặt phòng',
 ]

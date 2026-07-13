@@ -22,6 +22,7 @@ type BookingHistoryFiltersProps = {
 const STATUS_OPTIONS: Array<{ value: BookingHistoryFilterState['status']; label: string }> = [
   { value: 'ALL', label: 'Tất cả trạng thái' },
   { value: 'PENDING_PAYMENT', label: formatBookingStatus('PENDING_PAYMENT') },
+  { value: 'DEPOSIT_PAID', label: formatBookingStatus('DEPOSIT_PAID') },
   { value: 'PAID', label: formatBookingStatus('PAID') },
   { value: 'CHECKED_IN', label: formatBookingStatus('CHECKED_IN') },
   { value: 'COMPLETED', label: formatBookingStatus('COMPLETED') },

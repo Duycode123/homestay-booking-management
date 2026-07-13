@@ -1,6 +1,7 @@
 package backend.booking.application.service;
 
 import backend.booking.application.model.PageResult;
+import backend.booking.application.policy.BookingStatusTransitionPolicy;
 import backend.booking.application.port.in.CalculateBookingCostUseCase;
 import backend.booking.application.port.in.CancelBookingForManagementUseCase;
 import backend.booking.application.port.in.CancelCustomerBookingUseCase;
@@ -26,6 +27,8 @@ import backend.booking.application.port.out.LoadCustomerPort;
 import backend.booking.application.port.out.LoadDiscountCodeForBookingPort;
 import backend.booking.application.port.out.LoadReviewPort;
 import backend.booking.application.port.out.LoadRoomPort;
+import backend.booking.application.port.out.LoadStaffForBookingPort;
+import backend.booking.application.port.out.LoadSuccessfulPaymentAmountPort;
 import backend.booking.application.port.out.LoadUserPort;
 import backend.booking.application.port.out.SaveBookingPort;
 import backend.booking.application.port.out.SearchBookingsForManagementPort;
@@ -47,6 +50,7 @@ import backend.entity.Customer;
 import backend.entity.DiscountCode;
 import backend.entity.Room;
 import backend.entity.RoomStatus;
+import backend.entity.Staff;
 import backend.entity.User;
 import backend.exception.BookingConflictException;
 import backend.exception.ForbiddenException;
@@ -59,6 +63,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -92,8 +97,12 @@ public class BookingUseCaseService implements
     private final SearchCustomerBookingsPort searchCustomerBookingsPort;
     private final SearchBookingsForManagementPort searchBookingsForManagementPort;
     private final LoadReviewPort loadReviewPort;
+    private final LoadStaffForBookingPort loadStaffForBookingPort;
+    private final LoadSuccessfulPaymentAmountPort loadSuccessfulPaymentAmountPort;
     private final BookingCancellationNotificationService bookingCancellationNotificationService;
     private final ValidateCouponUseCase validateCouponUseCase;
+    private final BookingStatusTransitionPolicy bookingStatusTransitionPolicy;
+    private final Clock clock;
 
     @Override
     public BookingCostResponse calculateCost(CalculateBookingCostCommand command) {
@@ -355,6 +364,25 @@ public class BookingUseCaseService implements
         Booking booking = loadBookingPort.loadBooking(command.bookingId())
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay don dat phong"));
 
+        LocalDateTime now = LocalDateTime.now(clock);
+        bookingStatusTransitionPolicy.validateManagementTransition(booking, command.status(), now);
+
+        if (booking.getStatus() == command.status()) {
+            return new BookingResponse(booking);
+        }
+
+        if (command.status() == BookingStatus.CHECKED_IN) {
+            attachCheckInStaff(booking, currentUser, command.currentUserEmail());
+            booking.setCheckinTime(now);
+        } else if (command.status() == BookingStatus.COMPLETED) {
+            if (booking.getCheckinTime() == null) {
+                booking.setCheckinTime(booking.getStartTime() != null && booking.getStartTime().isBefore(now)
+                        ? booking.getStartTime()
+                        : now);
+            }
+            booking.setCheckoutTime(now);
+        }
+
         booking.setStatus(command.status());
 
         Booking savedBooking = saveBookingPort.save(booking);
@@ -371,9 +399,7 @@ public class BookingUseCaseService implements
         Booking booking = loadBookingPort.loadBooking(command.bookingId())
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay don dat phong"));
 
-        if (booking.getStatus() == BookingStatus.COMPLETED) {
-            throw new IllegalStateException("Khong the huy don da hoan thanh");
-        }
+        bookingStatusTransitionPolicy.validateManagementCancellation(booking, command.reason());
 
         booking.setStatus(BookingStatus.CANCELLED);
 
@@ -407,6 +433,7 @@ public class BookingUseCaseService implements
         }
 
         validateCustomerCancellationPolicy(booking);
+        BigDecimal refundAmount = resolveRefundAmount(booking);
 
         booking.setStatus(BookingStatus.CANCELLED);
 
@@ -418,7 +445,6 @@ public class BookingUseCaseService implements
         }
 
         Booking savedBooking = saveBookingPort.save(booking);
-        BigDecimal refundAmount = savedBooking.getTotalAmount().setScale(2, RoundingMode.HALF_UP);
         LocalDateTime expectedRefundAt = bookingCancellationNotificationService.notifyCancellationRefund(
                 savedBooking,
                 refundAmount
@@ -446,7 +472,7 @@ public class BookingUseCaseService implements
             throw new IllegalArgumentException("Thoi gian bat dau phai nho hon thoi gian ket thuc");
         }
 
-        if (command.startTime().isBefore(LocalDateTime.now())) {
+        if (command.startTime().isBefore(LocalDateTime.now(clock))) {
             throw new IllegalArgumentException("Khong the tinh phi cho thoi gian trong qua khu");
         }
 
@@ -474,7 +500,7 @@ public class BookingUseCaseService implements
             throw new IllegalArgumentException("Thoi gian bat dau phai nho hon thoi gian ket thuc");
         }
 
-        if (command.startTime().isBefore(LocalDateTime.now())) {
+        if (command.startTime().isBefore(LocalDateTime.now(clock))) {
             throw new IllegalArgumentException("Khong the dat lich trong qua khu");
         }
 
@@ -646,8 +672,8 @@ public class BookingUseCaseService implements
             throw new IllegalStateException("Khong the huy don da hoan thanh");
         }
 
-        if (booking.getStatus() != BookingStatus.PAID) {
-            throw new IllegalStateException("Chi ho tro huy va hoan tien cho don da thanh toan");
+        if (booking.getStatus() != BookingStatus.PAID && booking.getStatus() != BookingStatus.DEPOSIT_PAID) {
+            throw new IllegalStateException("Chi ho tro huy va hoan tien cho don da thanh toan hoac da dat coc");
         }
 
         if (booking.getStartTime() == null) {
@@ -655,9 +681,17 @@ public class BookingUseCaseService implements
         }
 
         LocalDateTime latestCancellationTime = booking.getStartTime().minusHours(CUSTOMER_CANCELLATION_DEADLINE_HOURS);
-        if (LocalDateTime.now().isAfter(latestCancellationTime)) {
-            throw new IllegalStateException("Chi co the huy lich truoc gio tap toi thieu 24 tieng");
+        if (LocalDateTime.now(clock).isAfter(latestCancellationTime)) {
+            throw new IllegalStateException("Chi co the huy booking truoc gio nhan phong toi thieu 24 tieng");
         }
+    }
+
+    private void attachCheckInStaff(Booking booking, User currentUser, String currentUserEmail) {
+        Staff staff = loadStaffForBookingPort.loadStaffByAccountEmail(currentUserEmail).orElse(null);
+        if (staff == null && String.valueOf(currentUser.getRole()).trim().equals("STAFF")) {
+            throw new IllegalStateException("Tai khoan nhan vien chua co ho so staff de check-in");
+        }
+        booking.setCheckinStaff(staff);
     }
 
     private String resolveRefundMethod(Booking booking) {
@@ -665,6 +699,22 @@ public class BookingUseCaseService implements
             case ONLINE -> "Hoan ve phuong thuc thanh toan online ban dau";
             case CASH -> "Hoan tien mat tai quay";
         };
+    }
+
+    private BigDecimal resolveRefundAmount(Booking booking) {
+        return booking.getStatus() == BookingStatus.DEPOSIT_PAID
+                ? resolveSuccessfulOnlineAmount(booking)
+                : normalizeMoney(booking.getTotalAmount());
+    }
+
+    private BigDecimal resolveSuccessfulOnlineAmount(Booking booking) {
+        BigDecimal loadedAmount = loadSuccessfulPaymentAmountPort.loadSuccessfulPaymentAmount(booking.getId());
+        BigDecimal paidAmount = normalizeMoney(loadedAmount == null ? BigDecimal.ZERO : loadedAmount);
+        if (paidAmount.signum() <= 0) {
+            throw new IllegalStateException("Khong xac dinh duoc so tien online da thu; vui long doi soat thu cong");
+        }
+
+        return paidAmount.min(normalizeMoney(booking.getTotalAmount()));
     }
 
     private User getCurrentUser(String email) {

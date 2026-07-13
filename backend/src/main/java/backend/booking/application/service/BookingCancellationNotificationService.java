@@ -72,7 +72,7 @@ public class BookingCancellationNotificationService {
 
     private String buildPlainContent(TemplateVariables variables) {
         return """
-                Xin chao %s, lich tap %s da duoc huy thanh cong. So tien hoan: %s (100%%). Phuong thuc hoan: %s. Thoi gian du kien nhan tien: %s.
+                Xin chao %s, booking %s da duoc huy thanh cong. So tien hoan: %s (100%%). Phuong thuc hoan: %s. Thoi gian du kien nhan tien: %s.
                 """.formatted(
                 variables.customerName(),
                 variables.bookingCode(),
@@ -87,7 +87,7 @@ public class BookingCancellationNotificationService {
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #f0f0f0; border-radius: 12px;">
                   <h2 style="color: #FF7518; margin-bottom: 16px;">Homestay Booking</h2>
                   <p>Xin chao <strong>%s</strong>,</p>
-                  <p>Yeu cau huy lich cua ban da duoc xac nhan thanh cong.</p>
+                  <p>Yeu cau huy booking cua ban da duoc xac nhan thanh cong.</p>
                   <table style="width: 100%%; border-collapse: collapse; margin: 16px 0;">
                     <tr><td style="padding: 8px; border-bottom: 1px solid #eee;">Ma booking</td><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>%s</strong></td></tr>
                     <tr><td style="padding: 8px; border-bottom: 1px solid #eee;">So tien hoan</td><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>%s (100%%)</strong></td></tr>

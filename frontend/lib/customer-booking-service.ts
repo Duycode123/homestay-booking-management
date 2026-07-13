@@ -11,6 +11,7 @@ import {
 
 export type CustomerBookingStatus =
   | 'PENDING_PAYMENT'
+  | 'DEPOSIT_PAID'
   | 'PAID'
   | 'CHECKED_IN'
   | 'COMPLETED'
@@ -107,6 +108,7 @@ function formatTime(value: string) {
 function normalizeStatus(status?: string | null): CustomerBookingStatus {
   if (
     status === 'PENDING_PAYMENT' ||
+    status === 'DEPOSIT_PAID' ||
     status === 'PAID' ||
     status === 'CHECKED_IN' ||
     status === 'COMPLETED' ||
@@ -227,6 +229,7 @@ export function canReviewBooking(booking: Pick<BookingHistoryItem, 'status' | 'c
 
 export function formatBookingStatus(status: CustomerBookingStatus) {
   const labels: Record<CustomerBookingStatus, string> = {
+    DEPOSIT_PAID: 'Đã đặt cọc',
     PENDING_PAYMENT: 'Chờ thanh toán',
     PAID: 'Đã thanh toán',
     CHECKED_IN: 'Đã check-in',

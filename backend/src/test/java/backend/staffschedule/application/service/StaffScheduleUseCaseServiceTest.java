@@ -88,7 +88,7 @@ class StaffScheduleUseCaseServiceTest {
                 LocalDateTime.of(2030, 1, 7, 10, 0),
                 LocalDateTime.of(2030, 1, 7, 12, 0),
                 "PAID",
-                "Guitar"
+                "Deluxe"
         );
 
         when(loadStaffSchedulePort.loadStaffIdByAccountEmail("staff@example.com")).thenReturn(Optional.of(5));

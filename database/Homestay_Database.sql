@@ -1,388 +1,418 @@
 -- =============================================================
--- Homestay - Script setup database & tao cac bang ban dau
--- Database muc tieu: homestaydb (PostgreSQL)
--- Cach chay:
---   psql -h 127.0.0.1 -p 6789 -U <user> -d homestaydb -f Homestay_Database.sql
--- Script idempotent: chay nhieu lan khong loi (dung IF NOT EXISTS).
+-- Homestay Booking Management - canonical PostgreSQL runtime schema
+-- Fresh installations use English snake_case names from the start.
+-- Legacy installations must use the dated rename/content migrations.
 -- =============================================================
 
 BEGIN;
 
--- -------------------------------------------------------------
--- 0. Extension can thiet (EXCLUDE constraint tren range + =)
--- -------------------------------------------------------------
 CREATE EXTENSION IF NOT EXISTS btree_gist;
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
--- -------------------------------------------------------------
--- 1. Kieu ENUM
---    CREATE TYPE khong ho tro IF NOT EXISTS -> boc trong DO block.
--- -------------------------------------------------------------
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'vai_tro') THEN
-    CREATE TYPE "vai_tro" AS ENUM ('CUSTOMER', 'STAFF', 'ADMIN');
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'role') THEN
+    CREATE TYPE role AS ENUM ('CUSTOMER', 'STAFF', 'ADMIN');
   END IF;
-
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'trang_thai_phong') THEN
-    CREATE TYPE "trang_thai_phong" AS ENUM ('TRONG', 'DANG_DUNG', 'BAO_TRI');
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'room_status') THEN
+    CREATE TYPE room_status AS ENUM ('AVAILABLE', 'IN_USE', 'MAINTENANCE', 'NEED_CLEANING');
   END IF;
-
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'trang_thai_dat_phong') THEN
-    CREATE TYPE "trang_thai_dat_phong" AS ENUM (
-      'CHO_THANH_TOAN', 'DA_THANH_TOAN', 'DA_CHECKIN', 'HOAN_TAT', 'DA_HUY'
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'booking_status') THEN
+    CREATE TYPE booking_status AS ENUM (
+      'PENDING_PAYMENT', 'DEPOSIT_PAID', 'PAID', 'CHECKED_IN', 'COMPLETED', 'CANCELLED'
     );
   END IF;
-
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'phuong_thuc_thanh_toan') THEN
-    CREATE TYPE "phuong_thuc_thanh_toan" AS ENUM ('TIEN_MAT', 'ONLINE');
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_method') THEN
+    CREATE TYPE payment_method AS ENUM ('CASH', 'ONLINE');
   END IF;
-
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'cong_thanh_toan') THEN
-    CREATE TYPE "cong_thanh_toan" AS ENUM ('VNPAY');
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_provider') THEN
+    CREATE TYPE payment_provider AS ENUM ('VNPAY', 'SEPAY', 'COUNTER');
   END IF;
-
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'trang_thai_giao_dich') THEN
-    CREATE TYPE "trang_thai_giao_dich" AS ENUM (
-      'KHOI_TAO', 'CHO_THANH_TOAN', 'THANH_CONG', 'THAT_BAI', 'DA_HUY'
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_transaction_status') THEN
+    CREATE TYPE payment_transaction_status AS ENUM (
+      'INITIALIZED', 'PENDING', 'SUCCEEDED', 'FAILED', 'CANCELLED'
     );
   END IF;
-
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'loai_giam_gia') THEN
-    CREATE TYPE "loai_giam_gia" AS ENUM ('PHAN_TRAM', 'SO_TIEN');
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'discount_type') THEN
+    CREATE TYPE discount_type AS ENUM ('PERCENTAGE', 'FIXED_AMOUNT');
   END IF;
-
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'trang_thai_ca') THEN
-    CREATE TYPE "trang_thai_ca" AS ENUM ('DA_PHAN', 'DANG_LAM', 'HOAN_TAT');
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'shift_status') THEN
+    CREATE TYPE shift_status AS ENUM ('ASSIGNED', 'IN_PROGRESS', 'COMPLETED');
   END IF;
-
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'loai_thiet_bi') THEN
-    CREATE TYPE "loai_thiet_bi" AS ENUM (
-      'WIFI', 'AIR_CONDITIONER', 'TV', 'WATER_HEATER', 'KHAC'
-    );
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'equipment_type') THEN
+    CREATE TYPE equipment_type AS ENUM ('WIFI', 'AIR_CONDITIONER', 'TV', 'WATER_HEATER', 'OTHER');
   END IF;
-
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'trang_thai_thiet_bi') THEN
-    CREATE TYPE "trang_thai_thiet_bi" AS ENUM ('TOT', 'HONG', 'BAO_TRI');
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'equipment_status') THEN
+    CREATE TYPE equipment_status AS ENUM ('GOOD', 'BROKEN', 'MAINTENANCE');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'shift_registration_status') THEN
+    CREATE TYPE shift_registration_status AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'attendance_status') THEN
+    CREATE TYPE attendance_status AS ENUM ('WORKING', 'DONE', 'MISSING_CHECKOUT');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'facility_condition') THEN
+    CREATE TYPE facility_condition AS ENUM ('GOOD', 'NEED_CLEANING', 'NEED_CHECK', 'BROKEN');
   END IF;
 END
 $$;
 
--- -------------------------------------------------------------
--- 2. Bang
--- -------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS "tai_khoan" (
-  "id" INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
-  "email" varchar UNIQUE NOT NULL,
-  "mat_khau_hash" varchar NOT NULL,
-  "vai_tro" vai_tro NOT NULL,
-  "reset_token" varchar UNIQUE,
-  "reset_token_expires_at" timestamp,
-  "ngay_tao" timestamp NOT NULL DEFAULT (now())
+CREATE TABLE IF NOT EXISTS account (
+  id INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  email VARCHAR UNIQUE NOT NULL,
+  password_hash VARCHAR NOT NULL,
+  role role NOT NULL,
+  reset_token VARCHAR UNIQUE,
+  reset_token_expires_at TIMESTAMP,
+  email_verified BOOLEAN NOT NULL DEFAULT false,
+  enabled BOOLEAN NOT NULL DEFAULT true,
+  email_verification_token_hash VARCHAR(64) UNIQUE,
+  email_verification_expires_at TIMESTAMP,
+  email_verification_sent_at TIMESTAMP,
+  avatar_url VARCHAR(500),
+  created_at TIMESTAMP NOT NULL DEFAULT now(),
+  CONSTRAINT chk_account_avatar_url_length
+    CHECK (avatar_url IS NULL OR char_length(avatar_url) <= 500)
 );
 
-CREATE TABLE IF NOT EXISTS "revoked_token" (
-  "id" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
-  "token_hash" varchar(64) UNIQUE NOT NULL,
-  "expires_at" timestamp NOT NULL,
-  "created_at" timestamp NOT NULL DEFAULT (now())
+CREATE TABLE IF NOT EXISTS revoked_token (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  token_hash VARCHAR(64) UNIQUE NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS "khach_hang" (
-  "id" INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
-  "tai_khoan_id" int UNIQUE NOT NULL,
-  "ho_ten" varchar NOT NULL,
-  "so_dien_thoai" varchar,
-  "email" varchar,
-  "ngay_sinh" date
+CREATE TABLE IF NOT EXISTS customer (
+  id INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  account_id INT UNIQUE NOT NULL REFERENCES account(id),
+  full_name VARCHAR NOT NULL,
+  phone_number VARCHAR,
+  email VARCHAR,
+  date_of_birth DATE
 );
 
-CREATE TABLE IF NOT EXISTS "nhan_vien" (
-  "id" INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
-  "tai_khoan_id" int UNIQUE NOT NULL,
-  "ho_ten" varchar NOT NULL,
-  "so_dien_thoai" varchar,
-  "email" varchar,
-  "ngay_sinh" date
+CREATE TABLE IF NOT EXISTS staff (
+  id INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  account_id INT UNIQUE NOT NULL REFERENCES account(id),
+  full_name VARCHAR NOT NULL,
+  phone_number VARCHAR,
+  email VARCHAR,
+  date_of_birth DATE
 );
 
-CREATE TABLE IF NOT EXISTS "hang_phong" (
-  "id" INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
-  "ten_hang" varchar UNIQUE NOT NULL,
-  "gia_gio" numeric(12,2) NOT NULL,
-  "mo_ta" text,
-  CONSTRAINT "chk_hang_phong_gia_gio_duong" CHECK ("gia_gio" > 0)
+CREATE TABLE IF NOT EXISTS room_tier (
+  id INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  name VARCHAR UNIQUE NOT NULL,
+  hourly_rate NUMERIC(12,2) NOT NULL,
+  description TEXT,
+  CONSTRAINT chk_room_tier_hourly_rate_positive CHECK (hourly_rate > 0)
 );
 
-CREATE TABLE IF NOT EXISTS "phong" (
-  "id" INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
-  "ten" varchar UNIQUE NOT NULL,
-  "hang_phong_id" int NOT NULL,
-  "trang_thai" trang_thai_phong NOT NULL DEFAULT 'TRONG'
+CREATE TABLE IF NOT EXISTS room (
+  id INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  name VARCHAR UNIQUE NOT NULL,
+  room_tier_id INT NOT NULL REFERENCES room_tier(id),
+  max_people INT NOT NULL DEFAULT 2,
+  status room_status NOT NULL DEFAULT 'AVAILABLE',
+  image_url VARCHAR(500),
+  CONSTRAINT chk_room_max_people_range CHECK (max_people BETWEEN 1 AND 100),
+  CONSTRAINT chk_room_image_url_length CHECK (image_url IS NULL OR char_length(image_url) <= 500)
 );
 
-CREATE TABLE IF NOT EXISTS "thiet_bi" (
-  "id" INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
-  "phong_id" int NOT NULL,
-  "loai" loai_thiet_bi NOT NULL,
-  "ten" varchar NOT NULL,
-  "trang_thai" trang_thai_thiet_bi NOT NULL DEFAULT 'TOT',
-  "ghi_chu" text
+CREATE TABLE IF NOT EXISTS equipment (
+  id INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  room_id INT NOT NULL REFERENCES room(id),
+  type equipment_type NOT NULL,
+  name VARCHAR NOT NULL,
+  status equipment_status NOT NULL DEFAULT 'GOOD',
+  notes TEXT
 );
 
-CREATE TABLE IF NOT EXISTS "ma_giam_gia" (
-  "id" INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
-  "ma" varchar UNIQUE NOT NULL,
-  "loai" loai_giam_gia NOT NULL,
-  "gia_tri" numeric(12,2) NOT NULL,
-  "dieu_kien_min" numeric(12,2),
-  "ngay_het_han" date,
-  CONSTRAINT "chk_ma_giam_gia_gia_tri_duong" CHECK ("gia_tri" > 0),
-  CONSTRAINT "chk_ma_giam_gia_phan_tram" CHECK (
-    "loai" <> 'PHAN_TRAM' OR "gia_tri" <= 100
-  ),
-  CONSTRAINT "chk_ma_giam_gia_dieu_kien_min" CHECK (
-    "dieu_kien_min" IS NULL OR "dieu_kien_min" >= 0
+CREATE TABLE IF NOT EXISTS discount_code (
+  id INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  code VARCHAR UNIQUE NOT NULL,
+  type discount_type NOT NULL,
+  value NUMERIC(12,2) NOT NULL,
+  min_order_value NUMERIC(12,2),
+  expires_at DATE,
+  CONSTRAINT chk_discount_code_value_positive CHECK (value > 0),
+  CONSTRAINT chk_discount_code_percentage_value CHECK (type <> 'PERCENTAGE' OR value <= 100),
+  CONSTRAINT chk_discount_code_min_order_value_non_negative
+    CHECK (min_order_value IS NULL OR min_order_value >= 0)
+);
+
+CREATE TABLE IF NOT EXISTS booking (
+  id INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  customer_id INT NOT NULL REFERENCES customer(id),
+  room_id INT NOT NULL REFERENCES room(id),
+  discount_code_id INT REFERENCES discount_code(id),
+  checkin_staff_id INT REFERENCES staff(id),
+  start_time TIMESTAMP NOT NULL,
+  end_time TIMESTAMP NOT NULL,
+  checkin_time TIMESTAMP,
+  checkout_time TIMESTAMP,
+  payment_method payment_method NOT NULL,
+  applied_hourly_rate NUMERIC(12,2) NOT NULL,
+  total_price NUMERIC(12,2) NOT NULL,
+  status booking_status NOT NULL DEFAULT 'PENDING_PAYMENT',
+  equipment_notes VARCHAR(500),
+  notes VARCHAR(500),
+  created_at TIMESTAMP NOT NULL DEFAULT now(),
+  CONSTRAINT chk_booking_time_range CHECK (start_time < end_time),
+  CONSTRAINT chk_booking_applied_hourly_rate_positive CHECK (applied_hourly_rate > 0),
+  CONSTRAINT chk_booking_total_price_non_negative CHECK (total_price >= 0),
+  CONSTRAINT chk_booking_checkin_checkout
+    CHECK (checkout_time IS NULL OR (checkin_time IS NOT NULL AND checkin_time <= checkout_time))
+);
+
+CREATE TABLE IF NOT EXISTS payment_transaction (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  booking_id INT NOT NULL REFERENCES booking(id),
+  provider payment_provider NOT NULL,
+  transaction_reference VARCHAR(100) UNIQUE NOT NULL,
+  provider_transaction_id VARCHAR(100) UNIQUE,
+  amount NUMERIC(12,2) NOT NULL,
+  status payment_transaction_status NOT NULL DEFAULT 'INITIALIZED',
+  response_code VARCHAR(50),
+  paid_at TIMESTAMP,
+  created_at TIMESTAMP NOT NULL DEFAULT now(),
+  updated_at TIMESTAMP NOT NULL DEFAULT now(),
+  CONSTRAINT chk_payment_transaction_amount_non_negative CHECK (amount >= 0)
+);
+
+CREATE TABLE IF NOT EXISTS booking_status_history (
+  id INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  booking_id INT NOT NULL REFERENCES booking(id),
+  old_status booking_status,
+  new_status booking_status NOT NULL,
+  notes VARCHAR(500),
+  changed_at TIMESTAMP NOT NULL DEFAULT now(),
+  changed_by INT REFERENCES account(id)
+);
+
+CREATE TABLE IF NOT EXISTS review (
+  id INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  booking_id INT UNIQUE NOT NULL REFERENCES booking(id),
+  rating INT NOT NULL,
+  content TEXT,
+  approved BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMP NOT NULL DEFAULT now(),
+  CONSTRAINT chk_review_rating_range CHECK (rating BETWEEN 1 AND 5)
+);
+
+CREATE TABLE IF NOT EXISTS "shift" (
+  id INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  staff_id INT NOT NULL REFERENCES staff(id),
+  date DATE NOT NULL,
+  start_time TIME NOT NULL,
+  end_time TIME NOT NULL,
+  status shift_status NOT NULL DEFAULT 'ASSIGNED',
+  quality_rating INT,
+  CONSTRAINT chk_shift_time_range CHECK (start_time < end_time),
+  CONSTRAINT chk_shift_quality_rating_range
+    CHECK (quality_rating IS NULL OR quality_rating BETWEEN 1 AND 5)
+);
+
+CREATE TABLE IF NOT EXISTS review_response (
+  id INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  review_id INT UNIQUE NOT NULL REFERENCES review(id) ON DELETE CASCADE,
+  responder_id INT NOT NULL REFERENCES account(id) ON DELETE RESTRICT,
+  content TEXT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT now(),
+  updated_at TIMESTAMP NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS coupon_usage (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  discount_code_id INT NOT NULL REFERENCES discount_code(id),
+  customer_id INT NOT NULL REFERENCES customer(id),
+  booking_id INT UNIQUE NOT NULL REFERENCES booking(id),
+  discount_amount NUMERIC(12,2) NOT NULL,
+  used_at TIMESTAMP NOT NULL DEFAULT now(),
+  CONSTRAINT chk_coupon_usage_discount_amount_non_negative CHECK (discount_amount >= 0)
+);
+
+CREATE TABLE IF NOT EXISTS customer_issue_report (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  customer_id INT NOT NULL REFERENCES customer(id),
+  booking_id INT REFERENCES booking(id),
+  issue_type VARCHAR(30) NOT NULL,
+  description VARCHAR(1000) NOT NULL,
+  admin_note VARCHAR(1000),
+  status VARCHAR(30) NOT NULL DEFAULT 'OPEN',
+  created_at TIMESTAMP NOT NULL DEFAULT now(),
+  updated_at TIMESTAMP NOT NULL DEFAULT now(),
+  CONSTRAINT chk_customer_issue_report_issue_type
+    CHECK (issue_type IN ('ROOM', 'EQUIPMENT', 'PAYMENT', 'ACCOUNT', 'OTHER')),
+  CONSTRAINT chk_customer_issue_report_status
+    CHECK (status IN ('OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED')),
+  CONSTRAINT chk_customer_issue_report_description_not_blank CHECK (btrim(description) <> '')
+);
+
+CREATE TABLE IF NOT EXISTS user_notification_settings (
+  id INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  account_id INT UNIQUE NOT NULL REFERENCES account(id) ON DELETE CASCADE,
+  new_booking BOOLEAN NOT NULL DEFAULT true,
+  booking_reminder BOOLEAN NOT NULL DEFAULT true,
+  shift_reminder BOOLEAN NOT NULL DEFAULT true,
+  room_issue BOOLEAN NOT NULL DEFAULT true,
+  equipment_issue BOOLEAN NOT NULL DEFAULT true
+);
+
+CREATE TABLE IF NOT EXISTS app_notification (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  recipient_id INT NOT NULL REFERENCES account(id),
+  type VARCHAR(60) NOT NULL,
+  title VARCHAR(150) NOT NULL,
+  content TEXT NOT NULL,
+  is_read BOOLEAN NOT NULL DEFAULT false,
+  is_resolved BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMP NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS staff_shift_registration (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  staff_id INT NOT NULL REFERENCES staff(id),
+  work_date DATE NOT NULL,
+  start_time TIME NOT NULL,
+  end_time TIME NOT NULL,
+  status shift_registration_status NOT NULL DEFAULT 'PENDING',
+  reviewed_by_account_id INT REFERENCES account(id),
+  reviewed_at TIMESTAMP,
+  rejection_reason VARCHAR(500),
+  created_at TIMESTAMP NOT NULL DEFAULT now(),
+  updated_at TIMESTAMP NOT NULL DEFAULT now(),
+  CONSTRAINT chk_staff_shift_registration_time_range CHECK (start_time < end_time),
+  CONSTRAINT chk_staff_shift_registration_decision_fields CHECK (
+    (status = 'PENDING' AND reviewed_by_account_id IS NULL AND reviewed_at IS NULL AND rejection_reason IS NULL)
+    OR (status = 'APPROVED' AND reviewed_by_account_id IS NOT NULL AND reviewed_at IS NOT NULL AND rejection_reason IS NULL)
+    OR (status = 'REJECTED' AND reviewed_by_account_id IS NOT NULL AND reviewed_at IS NOT NULL
+        AND rejection_reason IS NOT NULL AND btrim(rejection_reason) <> '')
   )
 );
 
-CREATE TABLE IF NOT EXISTS "dat_phong" (
-  "id" INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
-  "khach_hang_id" int NOT NULL,
-  "phong_id" int NOT NULL,
-  "ma_giam_gia_id" int,
-  "nhan_vien_checkin_id" int,
-  "gio_bat_dau" timestamp NOT NULL,
-  "gio_ket_thuc" timestamp NOT NULL,
-  "gio_checkin" timestamp,
-  "gio_checkout" timestamp,
-  "phuong_thuc" phuong_thuc_thanh_toan NOT NULL,
-  "gia_gio_ap_dung" numeric(12,2) NOT NULL,
-  "tong_tien" numeric(12,2) NOT NULL,
-  "trang_thai" trang_thai_dat_phong NOT NULL DEFAULT 'CHO_THANH_TOAN',
-  "ghi_chu_nhac_cu" varchar(500),
-  "ghi_chu" varchar(500),
-  "ngay_tao" timestamp NOT NULL DEFAULT (now()),
-  CONSTRAINT "chk_dat_phong_khoang_thoi_gian" CHECK (
-    "gio_bat_dau" < "gio_ket_thuc"
-  ),
-  CONSTRAINT "chk_dat_phong_gia_gio_ap_dung" CHECK (
-    "gia_gio_ap_dung" > 0
-  ),
-  CONSTRAINT "chk_dat_phong_tong_tien" CHECK ("tong_tien" >= 0),
-  CONSTRAINT "chk_dat_phong_checkin_checkout" CHECK (
-    "gio_checkout" IS NULL
-    OR ("gio_checkin" IS NOT NULL AND "gio_checkin" <= "gio_checkout")
-  )
+CREATE TABLE IF NOT EXISTS staff_attendance (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  staff_id INT NOT NULL REFERENCES staff(id),
+  shift_id INT REFERENCES "shift"(id),
+  check_in_time TIMESTAMP NOT NULL,
+  check_out_time TIMESTAMP,
+  work_duration_hours NUMERIC(8,2),
+  status attendance_status NOT NULL DEFAULT 'WORKING',
+  created_at TIMESTAMP NOT NULL DEFAULT now(),
+  updated_at TIMESTAMP NOT NULL DEFAULT now(),
+  CONSTRAINT chk_staff_attendance_checkout_after_checkin
+    CHECK (check_out_time IS NULL OR check_out_time > check_in_time),
+  CONSTRAINT chk_staff_attendance_duration_non_negative
+    CHECK (work_duration_hours IS NULL OR work_duration_hours >= 0)
 );
 
-CREATE TABLE IF NOT EXISTS "giao_dich_thanh_toan" (
-  "id" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
-  "dat_phong_id" int NOT NULL,
-  "cong_thanh_toan" cong_thanh_toan NOT NULL,
-  "ma_giao_dich" varchar(100) UNIQUE NOT NULL,
-  "ma_giao_dich_cong" varchar(100) UNIQUE,
-  "so_tien" numeric(12,2) NOT NULL,
-  "trang_thai" trang_thai_giao_dich NOT NULL DEFAULT 'KHOI_TAO',
-  "ma_phan_hoi" varchar(20),
-  "thoi_gian_thanh_toan" timestamp,
-  "ngay_tao" timestamp NOT NULL DEFAULT (now()),
-  "ngay_cap_nhat" timestamp NOT NULL DEFAULT (now()),
-  CONSTRAINT "chk_giao_dich_so_tien_khong_am" CHECK ("so_tien" >= 0)
+CREATE TABLE IF NOT EXISTS facility_condition_report (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  staff_id INT NOT NULL REFERENCES staff(id),
+  room_id INT NOT NULL REFERENCES room(id),
+  equipment_id INT REFERENCES equipment(id),
+  condition facility_condition NOT NULL,
+  note VARCHAR(500),
+  image_url VARCHAR(500),
+  maintenance_suggested BOOLEAN NOT NULL DEFAULT false,
+  room_status_after_update room_status,
+  status VARCHAR(30) NOT NULL DEFAULT 'OPEN',
+  admin_note VARCHAR(1000),
+  resolved_at TIMESTAMP,
+  created_at TIMESTAMP NOT NULL DEFAULT now(),
+  CONSTRAINT chk_facility_condition_report_broken_note
+    CHECK (condition <> 'BROKEN' OR (note IS NOT NULL AND btrim(note) <> '')),
+  CONSTRAINT chk_facility_condition_report_status
+    CHECK (status IN ('OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED')),
+  CONSTRAINT chk_facility_condition_report_note_length
+    CHECK (note IS NULL OR char_length(note) <= 500),
+  CONSTRAINT chk_facility_condition_report_image_url_length
+    CHECK (image_url IS NULL OR char_length(image_url) <= 500),
+  CONSTRAINT chk_facility_condition_report_admin_note_length
+    CHECK (admin_note IS NULL OR char_length(admin_note) <= 1000)
 );
 
-CREATE TABLE IF NOT EXISTS "lich_su_trang_thai_dat_phong" (
-  "id" INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
-  "dat_phong_id" int NOT NULL,
-  "trang_thai_cu" trang_thai_dat_phong,
-  "trang_thai_moi" trang_thai_dat_phong NOT NULL,
-  "ghi_chu" varchar(500),
-  "thoi_gian" timestamp NOT NULL DEFAULT (now()),
-  "thuc_hien_boi" int
-);
+CREATE INDEX IF NOT EXISTS idx_equipment_room_type ON equipment(room_id, type);
+CREATE INDEX IF NOT EXISTS idx_booking_room_start_end ON booking(room_id, start_time, end_time);
+CREATE INDEX IF NOT EXISTS idx_booking_customer_created_at ON booking(customer_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_booking_status_start_time ON booking(status, start_time);
+CREATE INDEX IF NOT EXISTS idx_payment_transaction_status_paid_at
+  ON payment_transaction(status, paid_at) WHERE paid_at IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_booking_status_history_booking_changed_at
+  ON booking_status_history(booking_id, changed_at);
+CREATE INDEX IF NOT EXISTS idx_shift_staff_date ON "shift"(staff_id, date);
+CREATE INDEX IF NOT EXISTS idx_revoked_token_expires_at ON revoked_token(expires_at);
+CREATE INDEX IF NOT EXISTS idx_review_response_responder_id ON review_response(responder_id);
+CREATE INDEX IF NOT EXISTS idx_coupon_usage_discount_code_used_at ON coupon_usage(discount_code_id, used_at);
+CREATE INDEX IF NOT EXISTS idx_coupon_usage_customer_used_at ON coupon_usage(customer_id, used_at);
+CREATE INDEX IF NOT EXISTS idx_customer_issue_report_customer_created_at
+  ON customer_issue_report(customer_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_customer_issue_report_booking_id ON customer_issue_report(booking_id);
+CREATE INDEX IF NOT EXISTS idx_app_notification_recipient_created_at
+  ON app_notification(recipient_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_staff_shift_registration_staff_date
+  ON staff_shift_registration(staff_id, work_date, start_time);
+CREATE INDEX IF NOT EXISTS idx_staff_shift_registration_status_date
+  ON staff_shift_registration(status, work_date, start_time);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_staff_shift_registration_exact_active_slot
+  ON staff_shift_registration(staff_id, work_date, start_time, end_time)
+  WHERE status IN ('PENDING', 'APPROVED');
+CREATE UNIQUE INDEX IF NOT EXISTS ux_staff_attendance_working_shift
+  ON staff_attendance(staff_id, shift_id)
+  WHERE status = 'WORKING' AND shift_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_staff_attendance_staff_time
+  ON staff_attendance(staff_id, check_in_time DESC);
+CREATE INDEX IF NOT EXISTS idx_staff_attendance_status ON staff_attendance(status);
+CREATE INDEX IF NOT EXISTS idx_facility_condition_report_room_created_at
+  ON facility_condition_report(room_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_facility_condition_report_equipment_created_at
+  ON facility_condition_report(equipment_id, created_at DESC) WHERE equipment_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_facility_condition_report_staff_created_at
+  ON facility_condition_report(staff_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_facility_condition_report_maintenance
+  ON facility_condition_report(maintenance_suggested, created_at DESC) WHERE maintenance_suggested = true;
 
-CREATE TABLE IF NOT EXISTS "danh_gia" (
-  "id" INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
-  "dat_phong_id" int UNIQUE NOT NULL,
-  "diem" int NOT NULL,
-  "noi_dung" text,
-  "da_duyet" boolean NOT NULL DEFAULT true,
-  "ngay_tao" timestamp NOT NULL DEFAULT (now()),
-  CONSTRAINT "chk_danh_gia_diem" CHECK ("diem" BETWEEN 1 AND 5)
-);
-
-CREATE TABLE IF NOT EXISTS "ca_lam" (
-  "id" INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
-  "nhan_vien_id" int NOT NULL,
-  "ngay" date NOT NULL,
-  "gio_bat_dau" time NOT NULL,
-  "gio_ket_thuc" time NOT NULL,
-  "trang_thai" trang_thai_ca NOT NULL DEFAULT 'DA_PHAN',
-  "diem_chat_luong" int,
-  CONSTRAINT "chk_ca_lam_khoang_thoi_gian" CHECK (
-    "gio_bat_dau" < "gio_ket_thuc"
-  ),
-  CONSTRAINT "chk_ca_lam_diem_chat_luong" CHECK (
-    "diem_chat_luong" IS NULL OR "diem_chat_luong" BETWEEN 1 AND 5
-  )
-);
-
--- -------------------------------------------------------------
--- 3. Index
--- -------------------------------------------------------------
-CREATE INDEX IF NOT EXISTS "idx_thiet_bi_phong_loai"
-  ON "thiet_bi" ("phong_id", "loai");
-
-CREATE INDEX IF NOT EXISTS "idx_dat_phong_phong_thoi_gian"
-  ON "dat_phong" ("phong_id", "gio_bat_dau", "gio_ket_thuc");
-
-CREATE INDEX IF NOT EXISTS "idx_dat_phong_khach_hang_ngay_tao"
-  ON "dat_phong" ("khach_hang_id", "ngay_tao" DESC);
-
-CREATE INDEX IF NOT EXISTS "idx_dat_phong_trang_thai_gio_bat_dau"
-  ON "dat_phong" ("trang_thai", "gio_bat_dau");
-
-CREATE INDEX IF NOT EXISTS "idx_lich_su_dat_phong_thoi_gian"
-  ON "lich_su_trang_thai_dat_phong" ("dat_phong_id", "thoi_gian");
-
-CREATE INDEX IF NOT EXISTS "idx_ca_lam_nhan_vien_ngay"
-  ON "ca_lam" ("nhan_vien_id", "ngay");
-
-CREATE INDEX IF NOT EXISTS "idx_revoked_token_expires_at"
-  ON "revoked_token" ("expires_at");
-
--- -------------------------------------------------------------
--- 4. EXCLUDE constraint (chong trung lich)
---    ADD CONSTRAINT khong ho tro IF NOT EXISTS -> boc trong DO block.
--- -------------------------------------------------------------
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'excl_dat_phong_khong_trung_lich'
-  ) THEN
-    ALTER TABLE "dat_phong"
-      ADD CONSTRAINT "excl_dat_phong_khong_trung_lich"
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'excl_booking_no_overlap') THEN
+    ALTER TABLE booking
+      ADD CONSTRAINT excl_booking_no_overlap
       EXCLUDE USING gist (
-        "phong_id" WITH =,
-        tsrange("gio_bat_dau", "gio_ket_thuc", '[)') WITH &&
+        room_id WITH =,
+        tsrange(start_time, end_time, '[)') WITH &&
       )
-      WHERE ("trang_thai" <> 'DA_HUY');
+      WHERE (status <> 'CANCELLED');
   END IF;
 
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'excl_ca_lam_nhan_vien_khong_trung'
-  ) THEN
-    ALTER TABLE "ca_lam"
-      ADD CONSTRAINT "excl_ca_lam_nhan_vien_khong_trung"
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'excl_shift_staff_no_overlap') THEN
+    ALTER TABLE "shift"
+      ADD CONSTRAINT excl_shift_staff_no_overlap
       EXCLUDE USING gist (
-        "nhan_vien_id" WITH =,
-        tsrange("ngay" + "gio_bat_dau", "ngay" + "gio_ket_thuc", '[)') WITH &&
+        staff_id WITH =,
+        tsrange(date + start_time, date + end_time, '[)') WITH &&
       );
   END IF;
 END
 $$;
 
--- -------------------------------------------------------------
--- 5. Khoa ngoai
---    Boc trong DO block de chay lai khong bi loi trung ten.
--- -------------------------------------------------------------
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_khach_hang_tai_khoan') THEN
-    ALTER TABLE "khach_hang" ADD CONSTRAINT "fk_khach_hang_tai_khoan"
-      FOREIGN KEY ("tai_khoan_id") REFERENCES "tai_khoan" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-  END IF;
+COMMENT ON TABLE room_tier IS 'Homestay room categories such as Standard, Deluxe, and Family.';
+COMMENT ON TABLE room IS 'Individual homestay rooms offered for booking.';
+COMMENT ON TABLE equipment IS 'Room amenities and operational equipment such as Wi-Fi, air conditioner, TV, and water heater.';
+COMMENT ON COLUMN booking.equipment_notes IS 'Amenities the guest asks staff to prepare or verify.';
 
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_nhan_vien_tai_khoan') THEN
-    ALTER TABLE "nhan_vien" ADD CONSTRAINT "fk_nhan_vien_tai_khoan"
-      FOREIGN KEY ("tai_khoan_id") REFERENCES "tai_khoan" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-  END IF;
-
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_phong_hang_phong') THEN
-    ALTER TABLE "phong" ADD CONSTRAINT "fk_phong_hang_phong"
-      FOREIGN KEY ("hang_phong_id") REFERENCES "hang_phong" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-  END IF;
-
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_thiet_bi_phong') THEN
-    ALTER TABLE "thiet_bi" ADD CONSTRAINT "fk_thiet_bi_phong"
-      FOREIGN KEY ("phong_id") REFERENCES "phong" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-  END IF;
-
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_dat_phong_khach_hang') THEN
-    ALTER TABLE "dat_phong" ADD CONSTRAINT "fk_dat_phong_khach_hang"
-      FOREIGN KEY ("khach_hang_id") REFERENCES "khach_hang" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-  END IF;
-
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_dat_phong_phong') THEN
-    ALTER TABLE "dat_phong" ADD CONSTRAINT "fk_dat_phong_phong"
-      FOREIGN KEY ("phong_id") REFERENCES "phong" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-  END IF;
-
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_dat_phong_ma_giam_gia') THEN
-    ALTER TABLE "dat_phong" ADD CONSTRAINT "fk_dat_phong_ma_giam_gia"
-      FOREIGN KEY ("ma_giam_gia_id") REFERENCES "ma_giam_gia" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-  END IF;
-
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_dat_phong_nhan_vien_checkin') THEN
-    ALTER TABLE "dat_phong" ADD CONSTRAINT "fk_dat_phong_nhan_vien_checkin"
-      FOREIGN KEY ("nhan_vien_checkin_id") REFERENCES "nhan_vien" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-  END IF;
-
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_giao_dich_dat_phong') THEN
-    ALTER TABLE "giao_dich_thanh_toan" ADD CONSTRAINT "fk_giao_dich_dat_phong"
-      FOREIGN KEY ("dat_phong_id") REFERENCES "dat_phong" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-  END IF;
-
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_lich_su_dat_phong') THEN
-    ALTER TABLE "lich_su_trang_thai_dat_phong" ADD CONSTRAINT "fk_lich_su_dat_phong"
-      FOREIGN KEY ("dat_phong_id") REFERENCES "dat_phong" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-  END IF;
-
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_lich_su_thuc_hien_boi') THEN
-    ALTER TABLE "lich_su_trang_thai_dat_phong" ADD CONSTRAINT "fk_lich_su_thuc_hien_boi"
-      FOREIGN KEY ("thuc_hien_boi") REFERENCES "tai_khoan" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-  END IF;
-
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_danh_gia_dat_phong') THEN
-    ALTER TABLE "danh_gia" ADD CONSTRAINT "fk_danh_gia_dat_phong"
-      FOREIGN KEY ("dat_phong_id") REFERENCES "dat_phong" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-  END IF;
-
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_ca_lam_nhan_vien') THEN
-    ALTER TABLE "ca_lam" ADD CONSTRAINT "fk_ca_lam_nhan_vien"
-      FOREIGN KEY ("nhan_vien_id") REFERENCES "nhan_vien" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-  END IF;
-END
-$$;
-
--- -------------------------------------------------------------
--- 6. Comment mo ta cot
--- -------------------------------------------------------------
-COMMENT ON COLUMN "hang_phong"."gia_gio" IS 'Giá thuê / giờ';
-COMMENT ON COLUMN "thiet_bi"."ten" IS 'Tên tiện nghi cụ thể, vd: Wi-Fi 5G, Smart TV 50 inch';
-COMMENT ON COLUMN "ma_giam_gia"."dieu_kien_min" IS 'Giá trị đơn tối thiểu';
-COMMENT ON COLUMN "dat_phong"."ma_giam_gia_id" IS 'Có thể null';
-COMMENT ON COLUMN "dat_phong"."nhan_vien_checkin_id" IS 'NV xử lý check-in, có thể null';
-COMMENT ON COLUMN "dat_phong"."gia_gio_ap_dung" IS 'Giá giờ tại thời điểm đặt';
-COMMENT ON COLUMN "dat_phong"."ghi_chu_nhac_cu" IS 'Tiện nghi phòng khách yêu cầu nhân viên chuẩn bị';
-COMMENT ON COLUMN "dat_phong"."ghi_chu" IS 'Ghi chú khác của khách hoặc nhân viên';
-COMMENT ON COLUMN "lich_su_trang_thai_dat_phong"."thuc_hien_boi" IS 'tai_khoan.id của người thực hiện thay đổi; null nếu do hệ thống tự động';
-COMMENT ON COLUMN "danh_gia"."diem" IS '1-5';
-COMMENT ON COLUMN "ca_lam"."diem_chat_luong" IS 'Admin đánh giá ca, 1-5';
-
--- -------------------------------------------------------------
--- 7. Tai khoan admin mac dinh cho moi truong local/dev
---    Email: admin@homestay.local
---    Password: Admin@123
--- -------------------------------------------------------------
-INSERT INTO "tai_khoan" ("email", "mat_khau_hash", "vai_tro")
+INSERT INTO account (email, password_hash, role, email_verified, enabled)
 VALUES (
   'admin@homestay.local',
   '$2a$10$GvWVKahyW48qvHRAsjGbYOXoFz3b/cDSykbxByfHGnCFw/oIvOuZS',
-  'ADMIN'
+  'ADMIN',
+  true,
+  true
 )
-ON CONFLICT ("email") DO UPDATE
-SET
-  "mat_khau_hash" = EXCLUDED."mat_khau_hash",
-  "vai_tro" = EXCLUDED."vai_tro";
+ON CONFLICT (email) DO UPDATE
+SET password_hash = EXCLUDED.password_hash,
+    role = EXCLUDED.role,
+    email_verified = EXCLUDED.email_verified,
+    enabled = EXCLUDED.enabled;
 
 COMMIT;

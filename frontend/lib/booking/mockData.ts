@@ -1,6 +1,6 @@
-import type { PracticeRoom } from './types'
+import type { HomestayRoom } from './types'
 
-export const PRACTICE_ROOMS: PracticeRoom[] = [
+export const HOMESTAY_ROOMS: HomestayRoom[] = [
   {
     id: 'standard-garden-101',
     name: 'Standard Garden 101',

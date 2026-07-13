@@ -88,6 +88,7 @@ function derivePaymentStatus(status: BookingStatus): PaymentStatus {
     case 'COMPLETED':
       return 'PAID'
     case 'PENDING_PAYMENT':
+    case 'DEPOSIT_PAID':
       return 'PENDING'
     case 'CANCELLED':
     default:
@@ -136,6 +137,7 @@ function mapBackendBooking(booking: BackendBooking): AdminBooking {
     bookingStatus: booking.status,
     note: normalizeText(booking.note) || undefined,
     paymentMethod: mapPaymentMethod(booking.paymentMethod),
+    paymentMethodCode: booking.paymentMethod ?? undefined,
   }
 }
 

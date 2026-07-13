@@ -506,7 +506,7 @@ function getApiBookingRoom(searchParams: { get(name: string): string | null }): 
     rating: undefined,
     reviews: undefined,
     capacity: formatCapacityLabel(searchParams.get('roomCapacity'), 'Chưa rõ sức chứa'),
-    location: searchParams.get('roomLocation')?.trim() || 'Homestay Booking Studio',
+    location: searchParams.get('roomLocation')?.trim() || 'Homestay Booking',
     image: safeImage,
     imageClassName: 'object-center',
     pricePerHour,

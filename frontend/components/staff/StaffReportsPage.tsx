@@ -82,7 +82,7 @@ const reportData: Record<ReportRange, ReportDataset> = {
       { name: 'Tuần 3', checkIn: 'Đủ', checkOut: '1 ca thiếu', duration: '36 giờ', status: 'MISSING_CHECKOUT' },
     ],
     bookingStatus: { 'Chờ xác nhận': 42, 'Đã xác nhận': 90, 'Đã check-in': 78, 'Hoàn tất': 169, 'Đã hủy': 18, 'Không đến': 15 },
-    roomStatus: { topRoom: 'Homestay VIP', cleaning: 32, maintenance: 9, issue: 14 },
+    roomStatus: { topRoom: 'Family Suite 301', cleaning: 32, maintenance: 9, issue: 14 },
     issueStatus: { 'Sự cố mới': 13, 'Đang xử lý': 9, 'Đã xử lý': 58, 'Khẩn cấp': 6 },
     hourlyBookings: [
       { label: '08:00', value: 70 },
@@ -184,7 +184,7 @@ export default function StaffReportsPage() {
         {isLoading ? (
           <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className="h-32 animate-pulse rounded-3xl border border-outline-variant bg-white shadow-[var(--band-shadow-card)]" />
+              <div key={index} className="h-32 animate-pulse rounded-3xl border border-outline-variant bg-white shadow-[var(--homestay-shadow-card)]" />
             ))}
           </section>
         ) : data.summary.totalShifts > 0 || data.summary.handledBookings > 0 ? (
@@ -305,7 +305,7 @@ function mapPerformanceReport(report: StaffPerformanceResponse): ReportDataset {
 
 function ReportSection({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--band-shadow-card)]">
+    <section className="rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--homestay-shadow-card)]">
       <h2 className="font-display text-xl font-bold text-on-surface">{title}</h2>
       <div className="mt-4">{children}</div>
     </section>

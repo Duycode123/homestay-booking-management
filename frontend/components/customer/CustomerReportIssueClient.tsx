@@ -25,7 +25,7 @@ const issueTypes: Array<{
   icon: 'room' | 'equipment' | 'payment' | 'account' | 'other'
 }> = [
   { value: 'ROOM', label: 'Phòng homestay', description: 'Vệ sinh, cách âm, điều hòa', icon: 'room' },
-  { value: 'EQUIPMENT', label: 'Tiện nghi', description: 'Trống, ampli, micro hỏng', icon: 'equipment' },
+  { value: 'EQUIPMENT', label: 'Tiện nghi', description: 'Wi-Fi, điều hòa, TV hoặc máy nước nóng gặp sự cố', icon: 'equipment' },
   { value: 'PAYMENT', label: 'Thanh toán', description: 'Sai tiền, hoàn tiền, hóa đơn', icon: 'payment' },
   { value: 'ACCOUNT', label: 'Tài khoản', description: 'Đăng nhập, hồ sơ', icon: 'account' },
   { value: 'OTHER', label: 'Khác', description: 'Sự cố khác', icon: 'other' },

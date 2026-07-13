@@ -252,7 +252,7 @@ export default function StaffSettingsPage() {
 
         {pageError && <MessageBox type="error" message={pageError} />}
 
-        <section className="rounded-3xl border border-outline-variant bg-white p-3 shadow-[var(--band-shadow-card)]">
+        <section className="rounded-3xl border border-outline-variant bg-white p-3 shadow-[var(--homestay-shadow-card)]">
           <div className="flex gap-2 overflow-x-auto [scrollbar-width:none]">
             {tabs.map((tab) => (
               <button
@@ -415,7 +415,7 @@ function validatePasswordForm(form: typeof emptyPasswordForm) {
 
 function SettingsCard({ title, description, children, paddingClassName }: { title: string; description: string; children: React.ReactNode; paddingClassName: string }) {
   return (
-    <section className={['rounded-3xl border border-outline-variant bg-white shadow-[var(--band-shadow-card)]', paddingClassName].join(' ')}>
+    <section className={['rounded-3xl border border-outline-variant bg-white shadow-[var(--homestay-shadow-card)]', paddingClassName].join(' ')}>
       <h2 className="font-display text-2xl font-bold text-on-surface">{title}</h2>
       <p className="mt-2 text-sm leading-6 text-on-surface-variant">{description}</p>
       <div className="mt-6">{children}</div>
@@ -459,7 +459,7 @@ function OptionGroup({ label, options, value, onChange }: { label: string; optio
             onClick={() => onChange(option.value)}
             className={[
               'rounded-xl px-4 py-3 font-display text-sm font-bold transition',
-              value === option.value ? 'bg-secondary text-on-secondary shadow-[var(--band-shadow-card)]' : 'text-on-surface-variant hover:bg-white',
+              value === option.value ? 'bg-secondary text-on-secondary shadow-[var(--homestay-shadow-card)]' : 'text-on-surface-variant hover:bg-white',
             ].join(' ')}
           >
             {option.label}

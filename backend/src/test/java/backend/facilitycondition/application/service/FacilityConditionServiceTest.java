@@ -94,21 +94,21 @@ class FacilityConditionServiceTest {
                 .condition(FacilityCondition.BROKEN)
                 .maintenanceSuggested(true)
                 .status(FacilityConditionReportStatus.RESOLVED)
-                .adminNote("Da sua mixer")
+                .adminNote("Da sua may nuoc nong")
                 .build();
         when(facilityConditionPort.updateReportStatus(
                 eq(reportId),
                 eq(FacilityConditionReportStatus.RESOLVED),
-                eq("Da sua mixer")
+                eq("Da sua may nuoc nong")
         )).thenReturn(Optional.of(updatedReport));
 
         FacilityConditionReport result = service.updateReportStatus(new UpdateFacilityConditionReportStatusCommand(
                 reportId,
                 FacilityConditionReportStatus.RESOLVED,
-                "  Da sua mixer  "
+                "  Da sua may nuoc nong  "
         ));
 
         assertTrue(result.status().equals(FacilityConditionReportStatus.RESOLVED));
-        verify(facilityConditionPort).updateReportStatus(reportId, FacilityConditionReportStatus.RESOLVED, "Da sua mixer");
+        verify(facilityConditionPort).updateReportStatus(reportId, FacilityConditionReportStatus.RESOLVED, "Da sua may nuoc nong");
     }
 }

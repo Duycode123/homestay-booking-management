@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -26,6 +27,14 @@ public interface PaymentTransactionRepository extends JpaRepository<PaymentTrans
             Integer bookingId,
             Collection<PaymentTransactionStatus> statuses
     );
+
+    @Query("""
+            SELECT COALESCE(SUM(t.amount), 0)
+            FROM PaymentTransaction t
+            WHERE t.booking.id = :bookingId
+              AND t.status = backend.entity.PaymentTransactionStatus.SUCCEEDED
+            """)
+    BigDecimal sumSuccessfulAmountByBookingId(@Param("bookingId") Integer bookingId);
 
     @Query("""
             SELECT t

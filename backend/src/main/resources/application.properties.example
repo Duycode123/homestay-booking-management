@@ -8,8 +8,9 @@ spring.datasource.password=${DB_PASSWORD:your_postgres_password}
 spring.datasource.driver-class-name=org.postgresql.Driver
 
 spring.jpa.hibernate.ddl-auto=validate
-spring.jpa.show-sql=true
-spring.jpa.properties.hibernate.format_sql=true
+spring.jpa.show-sql=${JPA_SHOW_SQL:false}
+spring.jpa.open-in-view=false
+spring.jpa.properties.hibernate.format_sql=${JPA_FORMAT_SQL:false}
 spring.sql.init.mode=always
 spring.sql.init.platform=postgresql
 
@@ -58,6 +59,9 @@ gemini.ai.model=${GEMINI_AI_MODEL:gemini-2.5-flash}
 gemini.ai.base-url=${GEMINI_AI_BASE_URL:https://generativelanguage.googleapis.com/v1beta}
 gemini.ai.max-output-tokens=${GEMINI_AI_MAX_OUTPUT_TOKENS:1200}
 gemini.ai.temperature=${GEMINI_AI_TEMPERATURE:0.35}
+
+# Hold an unpaid room slot for 15 minutes before releasing it.
+app.booking.payment-expiration-seconds=${BOOKING_PAYMENT_EXPIRATION_SECONDS:900}
 
 # ===== SePay =====
 # Online deposit flow redirects customers to the configured SePay/VietQR checkout URL.

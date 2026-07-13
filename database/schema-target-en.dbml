@@ -1,4 +1,4 @@
-// ====== Homestay - Band Practice Room Booking System ======
+// ====== Homestay Booking Management System ======
 
 Enum role {
   CUSTOMER
@@ -22,6 +22,7 @@ Enum facility_condition {
 
 Enum booking_status {
   PENDING_PAYMENT
+  DEPOSIT_PAID
   PAID
   CHECKED_IN
   COMPLETED
@@ -89,6 +90,8 @@ Table account {
   email                           varchar   [unique, not null]
   password_hash                   varchar   [not null]
   role                            role      [not null]
+  reset_token                     varchar   [unique]
+  reset_token_expires_at          timestamp
   email_verified                  boolean   [not null, default: false]
   enabled                         boolean   [not null, default: true, note: 'False disables login while preserving account history']
   email_verification_token_hash   varchar   [unique, note: 'SHA-256 hash of active email verification token']
@@ -171,7 +174,7 @@ Table booking {
   total_price         decimal         [not null]
   status              booking_status  [not null, default: 'PENDING_PAYMENT']
 
-  equipment_notes     varchar(500)    [note: 'Equipment/instruments the customer wants prepared']
+  equipment_notes     varchar(500)    [note: 'Amenities the guest asks staff to prepare or verify']
   notes               varchar(500)    [note: 'Other notes from customer or staff']
 
   created_at          timestamp       [default: `now()`]
@@ -200,7 +203,7 @@ Table payment_transaction {
   provider_transaction_id varchar                    [unique]
   amount                  decimal                    [not null]
   status                  payment_transaction_status [not null, default: 'INITIALIZED']
-  response_code           varchar(20)
+  response_code           varchar(50)
   paid_at                 timestamp
   created_at              timestamp                  [not null, default: `now()`]
   updated_at              timestamp                  [not null, default: `now()`]
@@ -217,6 +220,7 @@ Table app_notification {
   title         varchar   [not null]
   content       text      [not null]
   is_read       boolean   [not null, default: false]
+  is_resolved   boolean   [not null, default: false]
   created_at    timestamp [not null, default: `now()`]
 
   indexes {
@@ -299,6 +303,9 @@ Table facility_condition_report {
   image_url                varchar(500)
   maintenance_suggested    boolean            [not null, default: false]
   room_status_after_update room_status
+  status                   varchar(30)        [not null, default: 'OPEN', note: 'OPEN, IN_PROGRESS, RESOLVED, or CLOSED']
+  admin_note               varchar(1000)
+  resolved_at              timestamp
   created_at               timestamp          [not null, default: `now()`]
 
   indexes {
@@ -307,4 +314,42 @@ Table facility_condition_report {
     (staff_id, created_at)
     (maintenance_suggested, created_at)
   }
+}
+
+Table revoked_token {
+  id          bigint    [pk, increment]
+  token_hash  varchar   [unique, not null, note: 'SHA-256 hash of a revoked JWT']
+  expires_at  timestamp [not null]
+  created_at  timestamp [not null, default: `now()`]
+}
+
+Table user_notification_settings {
+  id                int     [pk, increment]
+  account_id        int     [unique, not null, ref: - account.id]
+  new_booking       boolean [not null, default: true]
+  booking_reminder  boolean [not null, default: true]
+  shift_reminder    boolean [not null, default: true]
+  room_issue        boolean [not null, default: true]
+  equipment_issue   boolean [not null, default: true]
+}
+
+Table customer_issue_report {
+  id           bigint    [pk, increment]
+  customer_id  int       [not null, ref: > customer.id]
+  booking_id   int       [ref: > booking.id]
+  issue_type   varchar   [not null, note: 'ROOM, EQUIPMENT, PAYMENT, ACCOUNT, or OTHER']
+  description  varchar(1000) [not null]
+  admin_note   varchar(1000)
+  status       varchar   [not null, default: 'OPEN', note: 'OPEN, IN_PROGRESS, RESOLVED, or CLOSED']
+  created_at   timestamp [not null, default: `now()`]
+  updated_at   timestamp [not null, default: `now()`]
+}
+
+Table coupon_usage {
+  id                bigint    [pk, increment]
+  discount_code_id  int       [not null, ref: > discount_code.id]
+  customer_id       int       [not null, ref: > customer.id]
+  booking_id        int       [unique, not null, ref: - booking.id]
+  discount_amount   decimal   [not null]
+  used_at           timestamp [not null, default: `now()`]
 }

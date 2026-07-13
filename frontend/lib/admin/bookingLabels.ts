@@ -3,6 +3,7 @@ import { inferRoomCategoryFromTypeName } from '@/lib/room-mappers'
 import { roomCategoryLabels } from '@/lib/admin/rooms/types'
 
 export const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {
+  DEPOSIT_PAID: 'Đã đặt cọc',
   PENDING_PAYMENT: 'Chờ thanh toán',
   PAID: 'Đã thanh toán',
   CHECKED_IN: 'Đang sử dụng',
@@ -18,6 +19,7 @@ export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
 
 export const BOOKING_STATUS_OPTIONS: BookingStatus[] = [
   'PENDING_PAYMENT',
+  'DEPOSIT_PAID',
   'PAID',
   'CHECKED_IN',
   'COMPLETED',

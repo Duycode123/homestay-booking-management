@@ -45,6 +45,12 @@ public class Booking {
     @Column(name = "end_time", nullable = false)
     private LocalDateTime endTime;
 
+    @Column(name = "checkin_time")
+    private LocalDateTime checkinTime;
+
+    @Column(name = "checkout_time")
+    private LocalDateTime checkoutTime;
+
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "payment_method", nullable = false, columnDefinition = "payment_method")

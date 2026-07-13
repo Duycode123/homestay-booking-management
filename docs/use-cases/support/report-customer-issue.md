@@ -69,6 +69,8 @@ Allow an authenticated customer to submit a support issue that the backend can t
 ## Current Implementation Notes
 
 - The backend persists reports in `customer_issue_report`.
+- Web controllers call focused inbound use-case ports; application behavior depends on support context/report ports rather than Spring Data repositories.
+- Support domain models are separate from JPA entities, with explicit mapping in persistence adapters.
 - Status is stored explicitly as a small lifecycle string rather than inferred from frontend UI state.
 - Admin incident reports page reads from backend data rather than mock data.
 - Priority is currently derived from issue type for admin filtering and display.

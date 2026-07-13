@@ -1,50 +1,39 @@
 package backend.homepage.application.service;
 
-import backend.entity.Booking;
-import backend.entity.BookingStatus;
 import backend.homepage.application.model.HomepageRecentActivity;
-import backend.repository.BookingRepository;
+import backend.homepage.application.port.in.GetRecentHomepageActivitiesUseCase;
+import backend.homepage.application.port.out.LoadRecentHomepageBookingsPort;
+import backend.homepage.application.port.out.model.RecentHomepageBooking;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class HomepageQueryService {
+public class HomepageQueryService implements GetRecentHomepageActivitiesUseCase {
 
-    private final BookingRepository bookingRepository;
+    private static final int ACTIVITY_LIMIT = 6;
 
+    private final LoadRecentHomepageBookingsPort loadRecentHomepageBookingsPort;
+
+    @Override
     public List<HomepageRecentActivity> getRecentActivities() {
-        return bookingRepository.findTop10ByStatusNotOrderByCreatedAtDesc(BookingStatus.CANCELLED)
+        return loadRecentHomepageBookingsPort.loadRecentBookings(ACTIVITY_LIMIT)
                 .stream()
                 .map(this::mapActivity)
-                .limit(6)
                 .toList();
     }
 
-    private HomepageRecentActivity mapActivity(Booking booking) {
+    private HomepageRecentActivity mapActivity(RecentHomepageBooking booking) {
         return new HomepageRecentActivity(
-                "booking-" + booking.getId(),
-                booking.getCustomer() == null ? "" : booking.getCustomer().getFullName(),
-                booking.getRoom() == null ? "" : booking.getRoom().getRoomName(),
-                mapAction(booking.getStatus()),
-                booking.getCreatedAt() == null ? booking.getStartTime() : booking.getCreatedAt()
+                "booking-" + booking.bookingId(),
+                booking.customerName(),
+                booking.roomName(),
+                booking.state().name(),
+                booking.occurredAt()
         );
-    }
-
-    private String mapAction(BookingStatus status) {
-        if (status == BookingStatus.DEPOSIT_PAID || status == BookingStatus.PAID) {
-            return "PAID";
-        }
-
-        if (status == BookingStatus.CHECKED_IN || status == BookingStatus.COMPLETED) {
-            return "CHECKED_IN";
-        }
-
-        return "BOOKED";
     }
 }

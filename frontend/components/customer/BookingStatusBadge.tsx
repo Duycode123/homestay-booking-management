@@ -3,6 +3,7 @@ import type { CustomerBookingStatus } from '@/lib/customer-booking-service'
 
 const toneClassName = {
   PENDING_PAYMENT: 'border-brand-orange/25 bg-primary-container text-on-primary-container',
+  DEPOSIT_PAID: 'border-secondary-container/30 bg-secondary-container/10 text-secondary-container',
   PAID: 'border-secondary-container/30 bg-secondary-container/10 text-secondary-container',
   CHECKED_IN: 'border-secondary-container/30 bg-secondary-container/10 text-secondary-container',
   COMPLETED: 'border-secondary-container/30 bg-secondary-container/10 text-brand-greenLight',
@@ -11,6 +12,7 @@ const toneClassName = {
 
 const dotClassName = {
   PENDING_PAYMENT: 'bg-brand-orange',
+  DEPOSIT_PAID: 'bg-brand-greenLight',
   PAID: 'bg-brand-greenLight',
   CHECKED_IN: 'bg-brand-greenLight',
   COMPLETED: 'bg-brand-greenLight',

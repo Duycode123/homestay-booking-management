@@ -30,6 +30,10 @@ public class BookingResponse {
 
     private LocalDateTime startTime;
     private LocalDateTime endTime;
+    private LocalDateTime checkinTime;
+    private LocalDateTime checkoutTime;
+    private Integer checkinStaffId;
+    private String checkinStaffName;
 
     private BigDecimal totalHours;
     private BigDecimal pricePerHour;
@@ -72,6 +76,12 @@ public class BookingResponse {
 
         this.startTime = booking.getStartTime();
         this.endTime = booking.getEndTime();
+        this.checkinTime = booking.getCheckinTime();
+        this.checkoutTime = booking.getCheckoutTime();
+        if (booking.getCheckinStaff() != null) {
+            this.checkinStaffId = booking.getCheckinStaff().getId();
+            this.checkinStaffName = booking.getCheckinStaff().getFullName();
+        }
         this.totalHours = booking.getTotalHours();
         this.pricePerHour = booking.getPricePerHour();
         this.originalAmount = booking.getTotalHours() == null || booking.getPricePerHour() == null

@@ -19,37 +19,32 @@ const fallbackImage = '/images/homestay-room-hero.png'
 
 const defaultCapacity: Record<RoomCategory, number> = {
   standard: 2,
-  band: 3,
-  recording: 6,
-  premium: 5,
+  deluxe: 3,
+  family: 6,
 }
 
 const defaultPrice: Record<RoomCategory, number> = {
   standard: 350000,
-  band: 550000,
-  recording: 750000,
-  premium: 750000,
+  deluxe: 550000,
+  family: 750000,
 }
 
 const categoryEquipment: Record<RoomCategory, string[]> = {
   standard: ['Wi-Fi', 'Điều hòa', 'Smart TV', 'Máy nước nóng'],
-  band: ['Wi-Fi 5G', 'Điều hòa âm trần', 'Smart TV 50 inch', 'Máy nước nóng'],
-  recording: ['Wi-Fi gia đình', 'Hai điều hòa', 'Smart TV 55 inch', 'Bình nước nóng'],
-  premium: ['Wi-Fi gia đình', 'Hai điều hòa', 'Smart TV 55 inch', 'Bình nước nóng'],
+  deluxe: ['Wi-Fi 5G', 'Điều hòa âm trần', 'Smart TV 50 inch', 'Máy nước nóng'],
+  family: ['Wi-Fi gia đình', 'Hai điều hòa', 'Smart TV 55 inch', 'Bình nước nóng'],
 }
 
 const categoryBadges: Record<RoomCategory, string> = {
   standard: 'Standard',
-  band: 'Deluxe',
-  recording: 'Family',
-  premium: 'Family',
+  deluxe: 'Deluxe',
+  family: 'Family',
 }
 
 const categoryDescriptions: Record<RoomCategory, string> = {
   standard: 'Phòng tiện nghi cơ bản, phù hợp cho 1-2 khách.',
-  band: 'Phòng Deluxe rộng rãi, có ban công và tiện nghi nâng cấp.',
-  recording: 'Phòng Family có không gian sinh hoạt và sức chứa lớn.',
-  premium: 'Phòng Family rộng rãi dành cho gia đình hoặc nhóm đông người.',
+  deluxe: 'Phòng Deluxe rộng rãi, có ban công và tiện nghi nâng cấp.',
+  family: 'Phòng Family có không gian sinh hoạt và sức chứa lớn.',
 }
 
 function normalizeSearchText(value?: string | null) {
@@ -106,32 +101,21 @@ export function getPublicRoomTierLabel(
   const category = options.category ?? inferRoomCategoryFromTypeName(rawTypeName)
   const capacity = options.capacity ?? null
   const normalized = normalizeSearchText(rawTypeName)
-  const isDefaultSeededTier = [
-    'standard practice',
-    'band lưu trú',
-    'recording & mixing',
-    'premium homestay',
-  ].includes(normalized)
+  const isDefaultSeededTier = ['standard', 'deluxe', 'family'].includes(normalized)
 
   if (rawTypeName && !isDefaultSeededTier) {
     return rawTypeName
   }
 
-  if (category === 'recording') return 'Phòng thu'
-  if (capacity !== null && capacity >= 12) return 'Phòng nhóm lớn'
-  if (capacity !== null && capacity >= 5) return 'Phòng band'
-  if (category === 'premium') return 'Phòng nhóm lớn'
-  if (category === 'band') return 'Phòng band'
-
-  return 'Phòng nhóm nhỏ'
+  if (category === 'family') return 'Phòng Family'
+  if (category === 'deluxe') return 'Phòng Deluxe'
+  return 'Phòng Standard'
 }
 
 function getPublicRoomBadge(category: RoomCategory, capacity: number) {
-  if (category === 'recording') return 'Family'
-  if (capacity >= 12) return 'Nhóm lớn'
-  if (capacity >= 5) return 'Band'
-
-  return 'Nhóm nhỏ'
+  if (category === 'family') return 'Family'
+  if (category === 'deluxe') return 'Deluxe'
+  return 'Standard'
 }
 
 function getRoomDescription(room: BackendRoom, category: RoomCategory) {
@@ -209,9 +193,8 @@ function getStatusNote(status: BackendRoomStatus | null | undefined) {
 export function inferRoomCategoryFromTypeName(typeName?: string | null): RoomCategory {
   const normalized = normalizeSearchText(typeName)
 
-  if (/record|mix|thu|vocal|podcast/.test(normalized)) return 'recording'
-  if (/premium|vip|private|suite|cao cap/.test(normalized)) return 'premium'
-  if (/band|lưu trú|studio|nhom/.test(normalized)) return 'band'
+  if (/family|gia dinh|suite|group/.test(normalized)) return 'family'
+  if (/deluxe|premium|vip|cao cap/.test(normalized)) return 'deluxe'
   return 'standard'
 }
 
@@ -307,13 +290,13 @@ export function mapBackendRoomToBookingRoom(
     rating: reviewSummary?.reviewCount ? reviewSummary.averageRating : undefined,
     reviews: reviewSummary?.reviewCount ?? 0,
     capacity: `Tối đa ${capacity} người`,
-    location: room.floor ? `Tầng ${room.floor}, Homestay Booking Studio` : 'Homestay Booking Studio',
+    location: room.floor ? `Tầng ${room.floor}, Homestay Booking` : 'Homestay Booking',
     image: getImageUrl(room.imageUrl, true),
     imageClassName: '',
     pricePerHour: getRoomPrice(room, category),
     equipments: equipments.slice(0, 3),
     includedEquipments: equipments,
-    addons: ['Dây jack dự phòng', 'Stand micro', 'Kỹ thuật viên hỗ trợ'],
+    addons: ['Bữa sáng', 'Giặt ủi', 'Đón sân bay'],
     description: getRoomDescription(room, category),
     availabilityStatus: availability.availabilityStatus,
     remainingSlots: availability.remainingSlots,

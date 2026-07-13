@@ -3,22 +3,22 @@
 @import "tailwindcss";
 
 :root {
-  --band-bg: #F5F2EC;
-  --band-surface: #F5F2EC;
-  --band-card: #FFFFFF;
-  --band-card-muted: #FAF8F4;
-  --band-container: #F0EDE6;
-  --band-container-high: #E8E4DC;
-  --band-primary: #FF7518;
-  --band-primary-hover: #E6640F;
-  --band-secondary: #042A16;
-  --band-secondary-soft: #0A4D27;
-  --band-outline: #C9C2B6;
-  --band-outline-variant: #E8E4DC;
-  --band-text: #1A1C1E;
-  --band-muted: #5C5348;
-  --band-shadow-card: 0 4px 24px rgba(26, 28, 30, 0.06);
-  --band-shadow-elevated: 0 12px 48px rgba(26, 28, 30, 0.12);
+  --homestay-bg: #F5F2EC;
+  --homestay-surface: #F5F2EC;
+  --homestay-card: #FFFFFF;
+  --homestay-card-muted: #FAF8F4;
+  --homestay-container: #F0EDE6;
+  --homestay-container-high: #E8E4DC;
+  --homestay-primary: #FF7518;
+  --homestay-primary-hover: #E6640F;
+  --homestay-secondary: #042A16;
+  --homestay-secondary-soft: #0A4D27;
+  --homestay-outline: #C9C2B6;
+  --homestay-outline-variant: #E8E4DC;
+  --homestay-text: #1A1C1E;
+  --homestay-muted: #5C5348;
+  --homestay-shadow-card: 0 4px 24px rgba(26, 28, 30, 0.06);
+  --homestay-shadow-elevated: 0 12px 48px rgba(26, 28, 30, 0.12);
 }
 
 @theme {
@@ -161,7 +161,7 @@ body {
   font-size: 14px;
   font-weight: 700;
   color: var(--color-on-surface);
-  box-shadow: var(--band-shadow-card);
+  box-shadow: var(--homestay-shadow-card);
   transition: background-color 160ms ease, transform 160ms ease, border-color 160ms ease;
 }
 

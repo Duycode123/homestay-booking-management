@@ -185,7 +185,7 @@ export default function RoomsPublicPage() {
       <section className="relative overflow-hidden border-b border-outline-variant bg-secondary text-white">
         <Image
           src="/images/homestay-room-hero.png"
-          alt="Phòng homestay band với trống, ampli và micro"
+          alt="Phòng homestay sạch sẽ với giường, điều hòa và cửa sổ lớn"
           fill
           priority
           sizes="100vw"

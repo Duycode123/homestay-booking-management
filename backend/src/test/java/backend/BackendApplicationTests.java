@@ -408,6 +408,23 @@ class BackendApplicationTests {
     }
 
     @Test
+    void customerCannotCreateRoom() throws Exception {
+        User customer = User.builder()
+                .email("room-customer@example.com")
+                .password("unused")
+                .role(Role.CUSTOMER)
+                .build();
+        when(userDetailsService.loadUserByUsername(customer.getEmail())).thenReturn(customer);
+        String accessToken = jwtService.generateAccessToken(customer);
+
+        mockMvc.perform(post("/api/rooms")
+                        .cookie(new Cookie(AuthCookieService.ACCESS_COOKIE_NAME, accessToken))
+                        .contentType("application/json")
+                        .content("{}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void uploadAvatarStoresCloudinaryUrlForAuthenticatedUser() throws Exception {
         User user = User.builder()
                 .email("avatar-user@example.com")

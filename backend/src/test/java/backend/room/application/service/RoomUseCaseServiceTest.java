@@ -60,27 +60,27 @@ class RoomUseCaseServiceTest {
 
         when(roomActorPort.loadUserByEmail("admin@example.com")).thenReturn(Optional.of(adminUser()));
         when(roomCatalogPort.loadRoomForUpdate(10)).thenReturn(Optional.of(room));
-        when(roomCatalogPort.existsRoomName("Studio Prime")).thenReturn(false);
+        when(roomCatalogPort.existsRoomName("Deluxe Garden 201")).thenReturn(false);
         when(roomCatalogPort.loadRoomType(3)).thenReturn(Optional.of(updatedType));
         when(roomMutationPort.saveRoom(any(Room.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         service.updateRoom(new UpdateRoomCommand(
                 10,
-                "Studio Prime",
+                "Deluxe Garden 201",
                 3,
                 10,
-                "https://res.cloudinary.com/lkkmflxm/image/upload/v1/rooms/studio-prime.jpg",
+                "https://res.cloudinary.com/lkkmflxm/image/upload/v1/rooms/deluxe-garden-201.jpg",
                 RoomStatus.MAINTENANCE,
                 "admin@example.com"
         ));
 
         ArgumentCaptor<Room> roomCaptor = ArgumentCaptor.forClass(Room.class);
         verify(roomMutationPort).saveRoom(roomCaptor.capture());
-        assertEquals("Studio Prime", roomCaptor.getValue().getRoomName());
+        assertEquals("Deluxe Garden 201", roomCaptor.getValue().getRoomName());
         assertEquals(updatedType, roomCaptor.getValue().getRoomType());
         assertEquals(10, roomCaptor.getValue().getMaxPeople());
         assertEquals(
-                "https://res.cloudinary.com/lkkmflxm/image/upload/v1/rooms/studio-prime.jpg",
+                "https://res.cloudinary.com/lkkmflxm/image/upload/v1/rooms/deluxe-garden-201.jpg",
                 roomCaptor.getValue().getImageUrl()
         );
         assertEquals(RoomStatus.MAINTENANCE, roomCaptor.getValue().getStatus());
@@ -92,11 +92,11 @@ class RoomUseCaseServiceTest {
 
         when(roomActorPort.loadUserByEmail("admin@example.com")).thenReturn(Optional.of(adminUser()));
         when(roomCatalogPort.loadRoomForUpdate(10)).thenReturn(Optional.of(existingRoom()));
-        when(roomCatalogPort.existsRoomName("Studio Prime")).thenReturn(true);
+        when(roomCatalogPort.existsRoomName("Deluxe Garden 201")).thenReturn(true);
 
         assertThrows(IllegalArgumentException.class, () -> service.updateRoom(new UpdateRoomCommand(
                 10,
-                "Studio Prime",
+                "Deluxe Garden 201",
                 2,
                 6,
                 null,
@@ -169,7 +169,7 @@ class RoomUseCaseServiceTest {
 
         assertThrows(ForbiddenException.class, () -> service.updateRoom(new UpdateRoomCommand(
                 10,
-                "Studio Prime",
+                "Deluxe Garden 201",
                 3,
                 6,
                 null,
@@ -192,7 +192,7 @@ class RoomUseCaseServiceTest {
 
         RoomTypeResponse response = service.createRoomType(new CreateRoomTypeCommand(
                 "  Premium  ",
-                "  Full drum kit  ",
+                "  Spacious family room  ",
                 new BigDecimal("450000"),
                 "admin@example.com"
         ));
@@ -200,7 +200,7 @@ class RoomUseCaseServiceTest {
         ArgumentCaptor<RoomType> roomTypeCaptor = ArgumentCaptor.forClass(RoomType.class);
         verify(roomMutationPort).saveRoomType(roomTypeCaptor.capture());
         assertEquals("Premium", roomTypeCaptor.getValue().getTypeName());
-        assertEquals("Full drum kit", roomTypeCaptor.getValue().getDescription());
+        assertEquals("Spacious family room", roomTypeCaptor.getValue().getDescription());
         assertEquals(new BigDecimal("450000"), roomTypeCaptor.getValue().getPricePerHour());
         assertEquals(5, response.getId());
     }
@@ -226,7 +226,7 @@ class RoomUseCaseServiceTest {
         RoomUseCaseService service = new RoomUseCaseService(roomCatalogPort, roomMutationPort, roomActorPort);
 
         when(roomActorPort.loadUserByEmail("admin@example.com")).thenReturn(Optional.of(adminUser()));
-        when(roomCatalogPort.loadRoomType(2)).thenReturn(Optional.of(roomType(2, "Band")));
+        when(roomCatalogPort.loadRoomType(2)).thenReturn(Optional.of(roomType(2, "Deluxe")));
         when(roomCatalogPort.existsRoomTypeName("Premium")).thenReturn(true);
 
         assertThrows(IllegalArgumentException.class, () -> service.updateRoomType(new UpdateRoomTypeCommand(
@@ -244,7 +244,7 @@ class RoomUseCaseServiceTest {
         RoomUseCaseService service = new RoomUseCaseService(roomCatalogPort, roomMutationPort, roomActorPort);
 
         when(roomActorPort.loadUserByEmail("admin@example.com")).thenReturn(Optional.of(adminUser()));
-        when(roomCatalogPort.loadRoomType(2)).thenReturn(Optional.of(roomType(2, "Band")));
+        when(roomCatalogPort.loadRoomType(2)).thenReturn(Optional.of(roomType(2, "Deluxe")));
         when(roomCatalogPort.existsRoomForRoomType(2)).thenReturn(true);
 
         assertThrows(IllegalStateException.class, () -> service.deleteRoomType(
@@ -256,7 +256,7 @@ class RoomUseCaseServiceTest {
     @Test
     void deleteRoomTypeDeletesUnusedType() {
         RoomUseCaseService service = new RoomUseCaseService(roomCatalogPort, roomMutationPort, roomActorPort);
-        RoomType roomType = roomType(2, "Band");
+        RoomType roomType = roomType(2, "Deluxe");
 
         when(roomActorPort.loadUserByEmail("admin@example.com")).thenReturn(Optional.of(adminUser()));
         when(roomCatalogPort.loadRoomType(2)).thenReturn(Optional.of(roomType));
@@ -274,14 +274,14 @@ class RoomUseCaseServiceTest {
         when(roomCatalogPort.loadRooms(any(RoomSearchCriteria.class))).thenReturn(List.of(existingRoom()));
 
         List<RoomResponse> rooms = service.getRooms(new ListRoomsQuery(
-                2, RoomStatus.AVAILABLE, "  Studio  ", 4, null, null
+                2, RoomStatus.AVAILABLE, "  Garden  ", 4, null, null
         ));
 
         ArgumentCaptor<RoomSearchCriteria> criteriaCaptor = ArgumentCaptor.forClass(RoomSearchCriteria.class);
         verify(roomCatalogPort).loadRooms(criteriaCaptor.capture());
         assertEquals(2, criteriaCaptor.getValue().roomTypeId());
         assertEquals(RoomStatus.AVAILABLE, criteriaCaptor.getValue().status());
-        assertEquals("Studio", criteriaCaptor.getValue().search());
+        assertEquals("Garden", criteriaCaptor.getValue().search());
         assertEquals(4, criteriaCaptor.getValue().minCapacity());
         assertEquals(1, rooms.size());
         assertEquals("Deluxe Balcony 201", rooms.get(0).getRoomName());
@@ -365,7 +365,7 @@ class RoomUseCaseServiceTest {
         return Room.builder()
                 .id(10)
                 .roomName("Deluxe Balcony 201")
-                .roomType(roomType(2, "Band"))
+                .roomType(roomType(2, "Deluxe"))
                 .maxPeople(6)
                 .status(RoomStatus.AVAILABLE)
                 .build();

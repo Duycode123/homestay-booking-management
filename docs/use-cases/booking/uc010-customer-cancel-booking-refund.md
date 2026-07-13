@@ -2,7 +2,7 @@
 
 ## Business goal
 
-Allow a customer to cancel a paid booking before the 24-hour policy deadline and receive a 100% refund confirmation by email and in-app notification.
+Allow a customer to cancel a paid or deposit-paid booking before the 24-hour policy deadline and receive a 100% refund confirmation for the amount actually collected.
 
 ## Actors
 
@@ -23,7 +23,7 @@ Allow a customer to cancel a paid booking before the 24-hour policy deadline and
 1. Customer requests cancellation for a booking.
 2. Backend verifies ownership, status, and the 24-hour cancellation policy.
 3. Backend sets booking status to `CANCELLED`.
-4. Backend calculates refund amount as 100% of the booking total.
+4. Backend calculates the refund as the booking total for a fully paid booking, or the successful payment amount for a deposit-paid booking, capped at the booking total.
 5. Backend creates an in-app notification with customer name, booking code, refund amount, refund method, and expected refund date.
 6. Backend sends an email with the same template variables.
 7. Backend returns the cancelled booking and refund summary.
@@ -38,6 +38,7 @@ Allow a customer to cancel a paid booking before the 24-hour policy deadline and
 ## Business rules
 
 - Refund percentage is 100%.
+- A deposit-paid booking refunds only the collected deposit, not the unpaid booking balance.
 - Expected refund date defaults to current time plus `app.refund.expected-days` days.
 - Online payments are described as refunded to the original online payment method.
 - Cash payments are described as refunded at the counter.
@@ -55,6 +56,7 @@ Allow a customer to cancel a paid booking before the 24-hour policy deadline and
 
 - Implemented incrementally inside the booking use-case service.
 - Notification content is template-based in `BookingCancellationNotificationService`.
+- Successful online payment amounts are loaded through `LoadSuccessfulPaymentAmountPort`; cancellation is rejected for manual reconciliation if no successful amount can be established.
 - The refund summary (amount, percentage, method, expected date) is computed and communicated, but no `payment_transaction` refund row is written and no money is moved.
 
 ## Known gaps / follow-up (deliberately deferred)

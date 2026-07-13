@@ -16,7 +16,7 @@ type AuthBannerProps = {
 }
 
 export default function AuthBanner({
-  description = 'Không gian homestay chuyên nghiệp — trang tiện nghi hiện đại, cách âm tiêu chuẩn, sẵn sàng cho khách lưu trú và nghệ sĩ solo.',
+  description = 'Không gian homestay sạch sẽ, tiện nghi hiện đại và sẵn sàng cho khách cá nhân, cặp đôi hoặc gia đình.',
   bullets = DEFAULT_BULLETS,
 }: AuthBannerProps) {
   return (
@@ -72,7 +72,7 @@ export default function AuthBanner({
             </div>
           </div>
           <span className="rounded-full bg-tertiary-container/90 px-3 py-1 font-display text-[10px] font-semibold uppercase tracking-wider text-on-tertiary-container">
-            Homestay VIP
+            Family Suite
           </span>
         </div>
 

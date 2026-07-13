@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import AuthGuard from '@/components/AuthGuard'
 import { StaffPageShell } from './StaffShared'
+import { calculateDistanceMeters, STAFF_LOCATION } from './staff-location'
 import { useAuth } from '@/contexts/AuthContext'
 import { getDisplayName } from '@/lib/staff-profile'
 import {
@@ -50,13 +51,6 @@ type AuditLog = {
 }
 
 type ActionLoading = 'CHECK_IN' | 'CHECK_OUT' | null
-
-const STUDIO_LOCATION = {
-  address: 'Tòa nhà HPC Landmark, 105 P. Tố Hữu, Khu đô thị Văn Khê, Hà Đông, Hà Nội 10000, Việt Nam',
-  lat: 20.9829,
-  lng: 105.7874,
-  radiusMeters: 100,
-}
 
 const todayFormatter = new Intl.DateTimeFormat('vi-VN', {
   weekday: 'long',
@@ -211,12 +205,12 @@ export default function StaffCheckInPage() {
         const distance = calculateDistanceMeters(
           position.coords.latitude,
           position.coords.longitude,
-          STUDIO_LOCATION.lat,
-          STUDIO_LOCATION.lng,
+          STAFF_LOCATION.lat,
+          STAFF_LOCATION.lng,
         )
         setLocationDistance(distance)
 
-        if (distance <= STUDIO_LOCATION.radiusMeters) {
+        if (distance <= STAFF_LOCATION.radiusMeters) {
           setLocationStatus('VALID')
           showToast({ type: 'success', message: 'Vị trí hợp lệ. Bạn đang ở gần HPC Landmark.' })
           return
@@ -362,7 +356,7 @@ export default function StaffCheckInPage() {
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-outline-variant bg-white px-4 py-3 text-right shadow-[var(--band-shadow-card)]">
+              <div className="rounded-2xl border border-outline-variant bg-white px-4 py-3 text-right shadow-[var(--homestay-shadow-card)]">
                 <p className="font-display text-xs font-bold uppercase tracking-wide text-on-surface-variant">Hôm nay</p>
                 <p className="mt-1 font-display text-base font-bold text-on-surface">{todayFormatter.format(now)}</p>
               </div>
@@ -373,7 +367,7 @@ export default function StaffCheckInPage() {
             ) : (
               <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
                 <div className="space-y-5">
-                  <article className="overflow-hidden rounded-3xl border border-outline-variant bg-white shadow-[var(--band-shadow-card)]">
+                  <article className="overflow-hidden rounded-3xl border border-outline-variant bg-white shadow-[var(--homestay-shadow-card)]">
                     <div className="border-b border-outline-variant bg-surface-container-low px-5 py-4 sm:px-6">
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div>
@@ -404,7 +398,7 @@ export default function StaffCheckInPage() {
                         </div>
                       </div>
 
-                      <div className="rounded-3xl border border-outline-variant bg-white p-4 shadow-[var(--band-shadow-card)]">
+                      <div className="rounded-3xl border border-outline-variant bg-white p-4 shadow-[var(--homestay-shadow-card)]">
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                           <div>
                             <p className="font-display text-base font-bold text-on-surface">Cập nhật điểm danh ca làm</p>
@@ -441,18 +435,18 @@ export default function StaffCheckInPage() {
                 </div>
 
                 <aside className="space-y-5">
-                  <article className="rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--band-shadow-card)]">
+                  <article className="rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--homestay-shadow-card)]">
                     <h2 className="font-display text-xl font-bold text-on-surface">Timeline ca làm</h2>
                     <ShiftTimeline shift={shift} />
                   </article>
 
-                  <article className="rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--band-shadow-card)]">
+                  <article className="rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--homestay-shadow-card)]">
                     <h2 className="font-display text-xl font-bold text-on-surface">Quy định check-in</h2>
                     <div className="mt-4 space-y-3 text-sm leading-6 text-on-surface-variant">
                       <p>Check-in chỉ mở từ 30 phút trước đến 30 phút sau giờ bắt đầu ca.</p>
-                      <p>Nhân viên cần xác minh GPS trong bán kính {STUDIO_LOCATION.radiusMeters}m quanh địa điểm homestay trước khi check-in.</p>
+              <p>Nhân viên cần xác minh GPS trong bán kính {STAFF_LOCATION.radiusMeters}m quanh địa điểm homestay trước khi check-in.</p>
                       <p className="rounded-2xl border border-primary-container bg-primary-container p-3 font-semibold text-on-primary-container">
-                        Địa điểm: {STUDIO_LOCATION.address}
+                        Địa điểm: {STAFF_LOCATION.address}
                       </p>
                     </div>
                   </article>
@@ -481,7 +475,7 @@ function VerificationPanel({
   const canVerify = shift.status === 'NOT_STARTED'
 
   return (
-    <article className="rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--band-shadow-card)]">
+    <article className="rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--homestay-shadow-card)]">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="font-display text-sm font-bold uppercase tracking-wide text-brand-orange">Điều kiện chấm công</p>
@@ -554,7 +548,7 @@ function ChecklistItem({
 
 function AuditLogPanel({ logs }: { logs: AuditLog[] }) {
   return (
-    <article className="rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--band-shadow-card)]">
+    <article className="rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--homestay-shadow-card)]">
       <h2 className="font-display text-xl font-bold text-on-surface">Lịch sử chấm công</h2>
       {logs.length > 0 ? (
         <div className="mt-4 space-y-3">
@@ -581,7 +575,7 @@ function AuditLogPanel({ logs }: { logs: AuditLog[] }) {
 
 function Metric({ label, value, icon }: { label: string; value: string; icon: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-outline-variant bg-white p-4 shadow-[var(--band-shadow-card)]">
+    <div className="rounded-2xl border border-outline-variant bg-white p-4 shadow-[var(--homestay-shadow-card)]">
       <div className="flex items-center gap-3">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-container text-brand-orange">
           {icon}
@@ -676,7 +670,7 @@ function StatusBadge({ meta }: { meta: StatusMeta }) {
 
 function NoShiftState() {
   return (
-    <section className="rounded-3xl border border-dashed border-outline bg-white px-5 py-16 text-center shadow-[var(--band-shadow-card)]">
+    <section className="rounded-3xl border border-dashed border-outline bg-white px-5 py-16 text-center shadow-[var(--homestay-shadow-card)]">
       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-container text-brand-orange">
         <IconCalendar />
       </div>
@@ -692,7 +686,7 @@ function Toast({ toast }: { toast: ToastState }) {
   return (
     <div
       className={[
-        'fixed bottom-5 left-1/2 z-[80] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-2xl border px-4 py-3 text-sm font-semibold shadow-[var(--band-shadow-elevated)]',
+        'fixed bottom-5 left-1/2 z-[80] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-2xl border px-4 py-3 text-sm font-semibold shadow-[var(--homestay-shadow-elevated)]',
         toast.type === 'success'
           ? 'border-secondary-container bg-secondary text-on-secondary'
           : 'border-error-container bg-error-container text-on-error-container',
@@ -756,17 +750,6 @@ function isWithinCheckInWindow(shift: StaffCurrentShift, now = new Date()) {
   }
 
   return { allowed: true, message: `Được phép check-in từ ${formatTime(windowStart)} đến ${formatTime(windowEnd)}.` }
-}
-
-function calculateDistanceMeters(lat1: number, lng1: number, lat2: number, lng2: number) {
-  const earthRadius = 6371000
-  const dLat = toRadians(lat2 - lat1)
-  const dLng = toRadians(lng2 - lng1)
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLng / 2) * Math.sin(dLng / 2)
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-  return Math.round(earthRadius * c)
 }
 
 function calculateWorkingDuration(checkInTime: string, checkOutTime?: string, now = new Date()) {
@@ -853,7 +836,7 @@ function getLocationDescription(status: VerificationStatus, distance: number | n
   if (status === 'CHECKING') return 'Đang kiểm tra vị trí hiện tại...'
   if (status === 'VALID') return distance === null ? 'Vị trí hợp lệ.' : `Vị trí hợp lệ, cách homestay khoảng ${distance}m.`
   if (status === 'INVALID') return distance === null ? 'Không thể xác minh vị trí.' : `Ngoài bán kính cho phép, cách homestay khoảng ${distance}m.`
-  return `Chưa kiểm tra. Yêu cầu trong bán kính ${STUDIO_LOCATION.radiusMeters}m.`
+  return `Chưa kiểm tra. Yêu cầu trong bán kính ${STAFF_LOCATION.radiusMeters}m.`
 }
 
 function getAttendanceResultLabel(shift: StaffCurrentShift, now = new Date()) {
@@ -867,10 +850,6 @@ function getAttendanceResultLabel(shift: StaffCurrentShift, now = new Date()) {
 function formatVerificationMethod(method: VerificationMethod) {
   if (method === 'GPS') return 'GPS'
   return 'Chưa xác minh'
-}
-
-function toRadians(value: number) {
-  return (value * Math.PI) / 180
 }
 
 function createDateFromTime(time: string, baseDate: Date) {
