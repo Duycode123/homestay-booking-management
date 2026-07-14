@@ -11,10 +11,21 @@ const nextConfig: NextConfig = {
     'emcee-alumni-customer.ngrok-free.dev',
   ],
   images: {
+    qualities: [75, 90],
     remotePatterns: [
       {
         protocol: 'https',
         hostname: 'res.cloudinary.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'cdn.justfly.vn',
+        pathname: '/media/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'cdn.justfly.vn',
+        pathname: '/**/media/**',
       },
     ],
   },

@@ -1,5 +1,7 @@
 'use client'
 
+import ProjectSelect from '@/components/ui/ProjectSelect'
+
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   fetchAdminFacilityReports,
@@ -268,11 +270,11 @@ function FacilityReportDrawer({
           <div className="mt-5 rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
             <label className="block">
               <span className="mb-1.5 block font-display text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">Trạng thái xử lý</span>
-              <select value={status} onChange={(event) => setStatus(event.target.value as FacilityReportStatus)} className={inputClass}>
+              <ProjectSelect value={status} onChange={(event) => setStatus(event.target.value as FacilityReportStatus)} className={inputClass}>
                 {statusOptions.map((option) => (
                   <option key={option} value={option}>{statusLabels[option]}</option>
                 ))}
-              </select>
+              </ProjectSelect>
             </label>
 
             <label className="mt-3 block">

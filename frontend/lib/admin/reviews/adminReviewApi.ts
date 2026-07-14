@@ -37,6 +37,11 @@ type BackendReview = {
   staffName: string | null
   rating: number
   content: string
+  images?: Array<{
+    id: number
+    imageUrl: string
+    displayOrder: number
+  }>
   approved: boolean
   createdAt: string
   adminResponse: BackendReviewReply | null
@@ -81,6 +86,7 @@ function mapBackendReview(item: BackendReview): AdminReview {
     staffName: normalizeText(item.staffName) || null,
     rating: item.rating,
     content: normalizeText(item.content),
+    images: (item.images ?? []).filter((image) => Boolean(image.imageUrl)),
     approved: item.approved,
     createdAt: item.createdAt,
     adminResponse: item.adminResponse

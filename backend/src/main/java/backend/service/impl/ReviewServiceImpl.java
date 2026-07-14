@@ -11,6 +11,7 @@ import backend.entity.BookingStatus;
 import backend.entity.Customer;
 import backend.entity.Review;
 import backend.entity.ReviewAdminResponse;
+import backend.entity.ReviewImage;
 import backend.entity.Role;
 import backend.entity.User;
 import backend.exception.ForbiddenException;
@@ -33,6 +34,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 @Service
@@ -64,6 +68,14 @@ public class ReviewServiceImpl implements ReviewService {
                 .content(request.getContent().trim())
                 .approved(true)
                 .build();
+        List<String> imageUrls = normalizeReviewImageUrls(request.getImageUrls());
+        for (int index = 0; index < imageUrls.size(); index++) {
+            review.getImages().add(ReviewImage.builder()
+                    .review(review)
+                    .imageUrl(imageUrls.get(index))
+                    .displayOrder(index)
+                    .build());
+        }
 
         try {
             return ReviewResponse.from(reviewRepository.saveAndFlush(review));
@@ -305,5 +317,34 @@ public class ReviewServiceImpl implements ReviewService {
         if (rating < 1 || rating > 5) {
             throw new IllegalArgumentException("Diem danh gia phai tu 1 den 5");
         }
+    }
+
+    private List<String> normalizeReviewImageUrls(List<String> imageUrls) {
+        if (imageUrls == null || imageUrls.isEmpty()) {
+            return List.of();
+        }
+        if (imageUrls.size() > 4) {
+            throw new IllegalArgumentException("Moi danh gia chi duoc dinh kem toi da 4 anh");
+        }
+
+        LinkedHashSet<String> normalizedUrls = new LinkedHashSet<>();
+        for (String imageUrl : imageUrls) {
+            String normalized = imageUrl == null ? "" : imageUrl.trim();
+            if (normalized.length() > 500) {
+                throw new IllegalArgumentException("Duong dan anh danh gia khong duoc vuot qua 500 ky tu");
+            }
+            try {
+                URI uri = new URI(normalized);
+                if (!"https".equalsIgnoreCase(uri.getScheme())
+                        || !"res.cloudinary.com".equalsIgnoreCase(uri.getHost())) {
+                    throw new IllegalArgumentException("Anh danh gia phai duoc tai len Cloudinary");
+                }
+            } catch (URISyntaxException exception) {
+                throw new IllegalArgumentException("Duong dan anh danh gia khong hop le");
+            }
+            normalizedUrls.add(normalized);
+        }
+
+        return List.copyOf(normalizedUrls);
     }
 }

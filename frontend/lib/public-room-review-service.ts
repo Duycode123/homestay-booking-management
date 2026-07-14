@@ -34,6 +34,11 @@ type PublicReviewResponse = {
   roomName: string
   rating: number
   content: string
+  images?: Array<{
+    id: number
+    imageUrl: string
+    displayOrder: number
+  }>
   approved?: boolean
   createdAt: string
   adminResponse?: PublicReviewAdminResponse | null
@@ -94,7 +99,11 @@ function mapReviewToUiReview(review: PublicReviewResponse): BookingReview {
     title: content.slice(0, 80) || 'Đánh giá phòng',
     content,
     tags: [],
-    images: [],
+    images: (review.images ?? []).map((image, index) => ({
+      id: String(image.id),
+      name: `Ảnh đánh giá ${index + 1}`,
+      previewUrl: image.imageUrl,
+    })),
     createdAt: review.createdAt,
     verified: Boolean(review.bookingId),
     adminResponse: review.adminResponse

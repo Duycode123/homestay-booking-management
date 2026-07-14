@@ -45,18 +45,18 @@ const variantStyles: Record<
     stepComplete: 'border-brand-greenLight bg-brand-greenLight text-white',
   },
   'support-report': {
-    pageAccent: 'border-l-brand-orange bg-primary-container/50',
-    formHeader: 'border-b border-brand-orange/15 bg-gradient-to-r from-primary-container via-[#FFF7EF] to-white',
-    formIcon: 'bg-brand-orange text-white shadow-[0_10px_24px_rgba(255,117,24,0.35)]',
-    sidebarGradient: 'bg-gradient-to-br from-[#7C2D12] via-brand-orange to-[#E6640F] text-white',
-    stepActive: 'border-brand-orange bg-primary-container text-[#6B3200]',
-    stepComplete: 'border-brand-orange bg-brand-orange text-white',
+    pageAccent: 'border-l-secondary bg-[#EEF4F1]',
+    formHeader: 'border-b border-secondary/15 bg-gradient-to-r from-[#EAF2EE] via-[#F7FAF8] to-white',
+    formIcon: 'bg-secondary text-white shadow-[0_10px_24px_rgba(11,59,47,0.24)]',
+    sidebarGradient: 'bg-gradient-to-br from-[#082F26] via-secondary to-[#2E6654] text-white',
+    stepActive: 'border-secondary bg-[#EAF2EE] text-secondary',
+    stepComplete: 'border-secondary bg-secondary text-white',
   },
 }
 
 const statToneClasses = {
   green: 'border-brand-greenLight/25 bg-[#F1F8F2] text-brand-greenDark',
-  orange: 'border-brand-orange/20 bg-primary-container text-[#6B3200]',
+  orange: 'border-brand-orange/20 bg-primary-container text-[#5E4328]',
   amber: 'border-[#F59E0B]/25 bg-[#FFFBEB] text-[#92400E]',
   neutral: 'border-outline-variant bg-white text-on-surface',
 } as const
@@ -301,7 +301,7 @@ export function CustomerActionSubmitButton({
 }) {
   const buttonClass =
     variant === 'support'
-      ? 'bg-brand-orange shadow-[0_12px_28px_rgba(255,117,24,0.35)] hover:bg-brand-orangeHover focus:ring-brand-orange/30'
+      ? 'bg-secondary shadow-[0_12px_28px_rgba(11,59,47,0.24)] hover:bg-[#245545] focus:ring-secondary/30'
       : 'bg-brand-greenDark shadow-[0_12px_28px_rgba(10,77,39,0.28)] hover:bg-secondary focus:ring-brand-greenDark/30'
 
   return (

@@ -33,16 +33,18 @@ Allow an authenticated customer to select a valid room/time range, see the expec
 1. Customer opens the booking flow for a room.
 2. Frontend requests available slots for a selected time window.
 3. Backend returns free slots based on existing blocking bookings and room status.
-4. Customer selects a start time, end time, payment method, and optional coupon code.
+4. Customer selects a start time and end time, then confirms the booking without entering a coupon.
 5. Frontend requests cost calculation.
-6. Backend calculates price based on room hourly rate and duration, and applies the coupon when one is provided and valid.
+6. Backend calculates the original price based on room hourly rate and duration.
 7. Customer confirms booking.
 8. Backend validates the request again, checks availability under concurrency control, and creates the booking.
 9. Backend stores the booking with pending-payment status and returns booking summary data.
-10. For online SePay payment, backend creates a pending payment transaction using a `PAY...` transfer reference, keeps the booking in `PENDING_PAYMENT` to hold the room/time slot, and returns a VietQR image URL as `paymentUrl`.
-11. Frontend renders the QR code and polls `GET /api/payments/transactions/{paymentId}` about every 10 seconds.
-12. On each poll, backend queries SePay Transactions API when `payment.sepay.api-access-token` is configured, matches an incoming transfer by amount plus `PAY...` reference in the SePay `code` or transaction content, then marks the transaction as succeeded and the booking as `DEPOSIT_PAID` for a partial deposit or `PAID` for full payment.
-13. If no matching SePay transaction is found before the configured payment expiry, the same poll endpoint marks the transaction and held booking as `CANCELLED`.
+10. At checkout, the customer may enter an optional coupon before creating the online payment session. Backend validates the coupon, stores it on the still-pending booking, and recalculates the payable total before deriving the 50% deposit or 100% payment amount.
+11. For cash payment, backend keeps the booking in `PENDING_PAYMENT`, records `payment_method = CASH`, creates no online transaction, and the customer pays the full balance at the homestay.
+12. For online SePay payment, the customer chooses either a 50% deposit or 100% payment. Backend creates a pending payment transaction using a `PAY...` transfer reference, keeps the booking in `PENDING_PAYMENT` to hold the room/time slot, and returns a VietQR image URL as `paymentUrl`.
+13. Frontend renders the QR code and polls `GET /api/payments/transactions/{paymentId}` about every 10 seconds.
+14. On each poll, backend queries SePay Transactions API when `payment.sepay.api-access-token` is configured, matches an incoming transfer by amount plus `PAY...` reference in the SePay `code` or transaction content, then marks the transaction as succeeded and the booking as `DEPOSIT_PAID` for a partial deposit or `PAID` for full payment.
+15. If no matching SePay transaction is found before the configured payment expiry, the same poll endpoint marks the transaction and held booking as `CANCELLED`.
 
 ## Alternate and Error Flows
 
@@ -52,7 +54,7 @@ Allow an authenticated customer to select a valid room/time range, see the expec
 - Requested time overlaps an existing blocking booking: backend rejects the request.
 - Another user books the same slot concurrently: backend rejects the later request.
 - Invalid time range or booking in the past: backend rejects the request.
-- Invalid, expired, or ineligible coupon: backend rejects the request with the coupon validation reason.
+- Invalid, expired, or ineligible coupon at checkout: backend rejects payment-session creation with the coupon validation reason and does not create a transaction.
 - Customer cancels on the SePay portal: backend accepts the SePay cancel/void notification, marks the pending transaction as `CANCELLED`, and marks the held booking as `CANCELLED` to release the slot.
 - Portal payment fails: backend marks the pending transaction as `FAILED` and marks the held booking as `CANCELLED`.
 - Payment timeout: pending checkout sessions older than `app.booking.payment-expiration-seconds` (default `900`, or 15 minutes) are marked `CANCELLED` by the poll endpoint or scheduled expiry job; their still-pending bookings are also marked `CANCELLED` so availability is released.
@@ -62,15 +64,18 @@ Allow an authenticated customer to select a valid room/time range, see the expec
 
 - Booking start time must be before end time.
 - Booking cannot be created in the past.
-- Minimum booking duration is one hour.
+- Minimum booking duration is eight consecutive hours. The backend enforces this rule for both cost calculation and booking creation; the frontend must not enable continuation for a shorter stay.
 - Rooms in maintenance are not bookable.
 - Cancelled bookings do not block availability.
 - A new booking starts in `PENDING_PAYMENT` state.
-- A checkout session must create a pending `payment_transaction` before redirecting the user to the payment portal.
+- Online deposit amount is exactly 50% of the discounted booking total, rounded to two decimal places. Full online payment uses 100% of that total.
+- Cash payment does not create a `payment_transaction`; it remains pending until staff collects and confirms the full payment at the homestay.
+- Cash bookings are not cancelled by the short online-payment expiry sweep. The selected room/time remains reserved for the customer.
+- An online checkout session must create a pending `payment_transaction` before showing the QR or redirecting the user to a payment portal.
 - Creating a new checkout session for the same booking cancels any older open payment sessions with `PAYMENT_SESSION_REPLACED`.
 - A pending checkout holds the selected room/time slot until payment success, portal cancel/failure, or timeout.
 - Deposit success moves the booking to `DEPOSIT_PAID`; full-payment success moves it to `PAID`.
-- A valid coupon changes the final payable amount but does not create `coupon_usage` until payment is confirmed.
+- A valid coupon entered at checkout changes the pending booking total before the payment transaction is created, but does not create `coupon_usage` until payment is confirmed.
 
 ## Data Touched
 
@@ -87,13 +92,17 @@ Allow an authenticated customer to select a valid room/time range, see the expec
 - The scheduled expiry service delegates database state changes through `ExpireStalePendingBookingsPort`, keeping scheduling policy separate from JPA persistence.
 
 - Availability is calculated through `GET /api/rooms/{id}/available-slots`.
+- The public room flow uses a night-stay date range: check-in at `14:00`, checkout at `12:00` on the selected departure date, with a minimum of one night and a maximum selection of 30 nights.
+- Before enabling continuation, the frontend requests availability for the entire multi-day interval and requires one backend availability range to cover it completely.
+- Changing date clears the previous date's availability before loading the new result. A failed availability request blocks selection and exposes a retry action instead of presenting stale slots as bookable.
 - Cost calculation is exposed as a separate endpoint before creation.
 - Booking creation uses room locking plus overlap checks to reduce race conditions.
 - The service catches persistence conflicts and converts them into booking conflict errors.
 - A scheduled expiry job exists to auto-cancel stale unpaid payment sessions after the configured timeout (`app.booking.payment-expiration-seconds`, default `900`, or 15 minutes).
 - Checkout now asks the backend to create a `payment_transaction` record instead of simulating payment only in the frontend.
-- Customer checkout only supports online payment through SePay: either a 50,000 VND deposit or the full amount, both via VietQR plus SePay transaction lookup. `cash` is rejected by `POST /api/payments/sessions`; the booking payment method is always set to `ONLINE` by checkout. (`PaymentProvider.COUNTER` remains only for reading historical counter transactions.)
-- Cost calculation and booking creation now reuse the coupon validation use case so the same coupon rules apply before and during booking creation.
+- Customer checkout only supports online payment through SePay: either a 50% deposit or the full amount, both via VietQR plus SePay transaction lookup. `cash` is rejected by `POST /api/payments/sessions`; the booking payment method is always set to `ONLINE` by checkout.
+- Booking creation stores the original room total. Payment-session creation reuses the coupon validation use case and applies an optional coupon atomically before calculating the deposit/full-payment amount.
+- Room types still store an hourly rate. The night-stay UI displays the first-night reference as 22 hours (`14:00` to `12:00` next day), while backend totals remain based on the exact real duration. A dedicated nightly-rate schema is a future migration rather than being silently inferred in persistence.
 - `POST /api/payments/sessions` now returns a VietQR image URL from `payment.sepay.qr-bank-account`, `payment.sepay.qr-bank-code`, and `payment.sepay.qr-template`, using the generated `PAY...` payment reference as transfer content.
 - Payment completion is primarily closed by `GET /api/payments/transactions/{paymentId}`: `PaymentCheckoutUseCaseService` calls the outbound `FindSePayIncomingPaymentPort`, implemented by `SePayTransactionLookupAdapter` against SePay Transactions API with the API Access Bearer token. The adapter queries the v2 `GET /v2/transactions` endpoint first, falls back to the legacy v1 `GET /userapi/transactions/list` endpoint, filters by account, amount, date window, and then matches `PAY...` in SePay `code` or `transaction_content`.
 - Provider webhooks are still supported as a fallback: `PaymentWebhookServiceImpl` moves the transaction to `SUCCEEDED`/`FAILED`/`CANCELLED`, flips the booking from `PENDING_PAYMENT` to `DEPOSIT_PAID`, `PAID`, or `CANCELLED`, and records coupon usage on success. VNPay IPN is HMAC-SHA512 signature-verified; SePay can use HMAC-SHA256 headers (`payment.sepay.webhook-hmac-secret`) or the fallback `Authorization: Apikey <secret>` value from `payment.sepay.ipn-secret`.
@@ -104,7 +113,7 @@ Allow an authenticated customer to select a valid room/time range, see the expec
 
 - Live SePay polling requires an active API Access token in `payment.sepay.api-access-token`. Local tests validate QR generation and status sync behavior, not live money movement.
 - Homestay service/equipment add-ons and a richer checkout breakdown from the backlog are not yet covered in this backend path.
-- Deposit vs full-payment booking statuses are modelled, but remaining-balance tracking after `DEPOSIT_PAID` is not yet a first-class booking field.
+- Deposit vs full-payment booking statuses are modelled. Management responses calculate `paidAmount` and `remainingAmount` from successful payment transactions; the remaining balance is settled through the management checkout use case.
 
 ## Hexagonal Refactor Notes
 

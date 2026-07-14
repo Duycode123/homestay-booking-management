@@ -1,3 +1,4 @@
+import ProjectSelect from '@/components/ui/ProjectSelect'
 import {
   BOOKING_STATUS_LABELS,
   BOOKING_STATUS_OPTIONS,
@@ -86,7 +87,7 @@ export default function BookingFiltersBar({ filters, onChange, resultCount }: Bo
         <div className="grid gap-3 sm:grid-cols-3">
           <label className="block">
             <span className={labelClass}>Trạng thái đơn</span>
-            <select
+            <ProjectSelect
               value={filters.bookingStatus}
               onChange={(e) => set({ bookingStatus: e.target.value as BookingFilters['bookingStatus'] })}
               className={inputClass}
@@ -97,12 +98,12 @@ export default function BookingFiltersBar({ filters, onChange, resultCount }: Bo
                   {BOOKING_STATUS_LABELS[s]}
                 </option>
               ))}
-            </select>
+            </ProjectSelect>
           </label>
 
           <label className="block">
             <span className={labelClass}>Thanh toán</span>
-            <select
+            <ProjectSelect
               value={filters.paymentStatus}
               onChange={(e) => set({ paymentStatus: e.target.value as BookingFilters['paymentStatus'] })}
               className={inputClass}
@@ -113,7 +114,7 @@ export default function BookingFiltersBar({ filters, onChange, resultCount }: Bo
                   {PAYMENT_STATUS_LABELS[s]}
                 </option>
               ))}
-            </select>
+            </ProjectSelect>
           </label>
 
           <label className="block">

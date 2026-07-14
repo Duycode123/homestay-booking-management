@@ -5,8 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import BookingQuickModal from '@/components/booking/BookingQuickModal'
-import RoomDetailModal from '@/components/booking/RoomDetailModal'
-import { formatCurrency, type BookingRoom } from '@/components/booking/booking-data'
+import { formatCurrency, getNightlyDisplayPrice, type BookingRoom } from '@/components/booking/booking-data'
 import {
   readQuickBookingDraft,
   shouldReopenQuickBooking,
@@ -22,9 +21,9 @@ import {
 } from '@/lib/homepage-live-service'
 
 const stats = [
-  { value: '2.400+', label: 'Lượt đặt mỗi tháng' },
-  { value: '48', label: 'Khung giờ mỗi ngày' },
-  { value: '4.9/5', label: 'Điểm đánh giá' },
+  { value: 'Rõ ràng', label: 'Lịch trống & giá' },
+  { value: 'Linh hoạt', label: 'Khung giờ lưu trú' },
+  { value: 'Chu đáo', label: 'Hỗ trợ tại chỗ' },
 ]
 
 const equipmentCategories = [
@@ -66,24 +65,6 @@ const equipmentCategories = [
   },
 ] as const
 
-const steps = [
-  {
-    number: '01',
-    title: 'Chọn phòng',
-    description: 'Vào trang Phòng homestay, lọc theo số khách, tiện nghi và ngân sách.',
-  },
-  {
-    number: '02',
-    title: 'Chọn giờ nhận phòng',
-    description: 'Xem khung giờ trống và giữ chỗ ngay trong lịch.',
-  },
-  {
-    number: '03',
-    title: 'Xác nhận',
-    description: 'Hoàn tất đặt phòng và nhận thông tin check-in.',
-  },
-]
-
 const homestayStandards = [
   {
     icon: 'bed' as const,
@@ -102,18 +83,16 @@ const homestayStandards = [
   },
 ] as const
 
-const testimonials = [
+const experienceCommitments = [
   {
-    name: 'Marcus Reeves',
-    role: 'Khách lưu trú',
-    quote:
-      'Deluxe Balcony 201 có ban công thoáng, phòng sạch, tiện nghi đầy đủ và đặt lịch rất nhanh.',
+    name: 'Trước khi nhận phòng',
+    role: 'Chuẩn bị chỉn chu',
+    quote: 'Thông tin phòng, tiện nghi và mức giá được trình bày rõ trước khi bạn xác nhận.',
   },
   {
-    name: 'Gia đình Minh Anh',
-    role: 'Khách gia đình',
-    quote:
-      'Gia đình mình rất thích phần lịch trống theo thời gian thực. Việc chọn phòng Family và giữ chỗ rất thuận tiện.',
+    name: 'Trong kỳ lưu trú',
+    role: 'Hỗ trợ đúng lúc',
+    quote: 'Đội ngũ vận hành theo dõi lịch nhận phòng và tiếp nhận sự cố ngay trên hệ thống.',
   },
 ]
 
@@ -207,7 +186,7 @@ function Icon({ name, className = 'h-5 w-5' }: { name: IconName; className?: str
 function getAvailabilityBadgeClassName(tone: AvailabilityTone) {
   const toneClassName = {
     success: 'border-brand-orange/40 bg-white/10 text-primary-fixed hover:bg-white/15',
-    warning: 'border-[#FF7518]/60 bg-[#FF7518]/15 text-[#FFD8B8] hover:bg-[#FF7518]/20',
+    warning: 'border-brand-orange/60 bg-brand-orange/15 text-primary-fixed hover:bg-brand-orange/20',
     muted: 'border-white/20 bg-white/10 text-white/65 hover:bg-white/15',
   }
 
@@ -219,8 +198,8 @@ function getAvailabilityBadgeClassName(tone: AvailabilityTone) {
 
 function getAvailabilityDotClassName(tone: AvailabilityTone) {
   const toneClassName = {
-    success: 'bg-brand-orange shadow-[0_0_0_5px_rgba(255,117,24,0.16)]',
-    warning: 'bg-[#FFB15F] shadow-[0_0_0_5px_rgba(255,177,95,0.16)]',
+    success: 'bg-brand-orange shadow-[0_0_0_5px_rgba(178,132,85,0.16)]',
+    warning: 'bg-primary-fixed shadow-[0_0_0_5px_rgba(178,132,85,0.16)]',
     muted: 'bg-white/45',
   }
 
@@ -288,19 +267,14 @@ function TopRatedRoomsSection({
   }
 
   return (
-    <section className="relative overflow-hidden bg-brand-bgGray py-20 sm:py-24">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -left-20 top-12 h-64 w-64 rounded-full bg-brand-orange/10 blur-3xl"
-      />
-
-      <div className="relative mx-auto max-w-7xl px-5 sm:px-8">
+    <section className="relative overflow-hidden border-y border-outline-variant bg-brand-bgGray py-20 sm:py-24">
+      <div className="relative mx-auto max-w-[1400px] px-5 sm:px-8">
         <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
           <div className="max-w-2xl">
-            <p className="font-display text-sm font-semibold uppercase tracking-[0.12em] text-brand-orange">
+            <p className="eyebrow text-brand-orange">
               Gợi ý từ khách hàng
             </p>
-            <h2 className="mt-3 font-display text-3xl font-bold leading-tight text-on-surface sm:text-4xl">
+            <h2 className="font-editorial mt-3 text-4xl font-semibold leading-tight text-secondary sm:text-5xl">
               Phòng được đánh giá cao
             </h2>
             <p className="mt-4 text-base leading-7 text-on-surface-variant">
@@ -311,7 +285,7 @@ function TopRatedRoomsSection({
           <div className="flex flex-wrap items-center gap-3">
             <Link
               href="/rooms?sort=rating"
-              className="inline-flex h-11 items-center rounded-xl bg-brand-orange px-5 font-display text-sm font-semibold text-white shadow-[0_12px_28px_rgba(255,117,24,0.28)] transition-all hover:bg-brand-orangeHover active:scale-[0.98]"
+              className="inline-flex h-11 items-center rounded-full bg-secondary px-5 font-display text-sm font-semibold text-white shadow-[0_12px_28px_rgba(23,58,49,0.16)] transition-all hover:-translate-y-0.5 hover:bg-secondary-container"
             >
               Xem tất cả
             </Link>
@@ -330,7 +304,7 @@ function TopRatedRoomsSection({
               <button
                 type="button"
                 onClick={() => scrollCards('previous')}
-                className="group absolute left-1 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/35 bg-[linear-gradient(135deg,#FF8A33_0%,#FF7518_52%,#E6640F_100%)] text-white shadow-[0_18px_44px_rgba(230,100,15,0.28),0_4px_12px_rgba(26,28,30,0.12),inset_0_1px_0_rgba(255,255,255,0.36)] outline-none transition-all duration-300 ease-out before:pointer-events-none before:absolute before:inset-[1px] before:rounded-full before:border before:border-white/20 hover:scale-[1.05] hover:bg-[linear-gradient(135deg,#FF9B4A_0%,#FF8126_52%,#F06D15_100%)] hover:shadow-[0_24px_54px_rgba(230,100,15,0.36),0_8px_18px_rgba(26,28,30,0.14),inset_0_1px_0_rgba(255,255,255,0.46)] focus-visible:ring-4 focus-visible:ring-brand-orange/25 active:scale-[0.96] active:shadow-[0_12px_30px_rgba(230,100,15,0.22),0_3px_8px_rgba(26,28,30,0.1)] sm:left-2"
+                className="group absolute left-1 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-outline-variant bg-white text-secondary shadow-[var(--shadow-card)] transition hover:-translate-y-[54%] hover:bg-secondary hover:text-white sm:left-2"
                 aria-label="Xem nhóm phòng trước"
               >
                 <ChevronIcon className="h-5 w-5 rotate-180 stroke-[2.4] transition-transform duration-300 ease-out group-hover:-translate-x-0.5" />
@@ -341,7 +315,7 @@ function TopRatedRoomsSection({
               <button
                 type="button"
                 onClick={() => scrollCards('next')}
-                className="group absolute right-1 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/35 bg-[linear-gradient(135deg,#FF8A33_0%,#FF7518_52%,#E6640F_100%)] text-white shadow-[0_18px_44px_rgba(230,100,15,0.28),0_4px_12px_rgba(26,28,30,0.12),inset_0_1px_0_rgba(255,255,255,0.36)] outline-none transition-all duration-300 ease-out before:pointer-events-none before:absolute before:inset-[1px] before:rounded-full before:border before:border-white/20 hover:scale-[1.05] hover:bg-[linear-gradient(135deg,#FF9B4A_0%,#FF8126_52%,#F06D15_100%)] hover:shadow-[0_24px_54px_rgba(230,100,15,0.36),0_8px_18px_rgba(26,28,30,0.14),inset_0_1px_0_rgba(255,255,255,0.46)] focus-visible:ring-4 focus-visible:ring-brand-orange/25 active:scale-[0.96] active:shadow-[0_12px_30px_rgba(230,100,15,0.22),0_3px_8px_rgba(26,28,30,0.1)] sm:right-2"
+                className="group absolute right-1 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-outline-variant bg-white text-secondary shadow-[var(--shadow-card)] transition hover:-translate-y-[54%] hover:bg-secondary hover:text-white sm:right-2"
                 aria-label="Xem nhóm phòng tiếp theo"
               >
                 <ChevronIcon className="h-5 w-5 stroke-[2.4] transition-transform duration-300 ease-out group-hover:translate-x-0.5" />
@@ -376,24 +350,25 @@ function TopRatedRoomCard({
   onOpenDetail: (room: BookingRoom) => void
   onBook: (room: BookingRoom) => void
 }) {
-  const imageSrc = room.image ?? '/images/homestay-room-hero.png'
+  const imageSrc = room.image ?? '/images/homestay-luxury-hero.webp'
 
   return (
-    <article className="group flex w-[82vw] shrink-0 snap-start flex-col overflow-hidden rounded-[28px] border border-[#E8E4DC] bg-white shadow-[0_16px_42px_rgba(26,28,30,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-brand-orange/30 hover:shadow-[0_22px_56px_rgba(26,28,30,0.12)] sm:w-[calc((100vw-5rem-1.25rem)/2)] xl:w-[calc((100vw-12rem-3.75rem)/4)] xl:max-w-[292px]">
+    <article className="group flex w-[82vw] shrink-0 snap-start flex-col overflow-hidden rounded-[18px] border border-outline-variant bg-white shadow-[var(--shadow-card)] transition-all duration-300 hover:border-brand-orange/45 hover:shadow-[var(--shadow-elevated)] sm:w-[calc((100vw-5rem-1.25rem)/2)] xl:w-[calc((100vw-12rem-3.75rem)/4)] xl:max-w-[310px]">
       <button type="button" onClick={() => onOpenDetail(room)} className="block text-left">
         <div className="relative aspect-[16/11] overflow-hidden bg-surface-container">
           <Image
             src={imageSrc}
             alt={room.name}
             fill
+            unoptimized
             sizes="(min-width: 1280px) 292px, (min-width: 768px) 46vw, 82vw"
             className={['object-cover transition duration-300 group-hover:scale-105', room.imageClassName].join(' ')}
           />
-          <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(4,42,22,0.54),transparent_58%)]" />
-          <span className="absolute right-4 top-4 rounded-full bg-white/95 px-3 py-1 font-display text-xs font-bold text-[#1A1C1E] shadow-sm">
+          <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(23,58,49,0.58),transparent_58%)]" />
+          <span className="absolute right-4 top-4 rounded-full bg-white/95 px-3 py-1 font-display text-xs font-bold text-[#242A27] shadow-sm">
             ★ {(room.rating ?? 0).toFixed(1)}
           </span>
-          <span className="absolute bottom-4 left-4 rounded-full border border-white/20 bg-white/92 px-3 py-1 font-display text-xs font-bold text-[#5C5348]">
+          <span className="absolute bottom-4 left-4 rounded-full border border-white/20 bg-white/92 px-3 py-1 font-display text-xs font-bold text-[#6A6C66]">
             {room.availabilityStatus === 'FULL_TODAY' ? 'Chọn ngày khác' : 'Có thể đặt lịch'}
           </span>
         </div>
@@ -405,13 +380,13 @@ function TopRatedRoomCard({
         <p className="mt-2 line-clamp-2 text-sm leading-6 text-on-surface-variant">{room.description}</p>
 
         <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-          <div className="rounded-2xl border border-[#E8E4DC] bg-[#FAF8F4] px-3 py-3">
-            <p className="font-display text-[10px] font-bold uppercase text-[#5C5348]">Sức chứa</p>
-            <p className="mt-1 font-semibold text-[#1A1C1E]">{room.capacity}</p>
+          <div className="rounded-2xl border border-[#E4DED3] bg-[#FBF9F5] px-3 py-3">
+            <p className="font-display text-[10px] font-bold uppercase text-[#6A6C66]">Sức chứa</p>
+            <p className="mt-1 font-semibold text-[#242A27]">{room.capacity}</p>
           </div>
-          <div className="rounded-2xl border border-[#E8E4DC] bg-[#FAF8F4] px-3 py-3">
-            <p className="font-display text-[10px] font-bold uppercase text-[#5C5348]">Giá/giờ</p>
-            <p className="mt-1 font-semibold text-[#FF7518]">{formatCurrency(room.pricePerHour)}</p>
+          <div className="rounded-2xl border border-[#E4DED3] bg-[#FBF9F5] px-3 py-3">
+            <p className="font-display text-[10px] font-bold uppercase text-[#6A6C66]">Giá/đêm</p>
+            <p className="mt-1 font-semibold text-brand-orange">{formatCurrency(getNightlyDisplayPrice(room.pricePerHour))}</p>
           </div>
         </div>
 
@@ -423,25 +398,25 @@ function TopRatedRoomCard({
           {room.equipments.slice(0, 3).map((item) => (
             <span
               key={item}
-              className="rounded-full border border-[#E8E4DC] bg-[#F5F2EC] px-3 py-1 text-xs font-medium text-[#5C5348]"
+              className="rounded-full border border-[#E4DED3] bg-[#F6F3ED] px-3 py-1 text-xs font-medium text-[#6A6C66]"
             >
               {item}
             </span>
           ))}
         </div>
 
-        <div className="mt-auto grid grid-cols-2 gap-2 border-t border-[#E8E4DC] pt-4">
+        <div className="mt-auto grid grid-cols-2 gap-2 border-t border-[#E4DED3] pt-4">
           <button
             type="button"
             onClick={() => onOpenDetail(room)}
-            className="rounded-xl border border-[#E8E4DC] bg-white px-4 py-2.5 font-display text-sm font-semibold text-[#5C5348] transition-colors hover:border-brand-orange/40 hover:text-brand-orange"
+            className="rounded-xl border border-[#E4DED3] bg-white px-4 py-2.5 font-display text-sm font-semibold text-[#6A6C66] transition-colors hover:border-brand-orange/40 hover:text-brand-orange"
           >
             Chi tiết
           </button>
           <button
             type="button"
             onClick={() => onBook(room)}
-            className="rounded-xl bg-brand-orange px-4 py-2.5 font-display text-sm font-semibold text-white shadow-[0_10px_24px_rgba(255,117,24,0.24)] transition-colors hover:bg-brand-orangeHover"
+            className="rounded-xl bg-secondary px-4 py-2.5 font-display text-sm font-semibold text-white shadow-[0_10px_24px_rgba(23,58,49,0.16)] transition-colors hover:bg-secondary-container"
           >
             Đặt phòng
           </button>
@@ -462,6 +437,7 @@ function ChevronIcon({ className = 'h-5 w-5' }: { className?: string }) {
 type QuickBookingState = {
   room: BookingRoom
   initialDate?: string
+  initialEndDate?: string
   initialStartTime?: string
   initialDuration?: number
   initialNote?: string
@@ -478,7 +454,6 @@ export default function HomePage() {
   } = useHomepageLiveData()
   const { rooms, isLoading: isRoomCatalogLoading } = usePublicRoomCatalog()
   const [availabilityHintVisible, setAvailabilityHintVisible] = useState(false)
-  const [detailRoom, setDetailRoom] = useState<BookingRoom | null>(null)
   const [quickBooking, setQuickBooking] = useState<QuickBookingState | null>(null)
   const topRatedRooms = useMemo(() => getTopRatedRooms(rooms), [rooms])
 
@@ -498,6 +473,7 @@ export default function HomePage() {
       setQuickBooking({
         room: restoredRoom,
         initialDate: draft.selectedDate ?? draft.initialDate,
+        initialEndDate: draft.selectedEndDate ?? draft.initialEndDate,
         initialStartTime: draft.selectedStartTime ?? draft.selectedSlot?.startTime ?? draft.initialStartTime,
         initialDuration: draft.selectedDuration ?? draft.initialDuration,
         initialNote: draft.customerNote ?? draft.initialNote,
@@ -536,23 +512,21 @@ export default function HomePage() {
   }
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-brand-bgGray text-on-surface">
+    <main id="main-content" className="min-h-screen overflow-x-hidden bg-brand-bgGray text-on-surface">
 
-      <section className="relative flex min-h-[720px] items-center overflow-hidden bg-secondary pt-6 text-white md:min-h-screen md:pt-8">
+      <section className="relative flex min-h-[700px] items-center overflow-hidden bg-secondary text-white lg:min-h-[calc(100svh-5rem)]">
         <Image
-          src="/images/homestay-room-hero.png"
-          alt="Phòng homestay tiện nghi với giường, điều hòa và không gian thư giãn"
+          src="/images/homestay-luxury-hero.webp"
+          alt="Phòng ngủ homestay cao cấp với nội thất gỗ, chăn ga linen và cửa nhìn ra khu vườn"
           fill
           priority
           sizes="100vw"
-          className="object-cover opacity-60"
+          className="object-cover object-center"
         />
-        <div className="absolute inset-0 bg-[linear-gradient(108deg,rgba(4,42,22,0.98)_0%,rgba(4,42,22,0.88)_42%,rgba(4,42,22,0.36)_72%,rgba(4,42,22,0.64)_100%)]" />
-        <div aria-hidden className="pointer-events-none absolute -left-20 top-24 h-72 w-72 rounded-full bg-brand-orange/20 blur-3xl" />
-        <div aria-hidden className="pointer-events-none absolute -right-16 bottom-32 h-80 w-80 rounded-full bg-brand-greenLight/15 blur-3xl" />
-        <div className="absolute inset-x-0 bottom-0 h-40 bg-[linear-gradient(to_bottom,transparent,var(--color-brand-bgGray))]" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(17,42,35,0.96)_0%,rgba(17,42,35,0.82)_38%,rgba(17,42,35,0.18)_72%,rgba(17,42,35,0.18)_100%)]" />
+        <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-b from-transparent to-black/18" />
 
-        <div className="relative mx-auto grid w-full max-w-7xl items-center gap-12 px-5 pb-20 sm:px-8 lg:grid-cols-[1fr_380px]">
+        <div className="relative mx-auto grid w-full max-w-[1400px] items-center gap-12 px-5 py-20 sm:px-8 lg:grid-cols-[1fr_390px] lg:py-24">
           <div className="max-w-3xl">
             <button
               type="button"
@@ -570,48 +544,49 @@ export default function HomePage() {
               </p>
             )}
 
-            <h1 className="font-display text-5xl font-bold leading-none text-white sm:text-6xl lg:text-7xl">
-              Không gian của bạn.
-              <span className="mt-2 block bg-[linear-gradient(90deg,var(--color-brand-orange),#FFB07A)] bg-clip-text text-transparent">
-                Âm nhạc của bạn.
+            <p className="eyebrow mb-6 text-primary-fixed">Boutique nature stay</p>
+            <h1 className="font-editorial text-5xl font-semibold leading-[0.98] tracking-[-0.035em] text-white sm:text-6xl lg:text-[5.4rem]">
+              Một kỳ nghỉ
+              <span className="mt-2 block text-primary-fixed">
+                vừa vặn với bạn.
               </span>
             </h1>
 
-            <p className="mt-7 max-w-2xl text-lg leading-8 text-white/70">
-              Phòng homestay tiện nghi dành cho khách cá nhân, cặp đôi và gia đình. Đặt chỗ nhanh,
-              tiện nghi sẵn sàng, lịch đặt phòng rõ ràng trên trang Phòng homestay riêng.
+            <p className="mt-7 max-w-xl text-base leading-8 text-white/74 sm:text-lg">
+              Không gian riêng tư, tiện nghi được chuẩn bị kỹ và lịch trống minh bạch. Chọn căn phòng phù hợp,
+              đặt theo khung giờ linh hoạt và nhận hỗ trợ ngay khi cần.
             </p>
 
             <div className="mt-10 flex flex-wrap items-center gap-4">
               <Link
                 href="/rooms"
-                className="rounded-xl bg-brand-orange px-6 py-3.5 font-display text-sm font-semibold text-white shadow-[0_14px_36px_rgba(255,117,24,0.4)] transition-all hover:bg-brand-orangeHover hover:shadow-[0_18px_40px_rgba(255,117,24,0.48)] active:scale-[0.98]"
+                className="rounded-full bg-white px-6 py-3.5 font-display text-sm font-semibold text-secondary shadow-[0_16px_38px_rgba(0,0,0,0.18)] transition-all hover:-translate-y-0.5"
               >
-                Khám phá phòng
+                Kiểm tra phòng trống
               </Link>
-              <a
-                href="#process"
-                className="rounded-xl border border-white/25 bg-white/5 px-6 py-3.5 font-display text-sm font-semibold text-white/90 backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/10"
+              <Link
+                href="/process"
+                className="rounded-full border border-white/25 bg-black/10 px-6 py-3.5 font-display text-sm font-semibold text-white backdrop-blur-sm transition-all hover:bg-white/10"
               >
-                Xem quy trình
-              </a>
+                Xem quy trình lưu trú
+              </Link>
             </div>
 
             <div className="mt-14 grid max-w-2xl grid-cols-3 gap-4">
               {stats.map((item) => (
                 <div
                   key={item.label}
-                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 backdrop-blur-md transition-colors hover:border-brand-orange/30 hover:bg-white/10"
+                  className="border-l border-white/18 px-4 py-2 first:border-l-0 first:pl-0"
                 >
-                  <p className="font-display text-2xl font-bold text-primary-fixed sm:text-3xl">{item.value}</p>
-                  <p className="mt-1 text-[11px] font-medium uppercase tracking-wide text-white/50">{item.label}</p>
+                  <p className="font-editorial text-xl font-semibold text-primary-fixed sm:text-2xl">{item.value}</p>
+                  <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/58">{item.label}</p>
                 </div>
               ))}
             </div>
           </div>
 
           <aside className="hidden space-y-4 lg:block">
-            <div className="rounded-2xl border border-brand-orange/35 bg-secondary/60 p-5 shadow-[0_18px_48px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+            <div className="rounded-[18px] border border-white/16 bg-[#173A31]/78 p-5 shadow-[0_20px_54px_rgba(0,0,0,0.22)] backdrop-blur-xl">
               <div className="mb-4 flex items-center justify-between">
                 <p className="font-display text-xs font-semibold uppercase text-brand-orange">Hoạt động trực tiếp</p>
                 <span className="h-2 w-2 rounded-full bg-brand-orange" />
@@ -635,7 +610,7 @@ export default function HomePage() {
               {liveDataError && <p className="mt-4 text-xs text-white/40">{liveDataError}</p>}
             </div>
 
-            <div className="rounded-2xl border border-white/15 bg-secondary/60 p-5 shadow-[0_18px_48px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+            <div className="rounded-[18px] border border-white/15 bg-[#173A31]/78 p-5 shadow-[0_20px_54px_rgba(0,0,0,0.22)] backdrop-blur-xl">
               <p className="font-display text-xs font-semibold uppercase text-on-secondary-container">Khung giờ tiếp theo</p>
               {nextAvailableSlot ? (
                 <div className="mt-3 flex items-end justify-between gap-4">
@@ -672,15 +647,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="equipment" className="scroll-mt-20 bg-surface-container py-20 sm:py-24">
-        <div className="mx-auto max-w-7xl px-5 sm:px-8">
+      <section id="equipment" className="scroll-mt-20 bg-[#EFEAE1] py-20 sm:py-24">
+        <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
           <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
             <div className="max-w-2xl">
-              <p className="font-display text-sm font-semibold uppercase tracking-[0.12em] text-brand-orange">
+              <p className="eyebrow text-brand-orange">
                 Tiện nghi homestay
               </p>
-              <h2 className="mt-3 font-display text-3xl font-bold leading-tight text-on-surface sm:text-4xl">
-                Dịch vụ &amp; tiện nghi có sẵn trong phòng
+              <h2 className="font-editorial mt-3 text-4xl font-semibold leading-tight text-secondary sm:text-5xl">
+                Những tiện nghi làm nên một kỳ nghỉ dễ chịu.
               </h2>
               <p className="mt-4 text-base leading-7 text-on-surface-variant">
                 Tiện nghi thiết yếu đi kèm khi đặt phòng. Ghi chú nhu cầu khi đặt để homestay chuẩn bị
@@ -688,10 +663,10 @@ export default function HomePage() {
               </p>
             </div>
             <Link
-              href="/rooms"
-              className="inline-flex h-12 shrink-0 items-center rounded-xl border border-outline-variant bg-white px-6 font-display text-sm font-semibold text-on-surface transition-colors hover:border-brand-orange/40 hover:text-brand-orange"
+              href="/amenities"
+              className="inline-flex h-12 shrink-0 items-center rounded-full border border-outline bg-transparent px-6 font-display text-sm font-semibold text-secondary transition-colors hover:border-secondary hover:bg-secondary hover:text-white"
             >
-              Chọn phòng có tiện nghi phù hợp
+              Khám phá toàn bộ tiện nghi
             </Link>
           </div>
 
@@ -699,7 +674,7 @@ export default function HomePage() {
             {equipmentCategories.map((category) => (
               <article
                 key={category.title}
-                className="group rounded-2xl border border-outline-variant bg-white p-6 shadow-[var(--shadow-card)] transition-all duration-300 hover:-translate-y-1 hover:border-brand-orange/25 hover:shadow-[var(--shadow-elevated)]"
+                className="group rounded-[18px] border border-outline-variant bg-white/88 p-6 shadow-[var(--shadow-card)] transition-colors duration-300 hover:border-brand-orange/45"
               >
                 <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-primary-container text-brand-orange transition-colors group-hover:bg-brand-orange group-hover:text-white">
                   <Icon name={category.icon} />
@@ -725,56 +700,38 @@ export default function HomePage() {
       <TopRatedRoomsSection
         rooms={topRatedRooms}
         isLoading={isRoomCatalogLoading}
-        onOpenDetail={setDetailRoom}
+        onOpenDetail={(room) => router.push(`/rooms/${room.id}`)}
         onBook={(room) => setQuickBooking({ room })}
       />
 
-      <section className="relative scroll-mt-24 overflow-hidden bg-brand-bgGray py-20 sm:py-24">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.4]"
-          style={{
-            backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(26,28,30,0.05) 1px, transparent 0)',
-            backgroundSize: '24px 24px',
-          }}
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-20 top-10 h-64 w-64 rounded-full bg-brand-orange/10 blur-3xl"
-        />
-
-        <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-5 sm:px-8 lg:grid-cols-[1.1fr_0.9fr]">
+      <section className="relative scroll-mt-24 overflow-hidden bg-white py-20 sm:py-24">
+        <div className="relative mx-auto grid max-w-[1400px] items-center gap-12 px-5 sm:px-8 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="max-w-2xl">
-            <p className="font-display text-sm font-semibold uppercase tracking-[0.12em] text-brand-orange">Đặt phòng</p>
-            <h2 className="mt-3 font-display text-3xl font-bold leading-tight text-on-surface sm:text-4xl">
-              Trang Phòng homestay riêng — lọc, so sánh và đặt lịch
+            <p className="eyebrow text-brand-orange">Đặt phòng chủ động</p>
+            <h2 className="font-editorial mt-3 text-4xl font-semibold leading-tight text-secondary sm:text-5xl">
+              Chọn đúng phòng, đúng thời gian, đúng nhu cầu.
             </h2>
             <p className="mt-4 text-base leading-7 text-on-surface-variant">
-              Danh sách phòng, bộ lọc theo loại phòng, sức chứa, giá và lịch trống được tách sang trang riêng để bạn
-              tập trung đặt chỗ mà không bị phân tán trên trang chủ.
+              So sánh loại phòng, sức chứa, mức giá và tình trạng lịch trong một giao diện rõ ràng trước khi xác nhận.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href="/rooms"
-                className="inline-flex h-12 items-center rounded-xl bg-brand-orange px-6 font-display text-sm font-semibold text-white shadow-[0_14px_32px_rgba(255,117,24,0.35)] transition-all hover:bg-brand-orangeHover active:scale-[0.98]"
+                className="inline-flex h-12 items-center rounded-full bg-secondary px-6 font-display text-sm font-semibold text-white shadow-[0_14px_32px_rgba(23,58,49,0.16)] transition-all hover:-translate-y-0.5 hover:bg-secondary-container"
               >
                 Vào trang Phòng homestay
               </Link>
               <Link
-                href="/customer/support"
-                className="inline-flex h-12 items-center rounded-xl border border-outline-variant bg-white px-6 font-display text-sm font-semibold text-on-surface transition-colors hover:border-brand-orange/40 hover:text-brand-orange"
+                href="/support"
+                className="inline-flex h-12 items-center rounded-full border border-outline bg-white px-6 font-display text-sm font-semibold text-secondary transition-colors hover:border-brand-orange hover:text-brand-orange"
               >
                 Cần tư vấn chọn phòng
               </Link>
             </div>
           </div>
 
-          <div className="relative overflow-hidden rounded-[28px] border border-outline-variant bg-white p-6 shadow-[var(--shadow-elevated)]">
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-brand-orange/10 blur-2xl"
-            />
+          <div className="relative overflow-hidden rounded-[18px] border border-outline-variant bg-[#F6F3ED] p-7 shadow-[var(--shadow-card)]">
             <p className="relative font-display text-sm font-bold text-on-surface">Bạn sẽ tìm thấy trên /rooms</p>
             <ul className="relative mt-5 space-y-4 text-sm leading-6 text-on-surface-variant">
               <li className="flex gap-3">
@@ -800,70 +757,19 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="process" className="scroll-mt-20 bg-surface-container py-20 sm:py-24">
-        <div className="mx-auto max-w-7xl px-5 sm:px-8">
-          <div className="mx-auto max-w-2xl text-center">
-            <p className="font-display text-sm font-semibold uppercase tracking-[0.12em] text-brand-orange">Cách thức hoạt động</p>
-            <h2 className="mt-3 font-display text-3xl font-bold leading-tight text-on-surface sm:text-4xl">
-              Đặt phòng chỉ trong 3 bước.
-            </h2>
-          </div>
+      <section id="about" className="relative scroll-mt-24 overflow-hidden bg-secondary py-20 text-white sm:py-24">
+        <div className="absolute -right-36 top-12 h-80 w-80 rounded-full border border-white/[0.05]" aria-hidden />
+        <div className="absolute -right-20 top-28 h-52 w-52 rounded-full border border-brand-orange/10" aria-hidden />
 
-          <div className="relative mt-14 grid gap-6 md:grid-cols-3">
-            <div className="absolute left-[16%] right-[16%] top-12 hidden h-px bg-gradient-to-r from-transparent via-outline-variant to-transparent md:block" />
-            {steps.map((step) => (
-              <article
-                key={step.number}
-                className="group relative rounded-2xl border border-outline-variant bg-white p-6 text-center shadow-[var(--shadow-card)] transition-all duration-300 hover:-translate-y-1 hover:border-brand-orange/25 hover:shadow-[var(--shadow-elevated)]"
-              >
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-outline-variant bg-primary-container font-display text-lg font-bold text-brand-orange transition-all duration-300 group-hover:border-brand-orange group-hover:bg-brand-orange group-hover:text-white group-hover:shadow-[0_12px_28px_rgba(255,117,24,0.35)]">
-                  {step.number}
-                </div>
-                <h3 className="mt-5 font-display text-xl font-bold text-on-surface transition-colors group-hover:text-brand-orange">
-                  {step.title}
-                </h3>
-                <p className="mx-auto mt-3 max-w-xs text-sm leading-6 text-on-surface-variant">{step.description}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section id="about" className="relative scroll-mt-24 overflow-hidden bg-gradient-to-br from-secondary via-[#06361c] to-brand-greenLight py-20 text-white sm:py-24">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,117,24,0.14),transparent_55%)]"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(10,77,39,0.55),transparent_50%)]"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.12]"
-          style={{
-            backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.35) 1px, transparent 0)',
-            backgroundSize: '32px 32px',
-          }}
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-24 top-0 h-96 w-96 rounded-full bg-brand-orange/20 blur-3xl"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -left-20 bottom-10 h-72 w-72 rounded-full bg-emerald-400/10 blur-3xl"
-        />
-
-        <div className="relative mx-auto max-w-7xl px-5 sm:px-8">
+        <div className="relative mx-auto max-w-[1400px] px-5 sm:px-8">
           <div className="max-w-3xl">
-            <p className="font-display text-sm font-semibold uppercase text-brand-orange">Về chúng tôi</p>
-            <h2 className="mt-3 font-display text-3xl font-bold leading-tight sm:text-4xl">
-              Homestay được xây cho những kỳ lưu trú thật — không chỉ để chụp ảnh.
+            <p className="eyebrow text-primary-fixed">Triết lý vận hành</p>
+            <h2 className="font-editorial mt-4 text-4xl font-semibold leading-tight sm:text-5xl">
+              Đẹp trong hình ảnh. Chỉn chu trong từng lần đón khách.
             </h2>
-            <p className="mt-5 text-base leading-7 text-white/70">
-              Homestay Booking ra đời từ nhu cầu của các khách lưu trú độc lập: cần không gian ổn định, tiện nghi tin cậy và lịch
-              đặt minh bạch. Chúng tôi kết hợp đặt phòng online với đội ngũ homestay tại chỗ để bạn tập trung vào âm nhạc.
+            <p className="mt-5 text-base leading-8 text-white/72">
+              The Serene Villa giúp khách chủ động xem lịch, chọn phòng và theo dõi đặt chỗ; đồng thời giúp đội ngũ vận hành
+              chuẩn bị phòng, tiện nghi và hỗ trợ đúng thời điểm.
             </p>
           </div>
 
@@ -871,7 +777,7 @@ export default function HomePage() {
             {homestayStandards.map((item) => (
               <article
                 key={item.title}
-                className="group rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-md transition-all duration-300 hover:border-brand-orange/35 hover:bg-white/10"
+                className="group rounded-[18px] border border-white/12 bg-white/[0.045] p-6 transition-colors duration-300 hover:border-brand-orange/40 hover:bg-white/[0.07]"
               >
                 <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-brand-orange/20 text-brand-orange transition-colors group-hover:bg-brand-orange group-hover:text-white">
                   <Icon name={item.icon} />
@@ -883,48 +789,44 @@ export default function HomePage() {
           </div>
 
           <div className="mt-12 grid gap-8 lg:grid-cols-[1fr_1.1fr] lg:items-start">
-            <div className="rounded-2xl border border-white/15 bg-gradient-to-br from-white/12 to-white/5 p-6 backdrop-blur-md sm:p-8">
-              <p className="font-display text-xs font-semibold uppercase tracking-wider text-brand-orange">
-                Cộng đồng nhạc sĩ
-              </p>
-              <h3 className="mt-3 font-display text-2xl font-bold">Được tin dùng bởi nghệ sĩ và khách lưu trú độc lập</h3>
-              <ul className="mt-6 space-y-4 text-sm leading-6 text-white/70">
+            <div className="rounded-[18px] border border-white/15 bg-white/[0.055] p-6 sm:p-8">
+              <p className="eyebrow text-primary-fixed">Cam kết dịch vụ</p>
+              <h3 className="font-editorial mt-4 text-3xl font-semibold">Minh bạch trước khi đặt, đồng hành trong khi ở.</h3>
+              <ul className="mt-6 space-y-4 text-sm leading-7 text-white/72">
                 <li className="flex gap-3">
                   <Icon name="check" className="mt-0.5 h-5 w-5 shrink-0 text-brand-orange" />
-                  Hơn 2.400 lượt đặt mỗi tháng từ lưu trú đến thu demo
+                  Giá, sức chứa và tiện nghi được hiển thị rõ theo từng phòng
                 </li>
                 <li className="flex gap-3">
                   <Icon name="check" className="mt-0.5 h-5 w-5 shrink-0 text-brand-orange" />
-                  Lịch trống cập nhật theo thời gian thực, giảm trùng lượt lưu trú
+                  Lịch trống được cập nhật để giảm trùng và nhầm thời gian lưu trú
                 </li>
                 <li className="flex gap-3">
                   <Icon name="check" className="mt-0.5 h-5 w-5 shrink-0 text-brand-orange" />
-                  Hỗ trợ setup tiện nghi và check-in ngay tại homestay
+                  Yêu cầu hỗ trợ gắn trực tiếp với tài khoản và đơn đặt phòng
                 </li>
               </ul>
               <Link
-                href="/customer/support"
-                className="mt-8 inline-flex rounded-lg border border-white/20 px-5 py-2.5 font-display text-sm font-semibold text-white transition-colors hover:border-brand-orange hover:text-brand-orange"
+                href="/support"
+                className="mt-8 inline-flex rounded-full border border-white/22 px-5 py-3 font-display text-sm font-semibold text-white transition-colors hover:border-primary-fixed hover:text-primary-fixed"
               >
-                Liên hệ tham quan homestay
+                Tìm hiểu trung tâm hỗ trợ
               </Link>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-              {testimonials.map((item) => (
+              {experienceCommitments.map((item, index) => (
                 <article
                   key={item.name}
-                  className="rounded-xl border border-white/10 bg-white p-6 text-on-surface shadow-[var(--shadow-card)]"
+                  className="rounded-[18px] border border-white/10 bg-white p-6 text-on-surface shadow-[var(--shadow-card)]"
                 >
-                  <div className="mb-4 flex gap-1 text-tertiary">
-                    {Array.from({ length: 5 }).map((_, index) => (
-                      <Icon key={index} name="star" className="h-4 w-4 fill-current" />
-                    ))}
-                  </div>
-                  <p className="text-sm leading-6 text-on-surface-variant">&ldquo;{item.quote}&rdquo;</p>
-                  <div className="mt-5 border-t border-outline-variant pt-4">
-                    <p className="font-display text-sm font-bold text-on-surface">{item.name}</p>
-                    <p className="mt-1 text-xs text-on-surface-variant">{item.role}</p>
+                  <div className="flex items-start gap-5">
+                    <span className="font-editorial text-3xl text-brand-orange">0{index + 1}</span>
+                    <div>
+                      <p className="font-display text-base font-bold text-on-surface">{item.name}</p>
+                      <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-brand-orange">{item.role}</p>
+                      <p className="mt-4 text-sm leading-7 text-on-surface-variant">{item.quote}</p>
+                    </div>
                   </div>
                 </article>
               ))}
@@ -932,21 +834,13 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-b from-transparent to-brand-bgGray"
-        />
       </section>
 
-      <section className="relative overflow-hidden border-y border-outline-variant/60 bg-gradient-to-r from-brand-bgGray via-white to-primary-container/40 py-14 sm:py-16">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-16 top-1/2 h-48 w-48 -translate-y-1/2 rounded-full bg-brand-orange/10 blur-3xl"
-        />
-        <div className="relative mx-auto flex max-w-7xl flex-col items-start justify-between gap-8 px-5 sm:px-8 lg:flex-row lg:items-center">
+      <section className="relative overflow-hidden border-y border-outline-variant bg-[#EFEAE1] py-16 sm:py-20">
+        <div className="relative mx-auto flex max-w-[1400px] flex-col items-start justify-between gap-8 px-5 sm:px-8 lg:flex-row lg:items-center">
           <div className="max-w-xl">
-            <p className="font-display text-sm font-semibold uppercase tracking-[0.12em] text-brand-orange">Bắt đầu ngay</p>
-            <h2 className="mt-2 font-display text-2xl font-bold tracking-tight text-on-surface sm:text-3xl">
+            <p className="eyebrow text-brand-orange">Bắt đầu ngay</p>
+            <h2 className="font-editorial mt-3 text-4xl font-semibold tracking-tight text-secondary sm:text-5xl">
               Sẵn sàng cho kỳ lưu trú tiếp theo?
             </h2>
             <p className="mt-3 text-sm leading-6 text-on-surface-variant sm:text-base">
@@ -956,13 +850,13 @@ export default function HomePage() {
           <div className="flex w-full flex-wrap gap-3 sm:w-auto">
             <Link
               href="/rooms"
-              className="inline-flex h-12 flex-1 items-center justify-center rounded-xl bg-brand-orange px-6 font-display text-sm font-semibold text-white shadow-[0_14px_32px_rgba(255,117,24,0.35)] transition-all hover:bg-brand-orangeHover hover:shadow-[0_18px_36px_rgba(255,117,24,0.42)] active:scale-[0.98] sm:flex-none"
+              className="inline-flex h-12 flex-1 items-center justify-center rounded-full bg-secondary px-6 font-display text-sm font-semibold text-white shadow-[0_14px_32px_rgba(23,58,49,0.16)] transition-all hover:-translate-y-0.5 hover:bg-secondary-container sm:flex-none"
             >
               Khám phá phòng
             </Link>
             <Link
-              href="/customer/support"
-              className="inline-flex h-12 flex-1 items-center justify-center rounded-xl border border-outline-variant bg-white px-6 font-display text-sm font-semibold text-on-surface transition-colors hover:border-brand-orange/40 hover:text-brand-orange sm:flex-none"
+              href="/support"
+              className="inline-flex h-12 flex-1 items-center justify-center rounded-full border border-outline bg-transparent px-6 font-display text-sm font-semibold text-secondary transition-colors hover:border-brand-orange hover:text-brand-orange sm:flex-none"
             >
               Nhận tư vấn
             </Link>
@@ -970,22 +864,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      {detailRoom && (
-        <RoomDetailModal
-          room={detailRoom}
-          open
-          onClose={() => setDetailRoom(null)}
-          onBook={(room) => {
-            setDetailRoom(null)
-            setQuickBooking({ room })
-          }}
-        />
-      )}
       {quickBooking && (
         <BookingQuickModal
           room={quickBooking.room}
           open
           initialDate={quickBooking.initialDate}
+          initialEndDate={quickBooking.initialEndDate}
           initialStartTime={quickBooking.initialStartTime}
           initialDuration={quickBooking.initialDuration}
           initialNote={quickBooking.initialNote}

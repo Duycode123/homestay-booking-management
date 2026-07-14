@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { logoutSession, restoreSession, type AuthUser } from '@/lib/auth'
 import { clearStoredCustomerProfile } from '@/lib/customer-profile-service'
 
@@ -38,16 +38,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const authOperationId = useRef(0)
 
   const refreshSession = useCallback(async () => {
+    const operationId = ++authOperationId.current
     setIsLoading(true)
     try {
       const sessionUser = await restoreSession()
-      setUser(sessionUser)
+      if (operationId === authOperationId.current) {
+        setUser(sessionUser)
+      }
     } catch {
-      setUser(null)
+      if (operationId === authOperationId.current) {
+        setUser(null)
+      }
     } finally {
-      setIsLoading(false)
+      if (operationId === authOperationId.current) {
+        setIsLoading(false)
+      }
     }
   }, [])
 
@@ -56,16 +64,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refreshSession])
 
   const login = (sessionUser: AuthUser) => {
+    authOperationId.current += 1
     setUser(sessionUser)
     setIsLoading(false)
     setIsLoggingOut(false)
   }
 
   const logout = async (redirectTo?: string) => {
+    authOperationId.current += 1
     setIsLoggingOut(true)
     try {
       await logoutSession()
-    } finally {
       clearStoredCustomerProfile()
       clearClientUserCaches()
       setUser(null)
@@ -77,6 +86,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       window.setTimeout(() => setIsLoggingOut(false), 500)
+    } catch {
+      setIsLoggingOut(false)
+      if (typeof window !== 'undefined') {
+        window.alert('Không thể đăng xuất an toàn lúc này. Vui lòng kiểm tra kết nối và thử lại.')
+      }
     }
   }
 

@@ -1,5 +1,5 @@
 export const STAFF_LOCATION = {
-  name: 'Homestay Booking',
+  name: 'The Serene Villa',
   address: 'HPC Landmark, 105 Tố Hữu, Văn Khê, Hà Đông, Hà Nội',
   lat: 20.9829,
   lng: 105.7874,

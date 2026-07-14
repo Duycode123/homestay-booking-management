@@ -13,6 +13,7 @@ export type QuickBookingDraft = {
   selectedRoom: BookingRoom
   room?: BookingRoom
   selectedDate?: string
+  selectedEndDate?: string
   selectedSlot?: {
     startTime: string
     endTime: string
@@ -30,6 +31,7 @@ export type QuickBookingDraft = {
   currentStep?: string
   timestamp: number
   initialDate?: string
+  initialEndDate?: string
   initialStartTime?: string
   initialDuration?: number
   initialNote?: string

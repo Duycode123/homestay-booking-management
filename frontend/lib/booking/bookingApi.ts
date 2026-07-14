@@ -77,6 +77,7 @@ type CreateBookingRequest = {
 export type CreateBookingPayload = {
   roomId: string | number
   date: string
+  endDate?: string
   startTime: string
   endTime: string
   paymentMethod: BookingPaymentMethod
@@ -263,6 +264,30 @@ export async function fetchAvailableSlots(roomId: string, date: string): Promise
   }))
 }
 
+export async function checkRoomAvailabilityRange(
+  roomId: string,
+  startDate: string,
+  endDate: string,
+  startTime = '14:00',
+  endTime = '12:00',
+) {
+  const requestedStart = toBackendIso(startDate, startTime)
+  const requestedEnd = toBackendIso(endDate, endTime)
+  const response = await api.get<ApiResponse<RoomAvailabilityResponse>>(`/api/rooms/${roomId}/available-slots`, {
+    params: { from: requestedStart, to: requestedEnd },
+  })
+  const availability = response.data.data
+  const requestedStartMs = parseLocalDateTime(requestedStart).getTime()
+  const requestedEndMs = parseLocalDateTime(requestedEnd).getTime()
+  const fullyAvailable = Boolean(availability?.operational) && (availability?.availableSlots ?? []).some((range) => {
+    const rangeStart = parseLocalDateTime(range.startTime).getTime()
+    const rangeEnd = parseLocalDateTime(range.endTime).getTime()
+    return rangeStart <= requestedStartMs && rangeEnd >= requestedEndMs
+  })
+
+  return { available: fullyAvailable, operational: availability?.operational ?? false }
+}
+
 export async function createBooking(payload: CreateBookingPayload): Promise<BookingResponse> {
   const roomId = Number(payload.roomId)
   if (!Number.isInteger(roomId) || roomId <= 0) {
@@ -272,7 +297,7 @@ export async function createBooking(payload: CreateBookingPayload): Promise<Book
   const request: CreateBookingRequest = {
     roomId,
     startTime: toBackendIso(payload.date, payload.startTime),
-    endTime: toBackendIso(payload.date, payload.endTime),
+    endTime: toBackendIso(payload.endDate ?? payload.date, payload.endTime),
     paymentMethod: payload.paymentMethod,
     couponCode: payload.couponCode?.trim() || undefined,
     note: payload.note?.trim() || undefined,
@@ -286,8 +311,8 @@ export function formatPrice(amount: number) {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount)
 }
 
-export function mapPaymentMethodToBackend(method: 'bank_transfer' | 'e_wallet' | 'cash'): BookingPaymentMethod {
-  return method === 'cash' ? 'CASH' : 'ONLINE'
+export function mapPaymentMethodToBackend(_method: 'bank_transfer'): BookingPaymentMethod {
+  return 'ONLINE'
 }
 
 export function getTimeLabelFromIso(value: string) {

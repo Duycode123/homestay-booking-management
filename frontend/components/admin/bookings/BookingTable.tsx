@@ -119,7 +119,7 @@ function DayGroup({
         >
           <div className="flex items-center justify-between gap-3 border-l-4 border-l-brand-orange bg-surface-container-high px-4 py-2.5 shadow-[0_4px_12px_-4px_rgba(26,28,30,0.18)]">
             <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-brand-orange shadow-[0_0_8px_rgba(255,117,24,0.6)]" />
+              <span className="h-2 w-2 rounded-full bg-brand-orange shadow-[0_0_8px_rgba(178,132,85,0.6)]" />
               <p className="font-display text-sm font-bold capitalize text-on-surface">{group.label}</p>
             </div>
             <span className="rounded-full border border-outline-variant bg-white px-2.5 py-0.5 text-[11px] font-semibold text-on-surface-variant shadow-sm">
@@ -140,7 +140,7 @@ function DayGroup({
             className={[
               'cursor-pointer transition-colors',
               active
-                ? 'shadow-[inset_3px_0_0_0_#FF7518,inset_0_0_0_1px_rgba(255,117,24,0.12)]'
+                ? 'shadow-[inset_3px_0_0_0_#B28455,inset_0_0_0_1px_rgba(178,132,85,0.12)]'
                 : 'hover:bg-surface-container-low/80',
             ].join(' ')}
           >

@@ -98,7 +98,7 @@ const initialNotifications: StaffNotification[] = [
     id: 'n6',
     type: 'SYSTEM',
     title: 'Đồng bộ dữ liệu hoàn tất',
-    message: 'Danh sách booking hôm nay đã được cập nhật trong workspace nhân viên.',
+    message: 'Danh sách đặt phòng hôm nay đã được cập nhật trong khu vực nhân viên.',
     createdAt: '2 giờ trước',
     priority: 'LOW',
     isRead: true,
@@ -328,7 +328,7 @@ function NotificationCard({
 
 function NotificationDetail({ notification, onClose }: { notification: StaffNotification; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-[#042A16]/45 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex justify-end bg-[#173A31]/45 backdrop-blur-sm" onClick={onClose}>
       <aside className="h-full w-full overflow-y-auto border-l border-outline-variant bg-white p-5 shadow-[var(--homestay-shadow-elevated)] sm:max-w-xl sm:p-6" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-4">
           <div>

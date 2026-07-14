@@ -2,6 +2,7 @@ package backend.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -9,7 +10,8 @@ import lombok.Setter;
 @Setter
 public class ResendEmailVerificationRequest {
 
-    @Email(message = "Email khong hop le")
-    @NotBlank(message = "Email khong duoc de trong")
+    @NotBlank(message = "Email không được để trống")
+    @Email(message = "Email không đúng định dạng")
+    @Size(max = 254, message = "Email không được vượt quá 254 ký tự")
     private String email;
 }

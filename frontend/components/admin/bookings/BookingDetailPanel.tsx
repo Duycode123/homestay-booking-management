@@ -1,5 +1,7 @@
 'use client'
 
+import ProjectSelect from '@/components/ui/ProjectSelect'
+
 import { useState, type ReactNode } from 'react'
 import {
   IconBookings,
@@ -24,14 +26,17 @@ type BookingDetailPanelProps = {
   booking: AdminBooking | null
   onClose: () => void
   onStatusChange: (bookingId: number, status: BookingStatus) => Promise<void>
+  onSettleCheckout: (bookingId: number) => Promise<void>
 }
 
-export default function BookingDetailPanel({ booking, onClose, onStatusChange }: BookingDetailPanelProps) {
+export default function BookingDetailPanel({ booking, onClose, onStatusChange, onSettleCheckout }: BookingDetailPanelProps) {
   const [pendingStatus, setPendingStatus] = useState<BookingStatus | ''>('')
   const [isSaving, setIsSaving] = useState(false)
   const [message, setMessage] = useState('')
 
   if (!booking) return null
+
+  const checkInWindow = getCheckInWindow(booking)
 
   const handleSaveStatus = async () => {
     if (!pendingStatus || pendingStatus === booking.bookingStatus) return
@@ -41,8 +46,21 @@ export default function BookingDetailPanel({ booking, onClose, onStatusChange }:
       await onStatusChange(booking.bookingId, pendingStatus)
       setMessage('Cập nhật trạng thái thành công.')
       setPendingStatus('')
-    } catch {
-      setMessage('Không thể cập nhật trạng thái. Thử lại sau.')
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Không thể cập nhật trạng thái. Thử lại sau.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleSettleCheckout = async () => {
+    setIsSaving(true)
+    setMessage('')
+    try {
+      await onSettleCheckout(booking.bookingId)
+      setMessage('Đã kết toán và checkout thành công.')
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Không thể kết toán booking.')
     } finally {
       setIsSaving(false)
     }
@@ -116,6 +134,22 @@ export default function BookingDetailPanel({ booking, onClose, onStatusChange }:
             <InfoRow label="Thời lượng" value={`${booking.durationHours} giờ`} />
           </DetailCard>
 
+          <DetailCard title="Thanh toán" icon={<IconBookings className="h-4 w-4" />} accent="secondary">
+            <InfoRow label="Tổng tiền" value={formatAdminPrice(booking.totalPrice)} />
+            <InfoRow label="Đã thanh toán" value={formatAdminPrice(booking.paidAmount)} />
+            <InfoRow label="Còn phải thu" value={formatAdminPrice(booking.remainingAmount)} />
+            {booking.bookingStatus === 'CHECKED_IN' && booking.remainingAmount > 0 && (
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={() => void handleSettleCheckout()}
+                className="mt-2 flex h-11 w-full items-center justify-center rounded-xl bg-secondary font-display text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+              >
+                {isSaving ? 'Đang kết toán...' : `Thu ${formatAdminPrice(booking.remainingAmount)} & checkout`}
+              </button>
+            )}
+          </DetailCard>
+
           <DetailCard
             title="Tiện nghi đi kèm"
             icon={<IconEquipment className="h-4 w-4" />}
@@ -148,17 +182,35 @@ export default function BookingDetailPanel({ booking, onClose, onStatusChange }:
             <p className="mt-1 text-xs text-on-surface-variant">
               Thay đổi trạng thái vận hành của đơn đặt phòng.
             </p>
-            <select
+            {(booking.bookingStatus === 'PAID' || booking.bookingStatus === 'DEPOSIT_PAID') && (
+              <div className={[
+                'mt-3 rounded-xl border px-3 py-2.5 text-xs leading-5',
+                checkInWindow.allowed
+                  ? 'border-secondary/25 bg-secondary-container/20 text-secondary'
+                  : 'border-[#dfb980] bg-[#fff8eb] text-[#79582f]',
+              ].join(' ')}>
+                {checkInWindow.message}
+              </div>
+            )}
+            <ProjectSelect
               value={pendingStatus || booking.bookingStatus}
               onChange={(e) => setPendingStatus(e.target.value as BookingStatus)}
               className="mt-3 h-11 w-full rounded-xl border border-outline bg-white px-3 text-sm text-on-surface outline-none transition focus:border-brand-orange focus:ring-2 focus:ring-brand-orange/20"
             >
               {BOOKING_STATUS_OPTIONS.map((s) => (
-                <option key={s} value={s}>
+                <option
+                  key={s}
+                  value={s}
+                  disabled={
+                    s === 'CHECKED_IN'
+                    && (booking.bookingStatus === 'PAID' || booking.bookingStatus === 'DEPOSIT_PAID')
+                    && !checkInWindow.allowed
+                  }
+                >
                   {BOOKING_STATUS_LABELS[s]}
                 </option>
               ))}
-            </select>
+            </ProjectSelect>
             <button
               type="button"
               disabled={isSaving || !pendingStatus || pendingStatus === booking.bookingStatus}
@@ -192,6 +244,31 @@ export default function BookingDetailPanel({ booking, onClose, onStatusChange }:
       </aside>
     </>
   )
+}
+
+function getCheckInWindow(booking: AdminBooking) {
+  if (booking.cancellationRequestStatus === 'PENDING') {
+    return { allowed: false, message: 'Check-in đang bị khóa vì yêu cầu hủy phòng chờ admin xử lý.' }
+  }
+
+  const start = new Date(booking.startTime)
+  const end = new Date(booking.endTime)
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return { allowed: false, message: 'Booking không có khung giờ hợp lệ để check-in.' }
+  }
+
+  const opensAt = new Date(start.getTime() - 5 * 60 * 1000)
+  const now = new Date()
+  const openTimeLabel = opensAt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })
+
+  if (now < opensAt) {
+    return { allowed: false, message: `Check-in mở lúc ${openTimeLabel}, sớm tối đa 5 phút.` }
+  }
+  if (now >= end) {
+    return { allowed: false, message: 'Đã quá giờ kết thúc booking nên không thể check-in.' }
+  }
+
+  return { allowed: true, message: 'Đã đến khung giờ cho phép check-in.' }
 }
 
 type Accent = 'default' | 'primary' | 'secondary' | 'tertiary'

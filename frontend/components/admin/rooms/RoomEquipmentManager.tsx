@@ -1,5 +1,7 @@
 'use client'
 
+import ProjectSelect from '@/components/ui/ProjectSelect'
+
 import { useMemo, useState } from 'react'
 import { EQUIPMENT_TYPE_LABELS } from '@/lib/admin/equipment/equipmentLabels'
 import type { AdminEquipment } from '@/lib/admin/equipment/types'
@@ -59,7 +61,7 @@ export default function RoomEquipmentManager({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <select
+          <ProjectSelect
             value={selectedRoomId}
             onChange={(event) => {
               setSelectedRoomId(event.target.value)
@@ -73,7 +75,7 @@ export default function RoomEquipmentManager({
                 {room.name}
               </option>
             ))}
-          </select>
+          </ProjectSelect>
           <button
             type="button"
             onClick={() => onCreate(selectedRoomNumericId)}

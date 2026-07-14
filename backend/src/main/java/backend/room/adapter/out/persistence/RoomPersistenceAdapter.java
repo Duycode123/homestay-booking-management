@@ -1,7 +1,8 @@
 package backend.room.adapter.out.persistence;
 
-import backend.equipment.adapter.out.persistence.EquipmentRepository;
 import backend.entity.Room;
+import backend.entity.BookingStatus;
+import backend.entity.RoomStatus;
 import backend.entity.RoomType;
 import backend.entity.User;
 import backend.repository.BookingRepository;
@@ -36,7 +37,12 @@ public class RoomPersistenceAdapter implements
     private final RoomTypeRepository roomTypeRepository;
     private final UserRepository userRepository;
     private final BookingRepository bookingRepository;
-    private final EquipmentRepository equipmentRepository;
+    private static final List<BookingStatus> ACTIVE_BOOKING_STATUSES = List.of(
+            BookingStatus.PENDING_PAYMENT,
+            BookingStatus.DEPOSIT_PAID,
+            BookingStatus.PAID,
+            BookingStatus.CHECKED_IN
+    );
 
     @Override
     public List<Room> loadRooms(RoomSearchCriteria criteria) {
@@ -74,6 +80,8 @@ public class RoomPersistenceAdapter implements
             }
             if (criteria.status() != null) {
                 predicates.add(criteriaBuilder.equal(root.get("status"), criteria.status()));
+            } else {
+                predicates.add(criteriaBuilder.notEqual(root.get("status"), RoomStatus.INACTIVE));
             }
             if (criteria.search() != null) {
                 predicates.add(criteriaBuilder.like(
@@ -113,13 +121,8 @@ public class RoomPersistenceAdapter implements
     }
 
     @Override
-    public boolean existsBookingForRoom(Integer roomId) {
-        return bookingRepository.existsByRoom_Id(roomId);
-    }
-
-    @Override
-    public boolean existsEquipmentForRoom(Integer roomId) {
-        return equipmentRepository.existsByRoom_Id(roomId);
+    public boolean existsActiveBookingForRoom(Integer roomId) {
+        return bookingRepository.existsByRoom_IdAndStatusIn(roomId, ACTIVE_BOOKING_STATUSES);
     }
 
     @Override
@@ -128,13 +131,13 @@ public class RoomPersistenceAdapter implements
     }
 
     @Override
-    public boolean existsRoomForRoomType(Integer roomTypeId) {
-        return roomRepository.existsByRoomType_Id(roomTypeId);
+    public boolean existsActiveRoomForRoomType(Integer roomTypeId) {
+        return roomRepository.existsByRoomType_IdAndStatusNot(roomTypeId, RoomStatus.INACTIVE);
     }
 
     @Override
     public List<RoomType> loadRoomTypes() {
-        return roomTypeRepository.findAllByOrderByTypeNameAsc();
+        return roomTypeRepository.findAllByActiveTrueOrderByTypeNameAsc();
     }
 
     @Override

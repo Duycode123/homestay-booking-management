@@ -488,11 +488,11 @@ export default function StaffSchedulePage() {
   return (
     <AuthGuard allowedRoles={['STAFF']}>
       <StaffPageShell>
-        <section className="space-y-6">
-          <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+        <section className="space-y-5">
+          <div className="rounded-[28px] border border-[#e3d8ca] bg-[linear-gradient(135deg,#fff_0%,#fbf7f1_56%,#eef4f0_100%)] p-5 shadow-[0_18px_50px_rgba(31,54,44,0.08)] sm:p-7 xl:flex xl:items-end xl:justify-between">
             <div>
               <p className="font-display text-sm font-bold uppercase tracking-wide text-brand-orange">
-                Staff workspace
+                Không gian nhân viên
               </p>
               <h1 className="font-display text-3xl font-bold tracking-tight text-on-surface sm:text-4xl">
                 Lịch làm việc
@@ -530,11 +530,11 @@ export default function StaffSchedulePage() {
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="mt-5 flex flex-wrap items-center gap-3 xl:mt-0">
               <button
                 type="button"
                 onClick={handleRegisterShift}
-                className="inline-flex min-h-12 items-center gap-2 rounded-full bg-[#C91F2E] px-6 font-display text-sm font-bold text-white shadow-[0_12px_26px_rgba(201,31,46,0.22)] transition hover:bg-[#A91724]"
+                className="inline-flex min-h-12 items-center gap-2 rounded-full bg-brand-orange px-6 font-display text-sm font-bold text-white shadow-[0_12px_28px_rgba(184,136,87,0.24)] transition hover:-translate-y-0.5 hover:bg-brand-orangeHover"
               >
                 Đăng ký ca làm việc
                 <IconCalendarPlus />
@@ -547,7 +547,7 @@ export default function StaffSchedulePage() {
                   setLocationDistance(null)
                   setIsAttendanceOpen(true)
                 }}
-                className="inline-flex min-h-12 items-center gap-2 rounded-full bg-[#FFF5F5] px-6 font-display text-sm font-bold text-[#B91C1C] transition hover:bg-[#FFE8E8]"
+                className="inline-flex min-h-12 items-center gap-2 rounded-full border border-secondary/20 bg-white px-6 font-display text-sm font-bold text-secondary shadow-sm transition hover:-translate-y-0.5 hover:border-secondary/35 hover:bg-[#f2f7f4]"
               >
                 Điểm danh
                 <IconCalendarCheck />
@@ -565,7 +565,7 @@ export default function StaffSchedulePage() {
             <SummaryCard
               label="Ca trong tuần"
               value={shiftCells.length}
-              helper="Lấy từ /api/staff/schedule/shifts"
+              helper="Các ca đã được phân công trong tuần"
             />
             <SummaryCard
               label="Ca hiện tại"
@@ -579,7 +579,7 @@ export default function StaffSchedulePage() {
             <SummaryCard
               label="Chấm công"
               value={getAttendanceStatusMeta(attendanceStatus).label}
-              helper="Đồng bộ từ attendance API hiện tại"
+              helper="Trạng thái điểm danh của ca gần nhất"
             />
           </div>
 
@@ -671,7 +671,8 @@ function ScheduleGrid({
   onOpenShiftDetails: (cell: StaffShiftCell) => void
 }) {
   return (
-    <section className="border border-outline-variant bg-white p-4 shadow-[var(--homestay-shadow-card)] sm:p-7">
+    <section className="overflow-hidden rounded-[26px] border border-[#e3d8ca] bg-white shadow-[0_18px_50px_rgba(31,54,44,0.09)]">
+      <div className="p-5 pb-4 sm:px-7 sm:pt-7">
       <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="font-display text-xl font-bold text-on-surface">{title}</h2>
@@ -681,23 +682,24 @@ function ScheduleGrid({
           {weekDays[0] ? formatShortDate(weekDays[0].isoDate) : ''} - {weekDays[weekDays.length - 1] ? formatShortDate(weekDays[weekDays.length - 1].isoDate) : ''}
         </span>
       </div>
+      </div>
 
       {isLoading ? (
-        <div className="rounded-xl border border-dashed border-outline-variant bg-surface-container-low px-4 py-10 text-center text-sm text-on-surface-variant">
+        <div className="m-5 rounded-2xl border border-dashed border-outline-variant bg-surface-container-low px-4 py-10 text-center text-sm text-on-surface-variant sm:mx-7 sm:mb-7">
           Đang tải lịch làm việc...
         </div>
       ) : shiftCells.length === 0 ? (
         <EmptyState title={emptyTitle} description={emptyDescription} />
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1120px] border-collapse text-left">
+        <div className="overflow-x-auto border-t border-[#eee6dc]">
+          <table className="w-full min-w-[980px] border-separate border-spacing-0 text-left">
             <thead>
               <tr>
-                <th className="h-14 w-[170px] border border-[#C9D3E1] bg-white" />
+                <th className="h-14 w-[152px] border-b border-r border-[#e8dfd4] bg-[#f8f5f0]" />
                 {weekDays.map((day) => (
                   <th
                     key={day.key}
-                    className="h-14 border border-[#C9D3E1] bg-white text-center font-display text-lg font-medium text-[#1F2937]"
+                    className="h-14 border-b border-r border-[#e8dfd4] bg-[#f8f5f0] text-center font-display text-base font-bold text-[#26372f] last:border-r-0"
                   >
                     <div>{day.label}</div>
                     <div className="mt-1 text-xs font-semibold text-on-surface-variant">{day.shortDate}</div>
@@ -708,10 +710,10 @@ function ScheduleGrid({
             <tbody>
               {SHIFT_ROWS.map((row) => (
                 <tr key={row.name}>
-                  <th className="h-[220px] w-[170px] border border-[#C9D3E1] bg-white px-3 align-middle sm:px-4">
+                  <th className="h-[148px] w-[152px] border-b border-r border-[#e8dfd4] bg-[#fcfaf7] px-3 align-middle sm:px-4">
                     <div>
-                      <p className="font-display text-xl font-medium text-on-surface">{row.name}</p>
-                      <span className="mt-2 inline-flex rounded-full bg-[#E3E9F1] px-3 py-1 font-display text-sm font-bold text-[#253044]">
+                      <p className="font-display text-lg font-bold text-on-surface">{row.name}</p>
+                      <span className="mt-2 inline-flex rounded-full bg-[#edf3ef] px-3 py-1 text-xs font-bold text-secondary">
                         {row.startTime} - {row.endTime}
                       </span>
                     </div>
@@ -724,18 +726,18 @@ function ScheduleGrid({
                       <td
                         key={`${day.key}-${row.name}`}
                         className={[
-                          'h-[220px] border border-[#C9D3E1] align-middle',
-                          cell.status === 'EMPTY' ? 'bg-[#F7F8FA]' : 'bg-white',
+                          'h-[148px] border-b border-r border-[#e8dfd4] align-middle last:border-r-0',
+                          cell.status === 'EMPTY' ? 'bg-[#fbfaf8]' : 'bg-white',
                         ].join(' ')}
                       >
                         <button
                           type="button"
                           onClick={() => void onOpenShiftDetails(cell)}
-                          className="flex h-full w-full items-center justify-center p-4 text-center transition hover:bg-primary-container/30 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-orange"
+                          className="flex h-full w-full items-center justify-center p-3 text-center transition hover:bg-[#faf4ec] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-orange"
                         >
                           <span
                             className={[
-                              'inline-flex rounded-full px-4 py-2 font-display text-sm font-bold',
+                              'inline-flex rounded-full px-3 py-2 font-display text-xs font-bold shadow-sm',
                               meta.className,
                             ].join(' ')}
                           >
@@ -788,15 +790,19 @@ function ShiftRegistrationModal({
       size="lg"
     >
       <div className="space-y-4">
-        <div className="rounded-xl border border-outline-variant bg-white p-4">
+        <div className="flex flex-col gap-4 rounded-[20px] border border-[#e3d8ca] bg-[linear-gradient(135deg,#fbf7f1,#f1f6f3)] p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
           <div>
             <p className="font-display text-base font-bold text-on-surface">Tuần đăng ký</p>
             <p className="mt-1 text-sm text-on-surface-variant">
               {weekDays[0] ? formatDateForHeader(weekDays[0].isoDate) : ''} - {weekDays[weekDays.length - 1] ? formatDateForHeader(weekDays[weekDays.length - 1].isoDate) : ''}
             </p>
-            <p className="mt-2 text-xs font-semibold text-on-surface-variant">
+            <p className="mt-2 text-xs font-medium text-on-surface-variant">
               {isLoading ? 'Đang tự tải danh sách đăng ký...' : 'Danh sách đăng ký được tải tự động khi mở cửa sổ này.'}
             </p>
+          </div>
+          <div className="rounded-2xl bg-white px-4 py-3 text-center shadow-sm ring-1 ring-[#e3d8ca]">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-on-surface-variant">Đã chọn</p>
+            <p className="mt-0.5 font-display text-2xl font-bold text-secondary">{selectedCount} ca</p>
           </div>
         </div>
 
@@ -806,15 +812,15 @@ function ShiftRegistrationModal({
           </div>
         )}
 
-        <div className="overflow-x-auto rounded-xl border border-outline-variant bg-white">
-          <table className="w-full min-w-[920px] border-collapse text-left">
+        <div className="overflow-x-auto rounded-[20px] border border-[#e3d8ca] bg-white">
+          <table className="w-full min-w-[880px] border-separate border-spacing-0 text-left">
             <thead>
               <tr>
-                <th className="h-12 w-[150px] border border-[#C9D3E1] bg-white px-3 text-sm font-bold text-on-surface-variant">
+                <th className="h-14 w-[145px] border-b border-r border-[#e8dfd4] bg-[#f8f5f0] px-4 text-xs font-bold uppercase tracking-wider text-on-surface-variant">
                   Ca
                 </th>
                 {weekDays.map((day) => (
-                  <th key={day.key} className="h-12 border border-[#C9D3E1] bg-white px-3 text-center font-display text-sm font-bold text-on-surface">
+                  <th key={day.key} className="h-14 border-b border-r border-[#e8dfd4] bg-[#f8f5f0] px-3 text-center font-display text-sm font-bold text-on-surface last:border-r-0">
                     <div>{day.label}</div>
                     <div className="mt-1 text-xs font-semibold text-on-surface-variant">{day.shortDate}</div>
                   </th>
@@ -824,7 +830,7 @@ function ShiftRegistrationModal({
             <tbody>
               {shiftRows.map((row) => (
                 <tr key={row.name}>
-                  <th className="h-[130px] border border-[#C9D3E1] bg-white px-3 align-middle">
+                  <th className="h-[104px] border-b border-r border-[#e8dfd4] bg-[#fcfaf7] px-4 align-middle">
                     <p className="font-display text-base font-bold text-on-surface">{row.name}</p>
                     <p className="mt-1 text-xs font-semibold text-on-surface-variant">{row.startTime} - {row.endTime}</p>
                   </th>
@@ -841,16 +847,16 @@ function ShiftRegistrationModal({
                     const meta = registration ? getRegistrationStatusMeta(registration.status) : null
 
                     return (
-                      <td key={`${day.key}-${row.name}`} className="h-[130px] border border-[#C9D3E1] bg-[#FDFBF8] p-2 align-middle">
+                      <td key={`${day.key}-${row.name}`} className="h-[104px] border-b border-r border-[#e8dfd4] bg-[#fdfcf9] p-2 align-middle last:border-r-0">
                         <button
                           type="button"
                           onClick={() => onToggleSlot(slot)}
                           disabled={isBlocked || isLoading || isSubmitting}
                           className={[
-                            'flex h-full w-full flex-col items-center justify-center gap-2 rounded-xl border px-3 text-center transition',
+                            'flex h-full w-full flex-col items-center justify-center gap-1.5 rounded-2xl border px-2 text-center transition',
                             isSelected
-                              ? 'border-brand-orange bg-primary-container text-on-primary-container'
-                              : 'border-outline-variant bg-white text-on-surface hover:border-brand-orange/50',
+                              ? 'border-brand-orange bg-[#f7ecdd] text-on-primary-container shadow-[inset_0_0_0_1px_rgba(184,136,87,0.10)]'
+                              : 'border-[#e6ddd2] bg-white text-on-surface hover:border-brand-orange/50 hover:bg-[#fffaf4]',
                             isBlocked ? 'cursor-not-allowed opacity-75 hover:border-outline-variant' : '',
                           ].join(' ')}
                         >
@@ -870,7 +876,7 @@ function ShiftRegistrationModal({
           </table>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 rounded-[18px] bg-[#f8f5f0] p-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
           <p className="text-sm font-semibold text-on-surface-variant">Đã chọn {selectedCount} ca.</p>
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
             <button type="button" onClick={onClose} className="btn-secondary" disabled={isSubmitting}>
@@ -1177,7 +1183,7 @@ function ModalFrame({
   size?: 'md' | 'lg'
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1A1C1E]/35 p-3 sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#242A27]/35 p-3 sm:p-4">
       <section
         className={[
           'flex max-h-[calc(100vh-1.5rem)] w-full flex-col overflow-hidden rounded-xl border border-outline-variant bg-white shadow-[var(--homestay-shadow-elevated)]',
@@ -1247,7 +1253,7 @@ function getShiftStatusMeta(status: ShiftStatus): StatusMeta {
     EMPTY: { label: 'Trống', className: 'bg-surface-container text-on-surface-variant' },
     ASSIGNED: { label: 'Đã phân công', className: 'bg-[#E8F5EC] text-secondary' },
     IN_PROGRESS: { label: 'Đang làm', className: 'bg-[#FEF3C7] text-[#92400E]' },
-    COMPLETED: { label: 'Hoàn tất', className: 'bg-[#E8E4DC] text-on-surface-variant' },
+    COMPLETED: { label: 'Hoàn tất', className: 'bg-[#E4DED3] text-on-surface-variant' },
   }
 
   return meta[status]
@@ -1267,7 +1273,7 @@ function getAttendanceStatusMeta(status: AttendanceStatus): StatusMeta {
   const meta: Record<AttendanceStatus, StatusMeta> = {
     NOT_STARTED: { label: 'Chưa check-in', className: 'bg-primary-container text-on-primary-container' },
     CHECKED_IN: { label: 'Đã check-in', className: 'bg-[#FEF3C7] text-[#92400E]' },
-    CHECKED_OUT: { label: 'Đã check-out', className: 'bg-[#E8E4DC] text-on-surface-variant' },
+    CHECKED_OUT: { label: 'Đã check-out', className: 'bg-[#E4DED3] text-on-surface-variant' },
     NO_SHIFT: { label: 'Không có ca', className: 'bg-error-container text-on-error-container' },
   }
 

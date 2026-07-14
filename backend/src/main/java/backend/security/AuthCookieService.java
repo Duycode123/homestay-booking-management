@@ -1,5 +1,6 @@
 package backend.security;
 
+import backend.config.JwtProperties;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
@@ -13,17 +14,22 @@ public class AuthCookieService {
     public static final String REFRESH_COOKIE_NAME = "refresh_token";
 
     private final boolean secure;
+    private final JwtProperties jwtProperties;
 
-    public AuthCookieService(@Value("${app.cookie.secure:false}") boolean secure) {
+    public AuthCookieService(
+            @Value("${app.cookie.secure:false}") boolean secure,
+            JwtProperties jwtProperties
+    ) {
         this.secure = secure;
+        this.jwtProperties = jwtProperties;
     }
 
     public ResponseCookie accessCookie(String token) {
-        return cookie(ACCESS_COOKIE_NAME, token, Duration.ofMinutes(15));
+        return cookie(ACCESS_COOKIE_NAME, token, jwtProperties.getAccessTokenExpiration());
     }
 
     public ResponseCookie refreshCookie(String token) {
-        return cookie(REFRESH_COOKIE_NAME, token, Duration.ofDays(7));
+        return cookie(REFRESH_COOKIE_NAME, token, jwtProperties.getRefreshTokenExpiration());
     }
 
     public ResponseCookie clearAccessCookie() {

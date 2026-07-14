@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { ChangeEvent, InputHTMLAttributes, ReactNode } from 'react'
 
 type AuthFieldProps = {
   label: string
@@ -7,10 +7,17 @@ type AuthFieldProps = {
   value: string
   placeholder: string
   icon: 'user' | 'lock' | 'email' | 'calendar'
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  onChange: (e: ChangeEvent<HTMLInputElement>) => void
   trailing?: ReactNode
   max?: string
   min?: string
+  maxLength?: number
+  minLength?: number
+  pattern?: string
+  inputMode?: InputHTMLAttributes<HTMLInputElement>['inputMode']
+  autoComplete?: string
+  ariaDescribedBy?: string
+  ariaInvalid?: boolean
 }
 
 const iconPaths = {
@@ -33,21 +40,25 @@ export function AuthField({
   trailing,
   max,
   min,
+  maxLength,
+  minLength,
+  pattern,
+  inputMode,
+  autoComplete,
+  ariaDescribedBy,
+  ariaInvalid,
 }: AuthFieldProps) {
   return (
     <div>
-      <label
-        htmlFor={name}
-        className="mb-1.5 block font-display text-[11px] font-medium uppercase tracking-[0.08em] text-on-surface-variant"
-      >
+      <label htmlFor={name} className="mb-2 block text-xs font-semibold tracking-[0.03em] text-on-surface">
         {label}
       </label>
       <div className="relative">
-        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-on-surface-variant/60">
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-on-surface-variant/65" aria-hidden="true">
+          <svg className="h-[17px] w-[17px]" fill="none" stroke="currentColor" strokeWidth="1.7" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d={iconPaths[icon]} />
           </svg>
-        </div>
+        </span>
         <input
           id={name}
           type={type}
@@ -57,12 +68,20 @@ export function AuthField({
           required
           max={max}
           min={min}
+          maxLength={maxLength}
+          minLength={minLength}
+          pattern={pattern}
+          inputMode={inputMode}
+          autoComplete={autoComplete}
+          aria-describedby={ariaDescribedBy}
+          aria-invalid={ariaInvalid}
           placeholder={placeholder}
           className={[
-            'w-full rounded-lg border border-outline bg-white py-2.5 pl-10 text-sm text-on-surface',
-            'placeholder:text-on-surface-variant/50',
-            'transition-colors focus:border-brand-orange focus:outline-none focus:ring-1 focus:ring-brand-orange',
-            trailing ? 'pr-10' : 'pr-4',
+            'h-12 w-full rounded-xl border border-outline/70 bg-surface-container-lowest pl-11 text-sm text-on-surface shadow-[inset_0_1px_0_rgba(255,255,255,.7)]',
+            'placeholder:text-on-surface-variant/45',
+            'transition-[border-color,box-shadow,background-color] duration-200 hover:border-outline',
+            'focus:border-brand-orange focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-orange/10',
+            trailing ? 'pr-11' : 'pr-4',
           ].join(' ')}
         />
         {trailing}
@@ -73,32 +92,34 @@ export function AuthField({
 
 export function AuthError({ message }: { message: string }) {
   return (
-    <div className="mb-4 rounded-lg border border-error/20 bg-error-container px-3 py-2.5 text-xs text-error">
-      {message}
+    <div role="alert" aria-live="assertive" className="mb-5 flex gap-2.5 rounded-xl border border-error/20 bg-error-container/75 px-4 py-3 text-xs leading-5 text-error">
+      <svg className="mt-0.5 h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <circle cx="10" cy="10" r="7.5" stroke="currentColor" />
+        <path d="M10 6.25v4.5M10 13.5v.25" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+      <span>{message}</span>
     </div>
   )
 }
 
 export function AuthSuccess({ message }: { message: string }) {
   return (
-    <div className="mb-4 rounded-lg border border-secondary-container/50 bg-secondary-container/20 px-3 py-2.5 text-xs text-secondary">
-      {message}
+    <div role="status" aria-live="polite" className="mb-5 flex gap-2.5 rounded-xl border border-secondary/20 bg-secondary-container/25 px-4 py-3 text-xs leading-5 text-secondary">
+      <svg className="mt-0.5 h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <circle cx="10" cy="10" r="7.5" stroke="currentColor" />
+        <path d="m6.5 10 2.25 2.25 4.75-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <span>{message}</span>
     </div>
   )
 }
 
-export function AuthSubmitButton({
-  children,
-  disabled,
-}: {
-  children: ReactNode
-  disabled?: boolean
-}) {
+export function AuthSubmitButton({ children, disabled }: { children: ReactNode; disabled?: boolean }) {
   return (
     <button
       type="submit"
       disabled={disabled}
-      className="mt-6 flex h-12 w-full cursor-pointer items-center justify-center rounded-lg bg-brand-orange font-display text-sm font-medium text-white shadow-[var(--shadow-card)] transition-all hover:bg-brand-orangeHover active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-surface-container-high disabled:text-on-surface-variant disabled:shadow-none"
+      className="mt-6 flex h-12 w-full cursor-pointer items-center justify-center rounded-full bg-brand-greenDark px-6 font-display text-sm font-semibold tracking-[0.01em] text-white shadow-[0_12px_28px_rgba(18,50,39,.16)] transition-[transform,background-color,box-shadow] hover:-translate-y-0.5 hover:bg-brand-greenLight hover:shadow-[0_16px_34px_rgba(18,50,39,.2)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-orange/25 active:translate-y-0 disabled:cursor-not-allowed disabled:bg-surface-container-high disabled:text-on-surface-variant disabled:shadow-none"
     >
       {children}
     </button>
@@ -107,37 +128,36 @@ export function AuthSubmitButton({
 
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-screen bg-brand-bgGray font-sans antialiased">
+    <main className="relative flex min-h-screen flex-col overflow-hidden bg-brand-bgGray font-sans antialiased lg:flex-row">
+      <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-brand-orange/[0.07] blur-3xl lg:hidden" aria-hidden="true" />
       {children}
-    </div>
+    </main>
   )
 }
 
 export function AuthFormPanel({ children }: { children: ReactNode }) {
   return (
-    <div className="flex w-full items-center justify-center p-6 sm:p-10 md:w-1/2 lg:p-12">
-      <div className="w-full max-w-[440px] rounded-xl border border-outline-variant bg-white p-8 shadow-[var(--shadow-card)] sm:p-10">
+    <section className="relative z-10 flex min-h-screen w-full items-center justify-center px-5 py-8 sm:px-8 sm:py-12 lg:w-[52%] lg:px-10 xl:px-16">
+      <div className="w-full max-w-[460px] py-4 sm:rounded-[1.75rem] sm:border sm:border-outline-variant/80 sm:bg-white/90 sm:p-10 sm:shadow-[0_24px_70px_rgba(23,48,39,.08)] sm:backdrop-blur-xl">
         {children}
       </div>
-    </div>
+    </section>
   )
 }
 
 export function AuthMobileBrand() {
   return (
-    <div className="mb-6 flex items-center gap-3 md:hidden">
-      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-orange">
-        <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M9 19V6l12-3v13M9 10l12-3M9 14c0 1.657-1.343 3-3 3s-3-1.343-3-3 1.343-3 3-3 3 1.343 3 3zm12-4c0 1.657-1.343 3-3 3s-3-1.343-3-3 1.343-3 3-3 3 1.343 3 3z"
-          />
+    <div className="mb-8 flex items-center gap-3 lg:hidden">
+      <span className="flex h-11 w-11 items-center justify-center rounded-full border border-brand-orange/30 bg-brand-greenDark text-brand-orange shadow-[0_8px_20px_rgba(18,50,39,.12)]">
+        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M3.75 11.25 12 4.5l8.25 6.75v7.5a.75.75 0 0 1-.75.75h-15a.75.75 0 0 1-.75-.75v-7.5Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+          <path d="M9.25 19.5v-5.25h5.5v5.25" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+          <path d="M15.8 5.7c.25-1.65 1.35-2.7 3.2-2.95-.12 1.7-1.2 2.73-3.2 2.95Z" fill="currentColor" />
         </svg>
-      </div>
+      </span>
       <div>
-        <p className="font-display text-base font-bold text-on-surface">Homestay Booking</p>
-        <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">Đặt phòng homestay</p>
+        <p className="font-display text-base font-semibold tracking-[0.01em] text-on-surface">The Serene Villa</p>
+        <p className="mt-0.5 text-[9px] font-medium uppercase tracking-[0.22em] text-on-surface-variant">Curated stays</p>
       </div>
     </div>
   )

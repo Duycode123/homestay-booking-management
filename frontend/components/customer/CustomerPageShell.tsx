@@ -11,21 +11,13 @@ export function CustomerPageShell({
 }) {
   return (
     <main
+      id="main-content"
       className={
         contained
-          ? 'relative flex h-[calc(100dvh-5rem)] flex-col overflow-hidden bg-brand-bgGray text-on-surface'
-          : 'relative min-h-screen bg-brand-bgGray text-on-surface'
+          ? 'flex h-[calc(100dvh-5rem)] flex-col overflow-hidden bg-brand-bgGray text-on-surface'
+          : 'min-h-screen bg-brand-bgGray text-on-surface'
       }
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.35]"
-        style={{
-          backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(26,28,30,0.04) 1px, transparent 0)',
-          backgroundSize: '28px 28px',
-        }}
-      />
-      <div className="pointer-events-none absolute -left-24 top-0 h-72 w-72 rounded-full bg-brand-orange/8 blur-3xl" aria-hidden />
       <div className={contained ? 'relative flex min-h-0 flex-1 flex-col overflow-hidden' : 'relative overflow-x-hidden'}>
         <section
           className={
@@ -42,7 +34,7 @@ export function CustomerPageShell({
 }
 
 export function CustomerPageHeader({
-  eyebrow = 'Homestay Booking',
+  eyebrow = 'The Serene Villa',
   title,
   description,
   className = '',
@@ -55,18 +47,17 @@ export function CustomerPageHeader({
   return (
     <div
       className={[
-        'mb-6 overflow-hidden rounded-[28px] border border-outline-variant bg-white p-6 shadow-[var(--shadow-card)] md:p-8',
+        'mb-8 border-b border-outline-variant pb-6 pt-1 md:pb-8',
         className,
       ].join(' ')}
     >
-      <div className="relative">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-brand-orange/10 blur-2xl"
-        />
-        <p className="relative font-display text-sm font-bold uppercase tracking-[0.14em] text-brand-orange">{eyebrow}</p>
-        <h1 className="relative mt-3 font-display text-3xl font-bold tracking-tight text-on-surface">{title}</h1>
-        <p className="relative mt-2 max-w-2xl text-sm leading-6 text-on-surface-variant">{description}</p>
+      <div>
+        <div className="flex items-center gap-3">
+          <span aria-hidden className="h-px w-8 bg-brand-orange" />
+          <p className="font-display text-[10px] font-semibold uppercase tracking-[0.22em] text-brand-orange">{eyebrow}</p>
+        </div>
+        <h1 className="mt-3 font-editorial text-4xl font-normal leading-tight text-on-surface sm:text-5xl">{title}</h1>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-on-surface-variant">{description}</p>
       </div>
     </div>
   )
@@ -76,7 +67,7 @@ export function CustomerCard({ children, className = '' }: { children: ReactNode
   return (
     <section
       className={[
-        'rounded-[24px] border border-outline-variant bg-white p-6 shadow-[var(--shadow-card)] transition-shadow hover:shadow-[var(--shadow-elevated)]',
+        'rounded-xl border border-outline-variant bg-white/95 p-6 shadow-[var(--shadow-card)] transition-colors hover:border-outline',
         className,
       ].join(' ')}
     >

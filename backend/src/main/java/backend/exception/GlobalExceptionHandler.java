@@ -2,9 +2,11 @@ package backend.exception;
 
 import backend.common.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -14,6 +16,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -34,6 +37,19 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<Map<String, String>>> handleUnreadableRequest(
+            HttpMessageNotReadableException ex
+    ) {
+        return ResponseEntity.badRequest().body(
+                ApiResponse.<Map<String, String>>builder()
+                        .success(false)
+                        .message("Nội dung yêu cầu không hợp lệ")
+                        .data(Map.of())
+                        .build()
+        );
+    }
+
     @ExceptionHandler(AuthException.class)
     public ResponseEntity<ApiResponse<String>> handleAuthException(AuthException ex) {
         return ResponseEntity.badRequest().body(
@@ -50,6 +66,17 @@ public class GlobalExceptionHandler {
                 ApiResponse.<String>builder()
                         .success(false)
                         .message("Email hoac mat khau khong chinh xac")
+                        .build()
+        );
+    }
+
+    @ExceptionHandler(EmailDeliveryException.class)
+    public ResponseEntity<ApiResponse<String>> handleEmailDeliveryException(EmailDeliveryException ex) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(
+                ApiResponse.<String>builder()
+                        .success(false)
+                        .message("Dịch vụ email tạm thời không khả dụng. Vui lòng thử lại sau.")
+                        .data(null)
                         .build()
         );
     }
@@ -112,6 +139,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataAccessException.class)
     public ResponseEntity<ApiResponse<String>> handleDataAccessException(DataAccessException ex, HttpServletRequest request) {
         String method = request == null ? "" : request.getMethod();
+        String path = request == null ? "" : request.getRequestURI();
+        log.error("Database access failed for {} {}", method, path, ex);
         String message = "GET".equalsIgnoreCase(method)
                 ? "Không thể tải dữ liệu. Vui lòng thử lại."
                 : "Không thể lưu dữ liệu. Vui lòng thử lại.";

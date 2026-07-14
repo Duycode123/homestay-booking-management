@@ -10,6 +10,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -28,6 +30,9 @@ public class CreateRoomRequest {
 
     @Size(max = 500, message = "URL anh phong toi da 500 ky tu")
     private String imageUrl;
+
+    @Size(max = 3, message = "Mỗi phòng chỉ được thêm tối đa 3 ảnh phụ")
+    private List<@Size(max = 500, message = "URL ảnh phòng tối đa 500 ký tự") String> additionalImageUrls;
 
     private RoomStatus status;
 }

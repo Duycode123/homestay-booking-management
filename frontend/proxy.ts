@@ -10,6 +10,10 @@ function hasAuthCookie(request: NextRequest) {
   return AUTH_COOKIE_NAMES.some((name) => request.cookies.has(name))
 }
 
+function hasRefreshCookie(request: NextRequest) {
+  return request.cookies.has('refresh_token')
+}
+
 function decodeJwtPayload(token: string) {
   try {
     const parts = token.split('.')
@@ -59,6 +63,10 @@ export function proxy(request: NextRequest) {
 
   const accessTokenPayload = getAccessTokenPayload(request)
   if (isExpired(accessTokenPayload)) {
+    if (hasRefreshCookie(request)) {
+      return NextResponse.next()
+    }
+
     return redirectToLogin(request)
   }
 

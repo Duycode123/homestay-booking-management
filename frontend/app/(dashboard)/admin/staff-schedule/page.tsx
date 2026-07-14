@@ -200,7 +200,7 @@ export default function AdminStaffSchedulePage() {
           }
         />
 
-        <div className="mx-auto max-w-6xl space-y-4 px-5 py-6 sm:px-8">
+        <div className="mx-auto max-w-[1440px] space-y-5 px-5 py-6 sm:px-8">
           <AdminToast message={toast} onDismiss={() => setToast('')} />
 
           {errorMessage && (
@@ -209,7 +209,7 @@ export default function AdminStaffSchedulePage() {
             </div>
           )}
 
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-3 xl:max-w-[920px]">
             <AdminStatCard
               label="Chờ duyệt"
               value={isLoading ? '…' : stats.pending}

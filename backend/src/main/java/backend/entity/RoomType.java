@@ -28,6 +28,9 @@ public class RoomType {
     @Column(name = "hourly_rate", nullable = false, precision = 12, scale = 2)
     private BigDecimal pricePerHour;
 
+    @Column(name = "active", nullable = false)
+    private boolean active;
+
     @Transient
     private Integer capacity;
 
@@ -41,6 +44,7 @@ public class RoomType {
     public void prePersist() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        active = true;
     }
 
     @PreUpdate

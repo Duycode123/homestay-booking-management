@@ -6,6 +6,7 @@ export type PendingBooking = {
   bookingId: string
   roomId: string
   date: string
+  endDate?: string
   startTime: string
   endTime: string
   duration: number
@@ -47,6 +48,7 @@ export function pendingBookingToSearchParams(booking: PendingBooking) {
     bookingId: booking.bookingId,
     roomId: booking.roomId,
     date: booking.date,
+    endDate: booking.endDate ?? booking.date,
     startTime: booking.startTime,
     endTime: booking.endTime,
     duration: String(booking.duration),
@@ -90,6 +92,7 @@ function normalizePendingBooking(value: unknown): PendingBooking | null {
     bookingId: booking.bookingId,
     roomId: booking.roomId,
     date: booking.date,
+    endDate: typeof booking.endDate === 'string' ? booking.endDate : booking.date,
     startTime: booking.startTime,
     endTime: booking.endTime,
     duration: booking.duration,
@@ -102,5 +105,5 @@ function normalizePendingBooking(value: unknown): PendingBooking | null {
 }
 
 function isPaymentMethod(value: unknown): value is PaymentMethod {
-  return value === 'bank_transfer' || value === 'e_wallet' || value === 'cash'
+  return value === 'bank_transfer'
 }

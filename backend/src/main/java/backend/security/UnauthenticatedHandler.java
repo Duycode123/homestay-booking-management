@@ -7,6 +7,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
+import lombok.RequiredArgsConstructor;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -14,7 +15,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Component
+@RequiredArgsConstructor
 public class UnauthenticatedHandler implements AuthenticationEntryPoint {
+
+    private final ObjectMapper objectMapper;
+
     @Override
     public void commence(
             HttpServletRequest request,
@@ -27,8 +32,8 @@ public class UnauthenticatedHandler implements AuthenticationEntryPoint {
 
         Map<String, Object> body = new HashMap<>();
         body.put("success", false);
-        body.put("message", "Token xác thực không hợp lệ hoặc đã hết hạn");
+        body.put("message", "Phiên đăng nhập không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.");
 
-        new ObjectMapper().writeValue(response.getOutputStream(), body);
+        objectMapper.writeValue(response.getOutputStream(), body);
     }
 }

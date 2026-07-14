@@ -1,4 +1,4 @@
-import { bookingRooms, findBookingRoom, type BookingRoom } from '@/components/booking/booking-data'
+import type { BookingRoom } from '@/components/booking/booking-data'
 import {
   findBookingRoomInCatalog,
   mapBackendRoomToBookingRoom,
@@ -9,34 +9,22 @@ import { fetchRoomReviewSummaries } from '@/lib/public-room-review-service'
 
 export type PublicBookingRoomCatalog = {
   rooms: BookingRoom[]
-  source: 'backend' | 'fallback'
+  source: 'backend'
 }
 
 export async function fetchPublicBookingRoomCatalog(): Promise<PublicBookingRoomCatalog> {
-  try {
-    const [rooms, reviewSummaries, equipment] = await Promise.all([
-      fetchRooms(),
-      fetchRoomReviewSummaries().catch(() => new Map()),
-      fetchPublicRoomEquipment().catch(() => []),
-    ])
-    const equipmentByRoomId = groupEquipmentByRoomId(equipment)
+  const [rooms, reviewSummaries, equipment] = await Promise.all([
+    fetchRooms(),
+    fetchRoomReviewSummaries().catch(() => new Map()),
+    fetchPublicRoomEquipment().catch(() => []),
+  ])
+  const equipmentByRoomId = groupEquipmentByRoomId(equipment)
 
-    return {
-      rooms: rooms.map((room, index) =>
-        mapBackendRoomToBookingRoom(
-          room,
-          index,
-          reviewSummaries.get(String(room.id)),
-          equipmentByRoomId.get(room.id),
-        ),
-      ),
-      source: 'backend',
-    }
-  } catch {
-    return {
-      rooms: bookingRooms,
-      source: 'fallback',
-    }
+  return {
+    rooms: rooms.map((room, index) =>
+      mapBackendRoomToBookingRoom(room, index, reviewSummaries.get(String(room.id)), equipmentByRoomId.get(room.id)),
+    ),
+    source: 'backend',
   }
 }
 
@@ -45,7 +33,7 @@ export async function fetchPublicBookingRooms(): Promise<BookingRoom[]> {
   return rooms
 }
 
-export async function resolveBookingRoom(roomId: string | null, catalog: BookingRoom[] = bookingRooms) {
+export async function resolveBookingRoom(roomId: string | null, catalog: BookingRoom[] = []) {
   if (!roomId) return null
 
   const backendCatalogRoom = await resolveBackendCatalogRoom(roomId)
@@ -66,7 +54,7 @@ export async function resolveBookingRoom(roomId: string | null, catalog: Booking
 
     return mapBackendRoomToBookingRoom(room, 0, reviewSummaries.get(String(room.id)), equipment)
   } catch {
-    return findBookingRoom(roomId)
+    return null
   }
 }
 
@@ -79,34 +67,10 @@ function groupEquipmentByRoomId(equipment: PublicRoomEquipment[]) {
   }, new Map<number, PublicRoomEquipment[]>())
 }
 
-export async function resolveBookingRoomOrFallback(roomId: string | null, catalog: BookingRoom[] = bookingRooms) {
-  return (await resolveBookingRoom(roomId, catalog)) ?? bookingRooms[0]
-}
-
-function normalizeRoomIdentity(value?: string | null) {
-  return (value ?? '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/gi, ' ')
-    .trim()
-    .toLowerCase()
-}
-
 async function resolveBackendCatalogRoom(roomId: string) {
   try {
     const catalog = await fetchPublicBookingRoomCatalog()
-    if (catalog.source !== 'backend') return null
-
-    const staticRoom = findBookingRoom(roomId)
-    const normalizedRoomId = normalizeRoomIdentity(roomId)
-    const normalizedStaticName = normalizeRoomIdentity(staticRoom?.name)
-
-    return catalog.rooms.find((room) => {
-      if (room.id === roomId || room.code === roomId) return true
-      if (normalizeRoomIdentity(room.name) === normalizedRoomId) return true
-
-      return Boolean(normalizedStaticName && normalizeRoomIdentity(room.name) === normalizedStaticName)
-    }) ?? null
+    return findBookingRoomInCatalog(roomId, catalog.rooms)
   } catch {
     return null
   }

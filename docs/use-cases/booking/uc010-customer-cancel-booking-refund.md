@@ -22,18 +22,18 @@ Allow a customer to cancel a paid or deposit-paid booking before the 24-hour pol
 
 1. Customer requests cancellation for a booking.
 2. Backend verifies ownership, status, and the 24-hour cancellation policy.
-3. Backend sets booking status to `CANCELLED`.
-4. Backend calculates the refund as the booking total for a fully paid booking, or the successful payment amount for a deposit-paid booking, capped at the booking total.
-5. Backend creates an in-app notification with customer name, booking code, refund amount, refund method, and expected refund date.
-6. Backend sends an email with the same template variables.
-7. Backend returns the cancelled booking and refund summary.
+3. Backend creates a cancellation request in `PENDING`; the booking and room reservation stay active while admin reviews it.
+4. Admin approval sets the booking to `CANCELLED`, releases availability, and calculates the refund as the booking total for a fully paid booking or the successful collected amount for a deposit-paid booking.
+5. Backend creates a unique `booking_refund` in `PENDING` and sends the approval/expected-date notification.
+6. Admin moves the refund through `PROCESSING` to `COMPLETED` with one confirmation after the banking application reports success. The system generates a unique reconciliation reference when the optional bank code is omitted; an optional Cloudinary proof image may also be retained. A failed transfer moves to `RETRY_REQUIRED`.
+7. Customer reads a three-step timeline from `GET /api/bookings/{id}/refund`.
 
 ## Alternate and error flows
 
 - Booking not found or belongs to another customer: backend rejects the request.
 - Booking already cancelled or completed: backend rejects the request.
 - Cancellation is within 24 hours of the start time: backend rejects the request.
-- Email delivery failure: backend returns an error and cancellation is not committed.
+- Email delivery failure: in-app state remains authoritative and the mail failure is logged; financial state is not rolled back because of a notification outage.
 
 ## Business rules
 
@@ -54,13 +54,11 @@ Allow a customer to cancel a paid or deposit-paid booking before the 24-hour pol
 
 ## Current implementation notes
 
-- Implemented incrementally inside the booking use-case service.
+- Cancellation approval remains inside the booking use-case boundary; refund reconciliation is implemented in the feature-first `refund` module with explicit inbound/outbound ports.
 - Notification content is template-based in `BookingCancellationNotificationService`.
 - Successful online payment amounts are loaded through `LoadSuccessfulPaymentAmountPort`; cancellation is rejected for manual reconciliation if no successful amount can be established.
-- The refund summary (amount, percentage, method, expected date) is computed and communicated, but no `payment_transaction` refund row is written and no money is moved.
+- The original successful payment remains immutable. A separate `booking_refund` row records the manual transfer lifecycle and proof without falsifying the original payment transaction.
 
 ## Known gaps / follow-up (deliberately deferred)
 
-- **Automated refund disbursement is not implemented and is intentionally deferred.** Actually returning money requires calling the live SePay/VNPay refund API with production merchant credentials, which is not available in this environment; implementing a fake disbursement would misrepresent behaviour.
-- Recording a `REFUNDED` reconciliation row would require adding a value to the PostgreSQL `payment_transaction_status` named enum (a payment-table schema migration). This is scoped as a follow-up to be done alongside the real disbursement integration, so the enum and the code that sets it land together rather than leaving an unused status.
-- Until then, cancellations of paid bookings should be reconciled manually by staff using the booking status change plus the emailed/in-app refund summary.
+- **Automated provider disbursement remains deferred.** Real provider reversal requires supported production merchant APIs and credentials. The implemented center records authenticated admin confirmation, completion time, and a unique reconciliation reference, with optional bank code/proof. It does not pretend that cancellation approval itself moved money.

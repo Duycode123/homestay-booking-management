@@ -5,14 +5,12 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { clearForceHomepageTop, markForceHomepageTop } from '@/lib/navigation/scroll-restoration'
 import {
-  SUPPORT_EMAIL,
-  SUPPORT_HOTLINE,
   footerExploreLinks,
   footerLegalLinks,
   footerSupportLinks,
   getHomeSectionIdFromHref,
-  isHomepageAnchorHref,
   goToHomepageTop,
+  isHomepageAnchorHref,
   scrollToHomeSection,
   scrollToPageTop,
   shouldScrollToTop,
@@ -51,142 +49,93 @@ export default function HomestayFooter() {
   }
 
   return (
-    <footer className="relative overflow-hidden text-white">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[linear-gradient(165deg,#042A16_0%,#02180c_48%,#010a06_100%)]"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-orange/70 to-transparent"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -left-24 top-20 h-64 w-64 rounded-full bg-brand-orange/8 blur-3xl"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-20 bottom-32 h-72 w-72 rounded-full bg-brand-greenLight/15 blur-3xl"
-      />
+    <footer className="relative overflow-hidden bg-secondary text-white">
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-orange/75 to-transparent" aria-hidden />
+      <div className="absolute -right-40 -top-40 h-96 w-96 rounded-full border border-white/[0.05]" aria-hidden />
+      <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full border border-brand-orange/10" aria-hidden />
 
-      <div className="relative mx-auto max-w-7xl px-5 py-14 sm:px-8 sm:py-16">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.25fr_0.8fr_0.9fr_1.05fr]">
-          <div>
-            <Link
-              href="/"
-              onClick={handleLogoClick}
-              className="inline-flex items-center gap-3"
-              aria-label="Homestay Booking homepage"
-            >
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-orange text-white shadow-[0_12px_30px_rgba(255,117,24,0.35)]">
-                <LogoIcon />
+      <div className="relative mx-auto max-w-[1400px] px-5 py-14 sm:px-8 sm:py-18">
+        <div className="grid gap-12 border-b border-white/10 pb-12 lg:grid-cols-[1.4fr_0.7fr_0.8fr_1fr]">
+          <div className="max-w-md">
+            <Link href="/" onClick={handleLogoClick} className="inline-flex items-center gap-3" aria-label="Trang chủ The Serene Villa">
+              <span className="flex h-12 w-12 items-center justify-center rounded-full border border-brand-orange/45 bg-white/[0.06] text-primary-fixed">
+                <BrandMark />
               </span>
-              <span className="font-display text-xl font-bold text-white">Homestay Booking</span>
+              <span>
+                <span className="font-editorial block text-2xl font-semibold tracking-[-0.02em]">The Serene Villa</span>
+                <span className="mt-1 block text-[9px] font-semibold uppercase tracking-[0.24em] text-white/55">Stay in serenity</span>
+              </span>
             </Link>
-            <p className="mt-4 max-w-sm text-sm leading-6 text-white/62">
-              Đặt phòng homestay trực tuyến dành cho khách lưu trú, nghệ sĩ và người sáng tạo.
+            <p className="mt-6 text-sm leading-7 text-white/68">
+              Nền tảng đặt homestay minh bạch, thuận tiện và chỉn chu — từ lúc chọn phòng đến khi hoàn tất lưu trú.
             </p>
-            <div className="mt-6 flex gap-3" aria-label="Homestay Booking social links">
-              {['IG', 'FB', 'YT'].map((item) => (
-                <span
-                  key={item}
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 font-display text-xs font-bold text-white/70 transition-colors hover:border-brand-orange/40 hover:text-brand-orange"
-                >
-                  {item}
-                </span>
-              ))}
+            <div className="mt-7 flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-fixed">
+              <span className="rounded-full border border-white/12 px-3 py-2">Lịch trống rõ ràng</span>
+              <span className="rounded-full border border-white/12 px-3 py-2">Hỗ trợ tại chỗ</span>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-5 backdrop-blur-sm">
-            <h3 className="font-display text-sm font-bold uppercase tracking-[0.08em] text-brand-orange">Khám phá</h3>
-            <nav className="mt-5 grid gap-3 text-sm text-white/62" aria-label="Footer khám phá">
-              {footerExploreLinks.map((item) => (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  onClick={(event) => handleNavLinkClick(event, item.href)}
-                  className="transition-colors hover:text-white"
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
+          <FooterColumn title="Khám phá">
+            {footerExploreLinks.map((item) => (
+              <Link key={item.label} href={item.href} onClick={(event) => handleNavLinkClick(event, item.href)} className="footer-link">
+                {item.label}
+              </Link>
+            ))}
+          </FooterColumn>
 
-          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-5 backdrop-blur-sm">
-            <h3 className="font-display text-sm font-bold uppercase tracking-[0.08em] text-brand-orange">Hỗ trợ</h3>
-            <nav className="mt-5 grid gap-3 text-sm text-white/62" aria-label="Footer hỗ trợ">
-              {footerSupportLinks.map((item) => (
-                <Link key={item.label} href={item.href} className="transition-colors hover:text-white">
-                  {item.label}
-                </Link>
-              ))}
-              <a href={`mailto:${SUPPORT_EMAIL}`} className="transition-colors hover:text-white">
-                Liên hệ
-              </a>
-            </nav>
-          </div>
+          <FooterColumn title="Thông tin">
+            {footerSupportLinks.map((item) => (
+              <Link key={item.label} href={item.href} className="footer-link">
+                {item.label}
+              </Link>
+            ))}
+            {footerLegalLinks.map((item) => (
+              <Link key={item.label} href={item.href} className="footer-link">
+                {item.label}
+              </Link>
+            ))}
+          </FooterColumn>
 
-          <div className="rounded-2xl border border-brand-orange/20 bg-gradient-to-br from-brand-orange/15 to-white/[0.04] p-5 backdrop-blur-sm">
-            <h3 className="font-display text-sm font-bold uppercase tracking-[0.08em] text-white">Liên hệ</h3>
-            <div className="mt-5 space-y-3 text-sm leading-6 text-white/75">
-              <p>
-                <span className="text-white/90">Hotline:</span> {SUPPORT_HOTLINE}
-              </p>
-              <p>
-                <span className="text-white/90">Email:</span>{' '}
-                <a href={`mailto:${SUPPORT_EMAIL}`} className="text-brand-orange hover:underline">
-                  {SUPPORT_EMAIL}
-                </a>
-              </p>
-              <p>
-                <span className="text-white/90">Địa chỉ:</span> Hà Nội, Việt Nam
-              </p>
-            </div>
-
+          <div className="border-l-0 border-white/10 lg:border-l lg:pl-8">
+            <p className="eyebrow text-primary-fixed">Sẵn sàng lưu trú?</p>
+            <h2 className="font-editorial mt-4 text-3xl font-semibold leading-tight">Tìm một căn phòng phù hợp với nhịp nghỉ của bạn.</h2>
             <div className="mt-6 flex flex-wrap gap-3">
+              <Link href="/rooms" className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-secondary transition hover:-translate-y-0.5">
+                Xem phòng trống
+              </Link>
               {!isAuthenticated && (
-                <Link
-                  href="/login"
-                  className="rounded-lg border border-white/20 px-4 py-2.5 font-display text-sm font-semibold text-white/90 transition-colors hover:bg-white/10 hover:text-white"
-                >
+                <Link href="/login" className="rounded-full border border-white/20 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
                   Đăng nhập
                 </Link>
               )}
-              <Link
-                href="/rooms"
-                onClick={(event) => handleNavLinkClick(event, '/rooms')}
-                className="rounded-lg bg-brand-orange px-4 py-2.5 font-display text-sm font-semibold text-white shadow-[0_10px_24px_rgba(255,117,24,0.35)] transition-colors hover:bg-brand-orangeHover"
-              >
-                Khám phá phòng
-              </Link>
             </div>
           </div>
         </div>
 
-        <div className="mt-12 rounded-2xl border border-white/8 bg-black/20 px-5 py-5 sm:flex sm:items-center sm:justify-between sm:px-6">
-          <p className="text-sm text-white/50">© 2026 Homestay Booking. All rights reserved.</p>
-          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 sm:mt-0">
-            {footerLegalLinks.map((item) => (
-              <Link key={item.label} href={item.href} className="text-sm text-white/50 transition-colors hover:text-brand-orange">
-                {item.label}
-              </Link>
-            ))}
-          </div>
+        <div className="flex flex-col gap-3 pt-7 text-xs text-white/48 sm:flex-row sm:items-center sm:justify-between">
+          <p>© {new Date().getFullYear()} The Serene Villa. All rights reserved.</p>
+          <p>Đặt phòng chủ động · Trải nghiệm chỉn chu</p>
         </div>
       </div>
     </footer>
   )
 }
 
-function LogoIcon() {
+function FooterColumn({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
-      <path d="M9 18V5l10-2v13" />
-      <path d="M9 9l10-2" />
-      <circle cx="6" cy="18" r="3" />
-      <circle cx="16" cy="16" r="3" />
+    <div>
+      <h2 className="eyebrow text-primary-fixed">{title}</h2>
+      <nav className="mt-5 grid gap-3.5 text-sm text-white/64">{children}</nav>
+    </div>
+  )
+}
+
+function BrandMark() {
+  return (
+    <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+      <path d="m3.5 11 8.5-7 8.5 7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M5.5 9.6V20h13V9.6M9 20v-6.5h6V20" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M16.2 6.6c.8-1.6 2-2.4 3.6-2.5-.1 1.8-1.1 3-3 3.6" strokeLinecap="round" />
     </svg>
   )
 }

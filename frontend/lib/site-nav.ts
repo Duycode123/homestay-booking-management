@@ -3,24 +3,26 @@ export type SiteNavItem = {
   href: string
 }
 
-/** Header nav — action-oriented, no About (lives in footer + bottom section) */
+/** Header nav — public discovery and service information. */
 export const publicNavItems: SiteNavItem[] = [
+  { label: 'Trang chủ', href: '/' },
   { label: 'Phòng homestay', href: '/rooms' },
-  { label: 'Tiện nghi', href: '/#equipment' },
-  { label: 'Quy trình', href: '/#process' },
-  { label: 'Hỗ trợ', href: '/customer/support' },
+  { label: 'Tiện nghi', href: '/amenities' },
+  { label: 'Về chúng tôi', href: '/about' },
+  { label: 'Quy trình', href: '/process' },
+  { label: 'Hỗ trợ', href: '/support' },
 ]
 
 /** Footer explore — includes brand story */
 export const footerExploreLinks: SiteNavItem[] = [
   { label: 'Phòng homestay', href: '/rooms' },
-  { label: 'Tiện nghi', href: '/#equipment' },
-  { label: 'Quy trình', href: '/#process' },
+  { label: 'Tiện nghi', href: '/amenities' },
+  { label: 'Quy trình', href: '/process' },
   { label: 'Về chúng tôi', href: '/about' },
 ]
 
 export const footerSupportLinks: SiteNavItem[] = [
-  { label: 'Trung tâm hỗ trợ', href: '/customer/support' },
+  { label: 'Trung tâm hỗ trợ', href: '/support' },
   { label: 'Chính sách đặt phòng', href: '/booking-policy' },
   { label: 'Chính sách hủy lịch', href: '/cancellation-policy' },
 ]
@@ -37,10 +39,7 @@ export function homepageNavItems(): SiteNavItem[] {
   )
 }
 
-export const SUPPORT_EMAIL = 'support@homestay.local'
-export const SUPPORT_HOTLINE = '0900 000 000'
-
-export const HOMEPAGE_ANCHOR_SECTION_IDS = ['equipment', 'process'] as const
+export const HOMEPAGE_ANCHOR_SECTION_IDS = ['process'] as const
 export type HomepageAnchorSectionId = (typeof HOMEPAGE_ANCHOR_SECTION_IDS)[number]
 
 export const HEADER_SCROLL_OFFSET_PX = 80
@@ -121,8 +120,13 @@ export function isPublicNavItemActive(
   href: string,
   activeHomeSection: string | null,
 ) {
-  if (href === '/customer/support' && pathname === '/customer/support') return true
-  if (href === '/rooms' && pathname === '/rooms') return true
+  if (href === '/') return pathname === '/'
+
+  if (
+    href.startsWith('/')
+    && !href.startsWith('/#')
+    && (pathname === href || pathname.startsWith(`${href}/`))
+  ) return true
 
   if (pathname === '/') {
     const sectionId = getHomeSectionIdFromHref(href)

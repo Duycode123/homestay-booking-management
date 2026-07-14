@@ -192,6 +192,7 @@ public class FacilityConditionService implements
             case AVAILABLE, IN_USE -> FacilityCondition.GOOD;
             case NEED_CLEANING -> FacilityCondition.NEED_CLEANING;
             case MAINTENANCE -> FacilityCondition.NEED_CHECK;
+            case INACTIVE -> throw new IllegalStateException("Khong the cap nhat tinh trang cho phong da luu tru");
         };
     }
 

@@ -1,9 +1,11 @@
 'use client'
 
+import ProjectSelect from '@/components/ui/ProjectSelect'
+
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import AuthGuard from '@/components/AuthGuard'
 import { EmptyState, StaffPageShell, StatCard, Toast } from './StaffShared'
-import { cancelAdminBooking, fetchAdminBookings, getAdminBookingById, updateAdminBookingStatus } from '@/lib/admin/adminBookingApi'
+import { cancelAdminBooking, fetchAdminBookings, getAdminBookingById, settleAdminBookingAtCheckout, updateAdminBookingStatus } from '@/lib/admin/adminBookingApi'
 import { BOOKING_STATUS_LABELS, PAYMENT_STATUS_LABELS } from '@/lib/admin/bookingLabels'
 import { type AdminBooking, type BookingFilters, type BookingStatus, type PaymentStatus } from '@/lib/admin/types'
 
@@ -144,6 +146,22 @@ export default function StaffBookingsPage() {
       return
     }
 
+    if (action.kind === 'settle') {
+      setConfirmAction({
+        title: 'Thu phần còn lại và checkout?',
+        description: `${booking.bookingCode} còn ${formatCurrency(booking.remainingAmount)}. Hệ thống sẽ ghi nhận đã thu đủ và hoàn tất checkout.`,
+        confirmLabel: 'Xác nhận đã thu & checkout',
+        variant: 'primary',
+        run: async () => {
+          const updated = await settleAdminBookingAtCheckout(booking.bookingId)
+          setToastMessage(`Đã kết toán và checkout ${updated.bookingCode}.`)
+          await loadBookings()
+          setSelectedBooking(updated)
+        },
+      })
+      return
+    }
+
     setConfirmAction({
       title: action.title,
       description: action.description(booking),
@@ -168,7 +186,7 @@ export default function StaffBookingsPage() {
               <p className="font-display text-sm font-bold uppercase tracking-wide text-brand-orange">Vận hành đặt phòng</p>
               <h1 className="mt-2 font-display text-[32px] font-bold leading-10 text-on-surface">Quản lý booking</h1>
               <p className="mt-2 max-w-2xl text-base leading-6 text-on-surface-variant">
-                Màn hình staff này đã route vào backend booking management thay vì dùng mock local state.
+                Dữ liệu đặt phòng được đồng bộ trực tiếp từ hệ thống quản lý.
               </p>
             </div>
             <button type="button" onClick={() => void loadBookings()} className="btn-secondary self-start">
@@ -236,7 +254,7 @@ export default function StaffBookingsPage() {
                 onChange={(value) => setFilters((current) => ({ ...current, paymentStatus: value as PaymentStatus | 'ALL' }))}
               >
                 <option value="ALL">Tất cả thanh toán</option>
-                {(['PAID', 'UNPAID', 'PENDING'] as PaymentStatus[]).map((status) => (
+                {(['PAID', 'PARTIALLY_PAID', 'UNPAID', 'PENDING'] as PaymentStatus[]).map((status) => (
                   <option key={status} value={status}>
                     {PAYMENT_STATUS_LABELS[status]}
                   </option>
@@ -303,6 +321,7 @@ export default function StaffBookingsPage() {
 type StaffBookingAction =
   | { kind: 'detail'; label: string }
   | { kind: 'cancel'; label: string }
+  | { kind: 'settle'; label: string }
   | {
       kind: 'status'
       label: string
@@ -313,6 +332,10 @@ type StaffBookingAction =
 
 function getAvailableActions(booking: AdminBooking): StaffBookingAction[] {
   const status = booking.bookingStatus
+
+  if (booking.cancellationRequestStatus === 'PENDING') {
+    return [{ kind: 'detail', label: 'Xem yêu cầu hủy' }]
+  }
 
   if (status === 'PENDING_PAYMENT') {
     if (booking.paymentMethodCode !== 'CASH') {
@@ -339,10 +362,10 @@ function getAvailableActions(booking: AdminBooking): StaffBookingAction[] {
     return [
       {
         kind: 'status',
-        label: 'Xác nhận thu đủ tiền',
-        title: 'Xác nhận khách đã thanh toán đủ?',
-        nextStatus: 'PAID',
-        description: (selectedBooking) => `${selectedBooking.bookingCode} sẽ chuyển sang trạng thái đã thanh toán đủ.`,
+        label: 'Check-in',
+        title: 'Check-in booking đã cọc?',
+        nextStatus: 'CHECKED_IN',
+        description: (selectedBooking) => `${selectedBooking.bookingCode} đã cọc 50%. Chỉ được check-in từ 5 phút trước giờ nhận phòng.`,
       },
       { kind: 'cancel', label: 'Hủy booking' },
       { kind: 'detail', label: 'Xem chi tiết' },
@@ -356,7 +379,7 @@ function getAvailableActions(booking: AdminBooking): StaffBookingAction[] {
         label: 'Check-in',
         title: 'Check-in booking?',
         nextStatus: 'CHECKED_IN',
-        description: (booking) => `${booking.customerName} sẽ được ghi nhận đang sử dụng phòng.`,
+        description: (booking) => `${booking.customerName} sẽ được ghi nhận đang sử dụng phòng. Chỉ được check-in sớm tối đa 5 phút.`,
       },
       { kind: 'cancel', label: 'Hủy booking' },
       { kind: 'detail', label: 'Xem chi tiết' },
@@ -364,6 +387,13 @@ function getAvailableActions(booking: AdminBooking): StaffBookingAction[] {
   }
 
   if (status === 'CHECKED_IN') {
+    if (booking.remainingAmount > 0) {
+      return [
+        { kind: 'settle', label: `Thu còn lại ${formatCurrency(booking.remainingAmount)} & checkout` },
+        { kind: 'detail', label: 'Xem chi tiết' },
+      ]
+    }
+
     return [
       {
         kind: 'status',
@@ -408,6 +438,11 @@ function BookingCard({
               {booking.note}
             </p>
           )}
+          {booking.cancellationRequestStatus === 'PENDING' && (
+            <div className="mt-3 rounded-2xl border border-[#dfb980] bg-[#fff8eb] px-3 py-2.5 text-sm leading-6 text-[#79582f]">
+              <strong>Đang chờ admin duyệt hủy.</strong> Không được check-in booking này cho đến khi yêu cầu được xử lý.
+            </div>
+          )}
         </div>
 
         <div className="flex flex-wrap gap-2 xl:justify-end">
@@ -428,9 +463,9 @@ function BookingCard({
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
-        <Metric label="Thanh toán" value={PAYMENT_STATUS_LABELS[booking.paymentStatus]} />
+        <Metric label="Đã thanh toán" value={formatCurrency(booking.paidAmount)} />
+        <Metric label="Còn phải thu" value={formatCurrency(booking.remainingAmount)} />
         <Metric label="Tổng tiền" value={formatCurrency(booking.totalPrice)} />
-        <Metric label="Thời lượng" value={`${formatHours(booking.durationHours)} giờ`} />
       </div>
     </article>
   )
@@ -453,7 +488,7 @@ function BookingDetailPanel({
         type="button"
         aria-label="Đóng chi tiết booking"
         onClick={onClose}
-        className="fixed inset-0 z-[60] bg-[#042A16]/50 backdrop-blur-sm"
+        className="fixed inset-0 z-[60] bg-[#173A31]/50 backdrop-blur-sm"
       />
 
       <aside className="fixed inset-y-0 right-0 z-[70] flex w-full max-w-xl flex-col border-l border-outline-variant bg-white shadow-[var(--homestay-shadow-elevated)]">
@@ -479,10 +514,27 @@ function BookingDetailPanel({
             <div className="grid gap-3 sm:grid-cols-2">
               <Metric label="Khung giờ" value={formatBookingWindow(booking.startTime, booking.endTime)} />
               <Metric label="Tổng tiền" value={formatCurrency(booking.totalPrice)} />
+              <Metric label="Đã thanh toán" value={formatCurrency(booking.paidAmount)} />
+              <Metric label="Còn phải thu" value={formatCurrency(booking.remainingAmount)} />
               <Metric label="Email" value={booking.customerEmail || 'Chưa cập nhật'} />
               <Metric label="Số điện thoại" value={booking.customerPhone || 'Chưa cập nhật'} />
             </div>
           </PanelSection>
+
+          {(booking.bookingStatus === 'PAID' || booking.bookingStatus === 'DEPOSIT_PAID') && (
+            <PanelSection title="Điều kiện check-in">
+              <div className={[
+                'rounded-2xl border px-4 py-3 text-sm leading-6',
+                booking.cancellationRequestStatus === 'PENDING'
+                  ? 'border-[#dfb980] bg-[#fff8eb] text-[#79582f]'
+                  : 'border-[#b9d7ca] bg-[#f2faf6] text-[#285f4d]',
+              ].join(' ')}>
+                {booking.cancellationRequestStatus === 'PENDING'
+                  ? 'Yêu cầu hủy đang chờ admin duyệt. Check-in tạm thời bị khóa.'
+                  : `Có thể check-in từ ${formatCheckInOpenTime(booking.startTime)} — sớm tối đa 5 phút so với giờ nhận phòng.`}
+              </div>
+            </PanelSection>
+          )}
 
           <PanelSection title="Ghi chú và tiện nghi">
             <div className="space-y-3">
@@ -545,6 +597,13 @@ function Metric({ label, value }: { label: string; value: string }) {
   )
 }
 
+function formatCheckInOpenTime(startTime: string) {
+  const date = new Date(startTime)
+  if (Number.isNaN(date.getTime())) return '5 phút trước giờ nhận phòng'
+  date.setMinutes(date.getMinutes() - 5)
+  return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })
+}
+
 function SearchInput({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   return (
     <label className="relative block">
@@ -561,9 +620,9 @@ function SearchInput({ value, onChange }: { value: string; onChange: (value: str
 
 function SelectField({ value, onChange, children }: { value: string; onChange: (value: string) => void; children: ReactNode }) {
   return (
-    <select value={value} onChange={(event) => onChange(event.target.value)} className="h-12 rounded-2xl border border-outline-variant bg-surface-container-low px-4 font-display text-sm font-bold text-on-surface outline-none transition focus:border-brand-orange focus:bg-white">
+    <ProjectSelect value={value} onChange={(event) => onChange(event.target.value)} className="h-12 rounded-2xl border border-outline-variant bg-surface-container-low px-4 font-display text-sm font-bold text-on-surface outline-none transition focus:border-brand-orange focus:bg-white">
       {children}
-    </select>
+    </ProjectSelect>
   )
 }
 
@@ -587,6 +646,7 @@ function BookingStatusBadge({ status }: { status: BookingStatus }) {
 function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
   const className = {
     PAID: 'border-on-secondary-container/40 bg-on-secondary-container text-[#001A0D]',
+    PARTIALLY_PAID: 'border-primary-container bg-primary-container text-on-primary-container',
     PENDING: 'border-primary-container bg-primary-container text-on-primary-container',
     UNPAID: 'border-outline-variant bg-surface-container-high text-on-surface-variant',
   }[status]
@@ -625,7 +685,7 @@ function ConfirmDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#042A16]/50 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#173A31]/50 p-4 backdrop-blur-sm">
       <div className="w-full max-w-md rounded-3xl border border-outline-variant bg-white p-6 shadow-[var(--homestay-shadow-elevated)]">
         <div className={['flex h-12 w-12 items-center justify-center rounded-2xl', action.variant === 'danger' ? 'bg-error-container text-error' : 'bg-primary-container text-brand-orange'].join(' ')}>
           <IconAlert />

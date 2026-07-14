@@ -10,6 +10,8 @@ import java.util.Optional;
 public interface LoadBookingPort {
     Optional<Booking> loadBooking(Integer bookingId);
 
+    Optional<Booking> loadBookingForUpdate(Integer bookingId);
+
     List<Booking> loadBlockingBookings(
             Integer roomId,
             LocalDateTime startTime,

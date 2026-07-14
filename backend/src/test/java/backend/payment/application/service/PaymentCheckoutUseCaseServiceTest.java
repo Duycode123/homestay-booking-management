@@ -1,6 +1,11 @@
 package backend.payment.application.service;
 
 import backend.config.SePayProperties;
+import backend.booking.application.port.out.LoadDiscountCodeForBookingPort;
+import backend.coupon.domain.port.in.ValidateCouponUseCase;
+import backend.coupon.domain.model.CouponValidationResult;
+import backend.coupon.domain.model.DiscountType;
+import backend.entity.DiscountCode;
 import backend.entity.Booking;
 import backend.entity.BookingStatus;
 import backend.entity.Customer;
@@ -57,6 +62,12 @@ class PaymentCheckoutUseCaseServiceTest {
     @Mock
     private CouponUsageTrackingService couponUsageTrackingService;
 
+    @Mock
+    private ValidateCouponUseCase validateCouponUseCase;
+
+    @Mock
+    private LoadDiscountCodeForBookingPort loadDiscountCodeForBookingPort;
+
     private final SePayProperties sePayProperties = new SePayProperties();
 
     private PaymentCheckoutUseCaseService paymentCheckoutUseCaseService;
@@ -72,7 +83,9 @@ class PaymentCheckoutUseCaseServiceTest {
                 paymentTransactionRepository,
                 new SePayCheckoutAdapter(sePayProperties),
                 findSePayIncomingPaymentPort,
-                couponUsageTrackingService
+                couponUsageTrackingService,
+                validateCouponUseCase,
+                loadDiscountCodeForBookingPort
         );
         ReflectionTestUtils.setField(paymentCheckoutUseCaseService, "paymentExpirationSeconds", 300L);
     }
@@ -90,7 +103,7 @@ class PaymentCheckoutUseCaseServiceTest {
 
         PaymentSessionResult result = paymentCheckoutUseCaseService.createPaymentSession(
                 12,
-                "e_wallet",
+                "bank_transfer",
                 "deposit",
                 "customer@example.com"
         );
@@ -102,10 +115,10 @@ class PaymentCheckoutUseCaseServiceTest {
         PaymentTransaction savedTransaction = transactionCaptor.getValue();
         assertEquals(PaymentProvider.SEPAY, savedTransaction.getProvider());
         assertEquals(PaymentTransactionStatus.PENDING, savedTransaction.getStatus());
-        assertEquals(new BigDecimal("50000"), savedTransaction.getAmount());
+        assertEquals(new BigDecimal("225000.00"), savedTransaction.getAmount());
         assertEquals(BookingStatus.PENDING_PAYMENT, booking.getStatus());
         assertEquals(PaymentMethod.ONLINE, booking.getPaymentMethod());
-        assertEquals("e_wallet", result.method());
+        assertEquals("bank_transfer", result.method());
         assertEquals("pending", result.status());
         assertEquals(booking.getBookingCode(), result.bookingCode());
         assertEquals(true, result.paymentUrl().startsWith("https://vietqr.app/img?"));
@@ -183,20 +196,13 @@ class PaymentCheckoutUseCaseServiceTest {
     }
 
     @Test
-    void rejectsCashCheckoutBecauseCounterPaymentIsNotSupported() {
-        Booking booking = booking(25, PaymentMethod.ONLINE);
-        when(bookingRepository.findByIdAndCustomer_Account_Email(25, "customer@example.com"))
-                .thenReturn(Optional.of(booking));
-
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> paymentCheckoutUseCaseService.createPaymentSession(
-                        25,
-                        "cash",
-                        "full",
-                        "customer@example.com"
-                )
-        );
+    void rejectsCashPaymentBecauseCustomerCheckoutIsOnlineOnly() {
+        assertThrows(IllegalArgumentException.class, () -> paymentCheckoutUseCaseService.createPaymentSession(
+                25,
+                "cash",
+                "full",
+                "customer@example.com"
+        ));
     }
 
     @Test
@@ -224,7 +230,7 @@ class PaymentCheckoutUseCaseServiceTest {
         assertEquals(true, result.paymentUrl().startsWith("https://vietqr.app/img?"));
         assertEquals(true, result.paymentUrl().contains("acc=0924054707"));
         assertEquals(true, result.paymentUrl().contains("bank=970422"));
-        assertEquals(true, result.paymentUrl().contains("amount=50000"));
+        assertEquals(true, result.paymentUrl().contains("amount=225000"));
         assertEquals(true, result.paymentUrl().contains("des=" + result.paymentId()));
         assertEquals(true, result.paymentUrl().contains("template=compact"));
     }
@@ -299,6 +305,57 @@ class PaymentCheckoutUseCaseServiceTest {
         verify(bookingRepository).save(booking);
         verify(paymentTransactionRepository).save(transaction);
         verify(couponUsageTrackingService, never()).recordPaidBookingUsage(booking);
+    }
+
+    @Test
+    void appliesCouponAtCheckoutBeforeCreatingDepositTransaction() {
+        Booking booking = booking(26, PaymentMethod.CASH);
+        booking.setPricePerHour(new BigDecimal("450000"));
+        booking.setStartTime(LocalDateTime.of(2026, 7, 20, 10, 0));
+        booking.setEndTime(LocalDateTime.of(2026, 7, 20, 11, 0));
+        DiscountCode discountCode = new DiscountCode(
+                9,
+                "SAVE50",
+                backend.entity.DiscountType.FIXED_AMOUNT,
+                new BigDecimal("50000"),
+                BigDecimal.ZERO,
+                LocalDateTime.now().toLocalDate().plusDays(1)
+        );
+        CouponValidationResult validation = new CouponValidationResult(
+                true,
+                "Hop le",
+                "SAVE50",
+                DiscountType.FIXED_AMOUNT,
+                new BigDecimal("50000"),
+                BigDecimal.ZERO,
+                new BigDecimal("450000.00"),
+                new BigDecimal("50000.00"),
+                new BigDecimal("400000.00")
+        );
+
+        when(bookingRepository.findByIdAndCustomer_Account_Email(26, "customer@example.com"))
+                .thenReturn(Optional.of(booking));
+        when(validateCouponUseCase.validate(any())).thenReturn(validation);
+        when(loadDiscountCodeForBookingPort.loadDiscountCodeForBooking("SAVE50"))
+                .thenReturn(Optional.of(discountCode));
+        when(paymentTransactionRepository.save(any(PaymentTransaction.class))).thenAnswer(invocation -> {
+            PaymentTransaction saved = invocation.getArgument(0);
+            saved.prePersist();
+            return saved;
+        });
+
+        PaymentSessionResult result = paymentCheckoutUseCaseService.createPaymentSession(
+                26,
+                "bank_transfer",
+                "deposit",
+                "SAVE50",
+                "customer@example.com"
+        );
+
+        assertEquals(new BigDecimal("400000.00"), booking.getTotalAmount());
+        assertEquals(discountCode, booking.getDiscountCode());
+        assertEquals(new BigDecimal("200000.00"), result.amount());
+        verify(bookingRepository).save(booking);
     }
 
     @Test

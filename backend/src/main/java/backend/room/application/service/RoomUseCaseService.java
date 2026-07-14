@@ -42,6 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -58,6 +59,10 @@ public class RoomUseCaseService implements
         CreateRoomTypeUseCase,
         UpdateRoomTypeUseCase,
         DeleteRoomTypeUseCase {
+
+    private static final Pattern LOCAL_ROOM_IMAGE_PATH = Pattern.compile(
+            "^/images/rooms/[A-Za-z0-9][A-Za-z0-9/_-]*\\.(?i:jpg|jpeg|png|webp)$"
+    );
 
     private static final int DEFAULT_PAGE_SIZE = 10;
     private static final int MAX_PAGE_SIZE = 100;
@@ -156,6 +161,8 @@ public class RoomUseCaseService implements
                 .status(command.status() == null ? RoomStatus.AVAILABLE : command.status())
                 .build();
 
+        applyAdditionalImages(room, command.additionalImageUrls());
+
         return RoomResponse.from(roomMutationPort.saveRoom(room));
     }
 
@@ -190,6 +197,7 @@ public class RoomUseCaseService implements
         room.setRoomType(roomType);
         room.setMaxPeople(command.maxPeople());
         room.setImageUrl(normalizeOptionalImageUrl(command.imageUrl()));
+        applyAdditionalImages(room, command.additionalImageUrls());
         room.setStatus(command.status());
 
         return RoomResponse.from(roomMutationPort.saveRoom(room));
@@ -229,15 +237,12 @@ public class RoomUseCaseService implements
         Room room = roomCatalogPort.loadRoomForUpdate(command.roomId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phòng homestay"));
 
-        if (roomCatalogPort.existsBookingForRoom(command.roomId())) {
-            throw new IllegalStateException("Không thể xóa phòng đã phát sinh booking");
+        if (roomCatalogPort.existsActiveBookingForRoom(command.roomId())) {
+            throw new IllegalStateException("Không thể xóa phòng đang có booking chờ thanh toán, đã thanh toán hoặc đang check-in");
         }
 
-        if (roomCatalogPort.existsEquipmentForRoom(command.roomId())) {
-            throw new IllegalStateException("Không thể xóa phòng đang có thiết bị");
-        }
-
-        roomMutationPort.deleteRoom(room);
+        room.setStatus(RoomStatus.INACTIVE);
+        roomMutationPort.saveRoom(room);
     }
 
     @Override
@@ -273,6 +278,7 @@ public class RoomUseCaseService implements
                 .typeName(typeName)
                 .description(normalizeOptionalDescription(command.description()))
                 .pricePerHour(pricePerHour)
+                .active(true)
                 .build();
 
         return RoomTypeResponse.from(roomMutationPort.saveRoomType(roomType));
@@ -315,11 +321,12 @@ public class RoomUseCaseService implements
 
         RoomType roomType = loadRoomTypeRequired(command.roomTypeId());
 
-        if (roomCatalogPort.existsRoomForRoomType(command.roomTypeId())) {
-            throw new IllegalStateException("Không thể xóa loại phòng đang được sử dụng");
+        if (roomCatalogPort.existsActiveRoomForRoomType(command.roomTypeId())) {
+            throw new IllegalStateException("Không thể xóa hạng phòng vì vẫn còn phòng đang hoạt động thuộc hạng này");
         }
 
-        roomMutationPort.deleteRoomType(roomType);
+        roomType.setActive(false);
+        roomMutationPort.saveRoomType(roomType);
     }
 
     private User getCurrentUser(String email) {
@@ -390,10 +397,29 @@ public class RoomUseCaseService implements
         if (normalized.length() > 500) {
             throw new IllegalArgumentException("URL ảnh phòng tối đa 500 ký tự");
         }
-        if (!normalized.matches("^https?://.+")) {
-            throw new IllegalArgumentException("URL ảnh phòng phải là link http hoặc https");
+        boolean remoteUrl = normalized.matches("^https?://.+");
+        boolean localAsset = LOCAL_ROOM_IMAGE_PATH.matcher(normalized).matches();
+        if (!remoteUrl && !localAsset) {
+            throw new IllegalArgumentException(
+                    "Ảnh phòng phải là URL http/https hoặc đường dẫn /images/rooms/ten-anh.jpg"
+            );
         }
 
         return normalized;
+    }
+
+    private void applyAdditionalImages(Room room, List<String> imageUrls) {
+        List<String> normalized = imageUrls == null ? List.of() : imageUrls.stream()
+                .map(this::normalizeOptionalImageUrl)
+                .filter(value -> value != null && !value.isBlank())
+                .toList();
+
+        if (normalized.size() > 3) {
+            throw new IllegalArgumentException("Mỗi phòng chỉ được có tối đa 4 ảnh");
+        }
+
+        room.setImageUrl2(normalized.size() > 0 ? normalized.get(0) : null);
+        room.setImageUrl3(normalized.size() > 1 ? normalized.get(1) : null);
+        room.setImageUrl4(normalized.size() > 2 ? normalized.get(2) : null);
     }
 }

@@ -19,13 +19,11 @@ public interface RoomCatalogPort {
 
     boolean existsRoomName(String roomName);
 
-    boolean existsBookingForRoom(Integer roomId);
-
-    boolean existsEquipmentForRoom(Integer roomId);
+    boolean existsActiveBookingForRoom(Integer roomId);
 
     boolean existsRoomTypeName(String typeName);
 
-    boolean existsRoomForRoomType(Integer roomTypeId);
+    boolean existsActiveRoomForRoomType(Integer roomTypeId);
 
     List<RoomType> loadRoomTypes();
 

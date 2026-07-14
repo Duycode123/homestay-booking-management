@@ -35,9 +35,10 @@ export function IconStaff({ className = 'h-5 w-5' }: IconProps) {
 export function IconEquipment({ className = 'h-5 w-5' }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-      <path d="M9 18V5l12-2v13" />
-      <circle cx="6" cy="18" r="3" />
-      <circle cx="18" cy="16" r="3" />
+      <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" />
+      <circle cx="9" cy="6" r="2" />
+      <circle cx="15" cy="12" r="2" />
+      <circle cx="7" cy="18" r="2" />
     </svg>
   )
 }
@@ -47,6 +48,16 @@ export function IconCoupons({ className = 'h-5 w-5' }: IconProps) {
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
       <path d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2.2a2.4 2.4 0 0 0 0 4.6V16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2.2a2.4 2.4 0 0 0 0-4.6V7z" />
       <path d="M9 9h.01M15 15h.01M15 9l-6 6" />
+    </svg>
+  )
+}
+
+export function IconRefund({ className = 'h-5 w-5' }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 10a8.5 8.5 0 1 0 2.5-6" />
+      <path d="M3 4v6h6" />
+      <path d="M12 7v10M15 9.2c-.7-.8-1.7-1.2-3-1.2-1.7 0-3 1-3 2.4 0 1.5 1.2 2 3 2.4 1.8.4 3 .9 3 2.4 0 1.5-1.3 2.8-3.2 2.8-1.4 0-2.6-.5-3.4-1.4" />
     </svg>
   )
 }
@@ -190,7 +201,7 @@ export function AdminBrandMark({ className }: { className?: string }) {
         <span className="font-display text-sm font-bold text-white">B</span>
       </div>
       <div>
-        <p className="font-display text-sm font-bold leading-tight text-white">Homestay Booking</p>
+        <p className="font-display text-sm font-bold leading-tight text-white">The Serene Villa</p>
         <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-inverse-on-surface/70">
           Admin
         </p>

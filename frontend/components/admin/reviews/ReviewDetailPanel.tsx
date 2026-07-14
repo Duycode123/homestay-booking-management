@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import { renderReviewStars } from '@/lib/admin/reviews/reviewLabels'
 import type { AdminReview } from '@/lib/admin/reviews/types'
@@ -101,6 +102,15 @@ export default function ReviewDetailPanel({
           <Section title="Đánh giá">
             <p className="text-sm leading-6 text-on-surface">{review.content}</p>
             <p className="mt-2 text-sm text-brand-orange">{renderReviewStars(review.rating)}</p>
+            {review.images.length > 0 && (
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                {review.images.map((image, index) => (
+                  <a key={image.id} href={image.imageUrl} target="_blank" rel="noreferrer" className="group relative aspect-[4/3] overflow-hidden rounded-xl bg-surface-container" aria-label={`Mở ảnh đánh giá ${index + 1}`}>
+                    <Image src={image.imageUrl} alt={`Ảnh đánh giá ${index + 1}`} fill unoptimized sizes="220px" className="object-cover transition duration-300 group-hover:scale-105" />
+                  </a>
+                ))}
+              </div>
+            )}
           </Section>
 
           <Section title="Phản hồi quản trị">

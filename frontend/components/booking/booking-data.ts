@@ -2,7 +2,7 @@ import type { HomestayRoom } from '@/lib/booking/types'
 
 export type RoomCategory = 'standard' | 'deluxe' | 'family'
 export type RoomAvailabilityStatus = 'AVAILABLE' | 'ALMOST_FULL' | 'FULL_TODAY'
-export type RoomOperationalStatus = 'AVAILABLE' | 'IN_USE' | 'MAINTENANCE' | 'INACTIVE' | 'UNAVAILABLE' | 'DISABLED' | 'CLOSED'
+export type RoomOperationalStatus = 'AVAILABLE' | 'IN_USE' | 'MAINTENANCE' | 'NEED_CLEANING' | 'INACTIVE' | 'UNAVAILABLE' | 'DISABLED' | 'CLOSED'
 
 export type RoomCategoryOption = {
   id: RoomCategory
@@ -26,6 +26,7 @@ export type BookingRoom = {
   capacity: string
   location: string
   image?: string
+  images?: string[]
   imageClassName: string
   pricePerHour: number
   equipments: string[]
@@ -52,14 +53,6 @@ export type BookingRoomAvailabilitySummary = {
   nextAvailableTime?: string
 }
 
-export type PaymentMethodId = 'bank_transfer' | 'e_wallet' | 'cash'
-
-export type PaymentMethod = {
-  id: PaymentMethodId
-  label: string
-  description: string
-}
-
 export function getTodayDateString() {
   const today = new Date()
   const year = today.getFullYear()
@@ -71,7 +64,9 @@ export function getTodayDateString() {
 export const DEFAULT_BOOKING_DATE = getTodayDateString()
 export const DEFAULT_START_TIME = ''
 export const DEFAULT_DURATION = 0
-export const BOOKING_DURATION_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8] as const
+export const MINIMUM_BOOKING_HOURS = 8
+export const FIRST_NIGHT_STAY_HOURS = 22
+export const BOOKING_DURATION_OPTIONS = [8, 9, 10, 11, 12, 13, 14, 15, 16] as const
 export const EMPTY_NOTE_TEXT = 'Không có ghi chú thêm.'
 
 export const roomCategories: RoomCategoryOption[] = [
@@ -110,25 +105,13 @@ export function isApiBackedBookingRoom(room: BookingRoom) {
   return room.code.startsWith('API-')
 }
 
-function getOptimizedCloudinaryImageUrl(imageUrl: string) {
-  if (!/^https:\/\/res\.cloudinary\.com\//i.test(imageUrl)) {
-    return imageUrl
-  }
-
-  if (imageUrl.includes('/image/upload/f_auto,q_auto/')) {
-    return imageUrl
-  }
-
-  return imageUrl.replace('/image/upload/', '/image/upload/f_auto,q_auto/')
-}
-
 function getRoomImage(imageUrl?: string) {
   if (!imageUrl) return undefined
 
   const normalized = imageUrl.trim()
   if (!normalized) return undefined
   if (normalized.startsWith('/')) return normalized
-  if (/^https?:\/\//i.test(normalized)) return getOptimizedCloudinaryImageUrl(normalized)
+  if (/^https?:\/\//i.test(normalized)) return normalized
 
   return undefined
 }
@@ -172,7 +155,7 @@ export function mapPracticeRoomToBookingRoom(
     rating: reviewSummary?.averageRating,
     reviews: reviewSummary?.reviewCount,
     capacity: `Tối đa ${room.capacity} người`,
-    location: room.location || 'Homestay Booking',
+    location: room.location || 'The Serene Villa',
     image: safeImage,
     imageClassName: 'object-[62%_center]',
     pricePerHour: room.pricePerHour,
@@ -191,74 +174,29 @@ export function mapPracticeRoomToBookingRoom(
   }
 }
 
-export const paymentMethods: PaymentMethod[] = [
-  {
-    id: 'bank_transfer',
-    label: 'Chuyển khoản ngân hàng',
-    description: 'Thanh toán online qua portal SePay.',
-  },
-]
-
-const image = '/images/homestay-room-hero.png'
-
-export const bookingRooms: BookingRoom[] = [
-  {
-    id: 'standard-garden-101', code: 'HS-STD-101', name: 'Standard Garden 101', category: 'standard',
-    categoryLabel: 'Standard', type: 'Standard', badge: 'Tiết kiệm', rating: 4.7, reviews: 128,
-    capacity: 'Tối đa 2 người', location: 'Tầng 1, Homestay Booking', image, imageClassName: 'object-center',
-    pricePerHour: 350000, equipments: ['Wi-Fi', 'Điều hòa', 'Smart TV', 'Máy nước nóng'],
-    includedEquipments: ['Wi-Fi tốc độ cao', 'Điều hòa Daikin', 'Smart TV 43 inch', 'Máy nước nóng Ariston'],
-    addons: ['Bữa sáng', 'Giặt ủi'], description: 'Phòng hướng vườn yên tĩnh, phù hợp cho cá nhân hoặc cặp đôi.',
-    availabilityStatus: 'AVAILABLE', remainingSlots: 4, nextAvailableSlot: 'Hôm nay, 14:00', isAvailable: true, nextAvailableTime: '14:00',
-  },
-  {
-    id: 'standard-garden-102', code: 'HS-STD-102', name: 'Standard Garden 102', category: 'standard',
-    categoryLabel: 'Standard', type: 'Standard', badge: 'Phổ biến', rating: 4.6, reviews: 96,
-    capacity: 'Tối đa 2 người', location: 'Tầng 1, Homestay Booking', image, imageClassName: 'object-center',
-    pricePerHour: 350000, equipments: ['Wi-Fi', 'Điều hòa', 'Smart TV', 'Máy nước nóng'],
-    includedEquipments: ['Wi-Fi tốc độ cao', 'Điều hòa Panasonic', 'Smart TV 43 inch', 'Máy nước nóng Ferroli'],
-    addons: ['Bữa sáng', 'Đón sân bay'], description: 'Phòng Standard gọn gàng với đầy đủ tiện nghi thiết yếu.',
-    availabilityStatus: 'AVAILABLE', remainingSlots: 3, nextAvailableSlot: 'Hôm nay, 16:00', isAvailable: true, nextAvailableTime: '16:00',
-  },
-  {
-    id: 'deluxe-balcony-201', code: 'HS-DLX-201', name: 'Deluxe Balcony 201', category: 'deluxe',
-    categoryLabel: 'Deluxe', type: 'Deluxe', badge: 'Có ban công', rating: 4.9, reviews: 214,
-    capacity: 'Tối đa 3 người', location: 'Tầng 2, Homestay Booking', image, imageClassName: 'object-center',
-    pricePerHour: 550000, equipments: ['Wi-Fi 5G', 'Điều hòa âm trần', 'Smart TV 50 inch', 'Máy nước nóng'],
-    includedEquipments: ['Wi-Fi 5G', 'Điều hòa âm trần', 'Smart TV 50 inch', 'Máy nước nóng trực tiếp'],
-    addons: ['Bữa sáng', 'Trang trí phòng'], description: 'Phòng Deluxe rộng rãi với ban công riêng và góc thư giãn.',
-    availabilityStatus: 'ALMOST_FULL', remainingSlots: 1, nextAvailableSlot: 'Ngày mai, 09:00', isAvailable: true, nextAvailableTime: '09:00',
-  },
-  {
-    id: 'deluxe-city-view-202', code: 'HS-DLX-202', name: 'Deluxe City View 202', category: 'deluxe',
-    categoryLabel: 'Deluxe', type: 'Deluxe', badge: 'View thành phố', rating: 4.8, reviews: 175,
-    capacity: 'Tối đa 3 người', location: 'Tầng 2, Homestay Booking', image, imageClassName: 'object-center',
-    pricePerHour: 550000, equipments: ['Wi-Fi 5G', 'Điều hòa âm trần', 'Smart TV 50 inch', 'Máy nước nóng'],
-    includedEquipments: ['Wi-Fi 5G', 'Điều hòa âm trần', 'Smart TV 50 inch', 'Máy nước nóng trực tiếp'],
-    addons: ['Bữa sáng', 'Đón sân bay'], description: 'Phòng Deluxe có cửa sổ lớn nhìn ra thành phố.',
-    availabilityStatus: 'FULL_TODAY', remainingSlots: 0, nextAvailableSlot: 'Ngày mai, 12:00', isAvailable: false, nextAvailableTime: '12:00',
-  },
-  {
-    id: 'family-suite-301', code: 'HS-FAM-301', name: 'Family Suite 301', category: 'family',
-    categoryLabel: 'Family', type: 'Family', badge: 'Gia đình', rating: 4.9, reviews: 246,
-    capacity: 'Tối đa 6 người', location: 'Tầng 3, Homestay Booking', image, imageClassName: 'object-center',
-    pricePerHour: 750000, equipments: ['Wi-Fi gia đình', 'Hai điều hòa', 'Smart TV 55 inch', 'Bình nước nóng'],
-    includedEquipments: ['Wi-Fi phủ sóng toàn phòng', 'Hai điều hòa inverter', 'Smart TV 55 inch', 'Bình nước nóng 30 lít'],
-    addons: ['Bữa sáng gia đình', 'Nôi em bé'], description: 'Suite gia đình có phòng khách riêng và không gian sinh hoạt rộng.',
-    availabilityStatus: 'AVAILABLE', remainingSlots: 2, nextAvailableSlot: 'Hôm nay, 15:00', isAvailable: true, nextAvailableTime: '15:00',
-  },
-  {
-    id: 'family-garden-302', code: 'HS-FAM-302', name: 'Family Garden 302', category: 'family',
-    categoryLabel: 'Family', type: 'Family', badge: 'Sân vườn', rating: 4.8, reviews: 192,
-    capacity: 'Tối đa 5 người', location: 'Tầng 3, Homestay Booking', image, imageClassName: 'object-center',
-    pricePerHour: 750000, equipments: ['Wi-Fi gia đình', 'Hai điều hòa', 'Smart TV 55 inch', 'Bình nước nóng'],
-    includedEquipments: ['Wi-Fi phủ sóng sân vườn', 'Hai điều hòa inverter', 'Smart TV 55 inch', 'Bình nước nóng 30 lít'],
-    addons: ['BBQ sân vườn', 'Bữa sáng gia đình'], description: 'Phòng Family có lối ra vườn, phù hợp nhóm bạn hoặc gia đình.',
-    availabilityStatus: 'FULL_TODAY', remainingSlots: 0, nextAvailableSlot: 'Ngày kia, 10:00', isAvailable: false, operationalStatus: 'MAINTENANCE', note: 'Đang bảo trì một điều hòa.',
-  },
-]
+export const EMPTY_BOOKING_ROOM: BookingRoom = {
+  id: '',
+  code: '',
+  name: 'Đang tải thông tin phòng',
+  category: 'standard',
+  categoryLabel: '',
+  type: '',
+  capacity: '',
+  location: '',
+  imageClassName: 'object-center',
+  pricePerHour: 0,
+  equipments: [],
+  includedEquipments: [],
+  addons: [],
+  isAvailable: false,
+  availabilityKnown: false,
+}
 export function formatCurrency(value: number) {
   return new Intl.NumberFormat('vi-VN').format(value) + 'đ'
+}
+
+export function getNightlyDisplayPrice(pricePerHour: number) {
+  return Math.max(0, pricePerHour) * FIRST_NIGHT_STAY_HOURS
 }
 
 export function maskCustomerName(customerName: string) {
@@ -290,17 +228,9 @@ export function formatRelativeTime(createdAt: string) {
   return `${diffInMonths} tháng trước`
 }
 
-export function findBookingRoom(roomId: string | null) {
-  return bookingRooms.find((room) => room.id === roomId) ?? null
-}
-
-export function getBookingRoomOrFallback(roomId: string | null) {
-  return findBookingRoom(roomId) ?? bookingRooms[0]
-}
-
 export function normalizeDuration(value: string | number | null) {
   const duration = Number(value)
-  return Number.isInteger(duration) && duration >= 0 && duration <= 8 ? duration : DEFAULT_DURATION
+  return Number.isInteger(duration) && duration >= 0 && duration <= 24 * 30 ? duration : DEFAULT_DURATION
 }
 
 export function getRoomSubtotal(room: BookingRoom, duration: number) {

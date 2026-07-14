@@ -35,6 +35,17 @@ cd backend
 
 Sao chép `backend/src/main/resources/application.properties.example` thành `application.properties` và cập nhật cấu hình PostgreSQL trước khi chạy.
 
+Để email xác thực tạo đúng liên kết và gửi qua Gmail, cấu hình các biến môi trường trước khi chạy backend:
+
+```powershell
+$env:APP_FRONTEND_BASE_URL="http://localhost:3000"
+$env:MAIL_USERNAME="your_email@gmail.com"
+$env:MAIL_PASSWORD="your_gmail_app_password"
+./mvnw spring-boot:run
+```
+
+`APP_FRONTEND_BASE_URL` chỉ chứa origin của frontend, không thêm `/verify-email`. Khi triển khai production, thay giá trị localhost bằng domain HTTPS thật. `MAIL_PASSWORD` phải là Gmail App Password và không được commit vào repository.
+
 ## Chạy frontend
 
 ```powershell

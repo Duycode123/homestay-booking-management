@@ -14,10 +14,10 @@ export function StaffSidebar() {
   const roleLabel = getRoleLabel(user?.role)
   const avatarInitial = getInitials(displayName || user?.email)
   const menuItems = [
-    { label: 'Lịch làm việc', href: '/staff/dashboard' },
-    { label: 'Phòng & Tiện nghi', href: '/staff/rooms' },
-    { label: 'Booking', href: '/staff/bookings' },
-    { label: 'Cài đặt', href: '/staff/settings' },
+    { label: 'Lịch làm việc', shortLabel: 'Lịch', href: '/staff/dashboard', icon: 'schedule' as const },
+    { label: 'Phòng & tiện nghi', shortLabel: 'Phòng', href: '/staff/rooms', icon: 'rooms' as const },
+    { label: 'Đặt phòng', shortLabel: 'Đặt phòng', href: '/staff/bookings', icon: 'bookings' as const },
+    { label: 'Cài đặt', shortLabel: 'Cài đặt', href: '/staff/settings', icon: 'settings' as const },
   ]
 
   const handleConfirmLogout = async () => {
@@ -27,32 +27,32 @@ export function StaffSidebar() {
 
   return (
     <>
-      <aside className="hidden w-72 shrink-0 border-r border-secondary-container/60 bg-secondary px-4 py-6 text-inverse-on-surface lg:flex lg:flex-col">
+      <aside className="hidden w-[17rem] shrink-0 border-r border-white/10 bg-brand-greenDark px-4 py-6 text-inverse-on-surface lg:flex lg:flex-col">
         <div className="flex items-center gap-3 px-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-orange text-white shadow-[0_12px_28px_rgba(255,117,24,0.24)]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-brand-orange text-white">
             <IconLogo />
           </div>
           <div>
-            <p className="font-display text-lg font-bold leading-none text-inverse-on-surface">Homestay Booking</p>
-            <p className="mt-1 font-display text-xs font-bold uppercase tracking-wide text-brand-orange">Staff</p>
+            <p className="font-editorial text-lg leading-none text-inverse-on-surface">The Serene Villa</p>
+            <p className="mt-1.5 font-display text-[9px] font-semibold uppercase tracking-[0.2em] text-brand-orange">Không gian nhân viên</p>
           </div>
         </div>
 
-        <div className="mt-8 border-t border-secondary-container/60 pt-6">
-          <div className="rounded-xl border border-secondary-container/70 bg-secondary-container/45 px-3 py-3">
+        <div className="mt-7 border-t border-white/10 pt-5">
+          <div className="rounded-xl border border-white/10 bg-white/[0.05] px-3 py-3">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-primary-container font-display font-bold text-on-primary-container">
+              <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-primary-container font-display text-sm font-semibold text-on-primary-container">
                 {user?.avatarUrl ? <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" /> : avatarInitial}
               </div>
               <div className="min-w-0">
-                <p className="truncate font-display text-sm font-bold text-inverse-on-surface">{displayName}</p>
-                <p className="text-xs text-on-secondary-container">{roleLabel}</p>
+                <p className="truncate font-display text-sm font-semibold text-inverse-on-surface">{displayName}</p>
+                <p className="mt-0.5 text-[11px] text-white/50">{roleLabel}</p>
               </div>
             </div>
           </div>
         </div>
 
-        <nav className="mt-6 space-y-1">
+        <nav aria-label="Điều hướng nhân viên" className="mt-6 space-y-1">
           {menuItems.map((item) => {
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
             return (
@@ -60,14 +60,14 @@ export function StaffSidebar() {
                 key={item.label}
                 href={item.href}
                 className={[
-                  'relative flex h-12 items-center gap-3 rounded-lg px-3 font-display text-sm font-medium transition',
+                  'group relative flex h-11 items-center gap-3 rounded-lg px-3 font-display text-sm font-medium transition-colors',
                   active
-                    ? 'bg-[rgba(255,117,24,0.12)] text-brand-orange before:absolute before:left-0 before:top-2 before:h-8 before:w-[3px] before:rounded-full before:bg-brand-orange'
-                    : 'text-inverse-on-surface/75 hover:bg-brand-orange/10 hover:text-inverse-on-surface',
+                    ? 'bg-white text-brand-greenDark shadow-[0_8px_24px_rgba(5,24,19,0.16)]'
+                    : 'text-white/68 hover:bg-white/[0.07] hover:text-white',
                 ].join(' ')}
               >
-                <span className="flex h-5 w-5 items-center justify-center">
-                  <IconMenuDot active={active} />
+                <span className={['flex h-5 w-5 items-center justify-center', active ? 'text-brand-orange' : 'text-white/50 group-hover:text-white'].join(' ')}>
+                  <StaffNavIcon name={item.icon} />
                 </span>
                 {item.label}
               </Link>
@@ -79,7 +79,7 @@ export function StaffSidebar() {
           <button
             type="button"
             onClick={() => setIsLogoutConfirmOpen(true)}
-            className="flex h-12 w-full items-center gap-3 rounded-lg px-3 font-display text-sm font-medium text-inverse-on-surface/75 transition hover:bg-brand-orange/10 hover:text-inverse-on-surface"
+            className="flex h-11 w-full items-center gap-3 rounded-lg px-3 font-display text-sm font-medium text-white/68 transition-colors hover:bg-white/[0.07] hover:text-white"
           >
             <IconLogout />
             Đăng xuất
@@ -87,10 +87,57 @@ export function StaffSidebar() {
         </div>
       </aside>
 
+      <header className="fixed inset-x-0 top-0 z-50 flex h-16 items-center justify-between border-b border-white/10 bg-brand-greenDark px-4 lg:hidden">
+        <Link href="/staff/dashboard" className="flex min-w-0 items-center gap-2.5" aria-label="Về trang nhân viên">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-orange text-white">
+            <IconLogo />
+          </span>
+          <span className="min-w-0">
+            <span className="block truncate font-editorial text-base leading-none text-white">The Serene Villa</span>
+            <span className="mt-1 block text-[8px] font-semibold uppercase tracking-[0.18em] text-brand-orange">Nhân viên</span>
+          </span>
+        </Link>
+        <div className="flex items-center gap-2">
+          <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-white/15 bg-white/[0.06] text-xs font-semibold text-white" aria-label={displayName}>
+            {user?.avatarUrl ? <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" /> : avatarInitial}
+          </span>
+          <button
+            type="button"
+            onClick={() => setIsLogoutConfirmOpen(true)}
+            className="flex h-10 w-10 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+            aria-label="Đăng xuất"
+          >
+            <IconLogout />
+          </button>
+        </div>
+      </header>
+
+      <nav aria-label="Điều hướng nhân viên trên di động" className="fixed inset-x-0 bottom-0 z-50 grid min-h-16 grid-cols-4 border-t border-outline-variant bg-white/95 px-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_32px_rgba(31,43,37,0.08)] backdrop-blur-md lg:hidden">
+        {menuItems.map((item) => {
+          const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={active ? 'page' : undefined}
+              className={[
+                'relative flex min-h-16 flex-col items-center justify-center gap-1 px-1 text-[10px] font-semibold transition-colors',
+                active ? 'text-brand-greenDark' : 'text-on-surface-variant',
+              ].join(' ')}
+            >
+              {active && <span aria-hidden className="absolute inset-x-4 top-0 h-0.5 bg-brand-orange" />}
+              <span className={active ? 'text-brand-orange' : ''}><StaffNavIcon name={item.icon} /></span>
+              <span className="truncate">{item.shortLabel}</span>
+            </Link>
+          )
+        })}
+      </nav>
+
       {isLogoutConfirmOpen && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#1A1C1E]/45 p-4" onClick={() => setIsLogoutConfirmOpen(false)}>
-          <section className="w-full max-w-md rounded-xl border border-outline-variant bg-white p-6 shadow-[var(--homestay-shadow-elevated)]" onClick={(event) => event.stopPropagation()}>
-            <h2 className="font-display text-xl font-bold text-on-surface">Đăng xuất tài khoản?</h2>
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-brand-greenDark/55 p-4 backdrop-blur-sm" onClick={() => setIsLogoutConfirmOpen(false)}>
+          <section role="dialog" aria-modal="true" aria-labelledby="staff-logout-title" className="w-full max-w-md rounded-xl border border-outline-variant bg-white p-6 shadow-[var(--homestay-shadow-elevated)]" onClick={(event) => event.stopPropagation()}>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-orange">Phiên làm việc</p>
+            <h2 id="staff-logout-title" className="mt-2 font-editorial text-3xl text-on-surface">Đăng xuất tài khoản?</h2>
             <p className="mt-2 text-sm leading-6 text-on-surface-variant">
               Bạn sẽ cần đăng nhập lại để tiếp tục sử dụng trang nhân viên.
             </p>
@@ -111,7 +158,7 @@ export function StaffSidebar() {
 
 export function StaffPageShell({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-brand-bgGray text-on-surface lg:flex">
+    <div className="min-h-screen bg-brand-bgGray pb-20 pt-16 text-on-surface lg:flex lg:pb-0 lg:pt-0">
       <StaffSidebar />
       <main className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-[1480px] space-y-6">{children}</div>
@@ -131,13 +178,13 @@ export function StatusBadge({ label, className, dotClassName }: { label: string;
 
 export function StatCard({ label, value, helper, icon, className }: { label: string; value: string | number; helper: string; icon: ReactNode; className: string }) {
   return (
-    <article className="rounded-3xl border border-outline-variant bg-white p-5 shadow-[var(--homestay-shadow-card)]">
+    <article className="rounded-xl border border-outline-variant bg-white/95 p-5 shadow-[var(--homestay-shadow-card)]">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="font-display text-sm font-bold text-on-surface-variant">{label}</p>
-          <p className="mt-3 font-display text-4xl font-bold leading-none text-on-surface">{value}</p>
+          <p className="font-display text-[10px] font-semibold uppercase tracking-[0.16em] text-on-surface-variant">{label}</p>
+          <p className="mt-3 font-editorial text-4xl font-normal leading-none text-on-surface">{value}</p>
         </div>
-        <span className={['flex h-12 w-12 items-center justify-center rounded-2xl', className].join(' ')}>{icon}</span>
+        <span className={['flex h-11 w-11 items-center justify-center rounded-lg', className].join(' ')}>{icon}</span>
       </div>
       <p className="mt-4 text-sm text-on-surface-variant">{helper}</p>
     </article>
@@ -146,11 +193,11 @@ export function StatCard({ label, value, helper, icon, className }: { label: str
 
 export function EmptyState({ title, description, actionLabel, onAction }: { title: string; description: string; actionLabel?: string; onAction?: () => void }) {
   return (
-    <div className="rounded-3xl border border-dashed border-outline bg-white px-5 py-14 text-center shadow-[var(--homestay-shadow-card)]">
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-container text-brand-orange">
+    <div className="rounded-xl border border-dashed border-outline bg-white/95 px-5 py-14 text-center shadow-[var(--homestay-shadow-card)]">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-primary-container text-brand-orange">
         <IconEmpty />
       </div>
-      <h2 className="mt-5 font-display text-xl font-bold text-on-surface">{title}</h2>
+      <h2 className="mt-5 font-editorial text-2xl text-on-surface">{title}</h2>
       <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-on-surface-variant">{description}</p>
       {actionLabel && onAction && <button type="button" onClick={onAction} className="btn-warm mx-auto mt-6">{actionLabel}</button>}
     </div>
@@ -159,18 +206,27 @@ export function EmptyState({ title, description, actionLabel, onAction }: { titl
 
 export function Toast({ message }: { message: string }) {
   return (
-    <div className="fixed bottom-5 left-1/2 z-[70] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-2xl border border-secondary-container bg-secondary px-4 py-3 text-sm font-semibold text-on-secondary shadow-[var(--homestay-shadow-elevated)]">
+    <div className="fixed bottom-20 left-1/2 z-[70] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-xl border border-white/10 bg-secondary px-4 py-3 text-sm font-semibold text-on-secondary shadow-[var(--homestay-shadow-elevated)] lg:bottom-5">
       {message}
     </div>
   )
 }
 
 export function IconLogo() {
-  return <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true"><path d="M4 9v6M8 5v14M12 3v18M16 6v12M20 10v4" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" /></svg>
+  return <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true"><path d="m4 11 8-6 8 6v8H4v-8Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" /><path d="M9.5 19v-5h5v5M15.5 8.4c.6-1.7 1.8-2.7 3.6-2.9-.1 1.8-1.1 3-2.8 3.6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
 }
 
-function IconMenuDot({ active }: { active: boolean }) {
-  return <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" aria-hidden="true"><rect x="4" y="4" width="12" height="12" rx="3" stroke="currentColor" strokeWidth="1.8" opacity={active ? 1 : 0.68} /><path d="M7 10h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" opacity={active ? 1 : 0.68} /></svg>
+function StaffNavIcon({ name }: { name: 'schedule' | 'rooms' | 'bookings' | 'settings' }) {
+  if (name === 'schedule') {
+    return <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14" rx="2.5" stroke="currentColor" strokeWidth="1.8" /><path d="M8 3.5v4M16 3.5v4M4 9.5h16M8 13h3M8 16h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
+  }
+  if (name === 'rooms') {
+    return <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true"><path d="M4 18V8a2 2 0 0 1 2-2h7v12M13 10h5a2 2 0 0 1 2 2v6M3 18h18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /><path d="M7.5 10h2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
+  }
+  if (name === 'bookings') {
+    return <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true"><path d="M7 4.5h10a2 2 0 0 1 2 2v13l-3-2-4 2-4-2-3 2v-13a2 2 0 0 1 2-2Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" /><path d="M8.5 9h7M8.5 12.5H14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
+  }
+  return <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z" stroke="currentColor" strokeWidth="1.8" /><path d="m19 13.2 1.1 1.8-2 3.4h-2.2l-1.1.6-1.1 1.9H9.8L8.7 19l-1.1-.6H5.4L3.5 15l1.1-1.8v-1.3L3.5 10l1.9-3.4h2.2L8.7 6l1.1-1.9h3.9L14.8 6l1.1.6h2.2L20.1 10 19 11.9v1.3Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" /></svg>
 }
 
 function IconLogout() {

@@ -76,6 +76,49 @@ public class Booking {
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cancellation_request_status", length = 20)
+    private CancellationRequestStatus cancellationRequestStatus;
+
+    @Column(name = "cancellation_reason", length = 500)
+    private String cancellationReason;
+
+    @Column(name = "cancellation_requested_at")
+    private LocalDateTime cancellationRequestedAt;
+
+    @Column(name = "cancellation_reviewed_at")
+    private LocalDateTime cancellationReviewedAt;
+
+    @Column(name = "cancellation_reviewed_by", length = 255)
+    private String cancellationReviewedBy;
+
+    @Column(name = "cancellation_admin_note", length = 500)
+    private String cancellationAdminNote;
+
+    @Column(name = "refund_amount", precision = 12, scale = 2)
+    private BigDecimal refundAmount;
+
+    @Column(name = "refund_percentage")
+    private Integer refundPercentage;
+
+    @Column(name = "refund_method", length = 100)
+    private String refundMethod;
+
+    @Column(name = "expected_refund_at")
+    private LocalDateTime expectedRefundAt;
+
+    @Column(name = "refund_bank_code", length = 20)
+    private String refundBankCode;
+
+    @Column(name = "refund_bank_name", length = 100)
+    private String refundBankName;
+
+    @Column(name = "refund_account_number", length = 30)
+    private String refundAccountNumber;
+
+    @Column(name = "refund_account_holder", length = 100)
+    private String refundAccountHolder;
+
     @PrePersist
     public void prePersist() {
         if (status == null) {

@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import AccountMenu from '@/components/layout/AccountMenu'
+import FavoriteRoomsMenu from '@/components/layout/FavoriteRoomsMenu'
 import { useAuth } from '@/contexts/AuthContext'
 import { useHomepageActiveSection } from '@/hooks/useHomepageActiveSection'
 import {
@@ -12,13 +13,12 @@ import {
 } from '@/lib/navigation/scroll-restoration'
 import { isPublicNavItemActive, publicNavItems, scrollToHomeSection, scrollToPageTop, shouldScrollToTop, getHomeSectionIdFromHref, isHomepageAnchorHref, goToHomepageTop } from '@/lib/site-nav'
 
-function MusicLogo({ className = 'h-5 w-5' }: { className?: string }) {
+function BrandMark({ className = 'h-6 w-6' }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
-      <path d="M9 18V5l10-2v13" />
-      <path d="M9 9l10-2" />
-      <circle cx="6" cy="18" r="3" />
-      <circle cx="16" cy="16" r="3" />
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+      <path d="m3.5 11 8.5-7 8.5 7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M5.5 9.6V20h13V9.6M9 20v-6.5h6V20" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M16.2 6.6c.8-1.6 2-2.4 3.6-2.5-.1 1.8-1.1 3-3 3.6" strokeLinecap="round" />
     </svg>
   )
 }
@@ -26,35 +26,30 @@ function MusicLogo({ className = 'h-5 w-5' }: { className?: string }) {
 export default function HomestayHeader() {
   const pathname = usePathname()
   const router = useRouter()
-  const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth()
+  const { user, isAuthenticated } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const activeHomeSection = useHomepageActiveSection()
 
+  useEffect(() => {
+    setMenuOpen(false)
+  }, [pathname])
+
   const navLinkClassName = (isActive: boolean) =>
     [
-      'rounded-lg px-4 py-2 font-display text-sm font-medium transition-colors',
-      isActive ? 'bg-white/10 text-brand-orange' : 'text-white/75 hover:bg-white/10 hover:text-white',
+      'relative inline-flex items-center gap-1.5 px-0.5 py-2 font-display text-[13px] font-semibold whitespace-nowrap transition-colors after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:origin-left after:bg-brand-orange after:transition-transform 2xl:text-sm',
+      isActive
+        ? 'text-secondary after:scale-x-100'
+        : 'text-on-surface-variant after:scale-x-0 hover:text-secondary hover:after:scale-x-100',
     ].join(' ')
 
   const mobileNavLinkClassName = (isActive: boolean) =>
     [
-      'border-b border-white/10 py-3 font-display text-sm font-semibold',
-      isActive ? 'text-brand-orange' : 'text-white/85',
+      'flex items-center justify-between border-b border-outline-variant py-4 font-display text-sm font-semibold',
+      isActive ? 'text-secondary' : 'text-on-surface-variant',
     ].join(' ')
 
   const handleBookClick = () => {
     setMenuOpen(false)
-
-    if (isAuthLoading) return
-    if (!isAuthenticated) {
-      router.push('/login')
-      return
-    }
-    if (user?.role === 'CUSTOMER') {
-      router.push('/customer/booking')
-      return
-    }
-
     router.push('/rooms')
   }
 
@@ -96,21 +91,29 @@ export default function HomestayHeader() {
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-secondary/90 shadow-[0_8px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-        <div className="mx-auto flex h-20 max-w-7xl items-center gap-4 px-5 sm:px-8">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-outline-variant/80 bg-[#FBF9F5]/92 shadow-[0_8px_32px_rgba(23,58,49,0.06)] backdrop-blur-xl">
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-orange/70 to-transparent" aria-hidden />
+        <div className="mx-auto flex h-20 max-w-[1400px] items-center gap-4 px-5 sm:px-8 xl:px-6 2xl:gap-5 2xl:px-8">
           <Link
             href="/"
             onClick={handleLogoClick}
-            className="flex shrink-0 items-center gap-3"
-            aria-label="Homestay Booking homepage"
+            className="group flex shrink-0 items-center gap-3"
+            aria-label="Trang chủ The Serene Villa"
           >
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-orange text-white shadow-[0_8px_24px_rgba(255,117,24,0.45)]">
-              <MusicLogo />
+            <span className="flex h-11 w-11 items-center justify-center rounded-full border border-brand-orange/45 bg-secondary text-primary-fixed shadow-[0_10px_28px_rgba(23,58,49,0.16)] transition-transform group-hover:-translate-y-0.5">
+              <BrandMark />
             </span>
-            <span className="font-display text-lg font-bold text-white">Homestay Booking</span>
+            <span>
+              <span className="font-editorial block text-[1.28rem] font-semibold leading-none tracking-[-0.02em] text-secondary">
+                The Serene Villa
+              </span>
+              <span className="mt-1 block text-[9px] font-semibold uppercase tracking-[0.22em] text-on-surface-variant">
+                Stay in serenity
+              </span>
+            </span>
           </Link>
 
-          <nav className="mx-auto hidden items-center gap-6 md:flex">
+          <nav className="mx-auto hidden items-center gap-5 xl:flex 2xl:gap-7" aria-label="Điều hướng chính">
             {navItemsForPage.map((item) => {
               const isActive = isPublicNavItemActive(pathname, item.href, activeHomeSection)
 
@@ -122,30 +125,38 @@ export default function HomestayHeader() {
                   className={navLinkClassName(isActive)}
                   aria-current={isActive ? 'page' : undefined}
                 >
+                  {item.href === '/' && (
+                    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+                      <path d="m4 10.5 8-6.5 8 6.5" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M6.5 9.5V20h11V9.5M10 20v-6h4v6" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
                   {item.label}
                 </Link>
               )
             })}
           </nav>
 
-          <div className="hidden min-h-[44px] items-center justify-end gap-3 md:flex">
+          <div className="hidden min-h-[44px] shrink-0 items-center justify-end gap-3 xl:flex">
             {isAuthenticated && user ? (
-              <AccountMenu />
+              <>
+                <FavoriteRoomsMenu />
+                <AccountMenu />
+              </>
             ) : (
               <>
                 <Link
                   href="/login"
-                  className="px-4 py-2 font-display text-sm font-semibold text-white/80 transition-colors hover:text-white"
+                  className="px-3 py-2 font-display text-sm font-semibold text-on-surface-variant transition-colors hover:text-secondary"
                 >
                   Đăng nhập
                 </Link>
                 <button
                   type="button"
                   onClick={handleBookClick}
-                  disabled={isAuthLoading}
-                  className="rounded-lg bg-brand-orange px-5 py-2.5 font-display text-sm font-semibold text-white shadow-[0_10px_28px_rgba(255,117,24,0.28)] transition-all hover:bg-brand-orangeHover active:scale-[0.98] disabled:cursor-wait disabled:opacity-70"
+                  className="rounded-full bg-secondary px-5 py-2.5 font-display text-sm font-semibold text-white shadow-[0_12px_30px_rgba(23,58,49,0.17)] transition-all hover:-translate-y-0.5 hover:bg-secondary-container active:translate-y-0"
                 >
-                  Đặt phòng
+                  Tìm phòng
                 </button>
               </>
             )}
@@ -154,18 +165,22 @@ export default function HomestayHeader() {
           <button
             type="button"
             onClick={() => setMenuOpen((open) => !open)}
-            className="ml-auto rounded-lg border border-white/20 bg-white/10 px-3 py-2 font-display text-sm font-semibold text-white backdrop-blur-sm md:hidden"
+            className="ml-auto flex h-11 w-11 items-center justify-center rounded-full border border-outline-variant bg-white text-secondary shadow-sm xl:hidden"
             aria-expanded={menuOpen}
             aria-controls="homestay-mobile-menu"
+            aria-label={menuOpen ? 'Đóng menu' : 'Mở menu'}
           >
-            {menuOpen ? 'Đóng' : 'Menu'}
+            <span className="sr-only">{menuOpen ? 'Đóng menu' : 'Mở menu'}</span>
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+              {menuOpen ? <path d="m6 6 12 12M18 6 6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
+            </svg>
           </button>
         </div>
 
         {menuOpen && (
           <div
             id="homestay-mobile-menu"
-            className="border-t border-white/10 bg-secondary/95 px-5 pb-5 backdrop-blur-xl md:hidden"
+            className="border-t border-outline-variant bg-[#FBF9F5]/98 px-5 pb-6 shadow-[0_24px_44px_rgba(23,58,49,0.12)] backdrop-blur-xl xl:hidden"
           >
             <nav className="grid py-2">
               {navItemsForPage.map((item) => {
@@ -182,13 +197,23 @@ export default function HomestayHeader() {
                     className={mobileNavLinkClassName(isActive)}
                     aria-current={isActive ? 'page' : undefined}
                   >
-                    {item.label}
+                    <span className="inline-flex items-center gap-2.5">
+                      {item.href === '/' && (
+                        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+                          <path d="m4 10.5 8-6.5 8 6.5" strokeLinecap="round" strokeLinejoin="round" />
+                          <path d="M6.5 9.5V20h11V9.5M10 20v-6h4v6" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      )}
+                      {item.label}
+                    </span>
+                    <span aria-hidden>↗</span>
                   </Link>
                 )
               })}
             </nav>
             {isAuthenticated && user ? (
-              <div className="mt-4 flex justify-end">
+              <div className="mt-4 flex items-center justify-end gap-3">
+                <FavoriteRoomsMenu onNavigate={() => setMenuOpen(false)} />
                 <AccountMenu align="full" onNavigate={() => setMenuOpen(false)} />
               </div>
             ) : (
@@ -196,17 +221,16 @@ export default function HomestayHeader() {
                 <Link
                   href="/login"
                   onClick={() => setMenuOpen(false)}
-                  className="rounded-lg border border-white/15 bg-white/10 px-4 py-3 text-center font-display text-sm font-semibold text-white"
+                  className="rounded-full border border-outline px-4 py-3 text-center font-display text-sm font-semibold text-secondary"
                 >
                   Đăng nhập
                 </Link>
                 <button
                   type="button"
                   onClick={handleBookClick}
-                  disabled={isAuthLoading}
-                  className="rounded-lg bg-brand-orange px-4 py-3 font-display text-sm font-semibold text-white disabled:cursor-wait disabled:opacity-70"
+                  className="rounded-full bg-secondary px-4 py-3 font-display text-sm font-semibold text-white"
                 >
-                  Đặt phòng
+                  Tìm phòng
                 </button>
               </div>
             )}

@@ -17,7 +17,7 @@ export default function StaffScheduleWeekStrip({
   onSelectDate,
 }: StaffScheduleWeekStripProps) {
   return (
-    <section className="rounded-xl border border-outline-variant bg-white p-3 shadow-[var(--shadow-card)] sm:p-4">
+    <section className="rounded-[22px] border border-[#e2d7ca] bg-white p-4 shadow-[0_14px_40px_rgba(31,54,44,0.06)] sm:p-5">
       <div className="mb-2.5 flex items-center justify-between gap-2">
         <p className="font-display text-sm font-bold text-on-surface">Tuần làm việc</p>
         <div className="flex items-center gap-3 text-[11px] text-on-surface-variant">
@@ -39,8 +39,8 @@ export default function StaffScheduleWeekStrip({
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-outline-variant">
-        <div className="grid grid-cols-7 divide-x divide-outline-variant">
+      <div className="overflow-hidden rounded-[18px] border border-[#e8dfd4]">
+        <div className="grid grid-cols-7 divide-x divide-[#e8dfd4]">
           {days.map((date) => {
             const items = registrationsByDate[date] ?? []
             const pending = items.filter((item) => item.status === 'PENDING').length
@@ -54,12 +54,12 @@ export default function StaffScheduleWeekStrip({
                 type="button"
                 onClick={() => onSelectDate(isActive ? null : date)}
                 className={[
-                  'flex min-h-[88px] flex-col items-center px-1 py-2.5 text-center transition sm:px-2 sm:py-3',
+                  'flex min-h-[82px] flex-col items-center px-1 py-2.5 text-center transition sm:px-2',
                   isActive
                     ? 'bg-primary-container/45'
                     : today
                       ? 'bg-primary-container/15 hover:bg-primary-container/25'
-                      : 'bg-white hover:bg-surface-container-low',
+                      : 'bg-white hover:bg-[#faf6f0]',
                 ].join(' ')}
               >
                 <span

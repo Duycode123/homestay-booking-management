@@ -1,5 +1,7 @@
 'use client'
 
+import ProjectSelect from '@/components/ui/ProjectSelect'
+
 import {
   EQUIPMENT_STATUS_LABELS,
   EQUIPMENT_STATUS_OPTIONS,
@@ -130,7 +132,7 @@ export default function EquipmentFiltersBar({ filters, onChange, resultCount }: 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <label className="block">
             <span className={labelClass}>Loại chi tiết</span>
-            <select
+            <ProjectSelect
               value={filters.equipmentType}
               onChange={(event) => set({ equipmentType: event.target.value as EquipmentFilters['equipmentType'] })}
               className={inputClass}
@@ -141,12 +143,12 @@ export default function EquipmentFiltersBar({ filters, onChange, resultCount }: 
                   {EQUIPMENT_TYPE_LABELS[type]}
                 </option>
               ))}
-            </select>
+            </ProjectSelect>
           </label>
 
           <label className="block">
             <span className={labelClass}>Trạng thái</span>
-            <select
+            <ProjectSelect
               value={filters.status}
               onChange={(event) => set({ status: event.target.value as EquipmentFilters['status'] })}
               className={inputClass}
@@ -157,31 +159,31 @@ export default function EquipmentFiltersBar({ filters, onChange, resultCount }: 
                   {EQUIPMENT_STATUS_LABELS[status]}
                 </option>
               ))}
-            </select>
+            </ProjectSelect>
           </label>
 
           <label className="block">
             <span className={labelClass}>Sắp xếp theo</span>
-            <select
+            <ProjectSelect
               value={filters.sortBy}
               onChange={(event) => set({ sortBy: event.target.value as EquipmentFilters['sortBy'] })}
               className={inputClass}
             >
               <option value="name">Tên</option>
               <option value="room">Phòng</option>
-            </select>
+            </ProjectSelect>
           </label>
 
           <label className="block">
             <span className={labelClass}>Thứ tự</span>
-            <select
+            <ProjectSelect
               value={filters.sortOrder}
               onChange={(event) => set({ sortOrder: event.target.value as EquipmentFilters['sortOrder'] })}
               className={inputClass}
             >
               <option value="asc">Tăng dần</option>
               <option value="desc">Giảm dần</option>
-            </select>
+            </ProjectSelect>
           </label>
         </div>
       </div>

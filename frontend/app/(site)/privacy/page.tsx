@@ -4,6 +4,14 @@ import {
   PublicContentPage,
   PublicContentSection,
 } from '@/components/public/PublicContentPage'
+import { createPublicPageMetadata } from '@/lib/seo'
+
+export const metadata = createPublicPageMetadata({
+  title: 'Chính sách bảo mật',
+  description:
+    'Tìm hiểu cách The Serene Villa thu thập, sử dụng, lưu trữ và bảo vệ thông tin cá nhân của người dùng.',
+  path: '/privacy',
+})
 
 export default function PrivacyPage() {
   return (
@@ -11,7 +19,7 @@ export default function PrivacyPage() {
       <PublicContentHeader
         eyebrow="Pháp lý"
         title="Chính sách bảo mật"
-        description="Homestay Booking cam kết bảo vệ thông tin cá nhân của bạn khi sử dụng dịch vụ đặt phòng homestay."
+        description="The Serene Villa cam kết bảo vệ thông tin cá nhân của bạn khi sử dụng dịch vụ đặt phòng homestay."
         updatedAt="Tháng 7, 2026"
       />
 
@@ -51,7 +59,7 @@ export default function PrivacyPage() {
 
       <PublicContentSection title="5. Cookie và cài đặt trình duyệt">
         <p>
-          Homestay Booking có thể lưu token đăng nhập và tùy chọn hiển thị (ví dụ trợ năng) trên trình duyệt của bạn. Bạn có
+          The Serene Villa có thể lưu token đăng nhập và tùy chọn hiển thị (ví dụ trợ năng) trên trình duyệt của bạn. Bạn có
           thể xóa cookie bất cứ lúc nào trong cài đặt trình duyệt.
         </p>
       </PublicContentSection>

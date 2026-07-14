@@ -18,6 +18,7 @@ export type CheckoutBooking = {
   image?: string
   imageClassName?: string
   date: string
+  endDate: string
   startTime: string
   endTime: string
   duration: number
@@ -52,18 +53,8 @@ export const paymentMethodOptions: Array<{
 }> = [
   {
     id: 'bank_transfer',
-    label: 'Chuyển khoản ngân hàng',
-    description: 'Dùng cho đặt cọc online qua portal SePay.',
-  },
-  {
-    id: 'e_wallet',
-    label: 'Ví điện tử',
-    description: 'Chưa bật trong phiên bản hiện tại.',
-  },
-  {
-    id: 'cash',
-    label: 'Thanh toán tại quầy',
-    description: 'Phù hợp với phương án thanh toán toàn bộ tại homestay.',
+    label: 'Thanh toán online',
+    description: 'Quét mã QR ngân hàng và tự động xác nhận giao dịch.',
   },
 ]
 
@@ -104,8 +95,7 @@ export function getReturnStatusContent(status?: string | null) {
       tone: 'success',
       icon: 'OK',
       title: 'Thanh toán thành công',
-      message:
-        'SePay đã xác nhận giao dịch. Booking đã được chuyển sang trạng thái đã thanh toán.',
+      message: 'Giao dịch đã được xác nhận và trạng thái booking đã được cập nhật.',
       primaryLabel: 'Xem lịch đặt phòng',
       primaryHref: '/customer/bookings',
     },
@@ -121,7 +111,7 @@ export function getReturnStatusContent(status?: string | null) {
       tone: 'pending',
       icon: '...',
       title: 'Đang chờ thanh toán',
-      message: 'Phiên thanh toán SePay đã được tạo và đang chờ portal/webhook đối soát.',
+      message: 'Giao dịch đang chờ ngân hàng xác nhận. Vui lòng chưa thanh toán lại.',
       primaryLabel: 'Xem lịch đặt phòng',
       primaryHref: '/customer/bookings',
     },
@@ -178,7 +168,7 @@ export async function getCheckoutBookingFromParams(searchParams: URLSearchParams
   const image = getSafeImageUrl(room?.imageUrl)
   const pricePerHour = room?.pricePerHour ?? inferPricePerHour(booking.totalAmount, duration)
   const capacity = room ? `Tối đa ${room.capacity} người` : 'Chưa rõ sức chứa'
-  const location = room?.location || 'Homestay Booking'
+  const location = room?.location || 'The Serene Villa'
   const equipments = room?.equipment?.length ? room.equipment : [categoryLabel]
 
   return {
@@ -190,6 +180,7 @@ export async function getCheckoutBookingFromParams(searchParams: URLSearchParams
     image,
     imageClassName: 'object-center',
     date: normalizeDateLabel(booking.startDateTime, booking.date),
+    endDate: normalizeDateLabel(booking.endDateTime, booking.date),
     startTime: booking.startTime,
     endTime: booking.endTime,
     duration,
@@ -235,11 +226,12 @@ async function buildCheckoutBookingFromPending(
     image: getSafeImageUrl(room.imageUrl),
     imageClassName: 'object-center',
     date: pending.date,
+    endDate: pending.endDate ?? pending.date,
     startTime: pending.startTime,
     endTime: pending.endTime,
     duration,
     capacity: `Tối đa ${room.capacity} người`,
-    location: room.location || 'Homestay Booking',
+    location: room.location || 'The Serene Villa',
     pricePerHour,
     equipments: room.equipment?.length ? room.equipment : [categoryLabel],
     addons: [],
@@ -256,7 +248,7 @@ function inferCategoryLabel(roomType?: string | null) {
   const category = detectRoomCategory(roomType)
   if (category === 'family') return 'Family Room'
   if (category === 'deluxe') return 'Deluxe Room'
-  return 'Practice Room'
+  return 'Phòng homestay'
 }
 
 function inferPricePerHour(totalAmount: number, duration: number) {
@@ -266,7 +258,15 @@ function inferPricePerHour(totalAmount: number, duration: number) {
 
 function getSafeImageUrl(value?: string | null) {
   const normalized = value?.trim()
-  return normalized && normalized.startsWith('/') ? normalized : undefined
+  if (!normalized) return undefined
+  if (normalized.startsWith('/')) return normalized
+
+  try {
+    const url = new URL(normalized)
+    return url.protocol === 'https:' && url.hostname === 'res.cloudinary.com' ? normalized : undefined
+  } catch {
+    return undefined
+  }
 }
 
 function normalizeDateLabel(rawDateTime: string | undefined, fallbackDateLabel: string) {

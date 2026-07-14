@@ -1,4 +1,5 @@
 import type { HomestayRoom } from '@/lib/booking/types'
+import { getNightlyDisplayPrice } from '@/components/booking/booking-data'
 import { formatPrice } from '@/lib/booking/bookingApi'
 import { getRoomMeta } from '@/lib/booking/roomMeta'
 
@@ -64,9 +65,9 @@ export default function RoomCard({ room, selected, onSelect }: RoomCardProps) {
 
         <div className="mt-4 flex items-end justify-between border-t border-outline-variant/60 pt-3">
           <p className="font-display text-lg font-bold text-brand-orange">
-            {formatPrice(room.pricePerHour)}
+            {formatPrice(getNightlyDisplayPrice(room.pricePerHour))}
           </p>
-          <span className="text-xs text-on-surface-variant">/ giờ</span>
+          <span className="text-xs text-on-surface-variant">/ đêm</span>
         </div>
       </div>
     </button>

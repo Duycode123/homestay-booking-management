@@ -43,6 +43,11 @@ public class UserProfileUseCaseService implements
 
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
     private static final Pattern PHONE_PATTERN = Pattern.compile("^[0-9]{9,11}$");
+    private static final Pattern NEW_PASSWORD_PATTERN = Pattern.compile("^(?=.*[A-Za-z])(?=.*\\d).+$");
+    private static final int MIN_PASSWORD_LENGTH = 8;
+    private static final int MAX_PASSWORD_LENGTH = 72;
+    private static final int MIN_FULL_NAME_LENGTH = 2;
+    private static final int MAX_FULL_NAME_LENGTH = 100;
     private static final int MAX_AVATAR_BYTES = 5 * 1024 * 1024;
     private static final int MAX_AVATAR_URL_LENGTH = 500;
 
@@ -62,6 +67,7 @@ public class UserProfileUseCaseService implements
     @Transactional
     public UserProfileUpdateResult updateProfile(UpdateCurrentUserProfileCommand command) {
         String fullName = normalizeRequired(command.fullName(), "Ho ten khong duoc de trong");
+        validateFullName(fullName);
         String email = normalizeRequired(command.email(), "Email chua dung dinh dang").toLowerCase();
         String phone = normalizeOptional(command.phone());
 
@@ -74,8 +80,8 @@ public class UserProfileUseCaseService implements
         }
 
         User user = getCurrentUser(command.currentUserEmail());
-        if (!user.getEmail().equalsIgnoreCase(email) && userProfileAccountPort.existsUserByEmail(email)) {
-            throw new IllegalArgumentException("Email nay da duoc su dung");
+        if (!user.getEmail().equalsIgnoreCase(email)) {
+            throw new IllegalArgumentException("Khong the doi email trong ho so. Vui long lien he ho tro de xac minh email moi.");
         }
 
         Customer customer = loadCustomerProfile(user);
@@ -137,13 +143,10 @@ public class UserProfileUseCaseService implements
                 command.newPassword(),
                 "Mat khau moi phai co it nhat 8 ky tu"
         );
+        validateNewPassword(newPassword);
         String confirmPassword = command.confirmPassword() == null
                 ? newPassword
                 : normalizeRequired(command.confirmPassword(), "Mat khau xac nhan khong duoc trong");
-
-        if (newPassword.length() < 8) {
-            throw new IllegalArgumentException("Mat khau moi phai co it nhat 8 ky tu");
-        }
 
         if (!newPassword.equals(confirmPassword)) {
             throw new IllegalArgumentException("Mat khau xac nhan khong khop");
@@ -159,6 +162,7 @@ public class UserProfileUseCaseService implements
         }
 
         user.setPassword(userProfileSecurityPort.encodePassword(newPassword));
+        user.setCredentialsVersion(user.getCredentialsVersion() + 1);
         userProfileAccountPort.saveUser(user);
     }
 
@@ -297,6 +301,22 @@ public class UserProfileUseCaseService implements
         }
 
         return value;
+    }
+
+    private void validateNewPassword(String password) {
+        if (password.length() < MIN_PASSWORD_LENGTH || password.length() > MAX_PASSWORD_LENGTH) {
+            throw new IllegalArgumentException("Mat khau moi phai co tu 8 den 72 ky tu");
+        }
+
+        if (!NEW_PASSWORD_PATTERN.matcher(password).matches()) {
+            throw new IllegalArgumentException("Mat khau moi phai co it nhat mot chu cai va mot chu so");
+        }
+    }
+
+    private void validateFullName(String fullName) {
+        if (fullName.length() < MIN_FULL_NAME_LENGTH || fullName.length() > MAX_FULL_NAME_LENGTH) {
+            throw new IllegalArgumentException("Ho ten phai co tu 2 den 100 ky tu");
+        }
     }
 
     private String normalizeRequired(String value, String message) {

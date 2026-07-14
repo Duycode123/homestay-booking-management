@@ -4,6 +4,7 @@ import backend.booking.application.port.out.ExpireStalePendingBookingsPort;
 import backend.booking.application.port.out.model.BookingExpiryResult;
 import backend.entity.Booking;
 import backend.entity.BookingStatus;
+import backend.entity.PaymentMethod;
 import backend.entity.PaymentTransaction;
 import backend.entity.PaymentTransactionStatus;
 import backend.repository.BookingRepository;
@@ -45,6 +46,7 @@ public class BookingExpiryPersistenceAdapter implements ExpireStalePendingBookin
 
         List<Booking> staleBookings = bookingRepository.findStalePendingBookings(
                 BookingStatus.PENDING_PAYMENT,
+                PaymentMethod.CASH,
                 cutoff
         );
         staleBookings.forEach(booking -> booking.setStatus(BookingStatus.CANCELLED));

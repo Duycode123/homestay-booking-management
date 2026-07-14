@@ -10,7 +10,6 @@ import {
   CustomerFormField,
 } from '@/components/customer/CustomerActionPageLayout'
 import { CustomerCard } from '@/components/customer/CustomerPageShell'
-import { SUPPORT_EMAIL, SUPPORT_HOTLINE } from '@/lib/site-nav'
 import {
   fetchCustomerBookings,
   submitCustomerIssueReport,
@@ -24,7 +23,7 @@ const issueTypes: Array<{
   description: string
   icon: 'room' | 'equipment' | 'payment' | 'account' | 'other'
 }> = [
-  { value: 'ROOM', label: 'Phòng homestay', description: 'Vệ sinh, cách âm, điều hòa', icon: 'room' },
+  { value: 'ROOM', label: 'Phòng homestay', description: 'Vệ sinh, giường ngủ, điều hòa', icon: 'room' },
   { value: 'EQUIPMENT', label: 'Tiện nghi', description: 'Wi-Fi, điều hòa, TV hoặc máy nước nóng gặp sự cố', icon: 'equipment' },
   { value: 'PAYMENT', label: 'Thanh toán', description: 'Sai tiền, hoàn tiền, hóa đơn', icon: 'payment' },
   { value: 'ACCOUNT', label: 'Tài khoản', description: 'Đăng nhập, hồ sơ', icon: 'account' },
@@ -135,30 +134,24 @@ export default function CustomerReportIssueClient() {
       variant="support-report"
       eyebrow="Hỗ trợ"
       title="Báo cáo sự cố"
-      description="Khu vực hỗ trợ — gửi sự cố để đội ngũ Homestay Booking kiểm tra và phản hồi."
+      description="Khu vực hỗ trợ — gửi sự cố để đội ngũ The Serene Villa kiểm tra và phản hồi."
       breadcrumb={[
         { label: 'Hỗ trợ', href: '/customer/support' },
         { label: 'Báo cáo sự cố' },
       ]}
       banner={
-        <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-brand-orange/25 bg-primary-container px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-[#B76565]/20 bg-[#FAEEEE] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-orange text-white">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#8F4A4A] text-white">
               <AlertIcon className="h-5 w-5" />
             </span>
             <div>
-              <p className="font-display text-sm font-bold text-[#6B3200]">Sự cố khẩn cấp tại phòng?</p>
-              <p className="mt-0.5 text-sm text-[#6B3200]/80">
-                Gọi hotline ngay — không cần chờ gửi form.
+              <p className="font-display text-sm font-bold text-[#713B3B]">Sự cố ảnh hưởng đến an toàn?</p>
+              <p className="mt-0.5 text-sm text-[#713B3B]/80">
+                Rời khu vực có nguy cơ và báo ngay cho nhân viên đang trực tại homestay.
               </p>
             </div>
           </div>
-          <a
-            href={`tel:${SUPPORT_HOTLINE.replace(/\s/g, '')}`}
-            className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl bg-brand-orange px-5 font-display text-sm font-semibold text-white shadow-[0_8px_20px_rgba(255,117,24,0.3)] transition hover:bg-brand-orangeHover"
-          >
-            Gọi {SUPPORT_HOTLINE}
-          </a>
         </div>
       }
       stats={[
@@ -175,8 +168,8 @@ export default function CustomerReportIssueClient() {
           icon: <ShieldIcon className="h-4 w-4" />,
         },
         {
-          label: 'Kênh khác',
-          value: 'Email hỗ trợ',
+          label: 'Theo dõi',
+          value: 'Trong hệ thống',
           tone: 'orange',
           icon: <ChatIcon className="h-4 w-4" />,
         },
@@ -190,7 +183,7 @@ export default function CustomerReportIssueClient() {
           <CustomerActionSidebarCard
             variant="support-report"
             title="Sau khi gửi"
-            description="Quy trình xử lý báo cáo của Homestay Booking."
+            description="Quy trình xử lý báo cáo của The Serene Villa."
             icon={<WorkflowIcon className="h-5 w-5 text-white" />}
           >
             <ol className="space-y-3">
@@ -216,7 +209,7 @@ export default function CustomerReportIssueClient() {
             <ul className="mt-4 space-y-2">
               {reportTips.map((tip) => (
                 <li key={tip} className="flex gap-2 text-sm leading-6 text-on-surface-variant">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-orange" />
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-secondary" />
                   {tip}
                 </li>
               ))}
@@ -226,10 +219,7 @@ export default function CustomerReportIssueClient() {
               <CustomerActionQuickLink href="/customer/bookings" label="Lịch đặt của tôi" />
             </nav>
             <p className="mt-4 text-xs leading-5 text-on-surface-variant">
-              Email:{' '}
-              <a href={`mailto:${SUPPORT_EMAIL}`} className="font-semibold text-brand-orange hover:underline">
-                {SUPPORT_EMAIL}
-              </a>
+              Báo cáo được lưu cùng tài khoản để đội ngũ vận hành theo dõi và phản hồi.
             </p>
           </CustomerCard>
         </>
@@ -255,15 +245,15 @@ export default function CustomerReportIssueClient() {
                   className={[
                     'rounded-2xl border p-4 text-left transition',
                     selected
-                      ? 'border-brand-orange bg-primary-container shadow-[0_8px_24px_rgba(255,117,24,0.12)]'
-                      : 'border-outline-variant bg-white hover:border-brand-orange/30 hover:bg-surface-container-low/60',
+                      ? 'border-secondary/45 bg-[#EAF2EE] shadow-[0_8px_24px_rgba(11,59,47,0.1)]'
+                      : 'border-outline-variant bg-white hover:border-secondary/30 hover:bg-[#F4F8F6]',
                   ].join(' ')}
                 >
                   <div className="flex items-start gap-3">
                     <span
                       className={[
                         'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
-                        selected ? 'bg-brand-orange text-white' : 'bg-surface-container text-brand-orange',
+                        selected ? 'bg-secondary text-white' : 'bg-[#EAF2EE] text-secondary',
                       ].join(' ')}
                     >
                       <IssueTypeIcon type={type.icon} className="h-4 w-4" />
@@ -279,8 +269,8 @@ export default function CustomerReportIssueClient() {
           </div>
         </fieldset>
 
-        <div className="space-y-4 rounded-2xl border border-brand-orange/15 bg-primary-container/30 p-4 sm:p-5">
-          <p className="font-display text-xs font-bold uppercase tracking-[0.08em] text-[#6B3200]">
+        <div className="space-y-4 rounded-2xl border border-secondary/15 bg-[#F1F6F3] p-4 sm:p-5">
+          <p className="font-display text-xs font-bold uppercase tracking-[0.08em] text-secondary">
             Bước 2 — Chi tiết sự cố
           </p>
 
@@ -294,7 +284,7 @@ export default function CustomerReportIssueClient() {
                 value={bookingCode}
                 onChange={(event) => setBookingCode(event.target.value)}
                 placeholder="Ví dụ: BR00000012"
-                className="h-12 w-full rounded-2xl border border-outline bg-white py-2.5 pl-11 pr-4 text-sm text-on-surface outline-none transition placeholder:text-on-surface-variant/50 focus:border-brand-orange focus:ring-2 focus:ring-brand-orange/20"
+                className="h-12 w-full rounded-2xl border border-outline bg-white py-2.5 pl-11 pr-4 text-sm text-on-surface outline-none transition placeholder:text-on-surface-variant/50 focus:border-secondary focus:ring-2 focus:ring-secondary/15"
               />
               <datalist id="customer-booking-codes">
                 {bookings.map((booking) => (
@@ -320,8 +310,8 @@ export default function CustomerReportIssueClient() {
                     className={[
                       'rounded-full border px-3 py-1.5 text-xs font-semibold transition',
                       bookingCode === booking.code
-                        ? 'border-brand-orange bg-brand-orange text-white'
-                        : 'border-outline-variant bg-white text-on-surface-variant hover:border-brand-orange/30 hover:text-brand-orange',
+                        ? 'border-secondary bg-secondary text-white'
+                        : 'border-outline-variant bg-white text-on-surface-variant hover:border-secondary/30 hover:text-secondary',
                     ].join(' ')}
                   >
                     {booking.code}
@@ -340,7 +330,7 @@ export default function CustomerReportIssueClient() {
               onChange={(event) => setDescription(event.target.value)}
               rows={6}
               placeholder="Mô tả sự cố: thời gian, phòng, tiện nghi bị ảnh hưởng và những gì đã xảy ra..."
-              className="w-full resize-y rounded-2xl border border-outline bg-white px-4 py-3 text-sm leading-6 text-on-surface outline-none transition placeholder:text-on-surface-variant/50 focus:border-brand-orange focus:ring-2 focus:ring-brand-orange/20"
+              className="w-full resize-y rounded-2xl border border-outline bg-white px-4 py-3 text-sm leading-6 text-on-surface outline-none transition placeholder:text-on-surface-variant/50 focus:border-secondary focus:ring-2 focus:ring-secondary/15"
             />
             <div className="mt-2 flex items-center justify-between gap-3 text-xs">
               <span className={descriptionReady ? 'font-medium text-brand-greenDark' : 'text-on-surface-variant'}>
@@ -388,9 +378,10 @@ function IssueTypeIcon({
   if (type === 'equipment') {
     return (
       <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <path strokeLinecap="round" d="M9 18V5l10-2v13" />
-        <circle cx="6" cy="18" r="3" />
-        <circle cx="16" cy="16" r="3" />
+        <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
+        <circle cx="9" cy="6" r="2" />
+        <circle cx="15" cy="12" r="2" />
+        <circle cx="7" cy="18" r="2" />
       </svg>
     )
   }

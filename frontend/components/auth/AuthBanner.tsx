@@ -1,13 +1,13 @@
 const DEFAULT_BULLETS = [
-  { title: 'Đặt phòng 30 giây', desc: 'Chọn phòng, khung giờ và xác nhận ngay trên app.' },
-  { title: 'Ưu đãi hàng tuần', desc: 'Mã giảm giá và gói tập dành riêng cho thành viên.' },
-  { title: 'Hỗ trợ 24/7', desc: 'Kỹ thuật viên luôn sẵn sàng trong ca trực.' },
+  { title: 'Đặt phòng liền mạch', desc: 'Chọn không gian và hoàn tất đặt phòng chỉ trong vài bước.' },
+  { title: 'Không gian được tuyển chọn', desc: 'Mỗi phòng đều được chuẩn bị kỹ lưỡng trước khi đón khách.' },
+  { title: 'Đồng hành suốt kỳ nghỉ', desc: 'Đội ngũ vận hành luôn sẵn sàng khi bạn cần hỗ trợ.' },
 ]
 
 const STATS = [
-  { value: '6+', label: 'Phòng homestay' },
-  { value: '24/7', label: 'Vận hành' },
-  { value: '100%', label: 'Cách âm' },
+  { value: 'Rõ ràng', label: 'Thông tin phòng' },
+  { value: 'Linh hoạt', label: 'Khung giờ đặt' },
+  { value: 'Chu đáo', label: 'Hỗ trợ lưu trú' },
 ]
 
 type AuthBannerProps = {
@@ -15,115 +15,107 @@ type AuthBannerProps = {
   bullets?: { title: string; desc: string }[]
 }
 
+function HomestayMark() {
+  return (
+    <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M3.75 11.25 12 4.5l8.25 6.75v7.5a.75.75 0 0 1-.75.75h-15a.75.75 0 0 1-.75-.75v-7.5Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinejoin="round"
+      />
+      <path d="M9.25 19.5v-5.25h5.5v5.25" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+      <path
+        d="M15.8 5.7c.25-1.65 1.35-2.7 3.2-2.95-.12 1.7-1.2 2.73-3.2 2.95Z"
+        fill="currentColor"
+      />
+    </svg>
+  )
+}
+
 export default function AuthBanner({
-  description = 'Không gian homestay sạch sẽ, tiện nghi hiện đại và sẵn sàng cho khách cá nhân, cặp đôi hoặc gia đình.',
+  description = 'Một nơi ở chỉn chu, ấm áp và đủ riêng tư để bạn thực sự tận hưởng từng khoảnh khắc của chuyến đi.',
   bullets = DEFAULT_BULLETS,
 }: AuthBannerProps) {
   return (
-    <div className="relative hidden overflow-hidden md:flex md:w-1/2 md:flex-col md:justify-between">
-      {/* Background layers */}
-      <div className="absolute inset-0 bg-[#021a0e]" />
-      <div className="absolute inset-0 bg-gradient-to-br from-[#021a0e] via-brand-greenDark to-brand-greenLight" />
+    <aside className="relative hidden min-h-screen overflow-hidden bg-brand-greenDark text-white lg:flex lg:w-[48%] lg:flex-col">
       <div
-        className="absolute inset-0 opacity-[0.07]"
+        className="pointer-events-none absolute inset-0 opacity-70"
         style={{
           backgroundImage:
-            'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.15) 2px, rgba(255,255,255,0.15) 3px)',
+            'radial-gradient(circle at 82% 15%, rgba(196,158,106,0.22), transparent 30%), radial-gradient(circle at 2% 90%, rgba(255,255,255,0.08), transparent 28%)',
         }}
-        aria-hidden
+        aria-hidden="true"
       />
-      <div className="pointer-events-none absolute -right-20 top-1/4 h-96 w-96 rounded-full bg-brand-orange/20 blur-[100px]" aria-hidden />
-      <div className="pointer-events-none absolute -bottom-32 -left-20 h-80 w-80 rounded-full bg-tertiary/15 blur-[80px]" aria-hidden />
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.045]"
+        style={{
+          backgroundImage:
+            'linear-gradient(rgba(255,255,255,.8) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.8) 1px, transparent 1px)',
+          backgroundSize: '72px 72px',
+        }}
+        aria-hidden="true"
+      />
+      <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-white/20 to-transparent" aria-hidden="true" />
 
-      {/* Decorative waveform */}
-      <svg
-        className="pointer-events-none absolute bottom-0 left-0 right-0 h-32 w-full text-white/[0.04]"
-        viewBox="0 0 1200 120"
-        preserveAspectRatio="none"
-        aria-hidden
-      >
-        <path
-          fill="currentColor"
-          d="M0,60 C150,20 300,100 450,60 C600,20 750,100 900,60 C1050,20 1200,80 1200,80 L1200,120 L0,120 Z"
-        />
-      </svg>
-
-      {/* Orange accent stripe */}
-      <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-brand-orange via-brand-orange/60 to-transparent" />
-
-      <div className="relative z-10 flex flex-1 flex-col p-12 lg:p-16">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-orange shadow-lg shadow-brand-orange/30">
-              <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 19V6l12-3v13M9 10l12-3M9 14c0 1.657-1.343 3-3 3s-3-1.343-3-3 1.343-3 3-3 3 1.343 3 3zm12-4c0 1.657-1.343 3-3 3s-3-1.343-3-3 1.343-3 3-3 3 1.343 3 3z"
-                />
-              </svg>
-            </div>
+      <div className="relative z-10 flex min-h-screen flex-col px-10 py-9 xl:px-16 xl:py-12">
+        <div className="flex items-center justify-between gap-5">
+          <div className="flex items-center gap-3.5">
+            <span className="flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-white/10 text-brand-orange backdrop-blur-sm">
+              <HomestayMark />
+            </span>
             <div>
-              <p className="font-display text-xl font-bold tracking-tight text-white">Homestay Booking</p>
-              <p className="font-display text-[10px] font-medium uppercase tracking-[0.25em] text-on-secondary-container">
-                Premium Practice Rooms
+              <p className="font-display text-lg font-semibold tracking-[0.01em] text-white">The Serene Villa</p>
+              <p className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.24em] text-white/55">
+                Curated stays · Thoughtful service
               </p>
             </div>
           </div>
-          <span className="rounded-full bg-tertiary-container/90 px-3 py-1 font-display text-[10px] font-semibold uppercase tracking-wider text-on-tertiary-container">
-            Family Suite
+          <span className="hidden rounded-full border border-white/15 bg-white/[0.06] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/70 xl:inline-flex">
+            Kỳ nghỉ riêng tư
           </span>
         </div>
 
-        {/* Stats row */}
-        <div className="mt-10 grid grid-cols-3 gap-3">
+        <div className="my-auto max-w-xl py-12">
+          <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.3em] text-brand-orange">
+            A quiet place to belong
+          </p>
+          <h2 className="font-editorial max-w-[12ch] text-5xl font-semibold leading-[1.04] tracking-[-0.035em] text-white xl:text-6xl">
+            Một kỳ nghỉ dịu dàng, bắt đầu từ đây.
+          </h2>
+          <p className="mt-6 max-w-lg text-[15px] leading-7 text-white/66">{description}</p>
+
+          <ul className="mt-10 grid gap-3" aria-label="Lợi ích khi đặt phòng">
+            {bullets.map((item) => (
+              <li
+                key={item.title}
+                className="group flex items-start gap-4 border-t border-white/12 py-4 transition-colors first:border-t-0"
+              >
+                <span className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-brand-orange/45 text-brand-orange">
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                    <path d="m5.5 10.25 2.7 2.7 6.3-6.4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+                <div>
+                  <p className="font-display text-[15px] font-semibold text-white">{item.title}</p>
+                  <p className="mt-1 text-xs leading-5 text-white/55">{item.desc}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="grid grid-cols-3 border-y border-white/12">
           {STATS.map((stat) => (
-            <div
-              key={stat.label}
-              className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm"
-            >
-              <p className="font-display text-2xl font-bold text-brand-orange">{stat.value}</p>
-              <p className="mt-0.5 text-[11px] uppercase tracking-wider text-on-secondary-container/80">{stat.label}</p>
+            <div key={stat.label} className="border-r border-white/12 px-3 py-4 first:pl-0 last:border-r-0 last:pr-0">
+              <p className="font-editorial text-lg font-semibold text-primary-fixed">{stat.value}</p>
+              <p className="mt-1 text-[10px] uppercase leading-4 tracking-[0.12em] text-white/45">{stat.label}</p>
             </div>
           ))}
         </div>
 
-        {/* Hero copy */}
-        <div className="my-auto max-w-lg space-y-5 py-10">
-          <p className="font-display text-xs font-medium uppercase tracking-[0.3em] text-brand-orange">
-            Warm Homestay Premium
-          </p>
-          <h2 className="font-display text-4xl font-bold leading-[1.15] tracking-tight text-white lg:text-[2.75rem]">
-            Không gian lưu trú
-            <br />
-            <span className="bg-gradient-to-r from-brand-orange to-primary-fixed bg-clip-text text-transparent">
-              chuẩn homestay
-            </span>
-          </h2>
-          <p className="text-sm leading-relaxed text-on-secondary-container">{description}</p>
-        </div>
-
-        {/* Feature cards */}
-        <ul className="space-y-3">
-          {bullets.map((item, i) => (
-            <li
-              key={item.title}
-              className="flex items-start gap-4 rounded-xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur-sm transition-colors hover:bg-white/[0.09]"
-            >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-orange/20 font-display text-sm font-bold text-brand-orange">
-                {i + 1}
-              </span>
-              <div>
-                <p className="font-display text-sm font-semibold text-white">{item.title}</p>
-                <p className="mt-0.5 text-xs leading-relaxed text-on-secondary-container/80">{item.desc}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
-
-        <p className="mt-8 text-[11px] tracking-wide text-white/35">© 2026 Homestay Booking. All rights reserved.</p>
+        <p className="mt-6 text-[10px] tracking-[0.08em] text-white/35">© 2026 The Serene Villa</p>
       </div>
-    </div>
+    </aside>
   )
 }

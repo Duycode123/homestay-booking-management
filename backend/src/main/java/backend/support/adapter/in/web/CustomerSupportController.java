@@ -4,6 +4,7 @@ import backend.common.ApiResponse;
 import backend.support.adapter.in.web.dto.request.CreateCustomerIssueReportRequest;
 import backend.support.application.model.CustomerIssueReportResult;
 import backend.support.application.port.in.CreateCustomerIssueReportUseCase;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -18,7 +19,7 @@ public class CustomerSupportController {
 
     @PostMapping("/report-issue")
     public ResponseEntity<ApiResponse<CustomerIssueReportResult>> createIssueReport(
-            @RequestBody CreateCustomerIssueReportRequest request,
+            @RequestBody @Valid CreateCustomerIssueReportRequest request,
             Authentication authentication
     ) {
         CustomerIssueReportResult data = createCustomerIssueReportUseCase.createIssueReport(

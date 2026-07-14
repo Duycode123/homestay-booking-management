@@ -64,9 +64,13 @@ Allow operational staff to inspect bookings, review details, update booking stat
 ## Business Rules
 
 - Only admin/staff management roles can use the admin booking endpoints.
-- Allowed forward transitions are `PENDING_PAYMENT -> PAID` for cash bookings, `DEPOSIT_PAID -> PAID`, `PAID -> CHECKED_IN`, and `CHECKED_IN -> COMPLETED`.
+- A deposit-paid booking can move from `DEPOSIT_PAID -> CHECKED_IN`; full-payment bookings move from `PAID -> CHECKED_IN`.
+- Management responses expose the successful amount already collected and the remaining balance.
+- `CHECKED_IN -> COMPLETED` is rejected while a balance remains. Admin/staff uses `POST /api/admin/bookings/{id}/settle-checkout` to record a successful `COUNTER` transaction for the exact remainder and complete checkout atomically.
+- The settlement use case locks the booking row while calculating and recording the remainder, preventing duplicate collection from concurrent staff actions.
 - Online `PENDING_PAYMENT` bookings are confirmed only by the payment integration, not manually through booking management.
-- Check-in is accepted from 30 minutes before the planned start until before the planned end.
+- Check-in is accepted from 5 minutes before the planned start until before the planned end.
+- A booking with a `PENDING` customer cancellation request cannot be checked in until admin reviews that request.
 - Cancelled, checked-in, and completed bookings cannot be cancelled through the management flow.
 - Cancellation reason, if provided, is appended into booking note history.
 

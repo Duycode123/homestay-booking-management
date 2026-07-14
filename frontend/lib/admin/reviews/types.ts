@@ -11,9 +11,16 @@ export type AdminReview = {
   staffName: string | null
   rating: number
   content: string
+  images: AdminReviewImage[]
   approved: boolean
   createdAt: string
   adminResponse: AdminReviewReply | null
+}
+
+export type AdminReviewImage = {
+  id: number
+  imageUrl: string
+  displayOrder: number
 }
 
 export type AdminReviewReply = {

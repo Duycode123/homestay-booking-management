@@ -18,6 +18,11 @@ public interface PaymentTransactionRepository extends JpaRepository<PaymentTrans
 
     Optional<PaymentTransaction> findByProviderTransactionId(String providerTransactionId);
 
+    Optional<PaymentTransaction> findTopByBooking_IdAndStatusOrderByPaidAtDesc(
+            Integer bookingId,
+            PaymentTransactionStatus status
+    );
+
     Optional<PaymentTransaction> findByTransactionReferenceAndBooking_Customer_Account_Email(
             String transactionReference,
             String email
@@ -32,9 +37,12 @@ public interface PaymentTransactionRepository extends JpaRepository<PaymentTrans
             SELECT COALESCE(SUM(t.amount), 0)
             FROM PaymentTransaction t
             WHERE t.booking.id = :bookingId
-              AND t.status = backend.entity.PaymentTransactionStatus.SUCCEEDED
+              AND t.status = :status
             """)
-    BigDecimal sumSuccessfulAmountByBookingId(@Param("bookingId") Integer bookingId);
+    BigDecimal sumAmountByBookingIdAndStatus(
+            @Param("bookingId") Integer bookingId,
+            @Param("status") PaymentTransactionStatus status
+    );
 
     @Query("""
             SELECT t

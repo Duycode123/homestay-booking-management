@@ -117,7 +117,7 @@ export default function AdminStaffCreateModal({ open, onClose, onSubmit }: Admin
                   value={form.email}
                   onChange={(event) => set({ email: event.target.value })}
                   className={inputClass}
-                  placeholder="nhanvien@homestay.local"
+                  placeholder="nhanvien@example.com"
                 />
                 {errors.email && <p className="mt-1 text-xs text-error">{errors.email}</p>}
               </label>

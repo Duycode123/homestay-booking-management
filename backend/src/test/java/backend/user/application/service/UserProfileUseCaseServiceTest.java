@@ -10,6 +10,7 @@ import backend.user.application.model.UserAvatarUploadResult;
 import backend.user.application.port.in.command.ChangeCurrentUserPasswordCommand;
 import backend.user.application.port.in.command.UploadCurrentUserAvatarCommand;
 import backend.user.application.port.in.command.UpdateCurrentUserNotificationSettingsCommand;
+import backend.user.application.port.in.command.UpdateCurrentUserProfileCommand;
 import backend.user.application.port.in.query.GetCurrentUserProfileQuery;
 import backend.user.application.port.out.UserProfileAccountPort;
 import backend.user.application.port.out.UserAvatarStoragePort;
@@ -172,8 +173,8 @@ class UserProfileUseCaseServiceTest {
                 userProfileUseCaseService.changePassword(new ChangeCurrentUserPasswordCommand(
                         "vinh@example.com",
                         "wrong-password",
-                        "new-password",
-                        "new-password"
+                        "new-password1",
+                        "new-password1"
                 ))
         );
 
@@ -186,13 +187,69 @@ class UserProfileUseCaseServiceTest {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
                 userProfileUseCaseService.changePassword(new ChangeCurrentUserPasswordCommand(
                         "vinh@example.com",
-                        "same-password",
-                        "same-password",
-                        "same-password"
+                        "same-password1",
+                        "same-password1",
+                        "same-password1"
                 ))
         );
 
         assertEquals("Mat khau moi khong duoc trung voi mat khau hien tai", exception.getMessage());
+        verify(userProfileAccountPort, never()).saveUser(any(User.class));
+    }
+
+    @Test
+    void changePasswordRejectsWeakNewPasswordBeforeLoadingUser() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                userProfileUseCaseService.changePassword(new ChangeCurrentUserPasswordCommand(
+                        "vinh@example.com",
+                        "current-password",
+                        "onlyletters",
+                        "onlyletters"
+                ))
+        );
+
+        assertEquals("Mat khau moi phai co it nhat mot chu cai va mot chu so", exception.getMessage());
+        verify(userProfileAccountPort, never()).loadUserByEmail(any());
+    }
+
+    @Test
+    void changePasswordInvalidatesExistingSessions() {
+        User user = staffUser();
+        user.setCredentialsVersion(7);
+        when(userProfileAccountPort.loadUserByEmail("vinh@example.com")).thenReturn(Optional.of(user));
+        when(userProfileSecurityPort.matchesPassword("current-password1", "encoded-password")).thenReturn(true);
+        when(userProfileSecurityPort.encodePassword("new-password1")).thenReturn("new-encoded-password");
+
+        userProfileUseCaseService.changePassword(new ChangeCurrentUserPasswordCommand(
+                "vinh@example.com",
+                "current-password1",
+                "new-password1",
+                "new-password1"
+        ));
+
+        assertEquals(8, user.getCredentialsVersion());
+        assertEquals("new-encoded-password", user.getPassword());
+        verify(userProfileAccountPort).saveUser(user);
+    }
+
+    @Test
+    void updateProfileRejectsEmailChangeUntilNewAddressCanBeVerified() {
+        User user = staffUser();
+        when(userProfileAccountPort.loadUserByEmail("vinh@example.com")).thenReturn(Optional.of(user));
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                userProfileUseCaseService.updateProfile(new UpdateCurrentUserProfileCommand(
+                        "vinh@example.com",
+                        "Vinh Nguyen",
+                        "attacker@example.com",
+                        "0912345678"
+                ))
+        );
+
+        assertEquals(
+                "Khong the doi email trong ho so. Vui long lien he ho tro de xac minh email moi.",
+                exception.getMessage()
+        );
         verify(userProfileAccountPort, never()).saveUser(any(User.class));
     }
 

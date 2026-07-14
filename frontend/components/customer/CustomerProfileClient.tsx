@@ -1,6 +1,8 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
+import { CustomerCard, CustomerPageShell } from '@/components/customer/CustomerPageShell'
 import { useAuth } from '@/contexts/AuthContext'
 import {
   fetchCurrentUser,
@@ -97,7 +99,11 @@ export default function CustomerProfileClient() {
       return 'Họ tên không được để trống.'
     }
 
-    if (!emailPattern.test(profileForm.email.trim())) {
+    if (profileForm.fullName.trim().length < 2 || profileForm.fullName.trim().length > 100) {
+      return 'Họ tên cần từ 2 đến 100 ký tự.'
+    }
+
+    if (!emailPattern.test(profileForm.email.trim()) || profileForm.email.trim().length > 254) {
       return 'Email chưa đúng định dạng.'
     }
 
@@ -196,119 +202,159 @@ export default function CustomerProfileClient() {
     }
   }
 
-  return (
-    <main className="min-h-screen bg-[#F5F2EC] text-[#1A1C1E]">
+  const completedFields = [profileForm.fullName.trim(), profileForm.email.trim(), profileForm.phone.trim(), avatarUrl].filter(Boolean).length
+  const profileCompletion = completedFields * 25
 
-      <section className="mx-auto max-w-6xl px-6 py-8">
-        <div className="rounded-[28px] border border-[#E8E4DC] bg-white p-6 shadow-[0_4px_24px_rgba(26,28,30,0.06)] md:p-8">
-          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-              <div className="shrink-0">
-                <AvatarPreview avatarUrl={avatarUrl} initial={avatarInitial} size="large" />
+  return (
+    <CustomerPageShell>
+      <div className="relative mb-6 overflow-hidden rounded-[22px] bg-gradient-to-br from-[#0B3B2F] via-secondary to-[#245545] px-6 py-8 text-white shadow-[0_22px_60px_rgba(11,59,47,0.2)] sm:px-9 sm:py-10">
+        <div className="pointer-events-none absolute -right-16 -top-28 h-72 w-72 rounded-full border border-white/10" />
+        <div className="pointer-events-none absolute -right-4 -top-16 h-48 w-48 rounded-full bg-primary-fixed/10 blur-3xl" />
+        <div className="relative flex flex-col gap-7 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+            <div className="relative w-fit">
+              <AvatarPreview avatarUrl={avatarUrl} initial={avatarInitial} size="large" />
+              <span className="absolute bottom-1 right-1 h-4 w-4 rounded-full border-2 border-secondary bg-[#7DB48B]" title="Tài khoản đang hoạt động" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-3">
+                <span aria-hidden className="h-px w-7 bg-primary-fixed" />
+                <p className="font-display text-[10px] font-semibold uppercase tracking-[0.22em] text-primary-fixed">Hồ sơ cá nhân</p>
               </div>
-              <div className="min-w-0">
-                <div className="mb-2 flex flex-wrap items-center gap-2">
-                  <h1 className="font-display text-3xl font-bold tracking-tight">
-                    {isFetchingProfile ? 'Đang tải hồ sơ' : displayName}
-                  </h1>
-                  <span className="rounded-full bg-[#FFE8D6] px-3 py-1 font-display text-xs font-bold uppercase tracking-wide text-[#6B3200]">
-                    {roleLabels[role]}
-                  </span>
-                </div>
-                <p className="text-[#5C5348]">{isFetchingProfile ? 'Đang đồng bộ thông tin tài khoản...' : displayEmail}</p>
-                <p className="mt-2 max-w-2xl text-sm text-[#5C5348]">
-                  Hồ sơ này đang đọc và ghi trực tiếp vào backend. Avatar chỉ hiển thị nếu backend đã có sẵn dữ liệu.
-                </p>
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <h1 className="font-editorial text-4xl font-semibold leading-tight sm:text-5xl">{isFetchingProfile ? 'Đang tải hồ sơ' : displayName}</h1>
+                <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold text-white/85">{roleLabels[role]}</span>
               </div>
+              <p className="mt-2 text-sm text-white/65">{isFetchingProfile ? 'Đang đồng bộ thông tin tài khoản...' : displayEmail}</p>
             </div>
           </div>
+          <div className="max-w-xs border-t border-white/15 pt-5 md:border-l md:border-t-0 md:pl-7 md:pt-0">
+            <p className="font-display text-xs font-semibold uppercase tracking-[0.14em] text-primary-fixed">Dùng cho kỳ lưu trú</p>
+            <p className="mt-2 text-sm leading-6 text-white/68">Thông tin chính xác giúp xác nhận đặt phòng và liên hệ hỗ trợ thuận tiện hơn.</p>
+          </div>
         </div>
+      </div>
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_330px]">
+        <CustomerCard className="p-0 hover:border-outline-variant">
           <form
             onSubmit={handleSaveProfile}
-            className="rounded-[24px] border border-[#E8E4DC] bg-white p-6 shadow-[0_4px_24px_rgba(26,28,30,0.06)] md:p-8"
+            className="overflow-hidden"
           >
-            <div className="mb-6">
-              <h2 className="font-display text-xl font-bold">Thông tin cá nhân</h2>
-              <p className="mt-1 text-sm text-[#5C5348]">Cập nhật thông tin liên hệ dùng cho đặt phòng.</p>
+            <div className="border-b border-outline-variant bg-gradient-to-r from-[#F2F6F3] to-white px-6 py-6 sm:px-8">
+              <p className="eyebrow text-brand-orange">Thông tin tài khoản</p>
+              <h2 className="font-editorial mt-2 text-3xl font-semibold text-secondary">Chi tiết cá nhân</h2>
+              <p className="mt-2 text-sm leading-6 text-on-surface-variant">Cập nhật thông tin được dùng khi đặt phòng và nhận hỗ trợ.</p>
             </div>
 
-            <div className="grid gap-4">
-              <FormField label="Avatar">
-                <input
-                  type="file"
-                  accept="image/*"
-                  disabled={isFetchingProfile || isUploadingAvatar}
-                  onChange={(event) => void handleAvatarChange(event)}
-                  className="block w-full text-sm text-[#5C5348] file:mr-3 file:rounded-2xl file:border-0 file:bg-[#FF7518] file:px-4 file:py-2.5 file:font-display file:text-sm file:font-semibold file:text-white hover:file:bg-[#E6640F] disabled:cursor-not-allowed disabled:opacity-60"
-                />
-                <p className="mt-2 text-xs text-[#5C5348]">
-                  {isUploadingAvatar ? 'Đang tải ảnh lên Cloudinary...' : 'Chấp nhận file ảnh tối đa 5MB. Link ảnh sẽ được lưu vào database.'}
-                </p>
-              </FormField>
+            <div className="space-y-7 px-6 py-7 sm:px-8">
+              <div className="flex flex-col gap-5 rounded-2xl border border-outline-variant bg-[#FAF8F3] p-5 sm:flex-row sm:items-center">
+                <AvatarPreview avatarUrl={avatarUrl} initial={avatarInitial} size="small" />
+                <div className="flex-1">
+                  <p className="font-display text-sm font-semibold text-on-surface">Ảnh đại diện</p>
+                  <p className="mt-1 text-xs leading-5 text-on-surface-variant">Ảnh JPG, PNG hoặc WebP, dung lượng tối đa 5MB.</p>
+                </div>
+                <label className={`inline-flex h-10 cursor-pointer items-center justify-center rounded-full border border-secondary/20 bg-white px-4 font-display text-xs font-semibold text-secondary transition hover:border-secondary hover:bg-[#EDF4F0] ${isFetchingProfile || isUploadingAvatar ? 'pointer-events-none opacity-60' : ''}`}>
+                  <input type="file" accept="image/*" disabled={isFetchingProfile || isUploadingAvatar} onChange={(event) => void handleAvatarChange(event)} className="sr-only" />
+                  {isUploadingAvatar ? 'Đang cập nhật...' : 'Thay ảnh'}
+                </label>
+              </div>
 
-              <FormField label="Họ tên">
+              <div className="grid gap-5 sm:grid-cols-2">
+                <FormField label="Họ và tên" hint="Tên hiển thị trên thông tin đặt phòng.">
                 <input
+                  name="fullName"
+                  autoComplete="name"
+                  minLength={2}
+                  maxLength={100}
+                  required
                   value={profileForm.fullName}
                   disabled={isFetchingProfile}
                   onChange={(event) => setProfileForm((form) => ({ ...form, fullName: event.target.value }))}
-                  className="h-12 w-full rounded-2xl border border-[#C9C2B6] bg-white px-4 text-sm outline-none transition focus:border-[#FF7518] focus:ring-2 focus:ring-[#FF7518]/20 disabled:cursor-wait disabled:bg-[#FAF8F4]"
+                  className={inputClassName}
                 />
               </FormField>
 
-              <FormField label="Email">
+                <FormField label="Email" hint="Email đăng nhập được bảo vệ. Liên hệ hỗ trợ nếu bạn cần thay đổi.">
                 <input
                   type="email"
+                  name="email"
+                  autoComplete="email"
+                  maxLength={254}
+                  required
+                  readOnly
                   value={profileForm.email}
                   disabled={isFetchingProfile}
                   onChange={(event) => setProfileForm((form) => ({ ...form, email: event.target.value }))}
-                  className="h-12 w-full rounded-2xl border border-[#C9C2B6] bg-white px-4 text-sm outline-none transition focus:border-[#FF7518] focus:ring-2 focus:ring-[#FF7518]/20 disabled:cursor-wait disabled:bg-[#FAF8F4]"
+                  className={`${inputClassName} cursor-not-allowed bg-surface-container-low text-on-surface-variant`}
                 />
               </FormField>
 
-              <FormField label="Số điện thoại">
+                <FormField label="Số điện thoại" hint="9–11 chữ số, không gồm khoảng trắng.">
                 <input
+                  name="phone"
+                  type="tel"
+                  inputMode="numeric"
+                  autoComplete="tel"
+                  pattern="[0-9]{9,11}"
                   value={profileForm.phone}
                   disabled={isFetchingProfile}
                   onChange={(event) => setProfileForm((form) => ({ ...form, phone: event.target.value }))}
                   placeholder="Ví dụ: 0901234567"
-                  className="h-12 w-full rounded-2xl border border-[#C9C2B6] bg-white px-4 text-sm outline-none transition placeholder:text-[#8A8176] focus:border-[#FF7518] focus:ring-2 focus:ring-[#FF7518]/20 disabled:cursor-wait disabled:bg-[#FAF8F4]"
+                  className={inputClassName}
                 />
               </FormField>
-            </div>
+              </div>
 
-            {profileMessage && <MessageBox message={profileMessage} />}
+              {profileMessage && <MessageBox message={profileMessage} />}
 
-            <button
-              type="submit"
-              disabled={isSavingProfile || isFetchingProfile || isUploadingAvatar}
-              className="mt-6 h-12 rounded-2xl bg-[#FF7518] px-6 font-display font-semibold text-white transition hover:bg-[#E6640F] focus:outline-none focus:ring-2 focus:ring-[#FF7518]/30 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isSavingProfile ? 'Đang lưu' : 'Lưu thay đổi'}
-            </button>
-          </form>
-
-          <aside className="rounded-[24px] border border-[#E8E4DC] bg-white p-6 shadow-[0_4px_24px_rgba(26,28,30,0.06)]">
-            <div className="mb-5 flex items-center gap-3">
-              <AvatarPreview avatarUrl={avatarUrl} initial={avatarInitial} size="small" />
-              <div className="min-w-0">
-                <h2 className="font-display text-lg font-bold">Hồ sơ đặt phòng</h2>
-                <p className="truncate text-sm text-[#5C5348]">{displayEmail || 'Email sẽ hiển thị sau khi đồng bộ.'}</p>
+              <div className="flex flex-col gap-4 border-t border-outline-variant pt-6 sm:flex-row sm:items-center sm:justify-between">
+                <p className="max-w-sm text-xs leading-5 text-on-surface-variant">Kiểm tra lại email và số điện thoại để không bỏ lỡ thông tin về lịch đặt.</p>
+                <button
+                  type="submit"
+                  disabled={isSavingProfile || isFetchingProfile || isUploadingAvatar}
+                  className="inline-flex h-12 items-center justify-center rounded-full bg-secondary px-7 font-display text-sm font-semibold text-white shadow-[0_12px_28px_rgba(11,59,47,0.18)] transition hover:bg-[#245545] focus:outline-none focus:ring-2 focus:ring-secondary/25 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isSavingProfile ? 'Đang lưu thay đổi...' : 'Lưu thay đổi'}
+                </button>
               </div>
             </div>
-            <p className="text-sm leading-6 text-[#5C5348]">
-              Thông tin này được dùng để xác nhận lịch đặt phòng và liên hệ khi cần.
-            </p>
-            <div className="mt-5 rounded-2xl border border-[#E8E4DC] bg-[#FAF8F4] p-4 text-sm text-[#5C5348]">
-              Avatar mới sẽ được upload lên Cloudinary qua backend, sau đó link ảnh được lưu vào database account.avatar_url.
+          </form>
+        </CustomerCard>
+
+        <aside className="space-y-4">
+          <CustomerCard className="bg-secondary text-white hover:border-outline-variant">
+            <p className="font-display text-xs font-semibold uppercase tracking-[0.16em] text-primary-fixed">Mức độ hoàn thiện</p>
+            <div className="mt-4 flex items-end justify-between gap-4">
+              <p className="font-editorial text-4xl font-semibold">{isFetchingProfile ? '—' : `${profileCompletion}%`}</p>
+              <span className="text-xs text-white/60">{completedFields}/4 mục</span>
             </div>
-          </aside>
-        </div>
-      </section>
-    </main>
+            <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/15">
+              <div className="h-full rounded-full bg-primary-fixed transition-all duration-500" style={{ width: `${profileCompletion}%` }} />
+            </div>
+            <p className="mt-4 text-sm leading-6 text-white/68">Thêm ảnh đại diện và số điện thoại để đội ngũ dễ nhận diện, hỗ trợ bạn khi cần.</p>
+          </CustomerCard>
+
+          <CustomerCard>
+            <h2 className="font-editorial text-2xl font-semibold text-secondary">Quản lý tài khoản</h2>
+            <nav className="mt-5 divide-y divide-outline-variant border-y border-outline-variant">
+              <ProfileLink href="/customer/bookings" label="Lịch đặt của tôi" />
+              <ProfileLink href="/customer/security" label="Bảo mật tài khoản" />
+              <ProfileLink href="/customer/support" label="Trung tâm hỗ trợ" />
+            </nav>
+          </CustomerCard>
+
+          <div className="rounded-xl border border-[#D8C39E]/50 bg-[#F3EBDD] p-5">
+            <p className="font-display text-xs font-semibold uppercase tracking-[0.14em] text-[#74522F]">Quyền riêng tư</p>
+            <p className="mt-2 text-xs leading-5 text-[#74522F]/80">Thông tin liên hệ chỉ được sử dụng để phục vụ tài khoản, đơn đặt phòng và hỗ trợ lưu trú.</p>
+          </div>
+        </aside>
+      </div>
+    </CustomerPageShell>
   )
 }
+
+const inputClassName = 'h-12 w-full rounded-xl border border-outline bg-white px-4 text-sm text-on-surface outline-none transition placeholder:text-on-surface-variant/45 focus:border-secondary focus:ring-2 focus:ring-secondary/15 disabled:cursor-wait disabled:bg-surface-container-low'
 
 function AvatarPreview({
   avatarUrl,
@@ -319,12 +365,12 @@ function AvatarPreview({
   initial: string
   size: 'large' | 'small'
 }) {
-  const classes = size === 'large' ? 'h-24 w-24 text-4xl' : 'h-14 w-14 text-xl'
+  const classes = size === 'large' ? 'h-24 w-24 border-[3px] border-white/65 text-4xl shadow-[0_14px_30px_rgba(0,0,0,0.2)]' : 'h-14 w-14 text-xl'
 
   return (
     <span
       className={[
-        'flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#FF7518] font-display font-bold text-white',
+        'flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-orange font-display font-bold text-white',
         classes,
       ].join(' ')}
     >
@@ -337,12 +383,22 @@ function AvatarPreview({
   )
 }
 
-function FormField({ label, children }: { label: string; children: ReactNode }) {
+function FormField({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
     <label>
-      <span className="mb-1 block font-display text-xs font-bold uppercase tracking-wider text-[#5C5348]">{label}</span>
+      <span className="mb-2 block font-display text-xs font-semibold uppercase tracking-[0.1em] text-on-surface">{label}</span>
       {children}
+      {hint ? <span className="mt-2 block text-xs leading-5 text-on-surface-variant">{hint}</span> : null}
     </label>
+  )
+}
+
+function ProfileLink({ href, label }: { href: string; label: string }) {
+  return (
+    <Link href={href} className="group flex items-center justify-between py-3.5 text-sm font-semibold text-on-surface transition hover:text-secondary">
+      {label}
+      <span aria-hidden className="text-brand-orange transition-transform group-hover:translate-x-1">→</span>
+    </Link>
   )
 }
 
@@ -353,7 +409,7 @@ function MessageBox({ message }: { message: Message }) {
     <p
       className={[
         'mt-4 rounded-2xl border px-4 py-3 text-sm',
-        isSuccess ? 'border-[#0A4D27]/25 bg-[#F1F8F2] text-[#0A4D27]' : 'border-[#C62828]/20 bg-[#FFEBEE] text-[#C62828]',
+        isSuccess ? 'border-[#245545]/25 bg-[#F1F8F2] text-[#245545]' : 'border-[#C62828]/20 bg-[#FFEBEE] text-[#C62828]',
       ].join(' ')}
     >
       {message.text}

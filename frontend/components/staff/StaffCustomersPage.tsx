@@ -1,5 +1,7 @@
 'use client'
 
+import ProjectSelect from '@/components/ui/ProjectSelect'
+
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import AuthGuard from '@/components/AuthGuard'
 import { fetchStaffCustomers, type BackendStaffCustomerBooking, type BackendStaffCustomerSummary } from '@/lib/staff-customer-service'
@@ -247,9 +249,9 @@ export default function StaffCustomersPage() {
                 <section className="rounded-3xl border border-outline-variant bg-white p-4 shadow-[var(--homestay-shadow-card)]">
                   <div className="grid gap-3 lg:grid-cols-[minmax(280px,1fr)_260px_auto]">
                     <SearchInput value={query} onChange={setQuery} />
-                    <select value={filter} onChange={(event) => setFilter(event.target.value as CustomerFilter)} className="h-12 rounded-2xl border border-outline-variant bg-surface-container-low px-4 font-display text-sm font-bold text-on-surface outline-none transition focus:border-brand-orange focus:bg-white">
+                    <ProjectSelect value={filter} onChange={(event) => setFilter(event.target.value as CustomerFilter)} className="h-12 rounded-2xl border border-outline-variant bg-surface-container-low px-4 font-display text-sm font-bold text-on-surface outline-none transition focus:border-brand-orange focus:bg-white">
                       {filters.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-                    </select>
+                    </ProjectSelect>
                     <button type="button" onClick={resetFilters} className="btn-secondary">Đặt lại</button>
                   </div>
                 </section>
@@ -323,7 +325,7 @@ function CustomerCard({ customer, onView, onAddNote }: { customer: StaffCustomer
 
 function CustomerDetailPanel({ customer, bookings, onClose, onAddNote }: { customer: StaffCustomer; bookings: StaffBooking[]; onClose: () => void; onAddNote: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-[#042A16]/45 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex justify-end bg-[#173A31]/45 backdrop-blur-sm" onClick={onClose}>
       <aside className="h-full w-full overflow-y-auto border-l border-outline-variant bg-white p-5 shadow-[var(--homestay-shadow-elevated)] sm:max-w-2xl sm:p-6" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -403,7 +405,7 @@ function NoteModal({ customer, onCancel, onSubmit }: { customer: StaffCustomer; 
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end bg-[#042A16]/45 p-0 backdrop-blur-sm sm:items-center sm:justify-center sm:p-6" onClick={onCancel}>
+    <div className="fixed inset-0 z-[60] flex items-end bg-[#173A31]/45 p-0 backdrop-blur-sm sm:items-center sm:justify-center sm:p-6" onClick={onCancel}>
       <div className="w-full rounded-t-3xl border border-outline-variant bg-white p-5 shadow-[var(--homestay-shadow-elevated)] sm:max-w-xl sm:rounded-3xl sm:p-6" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -419,10 +421,10 @@ function NoteModal({ customer, onCancel, onSubmit }: { customer: StaffCustomer; 
         </label>
         <label className="mt-4 block">
           <span className="font-display text-sm font-bold text-on-surface">Mức độ ưu tiên</span>
-          <select value={priority} onChange={(event) => setPriority(event.target.value as NotePriority)} className="input-field mt-2">
+          <ProjectSelect value={priority} onChange={(event) => setPriority(event.target.value as NotePriority)} className="input-field mt-2">
             <option value="NORMAL">Bình thường</option>
             <option value="IMPORTANT">Quan trọng</option>
-          </select>
+          </ProjectSelect>
         </label>
         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <button type="button" onClick={onCancel} className="btn-secondary">Hủy</button>

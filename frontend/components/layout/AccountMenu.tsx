@@ -134,30 +134,38 @@ export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenu
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
         aria-haspopup="menu"
-        className="flex items-center gap-2 rounded-full border border-[#C9C2B6] bg-white/85 px-3 py-2 transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-[#FF7518]/30"
+        className="group flex min-h-12 items-center gap-2.5 rounded-full border border-[#d9c6aa] bg-[linear-gradient(135deg,rgba(255,255,255,.98),rgba(248,243,235,.96))] py-1.5 pl-1.5 pr-3 shadow-[0_8px_24px_rgba(36,58,49,.10),inset_0_0_0_1px_rgba(255,255,255,.85)] transition-all duration-300 hover:-translate-y-0.5 hover:border-brand-orange/55 hover:shadow-[0_12px_30px_rgba(36,58,49,.15)] focus:outline-none focus:ring-2 focus:ring-brand-orange/25"
       >
-        <AccountAvatar avatarUrl={avatarUrl} initial={avatarInitial} size="small" />
-        <span className="hidden max-w-[170px] truncate font-display text-sm font-semibold text-[#1A1C1E] sm:block">
-          {displayName}
+        <span className="relative">
+          <AccountAvatar avatarUrl={avatarUrl} initial={avatarInitial} size="small" />
+          <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-[#3f8068]" aria-hidden />
         </span>
-        <span className="font-display text-xs text-[#5C5348]">v</span>
+        <span className="hidden min-w-0 text-left sm:block">
+          <span className="block max-w-[170px] truncate font-display text-sm font-bold text-[#25332d]">{displayName}</span>
+          <span className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a7356]">{roleLabels[role]}</span>
+        </span>
+        <svg className={['h-4 w-4 text-[#806b50] transition-transform duration-300', open ? 'rotate-180' : ''].join(' ')} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+          <path d="m7 10 5 5 5-5" />
+        </svg>
       </button>
 
       {open && (
         <div
           role="menu"
           className={[
-            'absolute z-[90] mt-3 w-[min(380px,calc(100vw-32px))] overflow-hidden rounded-[24px] border border-[#E8E4DC] bg-white shadow-[0_24px_70px_rgba(26,28,30,0.20)]',
+            'absolute z-[90] mt-3 w-[min(360px,calc(100vw-24px))] overflow-hidden rounded-[26px] border border-[#dfd2bf] bg-[#fffdfa] shadow-[0_24px_70px_rgba(26,47,39,.22)]',
             align === 'full' ? 'right-0' : 'right-0',
           ].join(' ')}
         >
-          <div className="bg-[#F5F2EC] p-5">
+          <div className="relative overflow-hidden bg-[linear-gradient(145deg,#123f34,#255e4e)] p-5 text-white">
+            <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full border border-white/10" aria-hidden />
+            <div className="pointer-events-none absolute -right-2 top-5 h-24 w-24 rounded-full border border-[#c89861]/25" aria-hidden />
             <div className="flex items-center gap-3">
               <AccountAvatar avatarUrl={avatarUrl} initial={avatarInitial} size="large" />
               <div className="min-w-0">
-                <p className="truncate font-display text-base font-bold text-[#1A1C1E]">{displayName}</p>
-                <p className="mt-1 truncate text-sm text-[#5C5348]">{userEmail}</p>
-                <span className="mt-2 inline-flex rounded-full bg-[#FFE8D6] px-3 py-1 font-display text-xs font-bold text-[#6B3200]">
+                <p className="truncate font-display text-lg font-bold text-white">{displayName}</p>
+                <p className="mt-0.5 truncate text-sm text-white/70">{userEmail}</p>
+                <span className="mt-2 inline-flex rounded-full border border-[#e1bd8a]/35 bg-[#e1bd8a]/15 px-3 py-1 font-display text-[10px] font-bold uppercase tracking-[0.12em] text-[#f6dfbf]">
                   {roleLabels[role]}
                 </span>
               </div>
@@ -166,7 +174,7 @@ export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenu
             <Link
               href="/customer/profile"
               onClick={handleNavigate}
-              className="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#FF7518] font-display text-sm font-semibold text-white transition hover:bg-[#E6640F] focus:outline-none focus:ring-2 focus:ring-[#FF7518]/30"
+              className="relative mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/10 font-display text-sm font-semibold text-white backdrop-blur-sm transition hover:border-[#e1bd8a]/50 hover:bg-white/16 focus:outline-none focus:ring-2 focus:ring-[#e1bd8a]/35"
               role="menuitem"
             >
               <Icon name="user" />
@@ -174,7 +182,8 @@ export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenu
             </Link>
           </div>
 
-          <div className="border-t border-[#E8E4DC] p-2">
+          <div className="px-2 pb-2 pt-3">
+            <p className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-[#9a8569]">Tiện ích tài khoản</p>
             {menuItems.map((item) => (
               <AccountMenuLink
                 key={item.href}
@@ -186,12 +195,12 @@ export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenu
             ))}
           </div>
 
-          <div className="border-t border-[#E8E4DC] p-2">
+          <div className="border-t border-[#eadfce] bg-[#fcf8f2] p-2">
             <button
               type="button"
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-[#FFF4F2] focus:outline-none focus:ring-2 focus:ring-[#C62828]/20 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition hover:bg-error-container focus:outline-none focus:ring-2 focus:ring-error/20 disabled:cursor-not-allowed disabled:opacity-60"
               role="menuitem"
             >
               <MenuIcon name="logout" danger />
@@ -221,14 +230,14 @@ function AccountMenuLink({
     <Link
       href={href}
       onClick={onClick}
-      className="flex items-center justify-between rounded-2xl px-3 py-3 transition hover:bg-[#FAF8F4] focus:outline-none focus:ring-2 focus:ring-[#FF7518]/20"
+      className="group flex items-center justify-between rounded-2xl px-3 py-2.5 transition hover:bg-[#f5ede2] focus:outline-none focus:ring-2 focus:ring-brand-orange/20"
       role="menuitem"
     >
       <span className="flex items-center gap-3">
         <MenuIcon name={icon} />
-        <span className="font-display text-sm font-semibold text-[#1A1C1E]">{label}</span>
+        <span className="font-display text-sm font-semibold text-on-surface">{label}</span>
       </span>
-      <span className="text-xs text-[#5C5348]">›</span>
+      <svg className="h-4 w-4 text-[#a38e72] transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden><path d="m9 6 6 6-6 6" /></svg>
     </Link>
   )
 }
@@ -242,12 +251,12 @@ function AccountAvatar({
   initial: string
   size: 'small' | 'large'
 }) {
-  const classes = size === 'large' ? 'h-14 w-14 text-xl' : 'h-9 w-9 text-sm'
+  const classes = size === 'large' ? 'h-16 w-16 border-2 border-[#d9b27e] text-xl shadow-lg' : 'h-9 w-9 text-sm'
 
   return (
     <span
       className={[
-        'flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#FF7518] font-display font-bold text-white',
+        'flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-secondary font-display font-bold text-white',
         classes,
       ].join(' ')}
     >
@@ -265,7 +274,7 @@ function MenuIcon({ name, danger = false }: { name: MenuIconName; danger?: boole
     <span
       className={[
         'flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl',
-        danger ? 'bg-[#FFEBEE] text-[#C62828]' : 'bg-[#FFE8D6] text-[#6B3200]',
+        danger ? 'bg-error-container text-error' : 'bg-[#efe2cf] text-[#785d3d] transition-colors group-hover:bg-[#e5d2b5]',
       ].join(' ')}
     >
       <Icon name={name} />

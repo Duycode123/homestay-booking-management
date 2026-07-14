@@ -1,6 +1,7 @@
 package backend.repository;
 
 import backend.entity.Room;
+import backend.entity.RoomStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,6 +18,8 @@ public interface RoomRepository extends JpaRepository<Room, Integer>, JpaSpecifi
     boolean existsByRoomName(String roomName);
 
     boolean existsByRoomType_Id(Integer roomTypeId);
+
+    boolean existsByRoomType_IdAndStatusNot(Integer roomTypeId, RoomStatus status);
 
     @EntityGraph(attributePaths = "roomType")
     List<Room> findAllByOrderByRoomNameAsc();

@@ -1,5 +1,7 @@
 'use client'
 
+import ProjectSelect from '@/components/ui/ProjectSelect'
+
 import { useEffect, useState } from 'react'
 import {
   DISCOUNT_TYPE_LABELS,
@@ -198,7 +200,7 @@ export default function CouponFormModal({
                   <span className={labelClass}>
                     Loại giảm <span className="text-error">*</span>
                   </span>
-                  <select
+                  <ProjectSelect
                     value={form.type}
                     onChange={(event) => set({ type: event.target.value as CouponFormData['type'] })}
                     className={inputClass}
@@ -208,7 +210,7 @@ export default function CouponFormModal({
                         {DISCOUNT_TYPE_LABELS[type]}
                       </option>
                     ))}
-                  </select>
+                  </ProjectSelect>
                 </label>
 
                 <label className="block">

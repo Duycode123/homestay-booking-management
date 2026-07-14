@@ -1,81 +1,102 @@
-import { getPaymentMethodLabel, paymentMethodOptions } from '@/lib/checkout-data'
-import type { PaymentMethod, PaymentOption } from '@/lib/payment-service'
+import type { PaymentOption } from '@/lib/payment-service'
 
 export default function CheckoutPaymentMethods({
   bookingId,
-  method,
   paymentOption,
+  total,
   onChange,
 }: {
   bookingId: string
-  method: PaymentMethod
   paymentOption: PaymentOption
-  onChange: (method: PaymentMethod) => void
+  total: number
+  onChange: (option: PaymentOption) => void
 }) {
-  const visibleOptions = paymentMethodOptions.filter((option) => option.id === 'bank_transfer')
+  const depositAmount = Math.round(total * 0.5)
+  const remainingAmount = Math.max(0, total - depositAmount)
 
   return (
-    <div>
-      <h3 className="font-display text-base font-bold">Phương thức thanh toán</h3>
-      <div className="mt-2 grid gap-2">
-        {visibleOptions.map((option) => {
-          const active = method === option.id
-
-          return (
-            <button
-              key={option.id}
-              type="button"
-              onClick={() => onChange(option.id)}
-              aria-pressed={active}
-              className={[
-                'rounded-2xl border px-3 py-2.5 text-left transition focus:outline-none focus:ring-2 focus:ring-[#FF7518]/30',
-                active
-                  ? 'border-[#FF7518] bg-[#FFE8D6] text-[#6B3200]'
-                  : 'border-[#E8E4DC] bg-white text-[#5C5348] hover:bg-[#FAF8F4]',
-              ].join(' ')}
-            >
-              <span className="flex items-start justify-between gap-3">
-                <span className="min-w-0">
-                  <span className="block font-display text-sm font-bold">{option.label}</span>
-                  <span className="mt-1 block text-xs leading-5">{option.description}</span>
-                </span>
-                {active && (
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#FF7518] text-xs font-bold text-white">
-                    OK
-                  </span>
-                )}
-              </span>
-            </button>
-          )
-        })}
+    <section aria-labelledby="checkout-payment-option-title">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#B28455]">Hình thức thanh toán</p>
+          <h3 id="checkout-payment-option-title" className="mt-1 font-display text-xl font-bold">Bạn muốn thanh toán bao nhiêu?</h3>
+        </div>
+        <span className="rounded-full bg-[#F3EFE8] px-3 py-1 text-xs font-semibold text-[#6A6C66]">Mã {bookingId}</span>
       </div>
 
-      <PaymentMethodInstruction bookingId={bookingId} method={method} paymentOption={paymentOption} />
-    </div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <PaymentOptionCard
+          active={paymentOption === 'deposit'}
+          badge="Phổ biến"
+          percentage="50%"
+          title="Đặt cọc trước"
+          amount={depositAmount}
+          description={`Thanh toán phần còn lại ${formatCurrency(remainingAmount)} khi checkout.`}
+          onClick={() => onChange('deposit')}
+        />
+        <PaymentOptionCard
+          active={paymentOption === 'full'}
+          percentage="100%"
+          title="Thanh toán toàn bộ"
+          amount={total}
+          description="Hoàn tất tiền phòng ngay, không cần kết toán thêm khi checkout."
+          onClick={() => onChange('full')}
+        />
+      </div>
+    </section>
   )
 }
 
-function PaymentMethodInstruction({
-  bookingId,
-  method,
-  paymentOption,
+function PaymentOptionCard({
+  active,
+  badge,
+  percentage,
+  title,
+  amount,
+  description,
+  onClick,
 }: {
-  bookingId: string
-  method: PaymentMethod
-  paymentOption: PaymentOption
+  active: boolean
+  badge?: string
+  percentage: string
+  title: string
+  amount: number
+  description: string
+  onClick: () => void
 }) {
   return (
-    <div className="mt-4 rounded-2xl border border-[#E8E4DC] bg-[#FAF8F4] p-3 text-sm text-[#5C5348]">
-      <p className="font-display font-semibold text-[#1A1C1E]">
-        {paymentOption === 'deposit'
-          ? 'Đặt cọc 50.000 VND qua portal SePay'
-          : 'Thanh toán toàn bộ qua portal SePay'}
-      </p>
-      <p className="mt-2">
-        Hệ thống sẽ chuyển bạn sang portal thanh toán riêng của SePay và tự xác nhận khi webhook báo tiền vào.
-      </p>
-      <p className="mt-2 text-xs">Mã đặt phòng: {bookingId}</p>
-      <p className="sr-only">Phương thức đang chọn: {getPaymentMethodLabel(method)}</p>
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={[
+        'relative min-h-[178px] overflow-hidden rounded-[22px] border p-4 text-left transition duration-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#B28455]/20',
+        active
+          ? 'border-[#B28455] bg-[#F7EDE0] shadow-[0_12px_30px_rgba(178,132,85,0.14)]'
+          : 'border-[#E4DED3] bg-white hover:-translate-y-0.5 hover:border-[#B28455]/50 hover:shadow-sm',
+      ].join(' ')}
+    >
+      {active && <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-[#B28455]" />}
+      <span className="flex items-start justify-between gap-3">
+        <span className="flex items-center gap-2">
+          <span className={['rounded-full px-2.5 py-1 font-display text-xs font-bold', active ? 'bg-[#173F35] text-white' : 'bg-[#EEEAE3] text-[#5F655F]'].join(' ')}>{percentage}</span>
+          {badge && <span className="text-[10px] font-bold uppercase tracking-wide text-[#A16F3E]">{badge}</span>}
+        </span>
+        <span className={['flex h-6 w-6 items-center justify-center rounded-full border', active ? 'border-[#B28455] bg-[#B28455] text-white' : 'border-[#CFC7BB] text-transparent'].join(' ')}>
+          <CheckIcon />
+        </span>
+      </span>
+      <span className="mt-4 block font-display text-base font-bold text-[#242A27]">{title}</span>
+      <span className="mt-1 block font-display text-xl font-bold text-[#A97643]">{formatCurrency(amount)}</span>
+      <span className="mt-2 block text-xs leading-5 text-[#6A6C66]">{description}</span>
+    </button>
   )
+}
+
+function CheckIcon() {
+  return <svg aria-hidden viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.6"><path d="m6 12.5 4 4L18 8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+}
+
+function formatCurrency(value: number) {
+  return `${new Intl.NumberFormat('vi-VN').format(value)}đ`
 }

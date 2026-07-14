@@ -5,6 +5,7 @@ import {
   mapRoomTypeToAdminOption,
 } from '@/lib/room-mappers'
 import api from '@/lib/api'
+import { invalidatePublicRoomCatalog } from '@/lib/public/room-catalog-cache'
 import { fetchRoomReviewSummaries } from '@/lib/public-room-review-service'
 import {
   createRoomType,
@@ -88,11 +89,20 @@ export function validateRoomForm(data: RoomFormData): RoomFormErrors {
     errors.description = 'Mô tả tối đa 500 ký tự.'
   }
 
-  if (data.image.trim() && !/^https?:\/\/.+/i.test(data.image.trim())) {
-    errors.image = 'Đường dẫn ảnh phải bắt đầu bằng http hoặc https.'
+  const invalidImagePath = [data.image, ...data.additionalImages]
+    .map((value) => value.trim())
+    .find((value) => value && !isAllowedRoomImagePath(value))
+
+  if (invalidImagePath) {
+    errors.image = 'Ảnh phải là URL http/https hoặc đường dẫn /images/rooms/ten-phong/ten-anh.jpg.'
   }
 
   return errors
+}
+
+function isAllowedRoomImagePath(value: string) {
+  return /^https?:\/\/.+/i.test(value)
+    || /^\/images\/rooms\/[a-z0-9][a-z0-9/_-]*\.(?:jpe?g|png|webp)$/i.test(value)
 }
 
 export function validateRoomTypeForm(data: RoomTypeFormData): RoomTypeFormErrors {
@@ -225,9 +235,11 @@ export async function createAdminRoom(data: RoomFormData): Promise<AdminRoom> {
       roomTypeId: roomType.id,
       maxPeople: data.capacity,
       imageUrl: normalizeOptionalImageUrl(data.image),
+      additionalImageUrls: data.additionalImages.map(normalizeOptionalImageUrl).filter((value): value is string => Boolean(value)),
       status: mapAdminStatusToBackendStatus(data.status || 'active'),
     })
 
+    invalidatePublicRoomCatalog()
     return mapBackendRoomToAdminRoom(room)
   } catch (error) {
     throw new Error(getRoomApiErrorMessage(error, 'Không thể thêm phòng trên hệ thống.'))
@@ -253,9 +265,11 @@ export async function updateAdminRoom(id: string, data: RoomFormData): Promise<A
       roomTypeId: roomType.id,
       maxPeople: data.capacity,
       imageUrl: normalizeOptionalImageUrl(data.image),
+      additionalImageUrls: data.additionalImages.map(normalizeOptionalImageUrl).filter((value): value is string => Boolean(value)),
       status: mapAdminStatusToBackendStatus(data.status || 'active'),
     })
 
+    invalidatePublicRoomCatalog()
     return mapBackendRoomToAdminRoom(room)
   } catch (error) {
     throw new Error(getRoomApiErrorMessage(error, 'Không thể cập nhật phòng trên hệ thống.'))
@@ -265,6 +279,7 @@ export async function updateAdminRoom(id: string, data: RoomFormData): Promise<A
 export async function deleteAdminRoom(id: string): Promise<void> {
   try {
     await deleteRoom(id)
+    invalidatePublicRoomCatalog()
   } catch (error) {
     throw new Error(getRoomApiErrorMessage(error, 'Không thể xóa phòng trên hệ thống.'))
   }
@@ -273,6 +288,7 @@ export async function deleteAdminRoom(id: string): Promise<void> {
 export async function updateRoomStatus(id: string, status: RoomStatus): Promise<AdminRoom | null> {
   try {
     const room = await updateRoomOperationalStatus(id, mapAdminStatusToBackendStatus(status))
+    invalidatePublicRoomCatalog()
     return mapBackendRoomToAdminRoom(room)
   } catch (error) {
     throw new Error(getRoomApiErrorMessage(error, 'Không thể đổi trạng thái phòng.'))
@@ -291,6 +307,7 @@ export function toRoomFormData(room: AdminRoom): RoomFormData {
     description: room.description,
     equipments: room.equipments.join('\n'),
     image: room.imageUrl ?? '',
+    additionalImages: (room.imageUrls ?? []).filter((image) => image !== room.imageUrl).slice(0, 3),
   }
 }
 
@@ -357,4 +374,5 @@ export const EMPTY_ROOM_FORM: RoomFormData = {
   description: '',
   equipments: '',
   image: '',
+  additionalImages: [],
 }

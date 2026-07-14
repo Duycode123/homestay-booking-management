@@ -53,6 +53,10 @@ public class User implements UserDetails {
     @Builder.Default
     private boolean enabled = true;
 
+    @Column(name = "credentials_version", nullable = false)
+    @Builder.Default
+    private int credentialsVersion = 0;
+
     @Column(name = "email_verification_token_hash", unique = true)
     private String emailVerificationTokenHash;
 

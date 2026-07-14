@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface RoomTypeRepository extends JpaRepository<RoomType, Integer> {
-    List<RoomType> findAllByOrderByTypeNameAsc();
+    List<RoomType> findAllByActiveTrueOrderByTypeNameAsc();
 
     boolean existsByTypeName(String typeName);
 }

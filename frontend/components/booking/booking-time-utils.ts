@@ -5,8 +5,13 @@ export const BOOKING_SLOT_TIMES = Array.from({ length: CLOSE_HOUR - OPEN_HOUR },
   return `${String(OPEN_HOUR + index).padStart(2, '0')}:00`
 })
 
+export const BOOKING_END_TIMES = Array.from({ length: CLOSE_HOUR - OPEN_HOUR }, (_, index) => {
+  return `${String(OPEN_HOUR + index + 1).padStart(2, '0')}:00`
+})
+
 export type BookingScheduleValue = {
   date: string
+  endDate?: string
   startTime: string
   endTime: string
   duration: number
@@ -130,6 +135,18 @@ export function getSlotsInRange(firstSlot: string, secondSlot: string) {
   return BOOKING_SLOT_TIMES.filter((slot) => {
     const slotMinutes = timeToMinutes(slot)
     return slotMinutes >= startMinutes && slotMinutes <= endMinutes
+  })
+}
+
+export function getSlotsBetweenTimes(startTime: string, endTime: string) {
+  const startMinutes = timeToMinutes(startTime)
+  const endMinutes = timeToMinutes(endTime)
+
+  if (endMinutes <= startMinutes) return []
+
+  return BOOKING_SLOT_TIMES.filter((slot) => {
+    const slotMinutes = timeToMinutes(slot)
+    return slotMinutes >= startMinutes && slotMinutes < endMinutes
   })
 }
 

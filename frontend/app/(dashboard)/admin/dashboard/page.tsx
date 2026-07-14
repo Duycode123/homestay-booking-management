@@ -4,6 +4,7 @@ import AdminModuleCard from '@/components/admin/AdminModuleCard'
 import AdminPageHeader from '@/components/admin/AdminPageHeader'
 import {
   IconBookings,
+  IconRefund,
   IconRefresh,
   IconRooms,
   IconSparkle,
@@ -15,7 +16,7 @@ export default function AdminDashboardPage() {
         <AdminPageHeader
           eyebrow="Kinh doanh"
           title="Bảng điều khiển quản trị"
-          description="Truy cập nhanh các màn hình vận hành của Homestay Booking."
+          description="Truy cập nhanh các màn hình vận hành của The Serene Villa."
           actions={
             <button
               type="button"
@@ -40,7 +41,7 @@ export default function AdminDashboardPage() {
               className="pointer-events-none absolute inset-0 opacity-30"
               style={{
                 backgroundImage:
-                  'radial-gradient(circle at 20% 80%, rgba(255,117,24,0.35) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255,255,255,0.12) 0%, transparent 40%)',
+                  'radial-gradient(circle at 20% 80%, rgba(178,132,85,0.35) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255,255,255,0.12) 0%, transparent 40%)',
               }}
             />
             <div
@@ -57,7 +58,7 @@ export default function AdminDashboardPage() {
               <div className="max-w-xl">
                 <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium backdrop-blur-sm">
                   <IconSparkle className="h-3.5 w-3.5 text-brand-orange" />
-                  Trung tâm điều khiển Homestay Booking
+                  Trung tâm điều khiển The Serene Villa
                 </div>
                 <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
                   Bảng điều khiển quản trị
@@ -112,6 +113,15 @@ export default function AdminDashboardPage() {
                 icon={<IconRooms className="h-6 w-6" />}
                 accent="amber"
                 badge="Đang dùng"
+              />
+              <AdminModuleCard
+                href="/admin/refunds"
+                label="Tài chính & đối soát"
+                title="Trung tâm hoàn tiền"
+                description="Tiếp nhận hồ sơ sau khi duyệt hủy, theo dõi tiến độ và lưu bằng chứng hoàn tiền."
+                icon={<IconRefund className="h-6 w-6" />}
+                accent="green"
+                badge="Nghiệp vụ mới"
               />
             </div>
           </section>

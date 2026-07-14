@@ -16,6 +16,7 @@ const bookingStyles: Record<BookingStatus, string> = {
 
 const paymentStyles: Record<PaymentStatus, string> = {
   PAID: 'border-secondary/20 bg-secondary-container/50 text-on-secondary-container',
+  PARTIALLY_PAID: 'border-brand-orange/25 bg-primary-container text-on-primary-container',
   UNPAID: 'border-error/25 bg-error-container text-on-error-container',
   PENDING: 'border-tertiary/25 bg-tertiary-container text-on-tertiary-container',
 }

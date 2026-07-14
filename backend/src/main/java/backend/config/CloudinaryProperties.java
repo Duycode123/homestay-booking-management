@@ -16,4 +16,5 @@ public class CloudinaryProperties {
     private String apiSecret;
     private String folder = "homestay-booking-management/rooms";
     private String avatarFolder = "homestay-booking-management/avatars";
+    private String refundProofFolder = "homestay-booking-management/refunds";
 }

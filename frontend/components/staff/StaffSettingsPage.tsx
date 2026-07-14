@@ -246,7 +246,7 @@ export default function StaffSettingsPage() {
           <p className="font-display text-sm font-bold uppercase tracking-wide text-brand-orange">Không gian làm việc</p>
           <h1 className="mt-2 font-display text-[32px] font-bold leading-10 text-on-surface">Cài đặt</h1>
           <p className="mt-2 max-w-2xl text-base leading-6 text-on-surface-variant">
-            Quản lý hồ sơ, bảo mật, thông báo và cách hiển thị workspace nhân viên.
+            Quản lý hồ sơ, bảo mật, thông báo và cách hiển thị khu vực làm việc của nhân viên.
           </p>
         </header>
 

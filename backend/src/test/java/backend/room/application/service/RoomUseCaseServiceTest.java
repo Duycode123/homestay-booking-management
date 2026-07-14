@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -87,6 +88,61 @@ class RoomUseCaseServiceTest {
     }
 
     @Test
+    void updateRoomAcceptsSafeLocalGalleryPaths() {
+        RoomUseCaseService service = new RoomUseCaseService(roomCatalogPort, roomMutationPort, roomActorPort);
+        Room room = existingRoom();
+        RoomType updatedType = roomType(3, "Premium");
+
+        when(roomActorPort.loadUserByEmail("admin@example.com")).thenReturn(Optional.of(adminUser()));
+        when(roomCatalogPort.loadRoomForUpdate(10)).thenReturn(Optional.of(room));
+        when(roomCatalogPort.existsRoomName("Deluxe Garden 201")).thenReturn(false);
+        when(roomCatalogPort.loadRoomType(3)).thenReturn(Optional.of(updatedType));
+        when(roomMutationPort.saveRoom(any(Room.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.updateRoom(new UpdateRoomCommand(
+                10,
+                "Deluxe Garden 201",
+                3,
+                10,
+                "/images/rooms/deluxe-garden-201/main.jpg",
+                List.of(
+                        "/images/rooms/deluxe-garden-201/detail-1.jpg",
+                        "/images/rooms/deluxe-garden-201/detail-2.webp",
+                        "/images/rooms/deluxe-garden-201/detail-3.png"
+                ),
+                RoomStatus.AVAILABLE,
+                "admin@example.com"
+        ));
+
+        assertEquals("/images/rooms/deluxe-garden-201/main.jpg", room.getImageUrl());
+        assertEquals("/images/rooms/deluxe-garden-201/detail-1.jpg", room.getImageUrl2());
+        assertEquals("/images/rooms/deluxe-garden-201/detail-2.webp", room.getImageUrl3());
+        assertEquals("/images/rooms/deluxe-garden-201/detail-3.png", room.getImageUrl4());
+    }
+
+    @Test
+    void updateRoomRejectsUnsafeLocalImagePath() {
+        RoomUseCaseService service = new RoomUseCaseService(roomCatalogPort, roomMutationPort, roomActorPort);
+        Room room = existingRoom();
+
+        when(roomActorPort.loadUserByEmail("admin@example.com")).thenReturn(Optional.of(adminUser()));
+        when(roomCatalogPort.loadRoomForUpdate(10)).thenReturn(Optional.of(room));
+        when(roomCatalogPort.existsRoomName("Deluxe Garden 201")).thenReturn(false);
+        when(roomCatalogPort.loadRoomType(3)).thenReturn(Optional.of(roomType(3, "Premium")));
+
+        assertThrows(IllegalArgumentException.class, () -> service.updateRoom(new UpdateRoomCommand(
+                10,
+                "Deluxe Garden 201",
+                3,
+                10,
+                "/images/rooms/../private/secret.jpg",
+                RoomStatus.AVAILABLE,
+                "admin@example.com"
+        )));
+        verify(roomMutationPort, never()).saveRoom(any(Room.class));
+    }
+
+    @Test
     void updateRoomRejectsDuplicateNameWhenRenamed() {
         RoomUseCaseService service = new RoomUseCaseService(roomCatalogPort, roomMutationPort, roomActorPort);
 
@@ -122,43 +178,32 @@ class RoomUseCaseServiceTest {
     }
 
     @Test
-    void deleteRoomRejectsRoomThatHasBookings() {
+    void deleteRoomRejectsRoomThatHasActiveBookings() {
         RoomUseCaseService service = new RoomUseCaseService(roomCatalogPort, roomMutationPort, roomActorPort);
 
         when(roomActorPort.loadUserByEmail("admin@example.com")).thenReturn(Optional.of(adminUser()));
         when(roomCatalogPort.loadRoomForUpdate(10)).thenReturn(Optional.of(existingRoom()));
-        when(roomCatalogPort.existsBookingForRoom(10)).thenReturn(true);
+        when(roomCatalogPort.existsActiveBookingForRoom(10)).thenReturn(true);
 
         assertThrows(IllegalStateException.class, () -> service.deleteRoom(new DeleteRoomCommand(10, "admin@example.com")));
-        verify(roomMutationPort, never()).deleteRoom(any(Room.class));
+        verify(roomMutationPort, never()).saveRoom(any(Room.class));
     }
 
     @Test
-    void deleteRoomRejectsRoomThatStillHasEquipment() {
-        RoomUseCaseService service = new RoomUseCaseService(roomCatalogPort, roomMutationPort, roomActorPort);
-
-        when(roomActorPort.loadUserByEmail("admin@example.com")).thenReturn(Optional.of(adminUser()));
-        when(roomCatalogPort.loadRoomForUpdate(10)).thenReturn(Optional.of(existingRoom()));
-        when(roomCatalogPort.existsBookingForRoom(10)).thenReturn(false);
-        when(roomCatalogPort.existsEquipmentForRoom(10)).thenReturn(true);
-
-        assertThrows(IllegalStateException.class, () -> service.deleteRoom(new DeleteRoomCommand(10, "admin@example.com")));
-        verify(roomMutationPort, never()).deleteRoom(any(Room.class));
-    }
-
-    @Test
-    void deleteRoomDeletesRoomWithoutDependencies() {
+    void deleteRoomArchivesRoomThatHasNoActiveBookings() {
         RoomUseCaseService service = new RoomUseCaseService(roomCatalogPort, roomMutationPort, roomActorPort);
         Room room = existingRoom();
 
         when(roomActorPort.loadUserByEmail("admin@example.com")).thenReturn(Optional.of(adminUser()));
         when(roomCatalogPort.loadRoomForUpdate(10)).thenReturn(Optional.of(room));
-        when(roomCatalogPort.existsBookingForRoom(10)).thenReturn(false);
-        when(roomCatalogPort.existsEquipmentForRoom(10)).thenReturn(false);
+        when(roomCatalogPort.existsActiveBookingForRoom(10)).thenReturn(false);
+        when(roomMutationPort.saveRoom(room)).thenReturn(room);
 
         service.deleteRoom(new DeleteRoomCommand(10, "admin@example.com"));
 
-        verify(roomMutationPort).deleteRoom(room);
+        assertEquals(RoomStatus.INACTIVE, room.getStatus());
+        verify(roomMutationPort).saveRoom(room);
+        verify(roomMutationPort, never()).deleteRoom(any(Room.class));
     }
 
     @Test
@@ -240,31 +285,34 @@ class RoomUseCaseServiceTest {
     }
 
     @Test
-    void deleteRoomTypeRejectsTypeUsedByRoom() {
+    void deleteRoomTypeRejectsTypeUsedByActiveRoom() {
         RoomUseCaseService service = new RoomUseCaseService(roomCatalogPort, roomMutationPort, roomActorPort);
 
         when(roomActorPort.loadUserByEmail("admin@example.com")).thenReturn(Optional.of(adminUser()));
         when(roomCatalogPort.loadRoomType(2)).thenReturn(Optional.of(roomType(2, "Deluxe")));
-        when(roomCatalogPort.existsRoomForRoomType(2)).thenReturn(true);
+        when(roomCatalogPort.existsActiveRoomForRoomType(2)).thenReturn(true);
 
         assertThrows(IllegalStateException.class, () -> service.deleteRoomType(
                 new DeleteRoomTypeCommand(2, "admin@example.com")
         ));
-        verify(roomMutationPort, never()).deleteRoomType(any(RoomType.class));
+        verify(roomMutationPort, never()).saveRoomType(any(RoomType.class));
     }
 
     @Test
-    void deleteRoomTypeDeletesUnusedType() {
+    void deleteRoomTypeArchivesTypeWithoutActiveRooms() {
         RoomUseCaseService service = new RoomUseCaseService(roomCatalogPort, roomMutationPort, roomActorPort);
         RoomType roomType = roomType(2, "Deluxe");
 
         when(roomActorPort.loadUserByEmail("admin@example.com")).thenReturn(Optional.of(adminUser()));
         when(roomCatalogPort.loadRoomType(2)).thenReturn(Optional.of(roomType));
-        when(roomCatalogPort.existsRoomForRoomType(2)).thenReturn(false);
+        when(roomCatalogPort.existsActiveRoomForRoomType(2)).thenReturn(false);
+        when(roomMutationPort.saveRoomType(roomType)).thenReturn(roomType);
 
         service.deleteRoomType(new DeleteRoomTypeCommand(2, "admin@example.com"));
 
-        verify(roomMutationPort).deleteRoomType(roomType);
+        assertFalse(roomType.isActive());
+        verify(roomMutationPort).saveRoomType(roomType);
+        verify(roomMutationPort, never()).deleteRoomType(any(RoomType.class));
     }
 
     @Test
@@ -377,6 +425,7 @@ class RoomUseCaseServiceTest {
         roomType.setTypeName(typeName);
         roomType.setCapacity(6);
         roomType.setPricePerHour(new BigDecimal("300000"));
+        roomType.setActive(true);
         return roomType;
     }
 }

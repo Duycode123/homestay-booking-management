@@ -138,7 +138,7 @@ function ScheduleDayCell({
         'group relative min-h-36 border-b border-outline-variant p-2.5 text-left transition sm:min-h-40 sm:p-3 md:border-r',
         dimmed ? 'bg-surface-container-low/50 text-on-surface-variant' : 'bg-white text-on-surface',
         weekend && !dimmed ? 'bg-primary-container/10' : '',
-        'hover:bg-primary-container/20 hover:shadow-[inset_0_0_0_1px_rgba(255,117,24,0.25)]',
+        'hover:bg-primary-container/20 hover:shadow-[inset_0_0_0_1px_rgba(178,132,85,0.25)]',
         today ? 'ring-2 ring-inset ring-brand-orange/60' : '',
       ].join(' ')}
     >

@@ -1,5 +1,7 @@
 'use client'
 
+import ProjectSelect from '@/components/ui/ProjectSelect'
+
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { uploadAdminRoomImage, validateRoomForm } from '@/lib/admin/rooms/adminRoomApi'
 import type { AdminRoomTypeOption, RoomFormData, RoomFormErrors } from '@/lib/admin/rooms/types'
@@ -25,6 +27,29 @@ const inputClass =
 const labelClass =
   'mb-1.5 block font-display text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant'
 
+const MAX_ROOM_IMAGE_BYTES = 12 * 1024 * 1024
+const MIN_ROOM_IMAGE_WIDTH = 1200
+const MIN_ROOM_IMAGE_HEIGHT = 900
+const SUPPORTED_ROOM_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
+
+function readImageDimensions(file: File) {
+  return new Promise<{ width: number; height: number }>((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file)
+    const image = new window.Image()
+
+    image.onload = () => {
+      const dimensions = { width: image.naturalWidth, height: image.naturalHeight }
+      URL.revokeObjectURL(objectUrl)
+      resolve(dimensions)
+    }
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl)
+      reject(new Error('Không thể đọc kích thước ảnh.'))
+    }
+    image.src = objectUrl
+  })
+}
+
 export default function RoomFormModal({
   open,
   mode,
@@ -37,7 +62,8 @@ export default function RoomFormModal({
   const [errors, setErrors] = useState<RoomFormErrors>({})
   const [serverError, setServerError] = useState('')
   const [isSaving, setIsSaving] = useState(false)
-  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [uploadingImageIndex, setUploadingImageIndex] = useState<number | null>(null)
+  const isUploadingImage = uploadingImageIndex !== null
 
   useEffect(() => {
     if (!open) return
@@ -56,7 +82,7 @@ export default function RoomFormModal({
     setErrors({})
     setServerError('')
     setIsSaving(false)
-    setIsUploadingImage(false)
+    setUploadingImageIndex(null)
   }, [open, initialData, roomTypes])
 
   if (!open) return null
@@ -100,37 +126,69 @@ export default function RoomFormModal({
     }
   }
 
-  const handleImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (event: ChangeEvent<HTMLInputElement>, imageIndex: number) => {
     const file = event.target.files?.[0]
     event.target.value = ''
 
     if (!file) return
 
-    if (!file.type.startsWith('image/')) {
-      setErrors((current) => ({ ...current, image: 'File tải lên phải là ảnh.' }))
+    if (!SUPPORTED_ROOM_IMAGE_TYPES.has(file.type)) {
+      setErrors((current) => ({ ...current, image: 'Chỉ hỗ trợ ảnh JPG, PNG hoặc WebP.' }))
       return
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      setErrors((current) => ({ ...current, image: 'Ảnh phòng không được vượt quá 5MB.' }))
+    if (file.size > MAX_ROOM_IMAGE_BYTES) {
+      setErrors((current) => ({ ...current, image: 'Ảnh phòng không được vượt quá 12MB.' }))
       return
     }
 
-    setIsUploadingImage(true)
+    try {
+      const dimensions = await readImageDimensions(file)
+      if (dimensions.width < MIN_ROOM_IMAGE_WIDTH || dimensions.height < MIN_ROOM_IMAGE_HEIGHT) {
+        setErrors((current) => ({
+          ...current,
+          image: `Ảnh ${dimensions.width}×${dimensions.height}px quá nhỏ. Tối thiểu 1200×900px, khuyến nghị 1600×1200px (tỷ lệ 4:3).`,
+        }))
+        return
+      }
+    } catch {
+      setErrors((current) => ({ ...current, image: 'Ảnh bị lỗi hoặc không thể đọc được.' }))
+      return
+    }
+
+    setUploadingImageIndex(imageIndex)
     setServerError('')
     setErrors((current) => ({ ...current, image: undefined }))
 
     try {
       const result = await uploadAdminRoomImage(file)
-      set({ image: result.secureUrl })
+      if (imageIndex === 0) {
+        set({ image: result.secureUrl })
+      } else {
+        const additionalImages = [...form.additionalImages]
+        additionalImages[imageIndex - 1] = result.secureUrl
+        set({ additionalImages })
+      }
     } catch (error) {
       setErrors((current) => ({
         ...current,
         image: error instanceof Error ? error.message : 'Không thể tải ảnh phòng lên máy chủ lưu trữ.',
       }))
     } finally {
-      setIsUploadingImage(false)
+      setUploadingImageIndex(null)
     }
+  }
+
+  const setImagePath = (imageIndex: number, value: string) => {
+    if (imageIndex === 0) {
+      set({ image: value })
+      return
+    }
+
+    const additionalImages = [...form.additionalImages]
+    while (additionalImages.length < 3) additionalImages.push('')
+    additionalImages[imageIndex - 1] = value
+    set({ additionalImages })
   }
 
   return (
@@ -180,7 +238,7 @@ export default function RoomFormModal({
                   <span className={labelClass}>
                     Hạng phòng <span className="text-error">*</span>
                   </span>
-                  <select
+                  <ProjectSelect
                     value={roomTypes.length > 0 ? String(form.roomTypeId ?? '') : form.category}
                     onChange={(event) => {
                       if (roomTypes.length > 0) {
@@ -203,7 +261,7 @@ export default function RoomFormModal({
                             {roomCategoryLabels[category]}
                           </option>
                         ))}
-                  </select>
+                  </ProjectSelect>
                   {errors.category && <p className="mt-1 text-xs text-error">{errors.category}</p>}
                 </label>
               </div>
@@ -213,7 +271,7 @@ export default function RoomFormModal({
                   <span className={labelClass}>
                     Trạng thái <span className="text-error">*</span>
                   </span>
-                  <select
+                  <ProjectSelect
                     value={form.status}
                     onChange={(event) => set({ status: event.target.value as RoomFormData['status'] })}
                     className={inputClass}
@@ -223,7 +281,7 @@ export default function RoomFormModal({
                         {roomStatusLabels[status]}
                       </option>
                     ))}
-                  </select>
+                  </ProjectSelect>
                   {errors.status && <p className="mt-1 text-xs text-error">{errors.status}</p>}
                 </label>
 
@@ -248,40 +306,53 @@ export default function RoomFormModal({
                 </label>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-[180px_1fr]">
-                <div className="overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-low">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={form.image || '/images/homestay-room-hero.png'} alt="" className="h-36 w-full object-cover" />
+              <section>
+                <div className="flex items-end justify-between gap-3">
+                  <div>
+                    <span className={labelClass}>Bộ ảnh phòng</span>
+                    <p className="text-xs text-on-surface-variant">Thiết lập 1 ảnh đại diện và 3 ảnh phụ để hiển thị gallery trên trang chi tiết.</p>
+                  </div>
+                  <span className="rounded-full bg-primary-container px-3 py-1 text-xs font-bold text-on-primary-container">4 ảnh</span>
                 </div>
-
-                <div className="space-y-3">
-                  <label className="block">
-                    <span className={labelClass}>Ảnh phòng</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(event) => void handleImageChange(event)}
-                      disabled={isUploadingImage || isSaving}
-                      className="block w-full text-sm text-on-surface-variant file:mr-3 file:rounded-xl file:border-0 file:bg-brand-orange file:px-4 file:py-2.5 file:font-display file:text-sm file:font-medium file:text-white hover:file:bg-brand-orangeHover disabled:opacity-60"
-                    />
-                    <p className="mt-1 text-[11px] text-on-surface-variant">
-                      {isUploadingImage ? 'Đang tải ảnh lên...' : 'Tối đa 5MB.'}
-                    </p>
-                  </label>
-
-                  <label className="block">
-                    <span className={labelClass}>Đường dẫn hình ảnh</span>
-                    <input
-                      type="text"
-                      value={form.image}
-                      onChange={(event) => set({ image: event.target.value })}
-                      className={inputClass}
-                      placeholder="https://..."
-                    />
-                  </label>
-                  {errors.image && <p className="text-xs text-error">{errors.image}</p>}
+                <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {[form.image, ...form.additionalImages, '', '', ''].slice(0, 4).map((image, imageIndex) => (
+                    <label key={imageIndex} className="group relative block cursor-pointer overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-low">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={image || '/images/homestay-luxury-hero.webp'} alt="" className="h-28 w-full object-cover transition group-hover:scale-105" />
+                      <span className="absolute inset-x-2 bottom-2 rounded-lg bg-secondary/85 px-2 py-1 text-center text-[10px] font-bold text-white backdrop-blur-sm">
+                        {uploadingImageIndex === imageIndex ? 'Đang tải...' : imageIndex === 0 ? 'Ảnh đại diện' : `Ảnh phụ ${imageIndex}`}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={(event) => void handleImageChange(event, imageIndex)}
+                        disabled={isUploadingImage || isSaving}
+                        className="sr-only"
+                      />
+                    </label>
+                  ))}
                 </div>
-              </div>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {[form.image, ...form.additionalImages, '', '', ''].slice(0, 4).map((image, imageIndex) => (
+                    <label key={`path-${imageIndex}`} className="rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-on-surface-variant">
+                        {imageIndex === 0 ? 'Đường dẫn ảnh đại diện' : `Đường dẫn ảnh phụ ${imageIndex}`}
+                      </span>
+                      <input
+                        type="text"
+                        value={image}
+                        onChange={(event) => setImagePath(imageIndex, event.target.value)}
+                        placeholder={`/images/rooms/ten-phong/${imageIndex === 0 ? 'main' : `detail-${imageIndex}`}.jpg`}
+                        className="mt-1 w-full bg-transparent text-xs text-on-surface outline-none placeholder:text-on-surface-variant/55"
+                      />
+                    </label>
+                  ))}
+                </div>
+                <p className="mt-2 text-[11px] leading-5 text-on-surface-variant">
+                  Có thể tải lên Cloudinary hoặc dùng ảnh tĩnh trong project. Với ảnh tĩnh, chép file 1600×1200px vào frontend/public/images/rooms/ten-phong/ rồi nhập đường dẫn /images/rooms/ten-phong/ten-anh.jpg.
+                </p>
+                {errors.image && <p className="mt-1 text-xs text-error">{errors.image}</p>}
+              </section>
 
               {serverError && (
                 <p className="rounded-xl border border-error/30 bg-error-container/30 px-3 py-2.5 text-xs text-error">

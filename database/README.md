@@ -80,6 +80,10 @@ Core model/entity classes currently present in backend source:
 - `database/migrations/20260708_add_app_notification_resolved.sql`
 - `database/migrations/20260709_add_facility_condition_report_handling.sql`
 - `database/migrations/20260713_convert_legacy_to_homestay.sql`
+- `database/migrations/20260714_add_booking_cancellation_approval.sql`
+- `database/migrations/20260714_create_favorite_rooms.sql`
+- `database/migrations/20260714_expand_homestay_amenities_and_room_gallery.sql`
+- `database/migrations/20260714_add_room_archiving.sql`
 - `database/sample-data/seed_accounts_and_customers.sql`
 - `database/sample-data/seed_rooms_and_equipment.sql`
 - `database/sample-data/seed_bookings_and_reviews.sql`
@@ -93,6 +97,14 @@ For local development or demo setup, `database/sample-data/seed_rooms_and_equipm
 - `room`
 - `equipment`
 
+The room catalog contains 12 rooms with tier-specific equipment and amenities:
+
+- 4 Standard rooms at `350,000 VND/hour`
+- 4 Deluxe rooms at `550,000 VND/hour`
+- 4 Family rooms at `750,000 VND/hour`
+
+Each room includes the four core equipment records plus additional amenities by tier. Standard rooms receive essential work and refreshment items; Deluxe rooms add minibar, safe and lounge comforts; Family rooms add dining, food-warming and child-friendly amenities.
+
 The script targets the English schema and is written to be rerun safely:
 
 - existing room tiers are updated by `name`
@@ -104,6 +116,12 @@ Suggested usage after schema setup / rename migrations:
 
 ```powershell
 psql -h 127.0.0.1 -p 5432 -U <user> -d homestaydb -f database/sample-data/seed_rooms_and_equipment.sql
+```
+
+To add only the tier-specific amenities to an existing room database without changing room status, price, or images:
+
+```powershell
+psql -h 127.0.0.1 -p 5432 -U <user> -d homestaydb -f database/sample-data/seed_tier_amenities.sql
 ```
 
 Before booking/review data, seed three demo customer accounts. All demo accounts use password `Admin@123`:
@@ -143,7 +161,29 @@ The enforced naming direction for this project is:
 
 The backend JPA mappings now target the English schema. Existing PostgreSQL databases that still use Vietnamese names must apply the phased rename migrations, including `database/migrations/20260628_rename_vn_schema_to_en.sql` and `database/migrations/20260630_complete_vn_schema_to_en.sql`, before running a backend build that includes the English mappings.
 
+## Booking Cancellation Approval
+
+`booking` stores the lifecycle of one customer cancellation request through `cancellation_request_status`:
+
+- `PENDING`: the customer submitted a request at least 24 hours before check-in; the booking remains active.
+- `APPROVED`: an admin approved the request, the booking became `CANCELLED`, and refund details were recorded.
+- `REJECTED`: an admin rejected the request; the booking status remains unchanged.
+
+Refund fields record the approved amount, percentage, method, and expected completion time. The amount is based on money actually collected and never exceeds the booking total. Existing databases must apply `database/migrations/20260714_add_booking_cancellation_approval.sql` before starting a backend build with schema validation enabled.
+
 Do not mix new Vietnamese names into new schema work unless a task is strictly limited to keeping a legacy area stable.
+
+## Room And Room Tier Archiving
+
+Rooms and room tiers are archived rather than physically deleted so booking, payment, review, equipment, and reporting history remains valid.
+
+- `room.status = INACTIVE` removes a room from the default active catalog.
+- `room_tier.active = false` removes a tier from room-tier selection.
+- Active bookings (`PENDING_PAYMENT`, `DEPOSIT_PAID`, `PAID`, `CHECKED_IN`) prevent room archiving.
+- Historical bookings (`COMPLETED`, `CANCELLED`) do not prevent archiving.
+- A room tier can be archived only after all rooms assigned to it are also archived or reassigned.
+
+Existing databases must apply `database/migrations/20260714_add_room_archiving.sql`. With the current local configuration, restarting the backend also applies the equivalent idempotent additions from `schema-postgresql.sql` before Hibernate validation.
 
 ## Legacy To Current Mapping
 
@@ -206,13 +246,28 @@ If the change is part of the Vietnamese-to-English rename:
 - Booking is already a lifecycle-heavy aggregate and should be documented carefully whenever status semantics change.
 - Review moderation keeps `approved = false` by default until an admin approves the review.
 - Each review can have at most one admin response stored in `review_response`.
+- `review_image` stores up to four Cloudinary HTTPS images for each verified-stay review. Images are ordered by `display_order` and are removed automatically when their review is deleted.
 - Payment and booking timeout behavior should stay aligned with booking-expiry logic in the backend. Checkout sessions expire after `app.booking.payment-expiration-seconds` seconds by default (`900`, or 15 minutes), cancelling both the pending `payment_transaction` and its still-pending booking. The customer payment-status polling endpoint also applies this timeout so a VietQR checkout can release the held slot without waiting for the scheduled sweep.
 - `payment_transaction.response_code` is `varchar(50)` and stores application-level outcome codes (`PAYMENT_TIMEOUT`, `PAYMENT_SESSION_REPLACED`, `SEPAY_SUCCESS`, `SEPAY_ORDER_FAILED`, `SEPAY_TRANSACTION_VOID`, VNPay numeric codes). Keep new codes within 50 characters.
 - Enum-backed statuses deserve explicit documentation because they affect filters, transitions, and reporting.
 - `booking_status.DEPOSIT_PAID` means the customer paid only the online deposit. Full online payment still uses `PAID`.
-- `payment_provider` now includes `COUNTER` for pay-at-counter checkout sessions alongside online providers such as `VNPAY`.
+- Online deposits are 50% of the final booking total. An optional coupon is validated and persisted on the still-pending booking when the customer creates the checkout session, before the deposit/full-payment amount is calculated. The remaining 50% is collected by admin/staff when the guest checks out.
+
+### Refund reconciliation
+
+- `booking_refund` is the operational ledger for an approved customer cancellation. `booking.status = CANCELLED` releases the room, while `booking_refund.status` independently tracks whether money is still pending, processing, completed, failed, or requires retry.
+- One booking has at most one refund record (`uk_booking_refund_booking`). This prevents duplicate refund workflows when an approval endpoint is retried.
+- `amount` is the amount actually collected from successful payment transactions and is capped by the final booking total. Deposit-paid bookings therefore refund only the collected deposit.
+- `COMPLETED` requires both `completed_at` and a unique `transaction_reference`. This field is the reconciliation reference: it stores the optional bank transaction code when supplied, otherwise backend generates `REFUND-{bookingCode}-{refundId}`. `proof_image_url` stores an optional Cloudinary receipt for exception handling and audit support.
+- The original successful `payment_transaction` is immutable. Manual refund reconciliation references it through `original_payment_transaction_id` instead of changing its success status.
+- Current production behavior is manual disbursement with recorded evidence. Automatic provider reversal must only be added when a real merchant refund API and credentials are available.
+- A customer cancellation request records `refund_bank_code`, `refund_bank_name`, `refund_account_number`, and `refund_account_holder`. All four values must be present together and account numbers are restricted to 6-30 digits.
+- On approval, those values are copied to `booking_refund.recipient_*` as an immutable payout snapshot. The admin UI derives a VietQR with the approved amount and booking reference; the QR itself is not stored and never means the transfer has completed.
+- `payment_provider.COUNTER` records the successful remaining-balance collection at checkout. The booking management API derives `paidAmount` and `remainingAmount` from successful payment transactions instead of duplicating totals in the booking row.
 - `payment_provider` includes `SEPAY` for online deposit/full checkout through VietQR plus SePay transaction polling; webhook confirmation remains supported as a fallback.
-- `room.max_people` stores the maximum number of people a specific room can hold; `room.image_url` stores the persisted room image URL returned by Cloudinary or another HTTP(S) asset host.
+- `room.max_people` stores the maximum number of people a specific room can hold. `room.image_url` is the primary image; `image_url_2` through `image_url_4` form the detail-page gallery. `common_amenity` stores large shared facilities available to every guest, while the existing equipment tables remain room-specific.
+  - `common_amenity.active` controls public visibility; the public API returns active rows only.
+  - Rows are admin-managed business data. Startup schema scripts and repeatable migrations must not seed or reactivate them, otherwise an administrator's delete/hide decision would be reverted after restart.
 - `account.avatar_url` stores the current profile image URL for customer, staff, and admin accounts after upload through the backend.
 - `account.enabled` controls whether an account can authenticate. Disabled staff accounts are kept for historical references but cannot log in or continue JWT sessions.
 - `staff.account_id` is required for staff-only workflows. The backfill migration creates a minimal staff profile for existing `account.role = 'STAFF'` rows that were missing a `staff` record.
@@ -257,6 +312,8 @@ The `account` table stores email verification state for customer registration.
   - `email_verification_sent_at`: timestamp used to enforce resend cooldown.
   - `avatar_url`: optional HTTP(S) URL of the latest uploaded avatar image for the account, shared across customer, staff, and admin profile views.
   - `enabled`: false prevents authentication and JWT session refresh/use while preserving the account row for operational history.
+  - `credentials_version`: incremented after a successful password change or reset. Access and refresh JWTs carry the current value, so every older session is rejected immediately.
+  - `reset_token`: stores only the SHA-256 hash of the password-reset token; the raw value exists only in the email link.
 - Uniqueness and security:
   - `ux_account_email_verification_token_hash` prevents token-hash collisions while allowing nulls for verified accounts.
   - existing accounts are marked verified by the migration so current users are not locked out.
@@ -264,6 +321,7 @@ The `account` table stores email verification state for customer registration.
   - `database/migrations/20260703_add_email_verification_to_account.sql`
   - `database/migrations/20260703_add_account_avatar_url.sql`
   - `database/migrations/20260709_add_account_enabled.sql`
+  - `database/migrations/20260714_harden_account_sessions_and_reset_tokens.sql`
 
 ## Reporting Optimization Assets
 

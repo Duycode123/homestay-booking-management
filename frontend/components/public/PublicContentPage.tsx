@@ -2,17 +2,8 @@ import type { ReactNode } from 'react'
 
 export function PublicContentPage({ children }: { children: ReactNode }) {
   return (
-    <main className="relative min-h-full bg-brand-bgGray text-on-surface">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.35]"
-        style={{
-          backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(26,28,30,0.04) 1px, transparent 0)',
-          backgroundSize: '28px 28px',
-        }}
-      />
-      <div className="pointer-events-none absolute -left-24 top-0 h-72 w-72 rounded-full bg-brand-orange/8 blur-3xl" aria-hidden />
-      <section className="relative mx-auto max-w-3xl px-5 py-8 sm:px-8 sm:py-10">
+    <main id="main-content" className="relative min-h-full bg-brand-bgGray text-on-surface">
+      <section className="relative mx-auto max-w-4xl px-5 py-12 sm:px-8 sm:py-16">
         {children}
       </section>
     </main>
@@ -20,7 +11,7 @@ export function PublicContentPage({ children }: { children: ReactNode }) {
 }
 
 export function PublicContentHeader({
-  eyebrow = 'Homestay Booking',
+  eyebrow = 'The Serene Villa',
   title,
   description,
   updatedAt,
@@ -31,12 +22,13 @@ export function PublicContentHeader({
   updatedAt?: string
 }) {
   return (
-    <header className="mb-8 overflow-hidden rounded-[28px] border border-outline-variant bg-white p-6 shadow-[var(--shadow-card)] md:p-8">
-      <p className="font-display text-sm font-bold uppercase tracking-[0.14em] text-brand-orange">{eyebrow}</p>
-      <h1 className="mt-3 font-display text-3xl font-bold tracking-tight text-on-surface">{title}</h1>
-      <p className="mt-2 max-w-2xl text-sm leading-6 text-on-surface-variant">{description}</p>
+    <header className="relative mb-8 overflow-hidden rounded-[18px] border border-white/8 bg-secondary p-7 text-white shadow-[var(--shadow-elevated)] md:p-10">
+      <div className="absolute -right-16 -top-20 h-52 w-52 rounded-full border border-white/[0.06]" aria-hidden />
+      <p className="eyebrow relative text-primary-fixed">{eyebrow}</p>
+      <h1 className="font-editorial relative mt-4 max-w-3xl text-4xl font-semibold leading-[1.06] tracking-[-0.025em] sm:text-5xl">{title}</h1>
+      <p className="relative mt-4 max-w-2xl text-sm leading-7 text-white/72">{description}</p>
       {updatedAt ? (
-        <p className="mt-4 text-xs font-medium uppercase tracking-wide text-on-surface-variant">
+        <p className="relative mt-5 text-xs font-semibold uppercase tracking-[0.12em] text-white/50">
           Cập nhật lần cuối: {updatedAt}
         </p>
       ) : null}
@@ -52,8 +44,8 @@ export function PublicContentSection({
   children: ReactNode
 }) {
   return (
-    <section className="mb-6 rounded-[24px] border border-outline-variant bg-white p-6 shadow-[var(--shadow-card)]">
-      <h2 className="font-display text-xl font-bold text-on-surface">{title}</h2>
+    <section className="mb-5 rounded-[16px] border border-outline-variant bg-white p-6 shadow-[var(--shadow-card)] sm:p-8">
+      <h2 className="font-editorial text-2xl font-semibold text-secondary">{title}</h2>
       <div className="mt-4 space-y-3 text-sm leading-7 text-on-surface-variant">{children}</div>
     </section>
   )

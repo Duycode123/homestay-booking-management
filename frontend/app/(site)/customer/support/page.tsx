@@ -4,27 +4,26 @@ import {
   CustomerPageHeader,
   CustomerPageShell,
 } from '@/components/customer/CustomerPageShell'
-import { SUPPORT_EMAIL, SUPPORT_HOTLINE } from '@/lib/site-nav'
 
 const faqs = [
   {
     question: 'Làm thế nào để đặt phòng?',
-    answer: 'Chọn phòng trong Room Catalog, bấm Đặt ngay, chọn ngày giờ và xác nhận thông tin đặt phòng.',
+    answer: 'Chọn phòng trong danh mục, bấm Đặt phòng, chọn ngày giờ và xác nhận thông tin trước khi thanh toán.',
     icon: '01',
   },
   {
     question: 'Tôi có thể hủy lịch không?',
-    answer: 'Bạn có thể tự hủy trước giờ nhận phòng ít nhất 24 giờ để được hoàn 100% số tiền đã thanh toán.',
+    answer: 'Điều kiện hủy và hoàn tiền phụ thuộc thời điểm gửi yêu cầu. Vui lòng xem chính sách hủy trước khi liên hệ hỗ trợ.',
     icon: '02',
   },
   {
     question: 'Tôi thanh toán bằng cách nào?',
-    answer: 'Bạn có thể thanh toán chuyển khoản, ví điện tử hoặc thanh toán tại quầy tùy lựa chọn ở bước xác nhận.',
+    answer: 'Hệ thống hiện hỗ trợ chuyển khoản ngân hàng. Trạng thái sẽ được cập nhật sau khi giao dịch được xác nhận.',
     icon: '03',
   },
   {
     question: 'Tôi cần hỗ trợ kỹ thuật thì liên hệ ai?',
-    answer: 'Liên hệ hotline hoặc email hỗ trợ để được đội ngũ homestay phản hồi nhanh nhất.',
+    answer: 'Gửi báo cáo sự cố kèm mã đặt phòng để đội ngũ vận hành có đủ thông tin xử lý.',
     icon: '04',
   },
 ]
@@ -35,7 +34,7 @@ export default function CustomerSupportPage() {
       <CustomerPageHeader
         eyebrow="Hỗ trợ"
         title="Trợ giúp và hỗ trợ"
-        description="Tìm câu trả lời nhanh hoặc liên hệ đội ngũ Homestay Booking khi bạn cần hỗ trợ."
+        description="Tìm câu trả lời nhanh hoặc liên hệ đội ngũ The Serene Villa khi bạn cần hỗ trợ."
       />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
@@ -64,24 +63,16 @@ export default function CustomerSupportPage() {
 
         <CustomerCard className="bg-gradient-to-br from-secondary to-brand-greenDark text-white">
           <h2 className="font-display text-xl font-bold">Liên hệ hỗ trợ</h2>
-          <p className="mt-2 text-sm leading-6 text-white/70">Đội ngũ homestay sẵn sàng hỗ trợ trong giờ lượt lưu trú.</p>
-          <div className="mt-6 space-y-4 rounded-2xl border border-white/10 bg-white/5 p-5 text-sm leading-6 text-white/80">
-            <p>
-              <span className="font-semibold text-white">Hotline:</span> {SUPPORT_HOTLINE}
-            </p>
-            <p>
-              <span className="font-semibold text-white">Email:</span>{' '}
-              <a href={`mailto:${SUPPORT_EMAIL}`} className="text-brand-orange hover:underline">
-                {SUPPORT_EMAIL}
-              </a>
-            </p>
+          <p className="mt-2 text-sm leading-6 text-white/70">Gửi yêu cầu ngay trong hệ thống để đội ngũ vận hành theo dõi và phản hồi đúng đơn đặt phòng.</p>
+          <div className="mt-6 rounded-xl border border-white/10 bg-white/5 p-5 text-sm leading-7 text-white/80">
+            Đính kèm loại sự cố, mô tả cụ thể và thông tin đặt phòng nếu có. Bạn có thể theo dõi trạng thái sau khi gửi.
           </div>
-          <a
-            href={`mailto:${SUPPORT_EMAIL}`}
-            className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-xl bg-brand-orange px-5 font-display text-sm font-semibold text-white shadow-[0_12px_28px_rgba(255,117,24,0.35)] transition hover:bg-brand-orangeHover"
+          <Link
+            href="/customer/report-issue"
+            className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-full bg-white px-5 font-display text-sm font-semibold text-secondary transition hover:-translate-y-0.5"
           >
-            Liên hệ hỗ trợ
-          </a>
+            Gửi yêu cầu hỗ trợ
+          </Link>
           <Link
             href="/rooms"
             className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-xl border border-white/20 font-display text-sm font-semibold text-white/90 transition hover:border-white/40 hover:bg-white/10"

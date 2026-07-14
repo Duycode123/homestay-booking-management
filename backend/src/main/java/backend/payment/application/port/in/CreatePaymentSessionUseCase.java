@@ -8,6 +8,7 @@ public interface CreatePaymentSessionUseCase {
             Integer bookingId,
             String method,
             String paymentOption,
+            String couponCode,
             String customerEmail
     );
 }

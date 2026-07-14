@@ -7,6 +7,8 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import backend.entity.Role;
 import backend.entity.User;
+import backend.config.JwtProperties;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -18,18 +20,17 @@ import java.util.UUID;
 import java.util.function.Function;
 
 @Service
+@RequiredArgsConstructor
 public class JwtService {
 
-    private static final String SECRET_KEY = "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970";
     private static final String TOKEN_TYPE_CLAIM = "token_type";
     private static final String SESSION_STARTED_AT_CLAIM = "session_started_at";
     private static final String ROLE_CLAIM = "role";
+    private static final String CREDENTIALS_VERSION_CLAIM = "credentials_version";
     private static final String ACCESS_TOKEN_TYPE = "access";
     private static final String REFRESH_TOKEN_TYPE = "refresh";
 
-    private static final long ACCESS_TOKEN_EXPIRATION = 1000L * 60 * 15;
-    private static final long REFRESH_TOKEN_EXPIRATION = 1000L * 60 * 60 * 24 * 7;
-    private static final long ABSOLUTE_SESSION_EXPIRATION = 1000L * 60 * 60 * 24 * 30;
+    private final JwtProperties jwtProperties;
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -43,7 +44,7 @@ public class JwtService {
         Map<String, Object> claims = createIdentityClaims(userDetails);
         claims.put(TOKEN_TYPE_CLAIM, ACCESS_TOKEN_TYPE);
         long now = System.currentTimeMillis();
-        return buildToken(claims, userDetails, now, now + ACCESS_TOKEN_EXPIRATION);
+        return buildToken(claims, userDetails, now, now + jwtProperties.getAccessTokenExpiration().toMillis());
     }
 
     public String generateRefreshToken(UserDetails userDetails) {
@@ -62,7 +63,7 @@ public class JwtService {
 
         long now = System.currentTimeMillis();
         long sessionStartedAt = sessionStartedAtClaim.longValue();
-        long absoluteExpiration = sessionStartedAt + ABSOLUTE_SESSION_EXPIRATION;
+        long absoluteExpiration = sessionStartedAt + jwtProperties.getAbsoluteSessionExpiration().toMillis();
         if (now >= absoluteExpiration) {
             throw new JwtException("Phiên đăng nhập đã hết hạn tuyệt đối");
         }
@@ -82,8 +83,17 @@ public class JwtService {
         try {
             String username = extractUsername(token);
             String tokenType = extractClaim(token, claims -> claims.get(TOKEN_TYPE_CLAIM, String.class));
+            Number tokenCredentialsVersion = extractClaim(
+                    token,
+                    claims -> claims.get(CREDENTIALS_VERSION_CLAIM, Number.class)
+            );
+            int currentCredentialsVersion = userDetails instanceof User user
+                    ? user.getCredentialsVersion()
+                    : 0;
             return username.equals(userDetails.getUsername())
                     && expectedType.equals(tokenType)
+                    && tokenCredentialsVersion != null
+                    && tokenCredentialsVersion.intValue() == currentCredentialsVersion
                     && !isTokenExpired(token);
         } catch (JwtException | IllegalArgumentException ex) {
             return false;
@@ -91,8 +101,8 @@ public class JwtService {
     }
 
     private String buildRefreshToken(UserDetails userDetails, long sessionStartedAt, long issuedAt) {
-        long absoluteExpiration = sessionStartedAt + ABSOLUTE_SESSION_EXPIRATION;
-        long expiration = Math.min(issuedAt + REFRESH_TOKEN_EXPIRATION, absoluteExpiration);
+        long absoluteExpiration = sessionStartedAt + jwtProperties.getAbsoluteSessionExpiration().toMillis();
+        long expiration = Math.min(issuedAt + jwtProperties.getRefreshTokenExpiration().toMillis(), absoluteExpiration);
 
         Map<String, Object> claims = createIdentityClaims(userDetails);
         claims.put(TOKEN_TYPE_CLAIM, REFRESH_TOKEN_TYPE);
@@ -105,6 +115,7 @@ public class JwtService {
 
         if (userDetails instanceof User user && user.getRole() != null) {
             claims.put(ROLE_CLAIM, user.getRole().name());
+            claims.put(CREDENTIALS_VERSION_CLAIM, user.getCredentialsVersion());
         } else {
             String role = userDetails.getAuthorities().stream()
                     .map(authority -> authority.getAuthority())
@@ -113,6 +124,7 @@ public class JwtService {
                     .findFirst()
                     .orElse(Role.CUSTOMER.name());
             claims.put(ROLE_CLAIM, role);
+            claims.put(CREDENTIALS_VERSION_CLAIM, 0);
         }
 
         return claims;
@@ -142,6 +154,10 @@ public class JwtService {
         return extractClaim(token, Claims::getExpiration);
     }
 
+    public Date extractIssuedAt(String token) {
+        return extractClaim(token, Claims::getIssuedAt);
+    }
+
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
                 .verifyWith((javax.crypto.SecretKey) getSignInKey())
@@ -151,7 +167,7 @@ public class JwtService {
     }
 
     private Key getSignInKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
+        byte[] keyBytes = Decoders.BASE64.decode(jwtProperties.getSecret().trim());
         return Keys.hmacShaKeyFor(keyBytes);
     }
 }

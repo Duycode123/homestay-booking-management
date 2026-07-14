@@ -1,5 +1,7 @@
 'use client'
 
+import ProjectSelect from '@/components/ui/ProjectSelect'
+
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import AuthGuard from '@/components/AuthGuard'
 import { EmptyState, StaffPageShell, StatCard, StatusBadge, Toast } from './StaffShared'
@@ -168,9 +170,9 @@ export default function StaffReportsPage() {
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
-            <select value={range} onChange={(event) => setRange(event.target.value as ReportRange)} className="h-11 rounded-xl border border-outline-variant bg-white px-4 font-display text-sm font-bold outline-none focus:border-brand-orange">
+            <ProjectSelect value={range} onChange={(event) => setRange(event.target.value as ReportRange)} className="h-11 rounded-xl border border-outline-variant bg-white px-4 font-display text-sm font-bold outline-none focus:border-brand-orange">
               {ranges.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-            </select>
+            </ProjectSelect>
             <button type="button" onClick={() => setToast('Đã chuẩn bị báo cáo demo.')} className="btn-warm">Xuất báo cáo</button>
           </div>
         </header>

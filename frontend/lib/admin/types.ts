@@ -7,7 +7,8 @@ export type BookingStatus =
   | 'COMPLETED'
   | 'CANCELLED'
 
-export type PaymentStatus = 'PAID' | 'UNPAID' | 'PENDING'
+export type PaymentStatus = 'PAID' | 'PARTIALLY_PAID' | 'UNPAID' | 'PENDING'
+export type CancellationRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 
 export type AdminBooking = {
   bookingId: number
@@ -23,11 +24,22 @@ export type AdminBooking = {
   durationHours: number
   equipment: string[]
   totalPrice: number
+  paidAmount: number
+  remainingAmount: number
   paymentStatus: PaymentStatus
   bookingStatus: BookingStatus
   note?: string
   paymentMethod?: string
   paymentMethodCode?: 'CASH' | 'ONLINE'
+  cancellationRequestStatus?: CancellationRequestStatus
+  cancellationReason?: string
+  cancellationRequestedAt?: string
+  cancellationReviewedAt?: string
+  cancellationAdminNote?: string
+  refundAmount?: number
+  refundPercentage?: number
+  refundMethod?: string
+  expectedRefundAt?: string
 }
 
 export type BookingFilters = {

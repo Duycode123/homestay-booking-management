@@ -2,6 +2,7 @@ package backend.booking.application.policy;
 
 import backend.entity.Booking;
 import backend.entity.BookingStatus;
+import backend.entity.CancellationRequestStatus;
 import backend.entity.PaymentMethod;
 import org.springframework.stereotype.Component;
 
@@ -10,7 +11,7 @@ import java.time.LocalDateTime;
 @Component
 public class BookingStatusTransitionPolicy {
 
-    private static final long EARLY_CHECK_IN_MINUTES = 30;
+    private static final long EARLY_CHECK_IN_MINUTES = 5;
 
     public void validateManagementTransition(
             Booking booking,
@@ -31,7 +32,7 @@ public class BookingStatusTransitionPolicy {
         boolean allowed = switch (currentStatus) {
             case PENDING_PAYMENT -> targetStatus == BookingStatus.PAID
                     && booking.getPaymentMethod() == PaymentMethod.CASH;
-            case DEPOSIT_PAID -> targetStatus == BookingStatus.PAID;
+            case DEPOSIT_PAID -> targetStatus == BookingStatus.CHECKED_IN;
             case PAID -> targetStatus == BookingStatus.CHECKED_IN;
             case CHECKED_IN -> targetStatus == BookingStatus.COMPLETED;
             case COMPLETED, CANCELLED -> false;
@@ -44,6 +45,9 @@ public class BookingStatusTransitionPolicy {
         }
 
         if (targetStatus == BookingStatus.CHECKED_IN) {
+            if (booking.getCancellationRequestStatus() == CancellationRequestStatus.PENDING) {
+                throw new IllegalStateException("Khong the check-in khi yeu cau huy phong dang cho admin duyet");
+            }
             validateCheckInWindow(booking, now);
         }
     }
@@ -69,7 +73,7 @@ public class BookingStatusTransitionPolicy {
 
         LocalDateTime earliestCheckIn = booking.getStartTime().minusMinutes(EARLY_CHECK_IN_MINUTES);
         if (now.isBefore(earliestCheckIn)) {
-            throw new IllegalStateException("Chi co the check-in som toi da 30 phut");
+            throw new IllegalStateException("Chi co the check-in som toi da 5 phut");
         }
         if (!now.isBefore(booking.getEndTime())) {
             throw new IllegalStateException("Khong the check-in sau khi booking da ket thuc");

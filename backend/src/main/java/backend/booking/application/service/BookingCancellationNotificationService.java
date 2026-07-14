@@ -2,13 +2,16 @@ package backend.booking.application.service;
 
 import backend.entity.AppNotification;
 import backend.entity.Booking;
+import backend.mail.support.EmailMessageSupport;
 import backend.repository.AppNotificationRepository;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.HtmlUtils;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
@@ -18,6 +21,7 @@ import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class BookingCancellationNotificationService {
 
     private static final String NOTIFICATION_TYPE = "BOOKING_CANCELLED_REFUND";
@@ -47,7 +51,7 @@ public class BookingCancellationNotificationService {
         appNotificationRepository.save(AppNotification.builder()
                 .recipient(booking.getCustomer().getAccount())
                 .type(NOTIFICATION_TYPE)
-                .title("Huy lich thanh cong - " + variables.bookingCode())
+                .title("Hủy lịch thành công - " + variables.bookingCode())
                 .content(buildPlainContent(variables))
                 .read(false)
                 .build());
@@ -60,19 +64,33 @@ public class BookingCancellationNotificationService {
 
         try {
             MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            MimeMessageHelper helper = EmailMessageSupport.multipartHelper(message);
             helper.setTo(variables.customerEmail());
-            helper.setSubject("[Homestay Booking] Xac nhan huy lich va hoan tien " + variables.bookingCode());
-            helper.setText(buildHtmlEmail(variables), true);
+            EmailMessageSupport.setContent(
+                    helper,
+                    "[The Serene Villa] Xác nhận hủy lịch và hoàn tiền " + variables.bookingCode(),
+                    buildPlainContent(variables),
+                    buildHtmlEmail(variables)
+            );
             mailSender.send(message);
         } catch (Exception ex) {
-            throw new RuntimeException("Khong the gui email thong bao huy lich", ex);
+            log.warn("Khong the gui email thong bao huy booking {}; thong bao trong ung dung da duoc luu",
+                    variables.bookingCode(), ex);
         }
     }
 
     private String buildPlainContent(TemplateVariables variables) {
         return """
-                Xin chao %s, booking %s da duoc huy thanh cong. So tien hoan: %s (100%%). Phuong thuc hoan: %s. Thoi gian du kien nhan tien: %s.
+                Hủy lịch thành công
+
+                Xin chào %s,
+
+                Đơn đặt phòng %s đã được hủy thành công.
+                Số tiền hoàn: %s (100%%)
+                Phương thức hoàn: %s
+                Thời gian dự kiến nhận tiền: %s
+
+                Cảm ơn bạn đã sử dụng dịch vụ của The Serene Villa.
                 """.formatted(
                 variables.customerName(),
                 variables.bookingCode(),
@@ -84,25 +102,70 @@ public class BookingCancellationNotificationService {
 
     private String buildHtmlEmail(TemplateVariables variables) {
         return """
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #f0f0f0; border-radius: 12px;">
-                  <h2 style="color: #FF7518; margin-bottom: 16px;">Homestay Booking</h2>
-                  <p>Xin chao <strong>%s</strong>,</p>
-                  <p>Yeu cau huy booking cua ban da duoc xac nhan thanh cong.</p>
-                  <table style="width: 100%%; border-collapse: collapse; margin: 16px 0;">
-                    <tr><td style="padding: 8px; border-bottom: 1px solid #eee;">Ma booking</td><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>%s</strong></td></tr>
-                    <tr><td style="padding: 8px; border-bottom: 1px solid #eee;">So tien hoan</td><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>%s (100%%)</strong></td></tr>
-                    <tr><td style="padding: 8px; border-bottom: 1px solid #eee;">Phuong thuc hoan</td><td style="padding: 8px; border-bottom: 1px solid #eee;">%s</td></tr>
-                    <tr><td style="padding: 8px; border-bottom: 1px solid #eee;">Du kien nhan tien</td><td style="padding: 8px; border-bottom: 1px solid #eee;">%s</td></tr>
-                  </table>
-                  <p>Cam on ban da su dung dich vu cua Homestay Booking.</p>
-                </div>
+                <!doctype html>
+                <html lang="vi">
+                  <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Hủy lịch thành công</title>
+                    <style>
+                      body, table, td, p, a, h1, h2, h3, span, div {
+                        -webkit-text-size-adjust: 100%%;
+                        -ms-text-size-adjust: 100%%;
+                      }
+                      .email-copy {
+                        font-family: 'Segoe UI', Arial, Helvetica, sans-serif !important;
+                        letter-spacing: normal;
+                        word-spacing: normal;
+                      }
+                    </style>
+                  </head>
+                  <body class="email-copy" style="margin:0;background:#f5f1e9;padding:28px 12px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;letter-spacing:normal;word-spacing:normal;color:#25312d">
+                    <table role="presentation" width="100%%" cellspacing="0" cellpadding="0" border="0">
+                      <tr><td align="center">
+                        <table role="presentation" width="100%%" cellspacing="0" cellpadding="0" border="0" style="max-width:620px;background:#ffffff;border:1px solid #e3d8ca;border-radius:22px;overflow:hidden">
+                          <tr><td style="padding:28px 32px;background:#17493c;color:#ffffff">
+                            <div style="font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#e7c59d;font-weight:700">The Serene Villa</div>
+                            <div class="email-copy" style="margin-top:10px;font-size:30px;line-height:1.25;font-weight:700;letter-spacing:normal;word-spacing:normal;word-break:normal;overflow-wrap:normal;hyphens:none">Hủy lịch thành công</div>
+                            <div style="margin-top:10px;color:#d8e7e1;font-size:14px;line-height:1.6">Yêu cầu hủy của bạn đã được xác nhận và khoản hoàn đang được xử lý.</div>
+                          </td></tr>
+                          <tr><td style="padding:30px 32px">
+                            <p style="margin:0;font-size:16px;line-height:1.7">Xin chào <strong>%s</strong>,</p>
+                            <p style="margin:10px 0 0;color:#68736e;font-size:14px;line-height:1.7">Đơn đặt phòng của bạn đã được hủy thành công. Thông tin hoàn tiền dự kiến như sau:</p>
+                            <table role="presentation" width="100%%" cellspacing="0" cellpadding="0" border="0" style="margin-top:20px;border-collapse:separate;border-spacing:0 8px;font-size:14px">
+                              %s
+                              %s
+                              %s
+                              %s
+                            </table>
+                            <div style="margin-top:20px;padding:16px 18px;border-radius:15px;background:#eef6f2;color:#315b4e;font-size:13px;line-height:1.65">Khi khoản hoàn được xử lý xong, hệ thống sẽ gửi thêm email xác nhận kèm mã đối soát.</div>
+                          </td></tr>
+                          <tr><td style="padding:18px 32px;border-top:1px solid #ece4da;background:#faf8f4;color:#858b88;font-size:11px;line-height:1.6;text-align:center">Email tự động từ The Serene Villa · Vui lòng không trả lời email này</td></tr>
+                        </table>
+                      </td></tr>
+                    </table>
+                  </body>
+                </html>
                 """.formatted(
-                variables.customerName(),
-                variables.bookingCode(),
-                variables.refundAmountText(),
-                variables.refundMethod(),
-                variables.expectedRefundAtText()
+                escape(variables.customerName()),
+                detailRow("Mã booking", variables.bookingCode()),
+                detailRow("Số tiền hoàn", variables.refundAmountText() + " (100%)"),
+                detailRow("Phương thức hoàn", variables.refundMethod()),
+                detailRow("Dự kiến nhận tiền", variables.expectedRefundAtText())
         );
+    }
+
+    private String detailRow(String label, String value) {
+        return """
+                <tr>
+                  <td style="width:38%%;padding:10px 12px;color:#78817d;border-bottom:1px solid #eee7de">%s</td>
+                  <td style="padding:10px 12px;color:#25312d;font-weight:700;border-bottom:1px solid #eee7de;text-align:right">%s</td>
+                </tr>
+                """.formatted(escape(label), escape(value));
+    }
+
+    private String escape(String value) {
+        return HtmlUtils.htmlEscape(value == null ? "" : value);
     }
 
     private record TemplateVariables(
@@ -114,7 +177,7 @@ public class BookingCancellationNotificationService {
             String expectedRefundAtText
     ) {
         static TemplateVariables from(Booking booking, BigDecimal refundAmount, LocalDateTime expectedRefundAt) {
-            String customerName = booking.getCustomer() == null ? "Khach hang" : booking.getCustomer().getFullName();
+            String customerName = booking.getCustomer() == null ? "Quý khách" : booking.getCustomer().getFullName();
             String customerEmail = null;
             if (booking.getCustomer() != null) {
                 customerEmail = booking.getCustomer().getEmail();
@@ -140,8 +203,8 @@ public class BookingCancellationNotificationService {
 
         private static String resolveRefundMethod(Booking booking) {
             return switch (booking.getPaymentMethod()) {
-                case ONLINE -> "Hoan ve phuong thuc thanh toan online ban dau";
-                case CASH -> "Hoan tien mat tai quay";
+                case ONLINE -> "Hoàn về phương thức thanh toán online ban đầu";
+                case CASH -> "Hoàn tiền mặt tại quầy";
             };
         }
     }

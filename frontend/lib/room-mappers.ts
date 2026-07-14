@@ -1,5 +1,4 @@
 import {
-  bookingRooms,
   roomCategories,
   type BookingRoom,
   type BookingRoomReviewSummary,
@@ -15,25 +14,7 @@ import {
 import type { BackendRoom, BackendRoomStatus, BackendRoomType } from '@/lib/rooms-api'
 import type { PublicRoomEquipment } from '@/lib/public-room-equipment-service'
 
-const fallbackImage = '/images/homestay-room-hero.png'
-
-const defaultCapacity: Record<RoomCategory, number> = {
-  standard: 2,
-  deluxe: 3,
-  family: 6,
-}
-
-const defaultPrice: Record<RoomCategory, number> = {
-  standard: 350000,
-  deluxe: 550000,
-  family: 750000,
-}
-
-const categoryEquipment: Record<RoomCategory, string[]> = {
-  standard: ['Wi-Fi', 'Điều hòa', 'Smart TV', 'Máy nước nóng'],
-  deluxe: ['Wi-Fi 5G', 'Điều hòa âm trần', 'Smart TV 50 inch', 'Máy nước nóng'],
-  family: ['Wi-Fi gia đình', 'Hai điều hòa', 'Smart TV 55 inch', 'Bình nước nóng'],
-}
+const fallbackImage = '/images/homestay-luxury-hero.webp'
 
 const categoryBadges: Record<RoomCategory, string> = {
   standard: 'Standard',
@@ -73,20 +54,9 @@ function getImageUrl(imageUrl: string | null | undefined, allowRemote = false) {
 
   if (!value) return fallbackImage
   if (value.startsWith('/')) return value
-  if (allowRemote && /^https?:\/\//i.test(value)) return getOptimizedCloudinaryUrl(value)
+  if (allowRemote && /^https?:\/\//i.test(value)) return value
 
   return fallbackImage
-}
-
-function getOptimizedCloudinaryUrl(imageUrl: string) {
-  if (!/^https:\/\/res\.cloudinary\.com\//i.test(imageUrl)) {
-    return imageUrl
-  }
-  if (imageUrl.includes('/image/upload/f_auto,q_auto/')) {
-    return imageUrl
-  }
-
-  return imageUrl.replace('/image/upload/', '/image/upload/f_auto,q_auto/')
 }
 
 function getRoomTypeName(room: BackendRoom, category: RoomCategory) {
@@ -123,30 +93,41 @@ function getRoomDescription(room: BackendRoom, category: RoomCategory) {
 }
 
 function getRoomCapacity(room: BackendRoom, category: RoomCategory) {
-  return room.maxPeople ?? room.roomType?.capacity ?? defaultCapacity[category]
+  return room.maxPeople ?? room.roomType?.capacity ?? 0
+}
+
+function getRoomImages(room: BackendRoom) {
+  // The explicit primary image must be the first gallery image everywhere.
+  // Backend responses may also include it in imageUrls, so deduplicate afterward.
+  const source = [room.imageUrl, ...(room.imageUrls ?? [])]
+    .map((image) => image?.trim())
+    .filter((image): image is string => Boolean(image))
+  const images = Array.from(new Set(source.map((image) => getImageUrl(image, true)))).slice(0, 4)
+
+  return images.length > 0 ? images : [fallbackImage]
 }
 
 function getRoomPrice(room: BackendRoom, category: RoomCategory) {
-  return asNumber(room.roomType?.pricePerHour, defaultPrice[category])
+  return asNumber(room.roomType?.pricePerHour, 0)
 }
 
-function getRoomEquipmentNames(equipment: PublicRoomEquipment[] | undefined, category: RoomCategory) {
+function getRoomEquipmentNames(equipment: PublicRoomEquipment[] | undefined) {
   const names = (equipment ?? [])
     .filter((item) => item.status === 'GOOD')
     .map((item) => item.name?.trim())
     .filter((name): name is string => Boolean(name))
 
-  return names.length > 0 ? Array.from(new Set(names)) : categoryEquipment[category]
+  return Array.from(new Set(names))
 }
 
-function getAvailability(status: BackendRoomStatus | null | undefined, index: number) {
+function getAvailability(status: BackendRoomStatus | null | undefined) {
   if (status === 'MAINTENANCE') {
     return {
       availabilityStatus: 'FULL_TODAY' as RoomAvailabilityStatus,
       remainingSlots: 0,
-      nextAvailableSlot: 'Ngày mai, 18:00',
+      nextAvailableSlot: undefined,
       isAvailable: false,
-      nextAvailableTime: 'Ngày mai 18:00',
+      nextAvailableTime: undefined,
       todaySchedule: 'Đang bảo trì, tạm khóa lịch hôm nay',
       occupancyRateToday: 0,
     }
@@ -154,27 +135,24 @@ function getAvailability(status: BackendRoomStatus | null | undefined, index: nu
 
   if (status === 'IN_USE') {
     return {
-      availabilityStatus: 'ALMOST_FULL' as RoomAvailabilityStatus,
-      remainingSlots: 1,
-      nextAvailableSlot: 'Hôm nay, 21:00',
-      isAvailable: true,
-      nextAvailableTime: '21:00',
-      todaySchedule: 'Sắp kín lịch hôm nay',
-      occupancyRateToday: 85,
+      availabilityStatus: undefined,
+      remainingSlots: undefined,
+      nextAvailableSlot: undefined,
+      isAvailable: false,
+      nextAvailableTime: undefined,
+      todaySchedule: 'Phòng đang có khách',
+      occupancyRateToday: 0,
     }
   }
 
-  const availableTimes = ['18:00', '19:00', '20:00', '21:00']
-  const nextTime = availableTimes[index % availableTimes.length]
-
   return {
-    availabilityStatus: 'AVAILABLE' as RoomAvailabilityStatus,
-    remainingSlots: 3 + (index % 2),
-    nextAvailableSlot: `Hôm nay, ${nextTime}`,
-    isAvailable: true,
-    nextAvailableTime: nextTime,
-    todaySchedule: 'Còn lịch trống hôm nay',
-    occupancyRateToday: 35 + (index % 3) * 10,
+    availabilityStatus: undefined,
+    remainingSlots: undefined,
+    nextAvailableSlot: undefined,
+    isAvailable: false,
+    nextAvailableTime: undefined,
+    todaySchedule: 'Xem lịch trống từ hệ thống',
+    occupancyRateToday: 0,
   }
 }
 
@@ -187,7 +165,7 @@ function getStatusNote(status: BackendRoomStatus | null | undefined) {
     return 'Phòng gần kín lịch hôm nay. Nên đặt sớm để giữ khung giờ phù hợp.'
   }
 
-  return 'Phòng còn nhiều khung giờ hôm nay, phù hợp để đặt nhanh trong ngày.'
+  return undefined
 }
 
 export function inferRoomCategoryFromTypeName(typeName?: string | null): RoomCategory {
@@ -201,12 +179,14 @@ export function inferRoomCategoryFromTypeName(typeName?: string | null): RoomCat
 export function mapBackendStatusToAdminStatus(status?: BackendRoomStatus | null): RoomStatus {
   if (status === 'IN_USE') return 'occupied'
   if (status === 'MAINTENANCE') return 'maintenance'
+  if (status === 'INACTIVE') return 'inactive'
   return 'active'
 }
 
 export function mapAdminStatusToBackendStatus(status?: RoomStatus | null): BackendRoomStatus {
   if (status === 'occupied') return 'IN_USE'
-  if (status === 'maintenance' || status === 'inactive') return 'MAINTENANCE'
+  if (status === 'maintenance') return 'MAINTENANCE'
+  if (status === 'inactive') return 'INACTIVE'
   return 'AVAILABLE'
 }
 
@@ -218,8 +198,8 @@ export function mapRoomTypeToAdminOption(roomType: BackendRoomType): AdminRoomTy
     label: roomType.typeName,
     description: roomType.description?.trim() ?? '',
     category,
-    pricePerHour: asNumber(roomType.pricePerHour, defaultPrice[category]),
-    capacity: roomType.capacity ?? defaultCapacity[category],
+    pricePerHour: asNumber(roomType.pricePerHour, 0),
+    capacity: roomType.capacity ?? 0,
   }
 }
 
@@ -233,9 +213,10 @@ export function mapBackendRoomToAdminRoom(
   const category = inferRoomCategoryFromTypeName(
     `${room.roomType?.typeName ?? ''} ${room.roomType?.description ?? ''}`,
   )
-  const equipments = getRoomEquipmentNames(equipment, category)
-  const availability = getAvailability(room.status, index)
+  const equipments = getRoomEquipmentNames(equipment)
+  const availability = getAvailability(room.status)
   const status = mapBackendStatusToAdminStatus(room.status)
+  const images = getRoomImages(room)
 
   return {
     id: String(room.id),
@@ -248,8 +229,9 @@ export function mapBackendRoomToAdminRoom(
     capacity: getRoomCapacity(room, category),
     pricePerHour: getRoomPrice(room, category),
     status,
-    image: getImageUrl(room.imageUrl, true),
+    image: images[0],
     imageUrl: room.imageUrl?.trim() || '',
+    imageUrls: images,
     equipmentCount: equipments.length,
     equipments,
     todaySchedule: availability.todaySchedule,
@@ -258,7 +240,7 @@ export function mapBackendRoomToAdminRoom(
     occupancyRateToday: availability.occupancyRateToday,
     monthlyRevenue,
     averageRating: reviewSummary?.averageRating ?? 0,
-    latestMaintenance: status === 'maintenance' ? 'Đang bảo trì' : 'Chưa có lịch bảo trì gần đây',
+    latestMaintenance: status === 'maintenance' ? 'Đang bảo trì' : 'Không có dữ liệu lịch bảo trì',
   }
 }
 
@@ -271,10 +253,11 @@ export function mapBackendRoomToBookingRoom(
   const category = inferRoomCategoryFromTypeName(
     `${room.roomType?.typeName ?? ''} ${room.roomType?.description ?? ''}`,
   )
-  const equipments = getRoomEquipmentNames(equipment, category)
-  const availability = getAvailability(room.status, index)
+  const equipments = getRoomEquipmentNames(equipment)
+  const availability = getAvailability(room.status)
   const capacity = getRoomCapacity(room, category)
   const roomTypeName = getRoomTypeName(room, category)
+  const images = getRoomImages(room)
 
   return {
     id: String(room.id),
@@ -290,13 +273,14 @@ export function mapBackendRoomToBookingRoom(
     rating: reviewSummary?.reviewCount ? reviewSummary.averageRating : undefined,
     reviews: reviewSummary?.reviewCount ?? 0,
     capacity: `Tối đa ${capacity} người`,
-    location: room.floor ? `Tầng ${room.floor}, Homestay Booking` : 'Homestay Booking',
-    image: getImageUrl(room.imageUrl, true),
+    location: room.floor ? `Tầng ${room.floor}, The Serene Villa` : 'The Serene Villa',
+    image: images[0],
+    images,
     imageClassName: '',
     pricePerHour: getRoomPrice(room, category),
     equipments: equipments.slice(0, 3),
     includedEquipments: equipments,
-    addons: ['Bữa sáng', 'Giặt ủi', 'Đón sân bay'],
+    addons: [],
     description: getRoomDescription(room, category),
     availabilityStatus: availability.availabilityStatus,
     remainingSlots: availability.remainingSlots,
@@ -310,5 +294,5 @@ export function mapBackendRoomToBookingRoom(
 
 export function findBookingRoomInCatalog(roomId: string | null, catalog: BookingRoom[]) {
   if (!roomId) return null
-  return catalog.find((room) => room.id === roomId) ?? bookingRooms.find((room) => room.id === roomId) ?? null
+  return catalog.find((room) => room.id === roomId || room.code === roomId) ?? null
 }

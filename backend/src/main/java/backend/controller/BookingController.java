@@ -18,6 +18,7 @@ import backend.dto.response.BookingResponse;
 import backend.dto.response.CustomerBookingCancellationResponse;
 import backend.dto.response.PagedResponse;
 import backend.entity.BookingStatus;
+import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -52,7 +53,7 @@ public class BookingController {
     }
 
     @PostMapping("/calculate-cost")
-    public ResponseEntity<?> calculateCost(@RequestBody CalculateBookingCostRequest request) {
+    public ResponseEntity<?> calculateCost(@RequestBody @Valid CalculateBookingCostRequest request) {
         BookingCostResponse data = calculateBookingCostUseCase.calculateCost(
                 new CalculateBookingCostCommand(
                         request.getRoomId(),
@@ -67,7 +68,7 @@ public class BookingController {
 
     @PostMapping
     public ResponseEntity<?> createBooking(
-            @RequestBody CreateBookingRequest request,
+            @RequestBody @Valid CreateBookingRequest request,
             Authentication authentication
     ) {
         String customerEmail = authentication.getName();
@@ -131,18 +132,22 @@ public class BookingController {
     @PutMapping("/{id}/cancel")
     public ResponseEntity<?> cancelMyBooking(
             @PathVariable Integer id,
-            @RequestBody(required = false) CancelBookingRequest request,
+            @RequestBody(required = false) @Valid CancelBookingRequest request,
             Authentication authentication
     ) {
         CustomerBookingCancellationResponse data = cancelCustomerBookingUseCase.cancelCustomerBooking(
                 new CancelCustomerBookingCommand(
                         id,
                         request != null ? request.getReason() : null,
+                        request != null ? request.getRefundBankCode() : null,
+                        request != null ? request.getRefundBankName() : null,
+                        request != null ? request.getRefundAccountNumber() : null,
+                        request != null ? request.getRefundAccountHolder() : null,
                         authentication.getName()
                 )
         );
 
-        return ResponseEntity.ok(success("Huy lich thanh cong, thong tin hoan tien da duoc gui", data));
+        return ResponseEntity.ok(success("Da gui yeu cau huy phong, vui long cho admin duyet", data));
     }
 
     private Map<String, Object> success(String message, Object data) {

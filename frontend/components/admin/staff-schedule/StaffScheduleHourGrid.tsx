@@ -75,8 +75,8 @@ export default function StaffScheduleHourGrid({
   ]
 
   return (
-    <section className="flex max-h-[min(75vh,720px)] flex-col overflow-hidden rounded-xl border border-outline-variant bg-white shadow-[var(--shadow-card)]">
-      <div className="flex shrink-0 flex-col gap-3 border-b border-outline-variant px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+    <section className="flex max-h-[min(75vh,760px)] flex-col overflow-hidden rounded-[24px] border border-[#e2d7ca] bg-white shadow-[0_18px_52px_rgba(31,54,44,0.08)]">
+      <div className="flex shrink-0 flex-col gap-3 border-b border-[#e8dfd4] bg-[linear-gradient(135deg,#fff,#fbf8f3)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
         <div>
           <h2 className="font-display text-lg font-bold text-on-surface">Lịch theo khung giờ</h2>
           <p className="mt-0.5 text-sm text-on-surface-variant">
@@ -97,14 +97,14 @@ export default function StaffScheduleHourGrid({
             </label>
           )}
 
-          <div className="flex flex-wrap gap-1.5 rounded-lg bg-surface-container-low p-1">
+          <div className="flex flex-wrap gap-1.5 rounded-xl bg-[#f4efe8] p-1">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 type="button"
                 onClick={() => onStatusFilterChange(tab.id)}
                 className={[
-                  'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition',
+                  'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition',
                   statusFilter === tab.id
                     ? 'bg-white text-brand-orange shadow-sm'
                     : 'text-on-surface-variant hover:text-on-surface',

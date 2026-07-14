@@ -1,5 +1,7 @@
 'use client'
 
+import ProjectSelect from '@/components/ui/ProjectSelect'
+
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import AuthGuard from '@/components/AuthGuard'
 import { StaffPageShell } from './StaffShared'
@@ -502,7 +504,7 @@ export default function StaffRoomsPage() {
                 <button
                   type="button"
                   onClick={() => setReportTarget({ targetType: 'ROOM' })}
-                  className="inline-flex h-11 items-center gap-2 rounded-xl bg-brand-orange px-5 font-display text-sm font-bold text-white shadow-[0_14px_30px_rgba(255,117,24,0.22)] transition hover:bg-brand-orangeHover"
+                  className="inline-flex h-11 items-center gap-2 rounded-xl bg-brand-orange px-5 font-display text-sm font-bold text-white shadow-[0_14px_30px_rgba(178,132,85,0.22)] transition hover:bg-brand-orangeHover"
                 >
                   <IconPlus />
                   Báo sự cố
@@ -901,7 +903,7 @@ function RoomCard({
             {getRoomCategoryLabel(room.category)} · {room.capacity} người
           </p>
         </div>
-        <select
+        <ProjectSelect
           value={room.status}
           onChange={(event) => onUpdateStatus(event.target.value as RoomStatus)}
           className="h-10 rounded-xl border border-outline-variant bg-surface-container-low px-3 font-display text-sm font-bold text-on-surface outline-none transition focus:border-brand-orange"
@@ -914,7 +916,7 @@ function RoomCard({
                 {getRoomStatusMeta(item).label}
               </option>
             ))}
-        </select>
+        </ProjectSelect>
       </div>
 
       <div className="mt-5 rounded-2xl border border-outline-variant bg-surface-container-low p-4">
@@ -985,7 +987,7 @@ function EquipmentCard({
             {getEquipmentTypeLabel(equipment.type)} · {equipment.location}
           </p>
         </div>
-        <select
+        <ProjectSelect
           value={equipment.status}
           onChange={(event) => onUpdateStatus(event.target.value as EquipmentStatus)}
           className="h-10 rounded-xl border border-outline-variant bg-surface-container-low px-3 font-display text-sm font-bold text-on-surface outline-none transition focus:border-brand-orange"
@@ -998,7 +1000,7 @@ function EquipmentCard({
                 {getEquipmentStatusMeta(item).label}
               </option>
             ))}
-        </select>
+        </ProjectSelect>
       </div>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
@@ -1062,7 +1064,7 @@ function IssueCard({
         <button type="button" onClick={onView} className="btn-secondary">
           Xem chi tiết
         </button>
-        <select
+        <ProjectSelect
           value={issue.status}
           onChange={(event) => onUpdateStatus(event.target.value as IssueStatus)}
           className="h-11 rounded-xl border border-outline-variant bg-surface-container-low px-3 font-display text-sm font-bold text-on-surface outline-none transition focus:border-brand-orange"
@@ -1075,7 +1077,7 @@ function IssueCard({
                 {getIssueStatusMeta(item).label}
               </option>
             ))}
-        </select>
+        </ProjectSelect>
       </div>
     </article>
   )
@@ -1125,7 +1127,7 @@ function ReportIssueModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end bg-[#042A16]/45 p-0 backdrop-blur-sm sm:items-center sm:justify-center sm:p-6" onClick={onCancel}>
+    <div className="fixed inset-0 z-50 flex items-end bg-[#173A31]/45 p-0 backdrop-blur-sm sm:items-center sm:justify-center sm:p-6" onClick={onCancel}>
       <div className="max-h-[92vh] w-full overflow-y-auto rounded-t-3xl border border-outline-variant bg-white p-5 shadow-[var(--homestay-shadow-elevated)] sm:max-w-2xl sm:rounded-3xl sm:p-6" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -1140,7 +1142,7 @@ function ReportIssueModal({
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           <Field label="Loại đối tượng">
-            <select
+            <ProjectSelect
               value={draft.targetType}
               onChange={(event) =>
                 setDraft((current) => ({ ...current, targetType: event.target.value as 'ROOM' | 'EQUIPMENT', targetId: '' }))
@@ -1149,11 +1151,11 @@ function ReportIssueModal({
             >
               <option value="ROOM">Phòng</option>
               <option value="EQUIPMENT">Tiện nghi</option>
-            </select>
+            </ProjectSelect>
           </Field>
 
           <Field label="Chọn phòng/tiện nghi" error={errors.targetId}>
-            <select
+            <ProjectSelect
               value={draft.targetId}
               onChange={(event) => updateDraft('targetId', event.target.value)}
               className="input-field"
@@ -1164,11 +1166,11 @@ function ReportIssueModal({
                   {target.name}
                 </option>
               ))}
-            </select>
+            </ProjectSelect>
           </Field>
 
           <Field label="Loại sự cố">
-            <select
+            <ProjectSelect
               value={draft.issueType}
               onChange={(event) => updateDraft('issueType', event.target.value as IssueType)}
               className="input-field"
@@ -1178,11 +1180,11 @@ function ReportIssueModal({
                   {label}
                 </option>
               ))}
-            </select>
+            </ProjectSelect>
           </Field>
 
           <Field label="Mức độ ưu tiên">
-            <select
+            <ProjectSelect
               value={draft.priority}
               onChange={(event) => updateDraft('priority', event.target.value as Priority)}
               className="input-field"
@@ -1194,7 +1196,7 @@ function ReportIssueModal({
                     {getPriorityMeta(item).label}
                   </option>
                 ))}
-            </select>
+            </ProjectSelect>
           </Field>
 
           <div className="sm:col-span-2">
@@ -1377,7 +1379,7 @@ function IssueDetailPanel({
         <p className="text-sm leading-6 text-on-surface-variant">{issue.description}</p>
       </PanelSection>
       <PanelSection title="Cập nhật trạng thái">
-        <select
+        <ProjectSelect
           value={issue.status}
           onChange={(event) => onUpdateStatus(issue, event.target.value as IssueStatus)}
           className="input-field"
@@ -1389,7 +1391,7 @@ function IssueDetailPanel({
                 {getIssueStatusMeta(item).label}
               </option>
             ))}
-        </select>
+        </ProjectSelect>
       </PanelSection>
     </SidePanel>
   )
@@ -1397,7 +1399,7 @@ function IssueDetailPanel({
 
 function SidePanel({ title, eyebrow, children, onClose }: { title: string; eyebrow: string; children: ReactNode; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-40 flex justify-end bg-[#042A16]/45 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-40 flex justify-end bg-[#173A31]/45 backdrop-blur-sm" onClick={onClose}>
       <aside className="h-full w-full overflow-y-auto border-l border-outline-variant bg-white p-5 shadow-[var(--homestay-shadow-elevated)] sm:max-w-xl sm:p-6" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -1452,7 +1454,7 @@ function FilterSelect({
   return (
     <label className="block">
       <span className="sr-only">{label}</span>
-      <select
+      <ProjectSelect
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className="h-12 w-full rounded-2xl border border-outline-variant bg-surface-container-low px-4 font-display text-sm font-bold text-on-surface outline-none transition focus:border-brand-orange focus:bg-white"
@@ -1462,7 +1464,7 @@ function FilterSelect({
             {option.label}
           </option>
         ))}
-      </select>
+      </ProjectSelect>
     </label>
   )
 }

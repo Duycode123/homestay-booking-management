@@ -25,6 +25,7 @@ import backend.entity.Customer;
 import backend.entity.Role;
 import backend.entity.User;
 import backend.exception.AuthException;
+import backend.exception.EmailDeliveryException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +41,7 @@ import java.time.LocalDateTime;
 import java.util.HexFormat;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -57,6 +59,14 @@ public class AuthUseCaseService implements
     private static final int EMAIL_VERIFICATION_EXPIRATION_HOURS = 24;
     private static final int RESEND_COOLDOWN_SECONDS = 60;
     private static final int MIN_CUSTOMER_AGE = 13;
+    private static final int MIN_FULL_NAME_LENGTH = 2;
+    private static final int MAX_FULL_NAME_LENGTH = 100;
+    private static final int MIN_PASSWORD_LENGTH = 8;
+    private static final int MAX_PASSWORD_LENGTH = 72;
+    private static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[A-Za-z])(?=.*\\d).+$");
+    private static final Pattern UUID_TOKEN_PATTERN = Pattern.compile(
+            "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+    );
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthUseCaseService.class);
     private static final Set<String> BLOCKED_EMAIL_DOMAINS = Set.of(
             "10minutemail.com",
@@ -73,12 +83,14 @@ public class AuthUseCaseService implements
     private final EmailVerificationNotificationPort emailVerificationNotificationPort;
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = EmailDeliveryException.class)
     public AuthResponse register(RegisterUserCommand command) {
         String fullName = normalizeRequired(command.fullName(), "Ho ten khong duoc de trong");
+        validateFullName(fullName);
         String email = normalizeEmail(command.email());
         String phone = normalizeRequired(command.phone(), "So dien thoai khong duoc de trong");
         String password = normalizeRequired(command.password(), "Mat khau khong duoc de trong");
+        validateNewPassword(password);
         validateDateOfBirth(command.dateOfBirth());
         String emailVerificationUrlBase = normalizeRequired(
                 command.emailVerificationUrlBase(),
@@ -112,7 +124,7 @@ public class AuthUseCaseService implements
                 .build();
 
         authAccountPort.saveCustomer(customer);
-        sendVerificationEmailSafely(
+        sendVerificationEmail(
                 savedUser.getEmail(),
                 emailVerificationUrlBase + verificationToken
         );
@@ -196,13 +208,14 @@ public class AuthUseCaseService implements
     }
 
     @Override
+    @Transactional
     public void logout(LogoutCommand command) {
         authSecurityPort.revokeToken(command.accessToken());
         authSecurityPort.revokeToken(command.refreshToken());
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = EmailDeliveryException.class)
     public void requestPasswordReset(RequestPasswordResetCommand command) {
         String email = normalizeEmail(command.email());
         String resetPasswordUrlBase = normalizeRequired(
@@ -210,15 +223,17 @@ public class AuthUseCaseService implements
                 "Duong dan dat lai mat khau khong hop le"
         );
 
-        User user = authAccountPort.loadUserByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Email khong ton tai"));
+        User user = authAccountPort.loadUserByEmail(email).orElse(null);
+        if (user == null || !user.isEnabled()) {
+            return;
+        }
 
         String token = UUID.randomUUID().toString();
-        user.setResetToken(token);
+        user.setResetToken(hashToken(token));
         user.setResetTokenExpiresAt(LocalDateTime.now().plusMinutes(30));
         authAccountPort.saveUser(user);
 
-        sendPasswordResetEmailSafely(
+        sendPasswordResetEmail(
                 user.getEmail(),
                 resetPasswordUrlBase + token
         );
@@ -227,10 +242,11 @@ public class AuthUseCaseService implements
     @Override
     @Transactional
     public void resetPassword(ResetPasswordCommand command) {
-        String token = normalizeRequired(command.token(), "Token dat lai mat khau khong hop le");
+        String token = normalizeUuidToken(command.token(), "Token dat lai mat khau khong hop le");
         String newPassword = normalizeRequired(command.newPassword(), "Mat khau moi khong duoc de trong");
+        validateNewPassword(newPassword);
 
-        User user = authAccountPort.loadUserByResetToken(token)
+        User user = authAccountPort.loadUserByResetToken(hashToken(token))
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Lien ket doi mat khau khong hop le hoac da het han!"
                 ));
@@ -244,6 +260,7 @@ public class AuthUseCaseService implements
         }
 
         user.setPassword(authSecurityPort.encodePassword(newPassword));
+        user.setCredentialsVersion(user.getCredentialsVersion() + 1);
         user.setResetToken(null);
         user.setResetTokenExpiresAt(null);
         authAccountPort.saveUser(user);
@@ -252,7 +269,7 @@ public class AuthUseCaseService implements
     @Override
     @Transactional
     public void verifyEmail(VerifyEmailCommand command) {
-        String token = normalizeRequired(command.token(), "Token xac thuc email khong hop le");
+        String token = normalizeUuidToken(command.token(), "Token xac thuc email khong hop le");
         String tokenHash = hashToken(token);
 
         User user = authAccountPort.loadUserByEmailVerificationTokenHash(tokenHash)
@@ -277,7 +294,7 @@ public class AuthUseCaseService implements
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = EmailDeliveryException.class)
     public void resendVerificationEmail(ResendEmailVerificationCommand command) {
         String email = normalizeEmail(command.email());
         String emailVerificationUrlBase = normalizeRequired(
@@ -285,21 +302,23 @@ public class AuthUseCaseService implements
                 "Duong dan xac thuc email khong hop le"
         );
 
-        User user = authAccountPort.loadUserByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Email khong ton tai"));
+        User user = authAccountPort.loadUserByEmail(email).orElse(null);
+        if (user == null || !user.isEnabled()) {
+            return;
+        }
 
         if (user.isEmailVerified()) {
-            throw new IllegalStateException("Email nay da duoc xac thuc");
+            return;
         }
 
         if (user.getEmailVerificationSentAt() != null
                 && user.getEmailVerificationSentAt().plusSeconds(RESEND_COOLDOWN_SECONDS).isAfter(LocalDateTime.now())) {
-            throw new IllegalStateException("Vui long doi it nhat 60 giay truoc khi gui lai email xac thuc");
+            return;
         }
 
         String verificationToken = prepareEmailVerification(user);
         authAccountPort.saveUser(user);
-        sendVerificationEmailSafely(
+        sendVerificationEmail(
                 user.getEmail(),
                 emailVerificationUrlBase + verificationToken
         );
@@ -313,20 +332,29 @@ public class AuthUseCaseService implements
         return token;
     }
 
-    private void sendVerificationEmailSafely(String email, String verificationLink) {
+    private void sendVerificationEmail(String email, String verificationLink) {
         try {
             emailVerificationNotificationPort.sendVerificationEmail(email, verificationLink);
         } catch (RuntimeException ex) {
-            LOGGER.warn("Could not send verification email to {}", email, ex);
+            LOGGER.error("Verification email delivery failed", ex);
+            throw asEmailDeliveryException("Khong the gui email xac thuc", ex);
         }
     }
 
-    private void sendPasswordResetEmailSafely(String email, String resetLink) {
+    private void sendPasswordResetEmail(String email, String resetLink) {
         try {
             passwordResetNotificationPort.sendPasswordResetEmail(email, resetLink);
         } catch (RuntimeException ex) {
-            LOGGER.warn("Could not send password reset email to {}", email, ex);
+            LOGGER.error("Password reset email delivery failed", ex);
+            throw asEmailDeliveryException("Khong the gui email dat lai mat khau", ex);
         }
+    }
+
+    private EmailDeliveryException asEmailDeliveryException(String message, RuntimeException cause) {
+        if (cause instanceof EmailDeliveryException emailDeliveryException) {
+            return emailDeliveryException;
+        }
+        return new EmailDeliveryException(message, cause);
     }
 
     private void clearEmailVerification(User user) {
@@ -372,5 +400,29 @@ public class AuthUseCaseService implements
         if (dateOfBirth.isAfter(LocalDate.now().minusYears(MIN_CUSTOMER_AGE))) {
             throw new IllegalArgumentException("Ban phai du 13 tuoi de tao tai khoan");
         }
+    }
+
+    private void validateFullName(String fullName) {
+        if (fullName.length() < MIN_FULL_NAME_LENGTH || fullName.length() > MAX_FULL_NAME_LENGTH) {
+            throw new IllegalArgumentException("Ho ten phai co tu 2 den 100 ky tu");
+        }
+    }
+
+    private void validateNewPassword(String password) {
+        if (password.length() < MIN_PASSWORD_LENGTH || password.length() > MAX_PASSWORD_LENGTH) {
+            throw new IllegalArgumentException("Mat khau phai co tu 8 den 72 ky tu");
+        }
+
+        if (!PASSWORD_PATTERN.matcher(password).matches()) {
+            throw new IllegalArgumentException("Mat khau phai co it nhat mot chu cai va mot chu so");
+        }
+    }
+
+    private String normalizeUuidToken(String token, String message) {
+        String normalizedToken = normalizeRequired(token, message);
+        if (!UUID_TOKEN_PATTERN.matcher(normalizedToken).matches()) {
+            throw new IllegalArgumentException(message);
+        }
+        return normalizedToken;
     }
 }

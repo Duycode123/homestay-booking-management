@@ -1,5 +1,7 @@
 'use client'
 
+import ProjectSelect from '@/components/ui/ProjectSelect'
+
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import AdminPageHeader from '@/components/admin/AdminPageHeader'
 import AdminStatCard from '@/components/admin/AdminStatCard'
@@ -229,7 +231,7 @@ function IncidentFiltersBar({
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <label className="block">
             <span className={labelClass}>Trạng thái</span>
-            <select
+            <ProjectSelect
               value={filters.status}
               onChange={(event) => set({ status: event.target.value as IncidentReportFilters['status'] })}
               className={inputClass}
@@ -240,12 +242,12 @@ function IncidentFiltersBar({
                   {INCIDENT_STATUS_LABELS[status]}
                 </option>
               ))}
-            </select>
+            </ProjectSelect>
           </label>
 
           <label className="block">
             <span className={labelClass}>Mức độ ưu tiên</span>
-            <select
+            <ProjectSelect
               value={filters.priority}
               onChange={(event) => set({ priority: event.target.value as IncidentReportFilters['priority'] })}
               className={inputClass}
@@ -256,19 +258,19 @@ function IncidentFiltersBar({
                   {INCIDENT_PRIORITY_LABELS[priority]}
                 </option>
               ))}
-            </select>
+            </ProjectSelect>
           </label>
 
           <label className="block">
             <span className={labelClass}>Phòng</span>
-            <select value={filters.roomId} onChange={(event) => set({ roomId: event.target.value })} className={inputClass}>
+            <ProjectSelect value={filters.roomId} onChange={(event) => set({ roomId: event.target.value })} className={inputClass}>
               <option value="ALL">Tất cả phòng</option>
               {rooms.map((room) => (
                 <option key={room.roomId} value={room.roomId}>
                   {room.roomName}
                 </option>
               ))}
-            </select>
+            </ProjectSelect>
           </label>
 
           <label className="block">
@@ -493,7 +495,7 @@ function IncidentDetailDrawer({
           <DetailSection title="Cập nhật xử lý">
             <label className="block">
               <span className={labelClass}>Trạng thái mới</span>
-              <select
+              <ProjectSelect
                 value={status}
                 onChange={(event) => setStatus(event.target.value as IncidentReportStatus)}
                 className={inputClass}
@@ -503,7 +505,7 @@ function IncidentDetailDrawer({
                     {INCIDENT_STATUS_LABELS[option]}
                   </option>
                 ))}
-              </select>
+              </ProjectSelect>
             </label>
 
             <label className="mt-3 block">

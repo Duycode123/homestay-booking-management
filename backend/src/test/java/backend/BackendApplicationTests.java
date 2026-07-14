@@ -398,8 +398,9 @@ class BackendApplicationTests {
                 .typeName("Standard")
                 .pricePerHour(new BigDecimal("150000"))
                 .capacity(6)
+                .active(true)
                 .build();
-        when(roomTypeRepository.findAllByOrderByTypeNameAsc()).thenReturn(List.of(roomType));
+        when(roomTypeRepository.findAllByActiveTrueOrderByTypeNameAsc()).thenReturn(List.of(roomType));
 
         mockMvc.perform(get("/api/room-types"))
                 .andExpect(status().isOk())

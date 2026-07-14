@@ -44,6 +44,15 @@ public class Room {
     @Column(name = "image_url", length = 500)
     private String imageUrl;
 
+    @Column(name = "image_url_2", length = 500)
+    private String imageUrl2;
+
+    @Column(name = "image_url_3", length = 500)
+    private String imageUrl3;
+
+    @Column(name = "image_url_4", length = 500)
+    private String imageUrl4;
+
     @Transient
     private LocalDateTime createdAt;
 

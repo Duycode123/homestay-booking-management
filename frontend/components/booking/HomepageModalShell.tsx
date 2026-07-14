@@ -94,17 +94,17 @@ export default function HomepageModalShell({
     >
       <section
         className={[
-          'flex max-h-[90vh] w-[min(96vw,1040px)] flex-col overflow-hidden rounded-[28px] border border-[#E8E4DC] bg-white shadow-[0_24px_80px_rgba(26,28,30,0.18)]',
+          'flex max-h-[90vh] w-[min(96vw,1040px)] flex-col overflow-hidden rounded-[28px] border border-[#E4DED3] bg-white shadow-[0_24px_80px_rgba(26,28,30,0.18)]',
           maxWidthClassName,
           isClosing ? 'animate-[homepageModalOut_180ms_ease-in_forwards]' : 'animate-[homepageModalIn_200ms_cubic-bezier(0.16,1,0.3,1)_forwards]',
         ].join(' ')}
         onClick={(event) => event.stopPropagation()}
       >
         {(title || eyebrow || description) && (
-          <header className={['sticky top-0 z-10 border-b border-[#E8E4DC] bg-white px-5 py-5 sm:px-6', headerClassName].join(' ')}>
-            {eyebrow && <p className="font-display text-xs font-bold uppercase tracking-[0.18em] text-[#FF7518]">{eyebrow}</p>}
-            {title && <h2 id={labelledBy} className="mt-1 font-display text-2xl font-bold tracking-tight text-[#1A1C1E]">{title}</h2>}
-            {description && <p className="mt-1 max-w-2xl text-sm leading-6 text-[#5C5348]">{description}</p>}
+          <header className={['sticky top-0 z-10 border-b border-[#E4DED3] bg-white px-5 py-5 sm:px-6', headerClassName].join(' ')}>
+            {eyebrow && <p className="font-display text-xs font-bold uppercase tracking-[0.18em] text-[#B28455]">{eyebrow}</p>}
+            {title && <h2 id={labelledBy} className="mt-1 font-display text-2xl font-bold tracking-tight text-[#242A27]">{title}</h2>}
+            {description && <p className="mt-1 max-w-2xl text-sm leading-6 text-[#6A6C66]">{description}</p>}
           </header>
         )}
 
@@ -113,7 +113,7 @@ export default function HomepageModalShell({
         </div>
 
         {footer && (
-          <footer className="sticky bottom-0 z-10 border-t border-[#E8E4DC] bg-white px-5 py-4 sm:px-6">
+          <footer className="sticky bottom-0 z-10 border-t border-[#E4DED3] bg-white px-5 py-4 sm:px-6">
             {footer}
           </footer>
         )}

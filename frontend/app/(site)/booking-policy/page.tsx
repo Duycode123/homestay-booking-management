@@ -4,6 +4,14 @@ import {
   PublicContentPage,
   PublicContentSection,
 } from '@/components/public/PublicContentPage'
+import { createPublicPageMetadata } from '@/lib/seo'
+
+export const metadata = createPublicPageMetadata({
+  title: 'Chính sách đặt phòng',
+  description:
+    'Hướng dẫn chọn phòng, xác nhận lịch, thanh toán và sử dụng phòng khi đặt homestay qua The Serene Villa.',
+  path: '/booking-policy',
+})
 
 export default function BookingPolicyPage() {
   return (
@@ -11,7 +19,7 @@ export default function BookingPolicyPage() {
       <PublicContentHeader
         eyebrow="Hỗ trợ"
         title="Chính sách đặt phòng"
-        description="Hướng dẫn cách đặt phòng homestay tại Homestay Booking — từ chọn phòng đến xác nhận lịch."
+        description="Hướng dẫn cách đặt phòng homestay tại The Serene Villa — từ chọn phòng đến xác nhận lịch."
         updatedAt="Tháng 7, 2026"
       />
 

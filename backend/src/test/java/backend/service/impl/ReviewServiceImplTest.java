@@ -1,8 +1,10 @@
 package backend.service.impl;
 
 import backend.dto.request.UpsertReviewResponseRequest;
+import backend.dto.request.CreateReviewRequest;
 import backend.dto.response.ReviewResponse;
 import backend.entity.Booking;
+import backend.entity.BookingStatus;
 import backend.entity.Customer;
 import backend.entity.Review;
 import backend.entity.ReviewAdminResponse;
@@ -24,6 +26,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -187,6 +190,41 @@ class ReviewServiceImplTest {
 
         assertEquals(17, response.staffId());
         assertEquals("Tran Thi B", response.staffName());
+    }
+
+    @Test
+    void createsReviewWithOrderedCloudinaryImages() {
+        Customer customer = Customer.builder().id(5).fullName("Nguyen Van A").build();
+        Booking booking = Booking.builder()
+                .id(13)
+                .customer(customer)
+                .room(Room.builder().id(8).roomName("Deluxe Balcony 201").build())
+                .status(BookingStatus.COMPLETED)
+                .build();
+        CreateReviewRequest request = new CreateReviewRequest();
+        request.setBookingId(13);
+        request.setRating(5);
+        request.setContent("Phong sach se va dich vu rat chu dao.");
+        request.setImageUrls(List.of(
+                "https://res.cloudinary.com/demo/image/upload/reviews/one.jpg",
+                "https://res.cloudinary.com/demo/image/upload/reviews/two.jpg"
+        ));
+
+        when(customerRepository.findByAccount_Email("guest@example.com")).thenReturn(Optional.of(customer));
+        when(bookingRepository.findById(13)).thenReturn(Optional.of(booking));
+        when(reviewRepository.existsByBooking_Id(13)).thenReturn(false);
+        when(reviewRepository.saveAndFlush(any(Review.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ReviewResponse response = reviewService.createReview(request, "guest@example.com");
+
+        ArgumentCaptor<Review> reviewCaptor = ArgumentCaptor.forClass(Review.class);
+        verify(reviewRepository).saveAndFlush(reviewCaptor.capture());
+        Review savedReview = reviewCaptor.getValue();
+        assertEquals(2, savedReview.getImages().size());
+        assertEquals(0, savedReview.getImages().get(0).getDisplayOrder());
+        assertEquals(1, savedReview.getImages().get(1).getDisplayOrder());
+        assertEquals(savedReview, savedReview.getImages().get(0).getReview());
+        assertEquals(2, response.images().size());
     }
 
     private Review sampleReview() {

@@ -198,8 +198,8 @@ export default function RoomTierManager({
                       <div className="w-full rounded-xl border border-error/25 bg-error-container/20 p-2 md:w-auto">
                         <p className="mb-2 max-w-[180px] text-xs leading-relaxed text-error">
                           {roomCount > 0
-                            ? `Đang có ${roomCount} phòng sử dụng hạng này.`
-                            : 'Xác nhận xóa hạng phòng này?'}
+                            ? `Hạng này còn ${roomCount} phòng hoạt động. Hãy xóa hoặc chuyển hạng các phòng đó trước.`
+                            : 'Hạng phòng sẽ được gỡ khỏi danh sách nhưng dữ liệu lịch sử vẫn được bảo toàn. Xác nhận xóa?'}
                         </p>
                         <div className="flex flex-wrap gap-2">
                           <button

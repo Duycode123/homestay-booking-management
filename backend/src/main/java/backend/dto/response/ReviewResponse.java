@@ -3,6 +3,7 @@ package backend.dto.response;
 import backend.entity.Review;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record ReviewResponse(
         Integer id,
@@ -15,6 +16,7 @@ public record ReviewResponse(
         String staffName,
         Integer rating,
         String content,
+        List<ReviewImageResponse> images,
         Boolean approved,
         LocalDateTime createdAt,
         ReviewAdminResponsePayload adminResponse
@@ -31,6 +33,7 @@ public record ReviewResponse(
                 review.getBooking().getCheckinStaff() == null ? null : review.getBooking().getCheckinStaff().getFullName(),
                 review.getRating(),
                 review.getContent(),
+                review.getImages().stream().map(ReviewImageResponse::from).toList(),
                 review.getApproved(),
                 review.getCreatedAt(),
                 review.getAdminResponse() == null ? null : ReviewAdminResponsePayload.from(review.getAdminResponse())

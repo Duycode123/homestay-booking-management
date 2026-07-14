@@ -7,6 +7,10 @@ import backend.entity.PaymentProvider;
 import backend.entity.PaymentTransaction;
 import backend.entity.PaymentTransactionStatus;
 import backend.exception.ResourceNotFoundException;
+import backend.booking.application.port.out.LoadDiscountCodeForBookingPort;
+import backend.coupon.domain.model.CouponValidationResult;
+import backend.coupon.domain.port.in.ValidateCouponCommand;
+import backend.coupon.domain.port.in.ValidateCouponUseCase;
 import backend.payment.application.model.PaymentSessionResult;
 import backend.payment.application.model.PaymentTransactionDetail;
 import backend.payment.application.model.SePayCheckoutForm;
@@ -46,17 +50,30 @@ public class PaymentCheckoutUseCaseService implements
     private final BuildSePayCheckoutPort buildSePayCheckoutPort;
     private final FindSePayIncomingPaymentPort findSePayIncomingPaymentPort;
     private final CouponUsageTrackingService couponUsageTrackingService;
+    private final ValidateCouponUseCase validateCouponUseCase;
+    private final LoadDiscountCodeForBookingPort loadDiscountCodeForBookingPort;
 
     @Value("${app.booking.payment-expiration-seconds:900}")
     private long paymentExpirationSeconds;
 
-    private static final BigDecimal DEPOSIT_AMOUNT = new BigDecimal("50000");
+    private static final BigDecimal DEPOSIT_RATE = new BigDecimal("0.50");
+
+    public PaymentSessionResult createPaymentSession(
+            Integer bookingId,
+            String rawMethod,
+            String rawPaymentOption,
+            String customerEmail
+    ) {
+        return createPaymentSession(bookingId, rawMethod, rawPaymentOption, null, customerEmail);
+    }
+
     @Override
     @Transactional
     public PaymentSessionResult createPaymentSession(
             Integer bookingId,
             String rawMethod,
             String rawPaymentOption,
+            String rawCouponCode,
             String customerEmail
     ) {
         if (bookingId == null) {
@@ -79,7 +96,8 @@ public class PaymentCheckoutUseCaseService implements
             throw new IllegalStateException("Don dat phong nay da duoc thanh toan");
         }
 
-        validateMethodForPaymentOption(checkoutMethod, paymentOption);
+        boolean pricingChanged = applyCouponIfRequested(booking, rawCouponCode);
+
         closeExistingOpenTransactions(booking.getId());
 
         String paymentId = generatePaymentId();
@@ -100,7 +118,8 @@ public class PaymentCheckoutUseCaseService implements
 
         paymentTransactionRepository.save(paymentTransaction);
 
-        boolean bookingChanged = booking.getPaymentMethod() != selectedPaymentMethod
+        boolean bookingChanged = pricingChanged
+                || booking.getPaymentMethod() != selectedPaymentMethod
                 || booking.getStatus() != BookingStatus.PENDING_PAYMENT;
         if (booking.getPaymentMethod() != selectedPaymentMethod) {
             booking.setPaymentMethod(selectedPaymentMethod);
@@ -188,9 +207,40 @@ public class PaymentCheckoutUseCaseService implements
         return booking.getTotalAmount() == null ? BigDecimal.ZERO : booking.getTotalAmount();
     }
 
+    private boolean applyCouponIfRequested(Booking booking, String rawCouponCode) {
+        if (rawCouponCode == null || rawCouponCode.isBlank()) {
+            return false;
+        }
+
+        BigDecimal originalAmount = booking.getPricePerHour()
+                .multiply(booking.getTotalHours())
+                .setScale(2, RoundingMode.HALF_UP);
+        CouponValidationResult validation = validateCouponUseCase.validate(
+                new ValidateCouponCommand(rawCouponCode.trim(), originalAmount)
+        );
+
+        if (!validation.valid()) {
+            throw new IllegalArgumentException(validation.reason());
+        }
+
+        var discountCode = loadDiscountCodeForBookingPort.loadDiscountCodeForBooking(validation.code())
+                .orElseThrow(() -> new IllegalStateException("Khong the tai ma giam gia hop le de ap dung"));
+        BigDecimal payableAmount = validation.payableAmount().setScale(2, RoundingMode.HALF_UP);
+        boolean changed = booking.getDiscountCode() == null
+                || !booking.getDiscountCode().getId().equals(discountCode.getId())
+                || booking.getTotalAmount() == null
+                || booking.getTotalAmount().compareTo(payableAmount) != 0;
+
+        booking.setDiscountCode(discountCode);
+        booking.setTotalAmount(payableAmount);
+        return changed;
+    }
+
     private BigDecimal resolvePaymentAmount(Booking booking, PaymentOption paymentOption) {
         if (paymentOption == PaymentOption.DEPOSIT) {
-            return resolveAmount(booking).min(DEPOSIT_AMOUNT);
+            return resolveAmount(booking)
+                    .multiply(DEPOSIT_RATE)
+                    .setScale(2, RoundingMode.HALF_UP);
         }
 
         return resolveAmount(booking);
@@ -209,12 +259,6 @@ public class PaymentCheckoutUseCaseService implements
         }
 
         throw new IllegalArgumentException("Lua chon thanh toan khong hop le");
-    }
-
-    private void validateMethodForPaymentOption(CheckoutMethod checkoutMethod, PaymentOption paymentOption) {
-        if (checkoutMethod == CheckoutMethod.CASH) {
-            throw new IllegalArgumentException("Thanh toan tai quay khong duoc ho tro, vui long thanh toan online qua SePay");
-        }
     }
 
     private void closeExistingOpenTransactions(Integer bookingId) {
@@ -398,9 +442,7 @@ public class PaymentCheckoutUseCaseService implements
     }
 
     private enum CheckoutMethod {
-        BANK_TRANSFER("bank_transfer"),
-        E_WALLET("e_wallet"),
-        CASH("cash");
+        BANK_TRANSFER("bank_transfer");
 
         private final String apiValue;
 

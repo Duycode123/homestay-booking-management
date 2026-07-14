@@ -13,13 +13,13 @@ import java.util.List;
 @Configuration
 public class CorsConfig {
 
-    private final String allowedOriginPatterns;
+    private final String allowedOrigins;
 
     public CorsConfig(
-            @Value("${app.cors.allowed-origin-patterns:http://localhost:3000,http://127.0.0.1:3000,https://*.ngrok-free.dev,https://*.ngrok-free.app}")
-            String allowedOriginPatterns
+            @Value("${app.cors.allowed-origins:http://localhost:3000,http://127.0.0.1:3000}")
+            String allowedOrigins
     ) {
-        this.allowedOriginPatterns = allowedOriginPatterns;
+        this.allowedOrigins = allowedOrigins;
     }
 
     @Bean
@@ -27,7 +27,7 @@ public class CorsConfig {
 
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOriginPatterns(parseAllowedOriginPatterns());
+        configuration.setAllowedOrigins(parseAllowedOrigins());
 
         configuration.setAllowedMethods(
                 List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
@@ -50,8 +50,8 @@ public class CorsConfig {
         return source;
     }
 
-    private List<String> parseAllowedOriginPatterns() {
-        return Arrays.stream(allowedOriginPatterns.split(","))
+    private List<String> parseAllowedOrigins() {
+        return Arrays.stream(allowedOrigins.split(","))
                 .map(String::trim)
                 .filter(value -> !value.isBlank())
                 .toList();

@@ -68,7 +68,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
   if (isUser) {
     return (
       <div className="flex justify-end pl-10">
-        <div className="max-w-[85%] rounded-2xl rounded-br-md bg-gradient-to-br from-brand-orange to-brand-orangeHover px-4 py-2.5 text-sm leading-relaxed text-white shadow-[0_8px_24px_rgba(255,117,24,0.35)]">
+        <div className="max-w-[85%] rounded-2xl rounded-br-md bg-gradient-to-br from-brand-orange to-brand-orangeHover px-4 py-2.5 text-sm leading-relaxed text-white shadow-[0_8px_24px_rgba(178,132,85,0.35)]">
           {message.content}
         </div>
       </div>
@@ -228,7 +228,7 @@ export default function ChatbotWidget() {
                 <p className="font-display text-base font-bold tracking-tight">HomeBot</p>
                 <p className="flex items-center gap-1.5 truncate text-xs text-white/85">
                   <span className="inline-block h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-emerald-300" />
-                  Trực tuyến · Trợ lý Homestay Booking
+                  Trực tuyến · Trợ lý The Serene Villa
                 </p>
               </div>
             </div>
@@ -281,7 +281,7 @@ export default function ChatbotWidget() {
             <button
               type="submit"
               disabled={!input.trim() || typing}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-orange to-brand-orangeHover text-white shadow-[0_6px_20px_rgba(255,117,24,0.4)] transition-all hover:brightness-105 active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-orange to-brand-orangeHover text-white shadow-[0_6px_20px_rgba(178,132,85,0.4)] transition-all hover:brightness-105 active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
               aria-label="Gửi tin nhắn"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5 translate-x-0.5" fill="currentColor">
@@ -290,7 +290,7 @@ export default function ChatbotWidget() {
             </button>
           </form>
           <p className="mt-2 text-center text-[10px] text-on-surface-variant/60">
-            HomeBot dùng dữ liệu phòng thực tế · Hỗ trợ thật qua hotline
+            HomeBot hỗ trợ tra cứu phòng · Yêu cầu quan trọng được chuyển tới đội ngũ vận hành
           </p>
         </div>
       </div>
@@ -300,7 +300,7 @@ export default function ChatbotWidget() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={[
-          'pointer-events-auto group relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-brand-orange via-brand-orange to-brand-orangeHover text-white shadow-[0_12px_40px_rgba(255,117,24,0.45)] transition-all duration-300 hover:scale-105 hover:shadow-[0_16px_48px_rgba(255,117,24,0.5)] active:scale-95 sm:h-16 sm:w-16',
+          'pointer-events-auto group relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-brand-orange via-brand-orange to-brand-orangeHover text-white shadow-[0_12px_40px_rgba(178,132,85,0.45)] transition-all duration-300 hover:scale-105 hover:shadow-[0_16px_48px_rgba(178,132,85,0.5)] active:scale-95 sm:h-16 sm:w-16',
           open ? 'rotate-0' : '',
         ].join(' ')}
         aria-label={open ? 'Đóng HomeBot' : 'Mở HomeBot'}

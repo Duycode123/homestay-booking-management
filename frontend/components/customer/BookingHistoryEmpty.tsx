@@ -34,7 +34,7 @@ export default function BookingHistoryEmpty({ variant, onClearFilters }: Booking
         <button
           type="button"
           onClick={onClearFilters}
-          className="relative mt-6 inline-flex h-11 items-center rounded-xl bg-brand-orange px-5 font-display text-sm font-semibold text-white shadow-[0_10px_26px_rgba(255,117,24,0.22)] transition hover:bg-brand-orangeHover active:scale-[0.98]"
+          className="relative mt-6 inline-flex h-11 items-center rounded-xl bg-brand-orange px-5 font-display text-sm font-semibold text-white shadow-[0_10px_26px_rgba(178,132,85,0.22)] transition hover:bg-brand-orangeHover active:scale-[0.98]"
         >
           Xóa bộ lọc
         </button>

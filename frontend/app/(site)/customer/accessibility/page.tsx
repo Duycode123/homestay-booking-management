@@ -50,7 +50,7 @@ export default function CustomerAccessibilityPage() {
     <CustomerPageShell>
       <CustomerPageHeader
         title="Màn hình và trợ năng"
-        description="Tùy chỉnh cách hiển thị để sử dụng Homestay Booking thoải mái hơn."
+        description="Tùy chỉnh cách hiển thị để sử dụng The Serene Villa thoải mái hơn."
       />
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -126,12 +126,12 @@ export default function CustomerAccessibilityPage() {
             {accessCommitments.map((item) => (
               <div
                 key={item}
-                className="flex items-center gap-3 rounded-2xl border border-[#E8E4DC] bg-[#FAF8F4] px-4 py-3"
+                className="flex items-center gap-3 rounded-2xl border border-[#E4DED3] bg-[#FBF9F5] px-4 py-3"
               >
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#FFE8D6] font-display text-xs font-bold text-[#6B3200]">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#EDE0CF] font-display text-xs font-bold text-[#5E4328]">
                   ✓
                 </span>
-                <span className="text-sm font-semibold text-[#1A1C1E]">
+                <span className="text-sm font-semibold text-[#242A27]">
                   {item}
                 </span>
               </div>
@@ -142,18 +142,18 @@ export default function CustomerAccessibilityPage() {
         <CustomerCard>
           <CardTitle
             title="Đã lưu trên trình duyệt"
-            description="Các cài đặt sẽ tự áp dụng lại khi bạn mở Homestay Booking lần sau."
+            description="Các cài đặt sẽ tự áp dụng lại khi bạn mở The Serene Villa lần sau."
           />
           <button
             type="button"
             onClick={handleReset}
-            className="h-12 w-full rounded-2xl border border-[#C9C2B6] bg-white px-5 font-display text-sm font-semibold text-[#1A1C1E] transition hover:bg-[#FAF8F4] focus:outline-none focus:ring-2 focus:ring-[#FF7518]/30"
+            className="h-12 w-full rounded-2xl border border-[#C9C1B4] bg-white px-5 font-display text-sm font-semibold text-[#242A27] transition hover:bg-[#FBF9F5] focus:outline-none focus:ring-2 focus:ring-[#B28455]/30"
           >
             Đặt lại mặc định
           </button>
           <p
             aria-live="polite"
-            className="mt-3 min-h-6 text-sm font-semibold text-[#0A4D27]"
+            className="mt-3 min-h-6 text-sm font-semibold text-[#245545]"
           >
             {message}
           </p>
@@ -172,8 +172,8 @@ function CardTitle({
 }) {
   return (
     <div className="mb-5">
-      <h2 className="font-display text-xl font-bold text-[#1A1C1E]">{title}</h2>
-      <p className="mt-1 text-sm leading-6 text-[#5C5348]">{description}</p>
+      <h2 className="font-display text-xl font-bold text-[#242A27]">{title}</h2>
+      <p className="mt-1 text-sm leading-6 text-[#6A6C66]">{description}</p>
     </div>
   );
 }
@@ -194,16 +194,16 @@ function SettingSwitch({
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border border-[#E8E4DC] bg-[#FAF8F4] p-5 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-4 rounded-2xl border border-[#E4DED3] bg-[#FBF9F5] p-5 sm:flex-row sm:items-center sm:justify-between">
       <div className="max-w-xl">
         <label
           htmlFor={id}
-          className="font-display text-base font-bold text-[#1A1C1E]"
+          className="font-display text-base font-bold text-[#242A27]"
         >
           {label}
         </label>
-        <p className="mt-1 text-sm leading-6 text-[#5C5348]">{description}</p>
-        <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-[#6B3200]">
+        <p className="mt-1 text-sm leading-6 text-[#6A6C66]">{description}</p>
+        <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-[#5E4328]">
           Trạng thái: {checked ? "Đang bật" : "Đang tắt"}
         </p>
       </div>
@@ -216,10 +216,10 @@ function SettingSwitch({
         disabled={disabled}
         onClick={() => onChange(!checked)}
         className={[
-          "relative h-8 w-14 shrink-0 rounded-full border transition focus:outline-none focus:ring-2 focus:ring-[#FF7518]/40 disabled:cursor-not-allowed disabled:opacity-60",
+          "relative h-8 w-14 shrink-0 rounded-full border transition focus:outline-none focus:ring-2 focus:ring-[#B28455]/40 disabled:cursor-not-allowed disabled:opacity-60",
           checked
-            ? "border-[#FF7518] bg-[#FF7518]"
-            : "border-[#C9C2B6] bg-white",
+            ? "border-[#B28455] bg-[#B28455]"
+            : "border-[#C9C1B4] bg-white",
         ].join(" ")}
       >
         <span
@@ -243,8 +243,8 @@ function FontSizeControl({
   onChange: (value: AccessibilitySettings["fontSize"]) => void;
 }) {
   return (
-    <fieldset className="rounded-2xl border border-[#E8E4DC] bg-[#FAF8F4] p-5">
-      <legend className="font-display text-base font-bold text-[#1A1C1E]">
+    <fieldset className="rounded-2xl border border-[#E4DED3] bg-[#FBF9F5] p-5">
+      <legend className="font-display text-base font-bold text-[#242A27]">
         Cỡ chữ
       </legend>
       <div
@@ -264,10 +264,10 @@ function FontSizeControl({
               disabled={disabled}
               onClick={() => onChange(option.value)}
               className={[
-                "rounded-2xl border px-4 py-3 text-left transition focus:outline-none focus:ring-2 focus:ring-[#FF7518]/40 disabled:cursor-not-allowed disabled:opacity-60",
+                "rounded-2xl border px-4 py-3 text-left transition focus:outline-none focus:ring-2 focus:ring-[#B28455]/40 disabled:cursor-not-allowed disabled:opacity-60",
                 selected
-                  ? "border-[#FF7518] bg-[#FFE8D6] text-[#6B3200]"
-                  : "border-[#C9C2B6] bg-white text-[#1A1C1E] hover:bg-[#FFF7EF]",
+                  ? "border-[#B28455] bg-[#EDE0CF] text-[#5E4328]"
+                  : "border-[#C9C1B4] bg-white text-[#242A27] hover:bg-[#FFF7EF]",
               ].join(" ")}
             >
               <span className="block font-display text-sm font-bold">

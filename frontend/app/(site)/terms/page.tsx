@@ -4,6 +4,14 @@ import {
   PublicContentPage,
   PublicContentSection,
 } from '@/components/public/PublicContentPage'
+import { createPublicPageMetadata } from '@/lib/seo'
+
+export const metadata = createPublicPageMetadata({
+  title: 'Điều khoản sử dụng',
+  description:
+    'Đọc điều khoản áp dụng khi tạo tài khoản, đặt phòng, thanh toán và sử dụng dịch vụ của The Serene Villa.',
+  path: '/terms',
+})
 
 export default function TermsPage() {
   return (
@@ -11,20 +19,20 @@ export default function TermsPage() {
       <PublicContentHeader
         eyebrow="Pháp lý"
         title="Điều khoản sử dụng"
-        description="Điều khoản này quy định cách bạn sử dụng website và dịch vụ đặt phòng homestay của Homestay Booking."
+        description="Điều khoản này quy định cách bạn sử dụng website và dịch vụ đặt phòng homestay của The Serene Villa."
         updatedAt="Tháng 7, 2026"
       />
 
       <PublicContentSection title="1. Chấp nhận điều khoản">
         <p>
-          Khi truy cập Homestay Booking hoặc tạo tài khoản, bạn đồng ý tuân thủ các điều khoản này. Nếu không đồng ý, vui
+          Khi truy cập The Serene Villa hoặc tạo tài khoản, bạn đồng ý tuân thủ các điều khoản này. Nếu không đồng ý, vui
           lòng ngừng sử dụng dịch vụ.
         </p>
       </PublicContentSection>
 
       <PublicContentSection title="2. Tài khoản người dùng">
         <p>Bạn chịu trách nhiệm bảo mật thông tin đăng nhập và mọi hoạt động phát sinh từ tài khoản của mình.</p>
-        <p>Thông tin đăng ký phải chính xác. Homestay Booking có quyền tạm khóa tài khoản khi phát hiện hành vi gian lận.</p>
+        <p>Thông tin đăng ký phải chính xác. The Serene Villa có quyền tạm khóa tài khoản khi phát hiện hành vi gian lận.</p>
       </PublicContentSection>
 
       <PublicContentSection title="3. Đặt phòng và thanh toán">
@@ -55,7 +63,7 @@ export default function TermsPage() {
 
       <PublicContentSection title="5. Giới hạn trách nhiệm">
         <p>
-          Homestay Booking nỗ lực duy trì hệ thống ổn định nhưng không chịu trách nhiệm cho gián đoạn do sự cố kỹ thuật ngoài
+          The Serene Villa nỗ lực duy trì hệ thống ổn định nhưng không chịu trách nhiệm cho gián đoạn do sự cố kỹ thuật ngoài
           tầm kiểm soát hợp lý. Trách nhiệm bồi thường (nếu có) được xử lý theo quy định pháp luật hiện hành.
         </p>
       </PublicContentSection>

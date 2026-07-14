@@ -13,33 +13,25 @@ export default function CheckoutSummary({
   const summary = calculateCheckoutSummary(booking, appliedDiscount)
 
   return (
-    <div className="rounded-2xl bg-[#FAF8F4] p-3.5">
+    <div className="rounded-2xl border border-[#E9E3D9] bg-white px-4 py-3">
       <div className="space-y-1">
         <PaymentRow label="Tiền phòng" value={formatCurrency(summary.roomPrice)} />
-        {summary.addonsTotal > 0 && (
-          <PaymentRow label="Tiện nghi thêm" value={formatCurrency(summary.addonsTotal)} />
-        )}
+        {summary.addonsTotal > 0 && <PaymentRow label="Tiện nghi thêm" value={formatCurrency(summary.addonsTotal)} />}
         {appliedDiscount && (
-          <>
-            <PaymentRow label="Tạm tính" value={formatCurrency(summary.subtotal)} />
-            <PaymentRow
-              label={`Mã giảm giá (${appliedDiscount.code})`}
-              value={`-${formatCurrency(appliedDiscount.discountAmount)}`}
-              green
-            />
-          </>
+          <PaymentRow
+            label={`Mã giảm giá (${appliedDiscount.code})`}
+            value={`-${formatCurrency(appliedDiscount.discountAmount)}`}
+            green
+          />
         )}
       </div>
 
-      <div className="my-3 h-px bg-[#E8E4DC]" />
-
-      <div className="rounded-2xl bg-white px-3 py-3.5">
-        <div className="flex items-end justify-between gap-3">
-          <span className="font-display text-sm font-bold">Tổng thanh toán</span>
-          <span className="shrink-0 text-nowrap font-display text-2xl font-bold text-[#FF7518]">
-            {formatCurrency(summary.total)}
-          </span>
-        </div>
+      <div className="my-2 h-px bg-[#E4DED3]" />
+      <div className="flex items-end justify-between gap-3 py-1.5">
+        <span className="font-display text-sm font-bold">Tổng giá trị booking</span>
+        <span className="shrink-0 text-nowrap font-display text-xl font-bold text-[#B28455]">
+          {formatCurrency(summary.total)}
+        </span>
       </div>
     </div>
   )
@@ -48,12 +40,8 @@ export default function CheckoutSummary({
 function PaymentRow({ label, value, green = false }: { label: string; value: string; green?: boolean }) {
   return (
     <div className="flex items-center justify-between gap-3 py-1.5 text-sm">
-      <span className="min-w-0 text-[#5C5348]">{label}</span>
-      <span
-        className={['shrink-0 text-nowrap text-right font-semibold', green ? 'text-[#0A4D27]' : 'text-[#1A1C1E]'].join(
-          ' ',
-        )}
-      >
+      <span className="min-w-0 text-[#6A6C66]">{label}</span>
+      <span className={['shrink-0 text-nowrap text-right font-semibold', green ? 'text-[#245545]' : 'text-[#242A27]'].join(' ')}>
         {value}
       </span>
     </div>

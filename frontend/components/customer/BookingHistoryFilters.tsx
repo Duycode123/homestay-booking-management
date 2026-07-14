@@ -1,5 +1,7 @@
 'use client'
 
+import ProjectSelect from '@/components/ui/ProjectSelect'
+
 import { useState } from 'react'
 import { formatBookingStatus } from '@/lib/customer-booking-service'
 import type { CustomerBookingStatus } from '@/lib/customer-booking-service'
@@ -51,13 +53,13 @@ export default function BookingHistoryFilters({
 
   return (
     <div className="overflow-hidden rounded-[20px] border border-outline-variant bg-gradient-to-br from-white via-surface-container-low/40 to-primary-container/15 shadow-[var(--shadow-card)]">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-outline-variant/80 px-4 py-4 sm:px-5">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-5">
         <div className="flex items-center gap-3">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-container text-brand-orange">
             <IconFilter className="h-5 w-5" />
           </span>
           <div>
-            <p className="font-display text-sm font-bold text-on-surface">Bộ lọc</p>
+            <p className="font-display text-sm font-bold text-on-surface">Tìm kiếm & bộ lọc</p>
             <p className="text-xs text-on-surface-variant">
               {filteredCount} / {totalCount} đơn đặt phòng
             </p>
@@ -86,8 +88,36 @@ export default function BookingHistoryFilters({
         </div>
       </div>
 
+      <div className="grid gap-3 border-t border-outline-variant/70 px-4 py-4 sm:grid-cols-[1fr_220px] sm:px-5">
+        <label className="relative block">
+          <span className="sr-only">Tìm theo tên phòng hoặc mã booking</span>
+          <SearchIcon />
+          <input
+            type="search"
+            value={value.query}
+            disabled={disabled}
+            onChange={(event) => set({ query: event.target.value })}
+            placeholder="Tìm tên phòng hoặc mã booking..."
+            className={`${inputClassName} pl-10`}
+          />
+        </label>
+        <label className="block">
+          <span className="sr-only">Trạng thái booking</span>
+          <ProjectSelect
+            value={value.status}
+            disabled={disabled}
+            onChange={(event) => set({ status: event.target.value as CustomerBookingStatus | 'ALL' })}
+            className={inputClassName}
+          >
+            {STATUS_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </ProjectSelect>
+        </label>
+      </div>
+
       {expanded && (
-        <div className="space-y-4 px-4 py-4 sm:px-5 sm:py-5">
+        <div className="space-y-4 border-t border-outline-variant/70 px-4 py-4 sm:px-5 sm:py-5">
           <div className="flex flex-wrap gap-2">
             {DATE_PRESETS.map((preset) => (
               <button
@@ -102,7 +132,7 @@ export default function BookingHistoryFilters({
             ))}
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <label className="block">
               <span className="mb-1.5 block font-display text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant">
                 Từ ngày
@@ -157,26 +187,18 @@ export default function BookingHistoryFilters({
               />
             </label>
 
-            <label className="block sm:col-span-2 lg:col-span-1">
-              <span className="mb-1.5 block font-display text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant">
-                Trạng thái
-              </span>
-              <select
-                value={value.status}
-                disabled={disabled}
-                onChange={(event) => set({ status: event.target.value as CustomerBookingStatus | 'ALL' })}
-                className={inputClassName}
-              >
-                {STATUS_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
           </div>
         </div>
       )}
     </div>
+  )
+}
+
+function SearchIcon() {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <circle cx="11" cy="11" r="6" />
+      <path d="m16 16 4 4" strokeLinecap="round" />
+    </svg>
   )
 }

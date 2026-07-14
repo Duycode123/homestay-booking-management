@@ -6,6 +6,7 @@ import {
   saveReviewDraft,
   type BookingReview,
   type ReviewDraft,
+  type ReviewImage,
   type SubmitBookingReviewPayload,
 } from '@/lib/review-service'
 
@@ -17,7 +18,35 @@ export type CustomerBookingStatus =
   | 'COMPLETED'
   | 'CANCELLED'
 
-export type { BookingReview, ReviewDraft, SubmitBookingReviewPayload }
+export type CancellationRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
+export type CustomerRefundStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'RETRY_REQUIRED'
+
+export type CustomerRefundRecord = {
+  refundId: number
+  amount: number
+  status: CustomerRefundStatus
+  method: 'ORIGINAL_PAYMENT_METHOD' | 'MANUAL_BANK_TRANSFER' | 'CASH_COUNTER'
+  transactionReference?: string | null
+  expectedAt?: string | null
+  processingAt?: string | null
+  completedAt?: string | null
+  recipientBankCode?: string | null
+  recipientBankName?: string | null
+  recipientAccountNumber?: string | null
+  recipientAccountHolder?: string | null
+  transferContent?: string | null
+  transferQrUrl?: string | null
+}
+
+export type RefundDestinationPayload = {
+  reason: string
+  refundBankCode: string
+  refundBankName: string
+  refundAccountNumber: string
+  refundAccountHolder: string
+}
+
+export type { BookingReview, ReviewDraft, ReviewImage, SubmitBookingReviewPayload }
 
 export type BookingHistoryItem = {
   bookingId: string
@@ -37,6 +66,19 @@ export type BookingHistoryItem = {
   review?: BookingReview
   canReview?: boolean
   alreadyReviewed?: boolean
+  cancellationRequestStatus?: CancellationRequestStatus
+  cancellationReason?: string
+  cancellationRequestedAt?: string
+  cancellationReviewedAt?: string
+  cancellationAdminNote?: string
+  refundAmount?: number
+  refundPercentage?: number
+  refundMethod?: string
+  expectedRefundAt?: string
+  refundBankCode?: string
+  refundBankName?: string
+  refundAccountNumber?: string
+  refundAccountHolder?: string
 }
 
 type ApiResponse<T> = {
@@ -69,6 +111,19 @@ type BackendBooking = {
   equipmentNotes?: string | null
   canReview?: boolean | null
   alreadyReviewed?: boolean | null
+  cancellationRequestStatus?: CancellationRequestStatus | null
+  cancellationReason?: string | null
+  cancellationRequestedAt?: string | null
+  cancellationReviewedAt?: string | null
+  cancellationAdminNote?: string | null
+  refundAmount?: number | string | null
+  refundPercentage?: number | null
+  refundMethod?: string | null
+  expectedRefundAt?: string | null
+  refundBankCode?: string | null
+  refundBankName?: string | null
+  refundAccountNumber?: string | null
+  refundAccountHolder?: string | null
 }
 
 type BackendReview = {
@@ -79,7 +134,17 @@ type BackendReview = {
   roomName: string
   rating: number
   content: string
+  images?: Array<{
+    id: number
+    imageUrl: string
+    displayOrder: number
+  }>
   createdAt: string
+}
+
+type ReviewImageUploadResponse = {
+  publicId: string
+  secureUrl: string
 }
 
 function parseAmount(value: number | string | null | undefined) {
@@ -144,6 +209,19 @@ function mapBooking(booking: BackendBooking): BookingHistoryItem {
     note: booking.note?.trim() || booking.equipmentNotes?.trim() || undefined,
     canReview: booking.canReview ?? undefined,
     alreadyReviewed: booking.alreadyReviewed ?? undefined,
+    cancellationRequestStatus: booking.cancellationRequestStatus ?? undefined,
+    cancellationReason: booking.cancellationReason?.trim() || undefined,
+    cancellationRequestedAt: booking.cancellationRequestedAt ?? undefined,
+    cancellationReviewedAt: booking.cancellationReviewedAt ?? undefined,
+    cancellationAdminNote: booking.cancellationAdminNote?.trim() || undefined,
+    refundAmount: booking.refundAmount == null ? undefined : parseAmount(booking.refundAmount),
+    refundPercentage: booking.refundPercentage ?? undefined,
+    refundMethod: booking.refundMethod?.trim() || undefined,
+    expectedRefundAt: booking.expectedRefundAt ?? undefined,
+    refundBankCode: booking.refundBankCode?.trim() || undefined,
+    refundBankName: booking.refundBankName?.trim() || undefined,
+    refundAccountNumber: booking.refundAccountNumber?.trim() || undefined,
+    refundAccountHolder: booking.refundAccountHolder?.trim() || undefined,
   }
 }
 
@@ -164,7 +242,11 @@ function mapBackendReviewToUiReview(review: BackendReview, booking: BookingHisto
     title: buildReviewTitle(content),
     content,
     tags: [],
-    images: [],
+    images: (review.images ?? []).map((image, index) => ({
+      id: String(image.id),
+      name: `Ảnh đánh giá ${index + 1}`,
+      previewUrl: image.imageUrl,
+    })),
     createdAt: review.createdAt,
   }
 }
@@ -289,6 +371,7 @@ export async function submitBookingReview(payload: SubmitBookingReviewPayload): 
       bookingId: payload.backendBookingId,
       rating: payload.rating,
       content: payload.content.trim(),
+      imageUrls: payload.imageUrls ?? [],
     })
 
     const booking: BookingHistoryItem = {
@@ -311,6 +394,58 @@ export async function submitBookingReview(payload: SubmitBookingReviewPayload): 
       throw new Error(error.response?.data?.message || 'Không thể gửi đánh giá. Vui lòng thử lại.')
     }
 
+    throw error
+  }
+}
+
+export async function uploadReviewImage(file: File) {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  try {
+    const response = await api.post<ApiResponse<ReviewImageUploadResponse>>('/api/reviews/images', formData)
+    return response.data.data
+  } catch (error) {
+    if (axios.isAxiosError<{ message?: string }>(error)) {
+      throw new Error(error.response?.data?.message || 'Không thể tải ảnh đánh giá. Vui lòng thử lại.')
+    }
+    throw error
+  }
+}
+
+export async function requestBookingCancellation(
+  backendBookingId: number,
+  destination: RefundDestinationPayload,
+): Promise<BookingHistoryItem> {
+  try {
+    const response = await api.put<ApiResponse<{ booking: BackendBooking }>>(
+      `/api/bookings/${backendBookingId}/cancel`,
+      {
+        reason: destination.reason.trim(),
+        refundBankCode: destination.refundBankCode,
+        refundBankName: destination.refundBankName.trim(),
+        refundAccountNumber: destination.refundAccountNumber.replace(/\s+/g, ''),
+        refundAccountHolder: destination.refundAccountHolder.trim().replace(/\s+/g, ' ').toLocaleUpperCase('vi-VN'),
+      },
+    )
+    return mapBooking(response.data.data.booking)
+  } catch (error) {
+    if (axios.isAxiosError<{ message?: string }>(error)) {
+      throw new Error(error.response?.data?.message || 'Không thể gửi yêu cầu hủy phòng. Vui lòng thử lại.')
+    }
+    throw error
+  }
+}
+
+export async function getBookingRefund(bookingId: number): Promise<CustomerRefundRecord | null> {
+  try {
+    const response = await api.get<ApiResponse<CustomerRefundRecord>>(`/api/bookings/${bookingId}/refund`)
+    return response.data.data
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) return null
+    if (axios.isAxiosError<{ message?: string }>(error)) {
+      throw new Error(error.response?.data?.message || 'Không thể tải trạng thái hoàn tiền.')
+    }
     throw error
   }
 }

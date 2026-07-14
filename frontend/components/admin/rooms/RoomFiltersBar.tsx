@@ -1,5 +1,7 @@
 'use client'
 
+import ProjectSelect from '@/components/ui/ProjectSelect'
+
 import { IconSearch } from '@/components/admin/AdminIcons'
 import type { AdminRoomTypeOption, RoomFilters } from '@/lib/admin/rooms/types'
 import { roomStatusLabels, roomStatusOptions } from '@/lib/admin/rooms/types'
@@ -108,7 +110,7 @@ export default function RoomFiltersBar({ filters, roomTypes, onChange, resultCou
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(220px,0.8fr)_minmax(260px,1.2fr)]">
           <label className="block">
             <span className={labelClass}>Trạng thái</span>
-            <select
+            <ProjectSelect
               value={filters.status}
               onChange={(event) => set({ status: event.target.value as RoomFilters['status'] })}
               className={inputClass}
@@ -119,12 +121,12 @@ export default function RoomFiltersBar({ filters, roomTypes, onChange, resultCou
                   {roomStatusLabels[status]}
                 </option>
               ))}
-            </select>
+            </ProjectSelect>
           </label>
 
           <label className="block">
             <span className={labelClass}>Sắp xếp</span>
-            <select
+            <ProjectSelect
               value={filters.sortBy}
               onChange={(event) => set({ sortBy: event.target.value as RoomFilters['sortBy'] })}
               className={inputClass}
@@ -133,7 +135,7 @@ export default function RoomFiltersBar({ filters, roomTypes, onChange, resultCou
               <option value="price-asc">Giá thấp đến cao</option>
               <option value="price-desc">Giá cao đến thấp</option>
               <option value="capacity">Sức chứa lớn nhất</option>
-            </select>
+            </ProjectSelect>
           </label>
         </div>
       </div>

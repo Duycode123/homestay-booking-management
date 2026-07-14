@@ -6,6 +6,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.util.List;
+import java.util.stream.Stream;
+
 @Getter
 @Builder
 @AllArgsConstructor
@@ -18,6 +21,7 @@ public class RoomResponse {
     private RoomStatus status;
     private String description;
     private String imageUrl;
+    private List<String> imageUrls;
 
     public static RoomResponse from(Room room) {
         return RoomResponse.builder()
@@ -29,6 +33,9 @@ public class RoomResponse {
                 .status(room.getStatus())
                 .description(room.getDescription())
                 .imageUrl(room.getImageUrl())
+                .imageUrls(Stream.of(room.getImageUrl(), room.getImageUrl2(), room.getImageUrl3(), room.getImageUrl4())
+                        .filter(value -> value != null && !value.isBlank())
+                        .toList())
                 .build();
     }
 }

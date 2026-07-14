@@ -4,12 +4,14 @@ import backend.entity.Booking;
 import backend.entity.BookingStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import jakarta.persistence.LockModeType;
 
 public interface BookingRepository extends JpaRepository<Booking, Integer>, JpaSpecificationExecutor<Booking> {
 
@@ -17,9 +19,15 @@ public interface BookingRepository extends JpaRepository<Booking, Integer>, JpaS
 
     boolean existsByRoom_Id(Integer roomId);
 
+    boolean existsByRoom_IdAndStatusIn(Integer roomId, List<BookingStatus> statuses);
+
     boolean existsByDiscountCode_Id(Integer discountCodeId);
 
     Optional<Booking> findByIdAndCustomer_Account_Email(Integer bookingId, String email);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT b FROM Booking b WHERE b.id = :bookingId")
+    Optional<Booking> findByIdForUpdate(@Param("bookingId") Integer bookingId);
 
     List<Booking> findTop10ByStatusNotOrderByCreatedAtDesc(BookingStatus status);
 
@@ -59,11 +67,13 @@ public interface BookingRepository extends JpaRepository<Booking, Integer>, JpaS
             SELECT b
             FROM Booking b
             WHERE b.status = :pendingStatus
+              AND b.paymentMethod <> :excludedPaymentMethod
               AND b.createdAt IS NOT NULL
               AND b.createdAt < :cutoff
             """)
     List<Booking> findStalePendingBookings(
             @Param("pendingStatus") BookingStatus pendingStatus,
+            @Param("excludedPaymentMethod") backend.entity.PaymentMethod excludedPaymentMethod,
             @Param("cutoff") LocalDateTime cutoff
     );
 

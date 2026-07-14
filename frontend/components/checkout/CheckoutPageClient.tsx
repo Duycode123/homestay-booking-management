@@ -33,11 +33,10 @@ import {
   createPaymentSession,
   getPaymentTransactionDetail,
   type CreatePaymentSessionResponse,
-  type PaymentMethod,
   type PaymentOption,
 } from '@/lib/payment-service'
 
-const DEPOSIT_AMOUNT = 50000
+const DEPOSIT_RATE = 0.5
 
 export default function CheckoutPageClient() {
   const router = useRouter()
@@ -46,7 +45,6 @@ export default function CheckoutPageClient() {
   const [booking, setBooking] = useState<CheckoutBooking | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(getInitialPaymentMethod(searchParams.get('method')))
   const [paymentOption, setPaymentOption] = useState<PaymentOption>(getInitialPaymentOption(searchParams.get('paymentOption')))
   const [isPaying, setIsPaying] = useState(false)
   const [paymentSession, setPaymentSession] = useState<CreatePaymentSessionResponse | null>(null)
@@ -126,7 +124,6 @@ export default function CheckoutPageClient() {
         }
 
         setPaymentOption(getInitialPaymentOption(checkoutParams.get('paymentOption')))
-        setPaymentMethod(getInitialPaymentMethod(checkoutParams.get('method')))
       } catch {
         if (mounted) {
           setError('Không thể tải thông tin thanh toán. Vui lòng thử lại.')
@@ -144,13 +141,6 @@ export default function CheckoutPageClient() {
       mounted = false
     }
   }, [searchParams])
-
-  useEffect(() => {
-    // Ca dat coc lan thanh toan toan bo deu di qua VietQR/SePay bang chuyen khoan.
-    if (paymentMethod !== 'bank_transfer') {
-      setPaymentMethod('bank_transfer')
-    }
-  }, [paymentMethod])
 
   useEffect(() => {
     if (!paymentSession || paymentSession.status !== 'pending') {
@@ -247,8 +237,9 @@ export default function CheckoutPageClient() {
   )
   const amountToPayNow = useMemo(() => {
     if (!summary) return 0
-    return paymentOption === 'deposit' ? Math.min(DEPOSIT_AMOUNT, summary.total) : summary.total
+    return paymentOption === 'deposit' ? Math.round(summary.total * DEPOSIT_RATE) : summary.total
   }, [paymentOption, summary])
+  const remainingAmount = summary ? Math.max(0, summary.total - amountToPayNow) : 0
   const secondsUntilExpiry = useMemo(
     () => getSecondsUntilExpiry(paymentSession?.expiresAt, now),
     [now, paymentSession?.expiresAt],
@@ -307,8 +298,9 @@ export default function CheckoutPageClient() {
     try {
       const session = await createPaymentSession({
         bookingId: booking.backendBookingId,
-        method: paymentMethod,
+        method: 'bank_transfer',
         paymentOption,
+        couponCode: appliedDiscount?.code,
       })
 
       if (session.status === 'success') {
@@ -339,196 +331,188 @@ export default function CheckoutPageClient() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F5F2EC] text-[#1A1C1E]">
-
-      <section className="mx-auto max-w-7xl px-6 py-8">
-        <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
-          <div>
-            <div className="mb-2 flex flex-wrap items-center gap-2 font-display text-sm text-[#5C5348]">
-              <Link href="/" className="hover:text-[#1A1C1E]">
-                Trang chủ
-              </Link>
-              <span>/</span>
-              <Link href={confirmationHref} className="hover:text-[#1A1C1E]">
-                Xác nhận đặt phòng
-              </Link>
-              <span>/</span>
-              <span className="text-[#1A1C1E]">Thanh toán</span>
-            </div>
-            <h1 className="font-display text-4xl font-bold tracking-tight">Thanh toán đặt phòng</h1>
-            <p className="mt-2 text-[#5C5348]">
-              Hệ thống đang đọc lại booking từ backend trước khi tạo phiên thanh toán SePay.
-            </p>
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(197,154,104,0.12),transparent_34%),#F6F3ED] text-[#242A27]">
+      <section className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-9 lg:px-8">
+        <div className="mb-7">
+          <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-[#74776F]">
+            <Link href="/" className="transition hover:text-[#173F35]">Trang chủ</Link>
+            <span aria-hidden>/</span>
+            <Link href={confirmationHref} className="transition hover:text-[#173F35]">Xác nhận đặt phòng</Link>
+            <span aria-hidden>/</span>
+            <span className="font-semibold text-[#173F35]">Thanh toán</span>
           </div>
-          <span className="w-fit rounded-full bg-[#FFE8D6] px-4 py-2 font-display text-sm font-bold text-[#6B3200]">
-            Bước thanh toán
-          </span>
+
+          <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#B28455]">Bước cuối cùng</p>
+              <h1 className="mt-2 font-display text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">Hoàn tất thanh toán</h1>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-[#686D68] sm:text-base">
+                Kiểm tra lại booking, chọn trả toàn bộ hoặc đặt cọc 50%, sau đó quét mã để xác nhận giữ phòng.
+              </p>
+            </div>
+            <CheckoutProgress />
+          </div>
         </div>
 
         {isLoading && (
-          <div className="rounded-[24px] border border-[#E8E4DC] bg-white p-6 shadow-[0_4px_24px_rgba(26,28,30,0.06)]">
-            <p className="font-display text-lg font-semibold">Đang tải thông tin thanh toán...</p>
+          <div className="grid animate-pulse gap-6 lg:grid-cols-[0.82fr_1.18fr]">
+            <div className="h-[420px] rounded-[28px] border border-[#E4DED3] bg-white/70" />
+            <div className="h-[520px] rounded-[28px] border border-[#E4DED3] bg-white/70" />
           </div>
         )}
 
         {!isLoading && error && (
-          <div className="rounded-[24px] border border-[#C62828]/20 bg-white p-6 shadow-[0_4px_24px_rgba(26,28,30,0.06)]">
-            <h2 className="font-display text-xl font-bold text-[#C62828]">Không thể mở checkout</h2>
-            <p className="mt-2 text-[#5C5348]">{error}</p>
-            <Link
-              href="/rooms"
-              className="mt-5 inline-flex h-12 items-center justify-center rounded-2xl bg-[#FF7518] px-6 font-display font-semibold text-white transition hover:bg-[#E6640F]"
-            >
-              Quay lại chọn phòng
-            </Link>
+          <div className="rounded-[28px] border border-[#E8C7CB] bg-white p-7 shadow-[0_18px_48px_rgba(55,45,40,0.08)] sm:p-9">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FCEAEC] text-[#B52D40]"><AlertIcon /></div>
+            <h2 className="mt-5 font-display text-2xl font-bold text-[#8F2433]">Chưa thể mở trang thanh toán</h2>
+            <p className="mt-2 max-w-2xl leading-6 text-[#6A6C66]">{error}</p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <Link href={missingCheckoutReturnHref} className="inline-flex min-h-[50px] items-center justify-center rounded-2xl bg-[#173F35] px-6 font-display font-bold text-white transition hover:bg-[#0F322A]">Quay lại đặt phòng</Link>
+              <Link href="/customer/bookings" className="inline-flex min-h-[50px] items-center justify-center rounded-2xl border border-[#D9D1C5] bg-white px-6 font-display font-bold transition hover:bg-[#FBF9F5]">Xem lịch sử booking</Link>
+            </div>
           </div>
         )}
 
         {!isLoading && booking && summary && (
-          <div className="grid gap-6 lg:grid-cols-3 lg:items-start">
-            <div className="min-w-0 lg:col-span-2">
+          <div className="grid gap-6 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
+            <div className="min-w-0 lg:sticky lg:top-24">
               <CheckoutBookingInfo booking={booking} />
             </div>
 
-            <aside className="w-full max-w-md rounded-[24px] border border-[#E8E4DC] bg-white p-4 shadow-[0_4px_18px_rgba(26,28,30,0.06)] sm:p-5 lg:sticky lg:top-24 lg:col-span-1 lg:max-h-[calc(100vh-7rem)] lg:justify-self-end lg:overflow-y-auto">
-              <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="mb-1 text-xs font-semibold text-[#5C5348]">Mã: {booking.bookingId}</p>
-                  <p className="font-display text-xs font-bold uppercase tracking-wider text-[#5C5348]">
-                    Tóm tắt thanh toán
-                  </p>
-                  <h2 className="mt-1 font-display text-xl font-bold">Thanh toán</h2>
+            <aside className="overflow-hidden rounded-[28px] border border-[#DED7CB] bg-white shadow-[0_22px_60px_rgba(45,42,36,0.09)]">
+              <div className="border-b border-[#E9E3D9] bg-gradient-to-r from-[#F9F5EE] to-white px-5 py-5 sm:px-7 sm:py-6">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#B28455]">Thanh toán bảo mật</p>
+                    <h2 className="mt-2 font-display text-2xl font-bold">Chọn khoản thanh toán</h2>
+                    <p className="mt-1 text-sm text-[#6A6C66]">Booking {booking.bookingId}</p>
+                  </div>
+                  <span className="inline-flex items-center gap-2 rounded-full bg-[#EAF4EF] px-3 py-2 text-xs font-bold text-[#205746]">
+                    <ShieldCheckIcon /> Đã giữ chỗ
+                  </span>
                 </div>
-                <span className="rounded-full bg-[#E8F5EC] px-3 py-1 font-display text-xs font-bold text-[#0A4D27]">
-                  Đã tạo booking
-                </span>
               </div>
 
-              <CheckoutSummary booking={booking} appliedDiscount={appliedDiscount} />
-
-              <div className="mt-4">
-                <CheckoutCouponInput
+              <div className="p-5 sm:p-7">
+                <CheckoutPaymentMethods
                   bookingId={booking.bookingId}
-                  subtotal={summary.subtotal}
-                  appliedDiscount={appliedDiscount}
-                  onApplied={handleApplyCoupon}
-                  onRemoved={handleRemoveCoupon}
-                  disabled={isPaying}
+                  paymentOption={paymentOption}
+                  total={summary.total}
+                  onChange={(option) => {
+                    setPaymentOption(option)
+                    setPaymentSession(null)
+                    setPaymentError('')
+                  }}
                 />
-              </div>
 
-              <div className="mt-4 grid gap-3">
-                <div className="rounded-2xl border border-[#E8E4DC] bg-[#FAF8F4] p-3">
-                  <p className="font-display text-sm font-bold text-[#1A1C1E]">Lựa chọn thanh toán</p>
-                  <div className="mt-3 grid gap-2">
-                    <PaymentOptionButton
-                      active={paymentOption === 'deposit'}
-                      title="Đặt cọc 50.000 VND"
-                      description="Thanh toán online bằng VietQR và tự xác nhận qua SePay."
-                      onClick={() => {
-                        setPaymentOption('deposit')
-                        setPaymentError('')
-                      }}
-                    />
-                    <PaymentOptionButton
-                      active={paymentOption === 'full'}
-                      title="Thanh toán toàn bộ"
-                      description="Chuyển khoản toàn bộ bằng mã QR cho booking này."
-                      onClick={() => {
-                        setPaymentOption('full')
-                        setPaymentError('')
-                      }}
+                <details className="group mt-5 rounded-2xl border border-[#E7E0D5] bg-[#FCFAF6]">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 text-sm font-semibold text-[#4F554F]">
+                    <span className="inline-flex items-center gap-2"><TicketIcon /> Bạn có mã giảm giá?</span>
+                    <ChevronDownIcon />
+                  </summary>
+                  <div className="border-t border-[#E7E0D5] p-3">
+                    <CheckoutCouponInput
+                      bookingId={booking.bookingId}
+                      subtotal={summary.subtotal}
+                      appliedDiscount={appliedDiscount}
+                      onApplied={handleApplyCoupon}
+                      onRemoved={handleRemoveCoupon}
+                      disabled={isPaying}
                     />
                   </div>
-                </div>
+                </details>
 
-                <div className="rounded-2xl border border-[#E8E4DC] bg-[#FAF8F4] p-3">
+                <section className="mt-5 rounded-[22px] border border-[#E4DED3] bg-[#FCFAF6] p-4 sm:p-5" aria-labelledby="checkout-summary-title">
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-sm text-[#5C5348]">Cần thanh toán lúc này</span>
-                    <span className="font-display text-xl font-bold text-[#FF7518]">
-                      {formatCurrency(amountToPayNow)}
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#A97643]">Chi tiết thanh toán</p>
+                      <h3 id="checkout-summary-title" className="mt-1 font-display text-lg font-bold">Tóm tắt booking</h3>
+                    </div>
+                    <span className="text-xs font-semibold text-[#74776F]">{booking.bookingId}</span>
+                  </div>
+
+                  <div className="mt-4">
+                    <CheckoutSummary booking={booking} appliedDiscount={appliedDiscount} />
+                  </div>
+
+                  <div className="mt-4 rounded-[18px] border border-[#DCE8E2] bg-[#F1F7F4] p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.13em] text-[#587068]">Thanh toán hôm nay</p>
+                      <span className="mt-1 block font-display text-3xl font-bold text-[#173F35]">
+                        {formatCurrency(amountToPayNow)}
+                      </span>
+                    </div>
+                    <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[#587068] shadow-sm">
+                      {paymentOption === 'deposit' ? 'Cọc 50%' : 'Thanh toán đủ'}
                     </span>
                   </div>
-                  <p className="mt-2 text-xs leading-5 text-[#5C5348]">
-                    Quét mã QR bên dưới và giữ nguyên nội dung chuyển khoản để hệ thống tự cập nhật trạng thái.
-                  </p>
-                </div>
-              </div>
+                  {paymentOption === 'deposit' && (
+                    <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#D7E5DE] pt-3 text-sm text-[#587068]">
+                      <span>Còn lại khi checkout</span>
+                      <span className="font-display font-bold text-[#173F35]">{formatCurrency(remainingAmount)}</span>
+                    </div>
+                  )}
+                  </div>
+                </section>
 
-              {paymentSession && (
-                <div className="mt-5 rounded-2xl border border-[#E8E4DC] bg-[#FAF8F4] p-4">
-                  <div className="flex items-start justify-between gap-3">
+              {paymentSession && paymentSession.paymentUrl && (
+                <div className="mt-5 rounded-[24px] border border-[#DCC9B4] bg-[#FBF7F1] p-4 sm:p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <p className="font-display text-sm font-bold text-[#1A1C1E]">Quét QR thanh toán</p>
-                      <p className="mt-1 text-xs leading-5 text-[#5C5348]">
-                        Hệ thống sẽ tự kiểm tra giao dịch mỗi 10 giây.
+                      <p className="font-display text-lg font-bold text-[#242A27]">Quét mã để thanh toán</p>
+                      <p className="mt-1 text-sm leading-6 text-[#6A6C66]">Mở ứng dụng ngân hàng và quét mã QR bên dưới.</p>
+                    </div>
+                    <span className="rounded-full bg-[#FFF3DD] px-3 py-1.5 text-xs font-bold text-[#98611C]">
+                      {secondsUntilExpiry !== null && secondsUntilExpiry > 0 ? formatCountdown(secondsUntilExpiry) : 'Đang chờ'}
+                    </span>
+                  </div>
+
+                  <div className="mt-4 grid gap-4 sm:grid-cols-[220px_1fr] sm:items-center">
+                    <div className="overflow-hidden rounded-[20px] border border-[#E4DED3] bg-white p-3 shadow-sm">
+                      <img src={paymentSession.paymentUrl} alt={`Mã QR thanh toán ${paymentSession.paymentId}`} className="mx-auto aspect-square w-full object-contain" />
+                    </div>
+                    <div className="grid gap-2 text-sm">
+                      <PaymentSessionRow label="Số tiền" value={formatCurrency(paymentSession.amount)} />
+                      <PaymentSessionRow label="Nội dung" value={paymentSession.paymentId} />
+                      {paymentSession.expiresAt && <PaymentSessionRow label="Hiệu lực đến" value={formatPaymentDate(paymentSession.expiresAt)} />}
+                      <p className="mt-1 rounded-xl bg-white px-3 py-2.5 text-xs leading-5 text-[#6A6C66]">
+                        Vui lòng giữ nguyên số tiền và nội dung. Trang sẽ tự chuyển khi giao dịch được xác nhận.
                       </p>
                     </div>
-                    <span className="rounded-full bg-white px-3 py-1 font-display text-xs font-bold text-[#6B3200]">
-                      {paymentSession.status === 'pending' ? 'Đang chờ' : paymentSession.status}
-                    </span>
                   </div>
 
-                  <div className="mt-4 overflow-hidden rounded-2xl border border-[#E8E4DC] bg-white p-3">
-                    <img
-                      src={paymentSession.paymentUrl}
-                      alt={`Mã QR thanh toán ${paymentSession.paymentId}`}
-                      className="mx-auto aspect-square w-full max-w-[260px] object-contain"
-                    />
-                  </div>
-
-                  <div className="mt-4 grid gap-2 text-sm">
-                    <PaymentSessionRow label="Nội dung chuyển khoản" value={paymentSession.paymentId} />
-                    <PaymentSessionRow label="Số tiền" value={formatCurrency(paymentSession.amount)} />
-                    {secondsUntilExpiry !== null && (
-                      <PaymentSessionRow
-                        label="Còn lại"
-                        value={secondsUntilExpiry > 0 ? formatCountdown(secondsUntilExpiry) : 'Đã hết hạn'}
-                      />
-                    )}
-                    {paymentSession.expiresAt && (
-                      <PaymentSessionRow label="Hết hạn" value={formatPaymentDate(paymentSession.expiresAt)} />
-                    )}
-                  </div>
-
-                  <p className="mt-3 text-xs leading-5 text-[#5C5348]">
-                    {isCheckingPayment
-                      ? 'Đang kiểm tra giao dịch với SePay...'
-                      : 'Sau khi chuyển khoản, trang này sẽ tự chuyển sang kết quả thanh toán.'}
+                  <p className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-[#587068]">
+                    {isCheckingPayment && <span className="h-2 w-2 animate-pulse rounded-full bg-[#2D7B60]" />}
+                    {isCheckingPayment ? 'Đang chờ xác nhận giao dịch...' : 'Hệ thống tự động kiểm tra trạng thái thanh toán.'}
                   </p>
                 </div>
               )}
 
-              <div className="mt-5">
-                <CheckoutPaymentMethods
-                  bookingId={booking.bookingId}
-                  method={paymentMethod}
-                  paymentOption={paymentOption}
-                  onChange={(method) => {
-                    setPaymentMethod(method)
-                    setPaymentError('')
-                  }}
-                />
-              </div>
-
               {paymentError && (
-                <p className="mt-4 rounded-2xl border border-[#C62828]/20 bg-[#FFEBEE] px-4 py-3 text-sm text-[#C62828]">
-                  {paymentError}
-                </p>
+                <div role="alert" className="mt-5 flex items-start gap-3 rounded-2xl border border-[#E8C7CB] bg-[#FCEEEF] px-4 py-3.5 text-sm leading-6 text-[#A3293A]">
+                  <AlertIcon />
+                  <span>{paymentError}</span>
+                </div>
               )}
 
               <button
                 type="button"
                 onClick={handlePay}
                 disabled={isPaying}
-                className="mt-5 h-12 w-full rounded-2xl bg-[#FF7518] font-display font-semibold text-white shadow-[0_8px_18px_rgba(255,117,24,0.22)] transition hover:bg-[#E6640F] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-5 flex min-h-[56px] w-full items-center justify-center gap-2 rounded-2xl bg-[#B88752] px-5 font-display text-base font-bold text-white shadow-[0_14px_30px_rgba(178,132,85,0.26)] transition hover:-translate-y-0.5 hover:bg-[#986B3E] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isPaying
-                  ? 'Đang tạo giao dịch...'
+                  ? 'Đang xử lý...'
                   : paymentSession?.status === 'pending'
                     ? 'Tạo lại mã QR'
-                    : `Tạo mã QR ${formatCurrency(amountToPayNow)}`}
+                    : <>Tạo mã QR · {formatCurrency(amountToPayNow)} <ArrowRightIcon /></>}
               </button>
+                <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-[#74776F]">
+                  <span className="inline-flex items-center gap-1.5"><ShieldCheckIcon /> Thanh toán an toàn</span>
+                  <span className="inline-flex items-center gap-1.5"><ClockSmallIcon /> Tự động xác nhận</span>
+                </div>
+              </div>
             </aside>
           </div>
         )}
@@ -537,11 +521,60 @@ export default function CheckoutPageClient() {
   )
 }
 
+function CheckoutProgress() {
+  const steps = [
+    { number: '1', label: 'Thông tin', complete: true },
+    { number: '2', label: 'Thanh toán', active: true },
+    { number: '3', label: 'Hoàn tất' },
+  ]
+
+  return (
+    <ol className="flex w-full max-w-md items-center rounded-2xl border border-[#E1DACF] bg-white/75 px-3 py-3 shadow-sm backdrop-blur-sm lg:w-auto lg:min-w-[380px]">
+      {steps.map((step, index) => (
+        <li key={step.number} className="flex min-w-0 flex-1 items-center">
+          <span className={[
+            'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold',
+            step.complete ? 'bg-[#DDECE5] text-[#17483B]' : step.active ? 'bg-[#B88752] text-white' : 'bg-[#EEEAE3] text-[#888A84]',
+          ].join(' ')}>
+            {step.complete ? '✓' : step.number}
+          </span>
+          <span className={['ml-2 hidden text-xs font-bold sm:inline', step.active ? 'text-[#202723]' : 'text-[#74776F]'].join(' ')}>{step.label}</span>
+          {index < steps.length - 1 && <span aria-hidden className="mx-2 h-px min-w-3 flex-1 bg-[#DED7CB]" />}
+        </li>
+      ))}
+    </ol>
+  )
+}
+
+function AlertIcon() {
+  return <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /><path d="M12 7.5v5M12 16.5h.01" strokeLinecap="round" /></svg>
+}
+
+function ShieldCheckIcon() {
+  return <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M12 3 5.5 5.8v5.3c0 4.2 2.7 7.7 6.5 9.3 3.8-1.6 6.5-5.1 6.5-9.3V5.8L12 3Z" /><path d="m9 12 2 2 4-4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+}
+
+function TicketIcon() {
+  return <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 7.5A1.5 1.5 0 0 1 5.5 6h13A1.5 1.5 0 0 1 20 7.5v2a2.5 2.5 0 0 0 0 5v2a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 16.5v-2a2.5 2.5 0 0 0 0-5v-2Z" /><path d="M12 8.5v7" strokeDasharray="2 2" /></svg>
+}
+
+function ChevronDownIcon() {
+  return <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4 transition group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="2"><path d="m7 9.5 5 5 5-5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+}
+
+function ClockSmallIcon() {
+  return <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="8" /><path d="M12 8v4l3 2" strokeLinecap="round" /></svg>
+}
+
+function ArrowRightIcon() {
+  return <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14m-5-5 5 5-5 5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+}
+
 function PaymentSessionRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-start justify-between gap-3 rounded-xl bg-white px-3 py-2">
-      <span className="text-[#5C5348]">{label}</span>
-      <span className="text-right font-display font-bold text-[#1A1C1E]">{value}</span>
+      <span className="text-[#6A6C66]">{label}</span>
+      <span className="text-right font-display font-bold text-[#242A27]">{value}</span>
     </div>
   )
 }
@@ -579,42 +612,6 @@ function formatCountdown(totalSeconds: number) {
   const seconds = totalSeconds % 60
 
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
-}
-
-function PaymentOptionButton({
-  active,
-  title,
-  description,
-  onClick,
-}: {
-  active: boolean
-  title: string
-  description: string
-  onClick: () => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        'rounded-2xl border px-3 py-3 text-left transition',
-        active
-          ? 'border-[#FF7518] bg-[#FFE8D6] text-[#6B3200]'
-          : 'border-[#E8E4DC] bg-white text-[#5C5348] hover:bg-[#FAF8F4]',
-      ].join(' ')}
-    >
-      <p className="font-display text-sm font-bold">{title}</p>
-      <p className="mt-1 text-xs leading-5">{description}</p>
-    </button>
-  )
-}
-
-function getInitialPaymentMethod(value: string | null): PaymentMethod {
-  if (value === 'bank_transfer' || value === 'e_wallet' || value === 'cash') {
-    return value
-  }
-
-  return 'bank_transfer'
 }
 
 function getInitialPaymentOption(value: string | null): PaymentOption {

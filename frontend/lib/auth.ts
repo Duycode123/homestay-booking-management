@@ -1,7 +1,6 @@
 import api, {
   clearStoredAuthSession,
   hasStoredAuthSession,
-  refreshSession,
   rememberAuthSession,
 } from '@/lib/api'
 
@@ -65,22 +64,12 @@ export const restoreSession = async () => {
   try {
     return await getSessionRole()
   } catch (error) {
-    try {
-      await refreshSession()
-      return await getSessionRole()
-    } catch (refreshError) {
-      clearStoredAuthSession()
-      throw refreshError
-    }
+    clearStoredAuthSession()
+    throw error
   }
 }
 
 export const logoutSession = async () => {
-  try {
-    await api.post('/api/auth/logout')
-  } catch {
-    // The UI still clears local auth state and returns to the homepage if the API is temporarily unavailable.
-  } finally {
-    clearStoredAuthSession()
-  }
+  await api.post('/api/auth/logout')
+  clearStoredAuthSession()
 }

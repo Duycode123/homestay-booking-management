@@ -1,5 +1,7 @@
 'use client'
 
+import ProjectSelect from '@/components/ui/ProjectSelect'
+
 import { useEffect, useState, type FormEvent } from 'react'
 import {
   EQUIPMENT_STATUS_LABELS,
@@ -111,7 +113,7 @@ export default function EquipmentFormModal({
                 <span className={labelClass}>
                   Phòng <span className="text-error">*</span>
                 </span>
-                <select
+                <ProjectSelect
                   value={form.roomId ?? ''}
                   onChange={(event) => set({ roomId: Number(event.target.value) || null })}
                   disabled={!hasRooms || isSaving}
@@ -123,7 +125,7 @@ export default function EquipmentFormModal({
                       {room.roomName}
                     </option>
                   ))}
-                </select>
+                </ProjectSelect>
                 {errors.roomId && <p className="mt-1 text-xs text-error">{errors.roomId}</p>}
               </label>
 
@@ -147,7 +149,7 @@ export default function EquipmentFormModal({
                   <span className={labelClass}>
                     Loại tiện nghi <span className="text-error">*</span>
                   </span>
-                  <select
+                  <ProjectSelect
                     value={form.equipmentType}
                     onChange={(event) => set({ equipmentType: event.target.value as EquipmentFormData['equipmentType'] })}
                     disabled={isSaving}
@@ -158,14 +160,14 @@ export default function EquipmentFormModal({
                         {EQUIPMENT_TYPE_LABELS[type]}
                       </option>
                     ))}
-                  </select>
+                  </ProjectSelect>
                 </label>
 
                 <label className="block">
                   <span className={labelClass}>
                     Trạng thái <span className="text-error">*</span>
                   </span>
-                  <select
+                  <ProjectSelect
                     value={form.status}
                     onChange={(event) => set({ status: event.target.value as EquipmentFormData['status'] })}
                     disabled={isSaving}
@@ -176,7 +178,7 @@ export default function EquipmentFormModal({
                         {EQUIPMENT_STATUS_LABELS[status]}
                       </option>
                     ))}
-                  </select>
+                  </ProjectSelect>
                 </label>
               </div>
 

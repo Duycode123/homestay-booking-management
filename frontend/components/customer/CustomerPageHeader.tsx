@@ -13,7 +13,7 @@ type CustomerPageHeaderProps = {
 }
 
 export default function CustomerPageHeader({
-  eyebrow = 'Homestay Booking',
+  eyebrow = 'The Serene Villa',
   title,
   description,
   breadcrumbs,

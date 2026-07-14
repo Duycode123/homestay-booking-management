@@ -10,6 +10,7 @@ import RoomDetailPanel from '@/components/admin/rooms/RoomDetailPanel'
 import RoomFiltersBar from '@/components/admin/rooms/RoomFiltersBar'
 import EquipmentFormModal from '@/components/admin/equipment/EquipmentFormModal'
 import RoomEquipmentManager from '@/components/admin/rooms/RoomEquipmentManager'
+import AdminAmenitiesManager from '@/components/admin/rooms/AdminAmenitiesManager'
 import RoomFormModal from '@/components/admin/rooms/RoomFormModal'
 import RoomTable from '@/components/admin/rooms/RoomTable'
 import RoomTierManager from '@/components/admin/rooms/RoomTierManager'
@@ -201,7 +202,7 @@ export default function AdminRoomsPage() {
 
   const handleDelete = async (roomId: string) => {
     await deleteAdminRoom(roomId)
-    setToast('Xóa phòng homestay thành công.')
+    setToast('Đã xóa phòng khỏi danh sách hoạt động.')
     setSelected((current) => (current?.id === roomId ? null : current))
     await loadRooms()
   }
@@ -220,7 +221,7 @@ export default function AdminRoomsPage() {
 
   const handleDeleteRoomType = async (id: number) => {
     await deleteAdminRoomType(id)
-    setToast('Xóa hạng phòng thành công.')
+    setToast('Đã xóa hạng phòng khỏi danh sách hoạt động.')
     await loadRooms()
   }
 
@@ -279,7 +280,7 @@ export default function AdminRoomsPage() {
         <AdminPageHeader
           eyebrow="Quản lý phòng"
           title="Quản lý phòng homestay"
-          description="Theo dõi danh sách phòng, hạng phòng, trạng thái vận hành và tiện nghi cho đội ngũ quản trị Homestay Booking."
+          description="Theo dõi danh sách phòng, hạng phòng, trạng thái vận hành và tiện nghi cho đội ngũ quản trị The Serene Villa."
           breadcrumbs={[
             { label: 'Tổng quan', href: '/admin/dashboard' },
             { label: 'Phòng homestay' },
@@ -381,22 +382,26 @@ export default function AdminRoomsPage() {
             />
           </section>
 
-          <RoomEquipmentManager
-            rooms={rooms}
-            equipment={equipment}
-            isLoading={isLoading}
-            onCreate={(roomId) =>
-              setEquipmentModal({ open: true, mode: 'create', data: createEquipmentInitialForm(roomId) })
+          <AdminAmenitiesManager
+            privateAmenities={
+              <RoomEquipmentManager
+                rooms={rooms}
+                equipment={equipment}
+                isLoading={isLoading}
+                onCreate={(roomId) =>
+                  setEquipmentModal({ open: true, mode: 'create', data: createEquipmentInitialForm(roomId) })
+                }
+                onEdit={(item) =>
+                  setEquipmentModal({
+                    open: true,
+                    mode: 'edit',
+                    equipmentId: item.equipmentId,
+                    data: toEquipmentFormData(item),
+                  })
+                }
+                onDelete={handleDeleteEquipment}
+              />
             }
-            onEdit={(item) =>
-              setEquipmentModal({
-                open: true,
-                mode: 'edit',
-                equipmentId: item.equipmentId,
-                data: toEquipmentFormData(item),
-              })
-            }
-            onDelete={handleDeleteEquipment}
           />
 
           <p className="pb-4 text-center text-[11px] text-on-surface-variant">

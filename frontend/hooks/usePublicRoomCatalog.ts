@@ -9,18 +9,20 @@ import {
 
 type CatalogState = {
   rooms: BookingRoom[]
-  source: 'backend' | 'fallback'
+  source: 'backend' | 'error'
   isLoading: boolean
   isRefreshing: boolean
+  error: string | null
 }
 
 export function usePublicRoomCatalog(): CatalogState {
   const cached = getCachedPublicRoomCatalog()
 
   const [rooms, setRooms] = useState<BookingRoom[]>(cached?.rooms ?? [])
-  const [source, setSource] = useState<'backend' | 'fallback'>(cached?.source ?? 'backend')
+  const [source, setSource] = useState<'backend' | 'error'>(cached?.source ?? 'error')
   const [isLoading, setIsLoading] = useState(!cached)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     let mounted = true
@@ -32,10 +34,18 @@ export function usePublicRoomCatalog(): CatalogState {
       }
 
       try {
-        const catalog = await loadPublicRoomCatalog()
+        // Render cached data immediately, then always reconcile with the backend.
+        // Admin edits can change the primary room image while this SPA is open.
+        const catalog = await loadPublicRoomCatalog({ force: true })
         if (!mounted) return
         setRooms(catalog.rooms)
         setSource(catalog.source)
+        setError(null)
+      } catch {
+        if (!mounted) return
+        setRooms([])
+        setSource('error')
+        setError('Không thể kết nối backend. Vui lòng kiểm tra dịch vụ và thử lại.')
       } finally {
         if (!mounted) return
         setIsLoading(false)
@@ -50,5 +60,5 @@ export function usePublicRoomCatalog(): CatalogState {
     }
   }, [])
 
-  return { rooms, source, isLoading, isRefreshing }
+  return { rooms, source, isLoading, isRefreshing, error }
 }

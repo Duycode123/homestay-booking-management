@@ -8,30 +8,20 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   DEFAULT_BOOKING_DATE,
   DEFAULT_START_TIME,
+  EMPTY_BOOKING_ROOM,
   EMPTY_NOTE_TEXT,
   calculateEndTime,
   detectRoomCategory,
-  findBookingRoom,
   formatCurrency,
+  getNightlyDisplayPrice,
   formatDisplayDate,
-  getBookingRoomOrFallback,
   normalizeDuration,
-  paymentMethods,
   type BookingRoom,
-  type PaymentMethod,
-  type PaymentMethodId,
 } from '@/components/booking/booking-data'
 import { useAuth } from '@/contexts/AuthContext'
-import CheckoutCouponInput from '@/components/checkout/CheckoutCouponInput'
 import { clearQuickBookingDraft } from '@/components/booking/quick-booking-draft'
-import {
-  clearConfirmationCouponDraft,
-  getConfirmationCouponDraft,
-  saveConfirmationCouponDraft,
-} from '@/lib/booking-coupon-draft'
 import { resolveBookingRoom } from '@/lib/booking-room-service'
 import { createBooking, mapPaymentMethodToBackend } from '@/lib/booking/bookingApi'
-import type { AppliedDiscount } from '@/lib/discount-service'
 import { savePendingBooking } from '@/lib/pending-booking'
 
 export default function BookingConfirmationClient() {
@@ -39,43 +29,25 @@ export default function BookingConfirmationClient() {
   const searchParams = useSearchParams()
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth()
   const roomId = searchParams.get('roomId')
-  const staticRoom = useMemo(() => findBookingRoom(roomId), [roomId])
-  const fallbackRoom = staticRoom ?? getBookingRoomOrFallback(roomId)
   const apiRoom = useMemo(() => getApiBookingRoom(searchParams), [searchParams])
-  const shouldResolveBackendRoom = Boolean(roomId && !apiRoom && !isNumericRoomId(roomId))
+  const shouldResolveBackendRoom = Boolean(roomId && !apiRoom)
 
-  const [room, setRoom] = useState<BookingRoom>(apiRoom ?? fallbackRoom)
-  const [roomMissing, setRoomMissing] = useState(Boolean(roomId && !staticRoom && !apiRoom))
-  const [isResolvingRoom, setIsResolvingRoom] = useState(shouldResolveBackendRoom || Boolean(roomId && !staticRoom && !apiRoom))
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId>('bank_transfer')
+  const [room, setRoom] = useState<BookingRoom>(apiRoom ?? EMPTY_BOOKING_ROOM)
+  const [roomMissing, setRoomMissing] = useState(Boolean(!roomId && !apiRoom))
+  const [isResolvingRoom, setIsResolvingRoom] = useState(shouldResolveBackendRoom)
   const [confirmError, setConfirmError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null)
 
   const displayRoom = apiRoom ?? room
   const roomSubtotal = displayRoom.pricePerHour * getBookingDuration(searchParams)
-  const discountAmount = Math.min(appliedDiscount?.discountAmount ?? 0, roomSubtotal)
-  const totalAfterDiscount = Math.max(0, roomSubtotal - discountAmount)
-  const activePaymentMethod = paymentMethods.find((method) => method.id === paymentMethod) ?? paymentMethods[0]
+  const paymentMethod = 'bank_transfer' as const
   const selectionHref = '/rooms'
   const date = searchParams.get('date') || DEFAULT_BOOKING_DATE
+  const endDate = searchParams.get('endDate') || date
   const startTime = searchParams.get('startTime') || DEFAULT_START_TIME
   const duration = getBookingDuration(searchParams)
   const endTime = searchParams.get('endTime') || calculateEndTime(startTime, duration)
   const note = searchParams.get('note')?.trim() || EMPTY_NOTE_TEXT
-  const couponDraftKey = {
-    roomId: displayRoom.id,
-    date,
-    startTime,
-    endTime,
-  }
-
-  useEffect(() => {
-    if (!displayRoom.id) return
-
-    setAppliedDiscount(getConfirmationCouponDraft(couponDraftKey))
-  }, [date, displayRoom.id, endTime, startTime])
-
   useEffect(() => {
     if (apiRoom) {
       setRoom(apiRoom)
@@ -85,16 +57,16 @@ export default function BookingConfirmationClient() {
     }
 
     let active = true
-    setRoom(fallbackRoom)
-    setRoomMissing(Boolean(roomId && !staticRoom))
-    setIsResolvingRoom(shouldResolveBackendRoom || Boolean(roomId && !staticRoom))
+    setRoom(EMPTY_BOOKING_ROOM)
+    setRoomMissing(!roomId)
+    setIsResolvingRoom(shouldResolveBackendRoom)
 
     async function loadRoom() {
       const resolvedRoom = await resolveBookingRoom(roomId)
       if (!active) return
 
-      setRoom(resolvedRoom ?? fallbackRoom)
-      setRoomMissing(Boolean(roomId && (!resolvedRoom || !isNumericRoomId(resolvedRoom.id))))
+      setRoom(resolvedRoom ?? EMPTY_BOOKING_ROOM)
+      setRoomMissing(!resolvedRoom)
       setIsResolvingRoom(false)
     }
 
@@ -103,7 +75,7 @@ export default function BookingConfirmationClient() {
     return () => {
       active = false
     }
-  }, [apiRoom, fallbackRoom, roomId, shouldResolveBackendRoom, staticRoom])
+  }, [apiRoom, roomId, shouldResolveBackendRoom])
 
   const handleConfirm = async () => {
     if (isAuthLoading) {
@@ -126,8 +98,8 @@ export default function BookingConfirmationClient() {
       return
     }
 
-    if (!date || !startTime || !duration || !paymentMethod) {
-      setConfirmError('Vui lòng kiểm tra ngày đặt, giờ bắt đầu, thời lượng và phương thức thanh toán.')
+    if (!date || !endDate || !startTime || !duration) {
+      setConfirmError('Vui lòng kiểm tra ngày đặt, giờ bắt đầu và thời lượng.')
       return
     }
 
@@ -138,10 +110,10 @@ export default function BookingConfirmationClient() {
       const booking = await createBooking({
         roomId: displayRoom.id,
         date,
+        endDate,
         startTime,
         endTime,
         paymentMethod: mapPaymentMethodToBackend(paymentMethod),
-        couponCode: appliedDiscount?.code,
         note: note === EMPTY_NOTE_TEXT ? '' : note,
       })
 
@@ -149,17 +121,15 @@ export default function BookingConfirmationClient() {
         bookingId: booking.bookingCode || String(booking.bookingId),
         roomId: displayRoom.id,
         date,
+        endDate,
         startTime,
         endTime,
         duration,
         addons: [],
         note,
         method: paymentMethod,
-        discountCode: appliedDiscount?.code,
-        discountAmount: appliedDiscount?.discountAmount,
       })
 
-      clearConfirmationCouponDraft()
       clearQuickBookingDraft()
 
       const params = new URLSearchParams({
@@ -168,11 +138,6 @@ export default function BookingConfirmationClient() {
         roomId: displayRoom.id,
         method: paymentMethod,
       })
-
-      if (appliedDiscount) {
-        params.set('discountCode', appliedDiscount.code)
-        params.set('discountAmount', String(appliedDiscount.discountAmount))
-      }
 
       router.push(`/customer/checkout?${params.toString()}`)
     } catch (error) {
@@ -183,46 +148,50 @@ export default function BookingConfirmationClient() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F5F2EC] text-[#1A1C1E]">
+    <main className="min-h-screen bg-[#F6F3ED] text-[#242A27]">
 
       <section className="mx-auto max-w-7xl px-6 py-8">
         <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
-            <div className="mb-2 flex flex-wrap items-center gap-2 font-display text-sm text-[#5C5348]">
-              <Link href="/" className="hover:text-[#1A1C1E]">
+            <div className="mb-2 flex flex-wrap items-center gap-2 font-display text-sm text-[#6A6C66]">
+              <Link href="/" className="hover:text-[#242A27]">
                 Trang chủ
               </Link>
               <span>/</span>
-              <Link href={selectionHref} className="hover:text-[#1A1C1E]">
+              <Link href={selectionHref} className="hover:text-[#242A27]">
                 Phòng homestay
               </Link>
               <span>/</span>
-              <span className="text-[#1A1C1E]">Xác nhận đặt phòng</span>
+              <span className="text-[#242A27]">Xác nhận đặt phòng</span>
             </div>
 
             <h1 className="font-display text-4xl font-bold tracking-tight">Xác nhận đặt phòng</h1>
-            <p className="mt-2 text-[#5C5348]">
-              Bước này sẽ tạo booking thật trên hệ thống trước khi chuyển sang checkout.
-            </p>
+            <p className="mt-2 text-[#6A6C66]">Kiểm tra lần cuối lịch phòng, tiện nghi và cách thanh toán.</p>
           </div>
 
-          <span className="w-fit rounded-full bg-[#0A4D27] px-4 py-2 font-display text-sm font-semibold text-white">
+          <span className="w-fit rounded-full bg-[#245545] px-4 py-2 font-display text-sm font-semibold text-white">
             Sẵn sàng xác nhận
           </span>
         </div>
 
+        <div className="mb-6 grid overflow-hidden rounded-[20px] border border-[#E4DED3] bg-white shadow-[0_4px_20px_rgba(26,28,30,0.04)] sm:grid-cols-3">
+          <BookingStep number="1" label="Chọn phòng & thời gian" state="done" />
+          <BookingStep number="2" label="Xác nhận thông tin" state="current" />
+          <BookingStep number="3" label="Thanh toán" state="upcoming" />
+        </div>
+
         {roomMissing && !isResolvingRoom && (
-          <div className="mb-6 rounded-2xl border border-[#FF7518]/30 bg-[#FFE8D6] px-4 py-3 text-sm font-medium text-[#6B3200]">
+          <div className="mb-6 rounded-2xl border border-[#B28455]/30 bg-[#EDE0CF] px-4 py-3 text-sm font-medium text-[#5E4328]">
             Không tìm thấy phòng đã chọn. Hệ thống đang hiển thị phòng mặc định để bạn kiểm tra.
           </div>
         )}
 
         <div className="grid gap-6 lg:grid-cols-[1fr_420px]">
-          <section className="rounded-[24px] border border-[#E8E4DC] bg-white p-6 shadow-[0_4px_24px_rgba(26,28,30,0.06)]">
+          <section className="rounded-[24px] border border-[#E4DED3] bg-white p-6 shadow-[0_4px_24px_rgba(26,28,30,0.06)]">
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
               <h2 className="font-display text-xl font-bold">Thông tin đặt phòng</h2>
               {displayRoom.badge && (
-                <span className="rounded-full bg-[#FFE8D6] px-3 py-1 font-display text-xs font-bold uppercase tracking-wide text-[#6B3200]">
+                <span className="rounded-full bg-[#EDE0CF] px-3 py-1 font-display text-xs font-bold uppercase tracking-wide text-[#5E4328]">
                   {displayRoom.badge}
                 </span>
               )}
@@ -234,14 +203,15 @@ export default function BookingConfirmationClient() {
                 alt={displayRoom.name}
                 width={900}
                 height={420}
+                unoptimized
                 className={`h-[260px] w-full rounded-2xl object-cover ${displayRoom.imageClassName}`}
                 priority
               />
             ) : (
-              <div className="flex h-[260px] w-full items-center justify-center rounded-2xl bg-[radial-gradient(circle_at_top,#FFE8D6,transparent_55%),linear-gradient(135deg,#F5F2EC,#E8E4DC)] px-6 text-center">
+              <div className="flex h-[260px] w-full items-center justify-center rounded-2xl bg-[radial-gradient(circle_at_top,#EDE0CF,transparent_55%),linear-gradient(135deg,#F6F3ED,#E4DED3)] px-6 text-center">
                 <div>
-                  <p className="font-display text-2xl font-bold text-[#6B3200]">{displayRoom.name}</p>
-                  <p className="mt-2 text-sm text-[#5C5348]">Hệ thống chưa có ảnh phòng cho mục này.</p>
+                  <p className="font-display text-2xl font-bold text-[#5E4328]">{displayRoom.name}</p>
+                  <p className="mt-2 text-sm text-[#6A6C66]">Hệ thống chưa có ảnh phòng cho mục này.</p>
                 </div>
               </div>
             )}
@@ -253,12 +223,12 @@ export default function BookingConfirmationClient() {
               )}
             </div>
 
-            <p className="mt-1 text-[#5C5348]">{displayRoom.type}</p>
+            <p className="mt-1 text-[#6A6C66]">{displayRoom.type}</p>
 
-            <div className="mt-6 grid gap-4 border-b border-[#E8E4DC] pb-6 sm:grid-cols-2">
-              <Detail label="Ngày đặt" value={formatDisplayDate(date)} />
-              <Detail label="Khung giờ" value={`${startTime} - ${endTime}`} />
-              <Detail label="Thời lượng" value={`${duration} giờ`} />
+            <div className="mt-6 grid gap-4 border-b border-[#E4DED3] pb-6 sm:grid-cols-2">
+              <Detail label="Nhận phòng" value={`${formatDisplayDate(date)} · ${startTime}`} />
+              <Detail label="Trả phòng" value={`${formatDisplayDate(endDate)} · ${endTime}`} />
+              <Detail label="Thời lượng" value={`${Math.max(1, Math.round((duration + 2) / 24))} đêm · ${duration} giờ`} />
               <Detail label="Số người" value={displayRoom.capacity} />
               <Detail label="Địa điểm" value={displayRoom.location} />
             </div>
@@ -267,82 +237,40 @@ export default function BookingConfirmationClient() {
 
             <div className="mt-6">
               <h3 className="font-display text-lg font-bold">Ghi chú khách hàng</h3>
-              <div className="mt-3 whitespace-pre-wrap rounded-2xl border border-[#E8E4DC] bg-[#FAF8F4] p-4 text-[#5C5348]">
+              <div className="mt-3 whitespace-pre-wrap rounded-2xl border border-[#E4DED3] bg-[#FBF9F5] p-4 text-[#6A6C66]">
                 {note}
               </div>
             </div>
           </section>
 
-          <aside className="h-fit rounded-[24px] border border-[#E8E4DC] bg-white p-6 shadow-[0_4px_24px_rgba(26,28,30,0.06)] lg:sticky lg:top-6">
+          <aside className="h-fit rounded-[24px] border border-[#E4DED3] bg-white p-6 shadow-[0_4px_24px_rgba(26,28,30,0.06)] lg:sticky lg:top-6">
             <div className="mb-5 flex items-center justify-between gap-3">
               <div>
-                  <p className="font-display text-xs font-bold uppercase tracking-wider text-[#5C5348]">
+                  <p className="font-display text-xs font-bold uppercase tracking-wider text-[#6A6C66]">
                     Tóm tắt thanh toán
                   </p>
                   <p className="mt-1 font-display font-semibold">Booking sẽ được tạo trước khi vào checkout</p>
                 </div>
-                <span className="rounded-full bg-[#FFE8D6] px-3 py-1 font-display text-xs font-bold text-[#6B3200]">
+                <span className="rounded-full bg-[#EDE0CF] px-3 py-1 font-display text-xs font-bold text-[#5E4328]">
                   Chờ thanh toán
                 </span>
               </div>
 
-            <PaymentRow label="Giá phòng" value={`${formatCurrency(displayRoom.pricePerHour)} / giờ`} />
-            <PaymentRow label="Thời lượng" value={`${duration} giờ`} />
+            <PaymentRow label="Giá tham khảo" value={`${formatCurrency(getNightlyDisplayPrice(displayRoom.pricePerHour))} / đêm`} />
+            <PaymentRow label="Thời lượng" value={`${Math.max(1, Math.round((duration + 2) / 24))} đêm · ${duration} giờ`} />
 
-            <div className="my-4 h-px bg-[#E8E4DC]" />
+            <div className="my-4 h-px bg-[#E4DED3]" />
 
             <PaymentRow label="Tiền phòng" value={formatCurrency(roomSubtotal)} />
 
-            <div className="my-4">
-              <CheckoutCouponInput
-                subtotal={roomSubtotal}
-                appliedDiscount={appliedDiscount}
-                disabled={isSubmitting}
-                onApplied={(discount) => {
-                  setAppliedDiscount(discount)
-                  saveConfirmationCouponDraft(couponDraftKey, discount)
-                  setConfirmError('')
-                }}
-                onRemoved={() => {
-                  setAppliedDiscount(null)
-                  saveConfirmationCouponDraft(couponDraftKey, null)
-                }}
-              />
-            </div>
-
-            {appliedDiscount && (
-              <PaymentRow
-                label={`Mã giảm giá (${appliedDiscount.code})`}
-                value={`-${formatCurrency(discountAmount)}`}
-                green
-              />
-            )}
-
-            <div className="my-5 rounded-2xl bg-[#FAF8F4] p-4">
+            <div className="my-5 rounded-2xl bg-[#FBF9F5] p-4">
               <div className="flex items-center justify-between gap-4">
                 <span className="font-display text-lg font-bold">Tổng tham chiếu</span>
-                <span className="font-display text-3xl font-bold text-[#FF7518]">
-                  {formatCurrency(totalAfterDiscount)}
+                <span className="font-display text-3xl font-bold text-[#B28455]">
+                  {formatCurrency(roomSubtotal)}
                 </span>
               </div>
             </div>
-
-            <h3 className="font-display text-lg font-bold">Phương thức thanh toán</h3>
-            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3 lg:grid-cols-1">
-              {paymentMethods.map((method) => (
-                <PaymentMethodOption
-                  key={method.id}
-                  method={method}
-                  active={paymentMethod === method.id}
-                  onSelect={() => {
-                    setPaymentMethod(method.id)
-                    setConfirmError('')
-                  }}
-                />
-              ))}
-            </div>
-
-            <PaymentInstruction method={activePaymentMethod} />
 
             {confirmError && (
               <p className="mt-4 rounded-2xl border border-[#C62828]/20 bg-[#FFEBEE] px-4 py-3 text-sm text-[#C62828]">
@@ -354,14 +282,14 @@ export default function BookingConfirmationClient() {
               type="button"
               onClick={() => void handleConfirm()}
               disabled={isSubmitting}
-              className="mt-6 h-12 w-full rounded-2xl bg-[#FF7518] font-display font-semibold text-white transition hover:bg-[#E6640F] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+              className="mt-6 h-12 w-full rounded-2xl bg-[#B28455] font-display font-semibold text-white transition hover:bg-[#946A42] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isSubmitting ? 'Đang xử lý...' : 'Xác nhận đặt phòng'}
             </button>
 
             <Link
               href={selectionHref}
-              className="mt-3 flex h-12 w-full items-center justify-center rounded-2xl border border-[#C9C2B6] bg-transparent font-display font-semibold text-[#1A1C1E] transition hover:bg-[#FAF8F4]"
+              className="mt-3 flex h-12 w-full items-center justify-center rounded-2xl border border-[#C9C1B4] bg-transparent font-display font-semibold text-[#242A27] transition hover:bg-[#FBF9F5]"
             >
               Quay lại chọn phòng
             </Link>
@@ -375,8 +303,43 @@ export default function BookingConfirmationClient() {
 function Detail({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="font-display text-xs font-bold uppercase tracking-wider text-[#5C5348]">{label}</p>
+      <p className="font-display text-xs font-bold uppercase tracking-wider text-[#6A6C66]">{label}</p>
       <p className="mt-1 font-semibold">{value}</p>
+    </div>
+  )
+}
+
+function BookingStep({
+  number,
+  label,
+  state,
+}: {
+  number: string
+  label: string
+  state: 'done' | 'current' | 'upcoming'
+}) {
+  return (
+    <div
+      className={[
+        'flex items-center gap-3 border-[#E4DED3] px-4 py-4 sm:border-r sm:last:border-r-0',
+        state === 'current' ? 'bg-[#F3E8D9]' : 'bg-white',
+      ].join(' ')}
+    >
+      <span
+        className={[
+          'flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-display text-xs font-bold',
+          state === 'done'
+            ? 'bg-[#245545] text-white'
+            : state === 'current'
+              ? 'bg-[#B28455] text-white'
+              : 'bg-[#EFEAE1] text-[#6A6C66]',
+        ].join(' ')}
+      >
+        {state === 'done' ? '✓' : number}
+      </span>
+      <span className={state === 'upcoming' ? 'text-sm text-[#6A6C66]' : 'text-sm font-bold text-[#242A27]'}>
+        {label}
+      </span>
     </div>
   )
 }
@@ -387,7 +350,7 @@ function InfoSection({ title, items }: { title: string; items: string[] }) {
       <h3 className="font-display text-lg font-bold">{title}</h3>
       <div className="mt-3 flex flex-wrap gap-2">
         {items.map((item) => (
-          <span key={item} className="rounded-full bg-[#F0EDE6] px-3 py-1 text-sm text-[#5C5348]">
+          <span key={item} className="rounded-full bg-[#EFEAE1] px-3 py-1 text-sm text-[#6A6C66]">
             {item}
           </span>
         ))}
@@ -399,51 +362,8 @@ function InfoSection({ title, items }: { title: string; items: string[] }) {
 function PaymentRow({ label, value, green = false }: { label: string; value: string; green?: boolean }) {
   return (
     <div className="flex items-center justify-between py-2 text-sm">
-      <span className="text-[#5C5348]">{label}</span>
-      <span className={['font-semibold', green ? 'text-[#0A4D27]' : 'text-[#1A1C1E]'].join(' ')}>{value}</span>
-    </div>
-  )
-}
-
-function PaymentMethodOption({
-  method,
-  active,
-  onSelect,
-}: {
-  method: PaymentMethod
-  active: boolean
-  onSelect: () => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={[
-        'min-h-16 rounded-2xl px-3 text-left font-display text-xs font-semibold transition',
-        active
-          ? 'border border-[#FF7518] bg-[#FFE8D6] text-[#6B3200]'
-          : 'border border-[#E8E4DC] bg-white text-[#5C5348] hover:bg-[#FAF8F4]',
-      ].join(' ')}
-      aria-pressed={active}
-    >
-      <span className="flex items-center justify-between gap-2">
-        <span>{method.label}</span>
-        {active && (
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#FF7518] text-xs text-white">
-            OK
-          </span>
-        )}
-      </span>
-    </button>
-  )
-}
-
-function PaymentInstruction({ method }: { method: PaymentMethod }) {
-  return (
-    <div className="mt-5 rounded-2xl border border-[#E8E4DC] bg-[#FAF8F4] p-4 text-sm text-[#5C5348]">
-      <p className="font-display font-semibold text-[#1A1C1E]">{method.label}</p>
-      <p className="mt-2">{method.description}</p>
-      <p className="mt-2">Ở bước tiếp theo, bạn sẽ chọn đặt cọc 50.000 VND hoặc thanh toán toàn bộ.</p>
+      <span className="text-[#6A6C66]">{label}</span>
+      <span className={['font-semibold', green ? 'text-[#245545]' : 'text-[#242A27]'].join(' ')}>{value}</span>
     </div>
   )
 }
@@ -484,7 +404,7 @@ function getApiBookingRoom(searchParams: { get(name: string): string | null }): 
     return null
   }
 
-  const roomType = searchParams.get('roomType')?.trim() || 'Practice Room'
+  const roomType = searchParams.get('roomType')?.trim() || 'Phòng homestay'
   const roomHighlights = parseCsvParam(searchParams.get('roomHighlights'))
   const rawPrice = Number(searchParams.get('pricePerHour'))
   const pricePerHour = Number.isFinite(rawPrice) && rawPrice > 0 ? rawPrice : 0
@@ -506,7 +426,7 @@ function getApiBookingRoom(searchParams: { get(name: string): string | null }): 
     rating: undefined,
     reviews: undefined,
     capacity: formatCapacityLabel(searchParams.get('roomCapacity'), 'Chưa rõ sức chứa'),
-    location: searchParams.get('roomLocation')?.trim() || 'Homestay Booking',
+    location: searchParams.get('roomLocation')?.trim() || 'The Serene Villa',
     image: safeImage,
     imageClassName: 'object-center',
     pricePerHour,

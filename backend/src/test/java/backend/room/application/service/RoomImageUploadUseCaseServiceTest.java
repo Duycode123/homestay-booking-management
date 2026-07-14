@@ -13,6 +13,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -33,12 +37,12 @@ class RoomImageUploadUseCaseServiceTest {
     private RoomImageStoragePort roomImageStoragePort;
 
     @Test
-    void uploadRoomImageStoresValidImageForAdmin() {
+    void uploadRoomImageStoresValidImageForAdmin() throws IOException {
         RoomImageUploadUseCaseService service = new RoomImageUploadUseCaseService(
                 roomActorPort,
                 roomImageStoragePort
         );
-        byte[] content = new byte[]{1, 2, 3};
+        byte[] content = pngImage(1600, 1200);
         RoomImageUploadResult expected = new RoomImageUploadResult(
                 "homestay-booking-management/rooms/family-suite-301",
                 "https://res.cloudinary.com/lkkmflxm/image/upload/v1/family-suite-301.jpg"
@@ -49,8 +53,8 @@ class RoomImageUploadUseCaseServiceTest {
 
         RoomImageUploadResult result = service.uploadRoomImage(new UploadRoomImageAssetCommand(
                 "admin@example.com",
-                "family-suite-301.jpg",
-                "image/jpeg",
+                "family-suite-301.png",
+                "image/png",
                 content
         ));
 
@@ -58,9 +62,33 @@ class RoomImageUploadUseCaseServiceTest {
                 ArgumentCaptor.forClass(backend.room.application.model.RoomImageFile.class);
         verify(roomImageStoragePort).uploadRoomImage(imageCaptor.capture());
         assertEquals(expected, result);
-        assertEquals("family-suite-301.jpg", imageCaptor.getValue().fileName());
-        assertEquals("image/jpeg", imageCaptor.getValue().contentType());
+        assertEquals("family-suite-301.png", imageCaptor.getValue().fileName());
+        assertEquals("image/png", imageCaptor.getValue().contentType());
         assertArrayEquals(content, imageCaptor.getValue().content());
+    }
+
+    @Test
+    void uploadRoomImageRejectsImageBelowMinimumResolution() throws IOException {
+        RoomImageUploadUseCaseService service = new RoomImageUploadUseCaseService(
+                roomActorPort,
+                roomImageStoragePort
+        );
+
+        when(roomActorPort.loadUserByEmail("admin@example.com")).thenReturn(Optional.of(user(Role.ADMIN)));
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> service.uploadRoomImage(new UploadRoomImageAssetCommand(
+                        "admin@example.com",
+                        "small-room.png",
+                        "image/png",
+                        pngImage(576, 345)
+                )));
+
+        assertEquals(
+                "Anh phong qua nho (576x345). Toi thieu 1200x900, khuyen nghi 1600x1200 (ty le 4:3)",
+                exception.getMessage()
+        );
+        verify(roomImageStoragePort, never()).uploadRoomImage(any());
     }
 
     @Test
@@ -104,5 +132,12 @@ class RoomImageUploadUseCaseServiceTest {
         user.setEmail("admin@example.com");
         user.setRole(role);
         return user;
+    }
+
+    private byte[] pngImage(int width, int height) throws IOException {
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ImageIO.write(image, "png", output);
+        return output.toByteArray();
     }
 }

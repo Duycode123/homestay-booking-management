@@ -8,6 +8,9 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter
 @Setter
 public class CreateReviewRequest {
@@ -23,4 +26,10 @@ public class CreateReviewRequest {
     @NotBlank(message = "Nội dung đánh giá không được để trống")
     @Size(max = 1000, message = "Nội dung đánh giá tối đa 1000 ký tự")
     private String content;
+
+    @Size(max = 4, message = "Mỗi đánh giá chỉ được đính kèm tối đa 4 ảnh")
+    private List<
+            @NotBlank(message = "Đường dẫn ảnh đánh giá không được để trống")
+            @Size(max = 500, message = "Đường dẫn ảnh đánh giá tối đa 500 ký tự")
+            String> imageUrls = new ArrayList<>();
 }

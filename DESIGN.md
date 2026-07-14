@@ -1,309 +1,151 @@
 ---
 name: Homestay Booking
-description: Design system for Homestay Booking Management — đặt phòng homestay trực tuyến
+description: Quiet-luxury design system for the homestay booking and operations platform
 colors:
-  surface: "#F5F2EC"
-  surface-dim: "#E8E4DC"
-  surface-bright: "#FFFFFF"
-  surface-container-lowest: "#FFFFFF"
-  surface-container-low: "#FAF8F4"
-  surface-container: "#F0EDE6"
-  surface-container-high: "#E8E4DC"
-  surface-container-highest: "#D6D0C4"
-  on-surface: "#1A1C1E"
-  on-surface-variant: "#5C5348"
-  inverse-surface: "#042A16"
-  inverse-on-surface: "#E8F5EC"
-  outline: "#C9C2B6"
-  outline-variant: "#E8E4DC"
-  surface-tint: "#FF7518"
-  primary: "#FF7518"
-  on-primary: "#FFFFFF"
-  primary-container: "#FFE8D6"
-  on-primary-container: "#6B3200"
-  inverse-primary: "#FFB07A"
-  secondary: "#042A16"
+  background: "#F6F3ED"
+  surface: "#FFFFFF"
+  surface-muted: "#FBF9F5"
+  surface-container: "#EFEAE1"
+  surface-container-high: "#E5DED2"
+  text: "#242A27"
+  text-muted: "#6A6C66"
+  outline: "#C9C1B4"
+  outline-variant: "#E4DED3"
+  primary: "#B28455"
+  primary-hover: "#946A42"
+  primary-container: "#EDE0CF"
+  on-primary-container: "#5E4328"
+  secondary: "#173A31"
+  secondary-container: "#245545"
   on-secondary: "#FFFFFF"
-  secondary-container: "#0A4D27"
-  on-secondary-container: "#A8D4B8"
-  tertiary: "#B45309"
-  on-tertiary: "#FFFFFF"
-  tertiary-container: "#FEF3C7"
-  on-tertiary-container: "#78350F"
+  tertiary: "#8B6848"
   error: "#C62828"
-  on-error: "#FFFFFF"
   error-container: "#FFEBEE"
-  on-error-container: "#8B1A1A"
-  primary-fixed: "#FFD4A8"
-  primary-fixed-dim: "#FFB07A"
-  on-primary-fixed: "#2E1500"
-  on-primary-fixed-variant: "#6B3200"
-  secondary-fixed: "#A8D4B8"
-  secondary-fixed-dim: "#6BA882"
-  on-secondary-fixed: "#001A0D"
-  on-secondary-fixed-variant: "#042A16"
-  background: "#F5F2EC"
-  on-background: "#1A1C1E"
-  surface-variant: "#F0EDE6"
 typography:
+  editorial:
+    fontFamily: Iowan Old Style, Baskerville, Palatino Linotype, Georgia, serif
+    usage: Marketing headlines, room names, page statements, large KPI values
   display:
-    fontFamily: Space Grotesk
-    fontSize: 44px
-    fontWeight: "700"
-    lineHeight: 52px
-    letterSpacing: -0.03em
-  headline-lg:
-    fontFamily: Space Grotesk
-    fontSize: 32px
-    fontWeight: "700"
-    lineHeight: 40px
-    letterSpacing: -0.02em
-  headline-md:
-    fontFamily: Space Grotesk
-    fontSize: 24px
-    fontWeight: "600"
-    lineHeight: 32px
-    letterSpacing: -0.01em
-  title-lg:
-    fontFamily: Space Grotesk
-    fontSize: 20px
-    fontWeight: "600"
-    lineHeight: 28px
-  body-lg:
-    fontFamily: Inter
-    fontSize: 18px
-    fontWeight: "400"
-    lineHeight: 28px
-  body-md:
-    fontFamily: Inter
-    fontSize: 16px
-    fontWeight: "400"
-    lineHeight: 24px
-  label-md:
-    fontFamily: Space Grotesk
-    fontSize: 14px
-    fontWeight: "500"
-    lineHeight: 20px
-    letterSpacing: 0.04em
-  label-sm:
-    fontFamily: Space Grotesk
-    fontSize: 11px
-    fontWeight: "500"
-    lineHeight: 16px
-    letterSpacing: 0.08em
+    fontFamily: Aptos Display, Segoe UI Variable Display, Segoe UI, sans-serif
+    usage: Navigation, buttons, UI headings, labels
+  body:
+    fontFamily: Aptos, Segoe UI Variable Text, Segoe UI, sans-serif
+    usage: Body copy, forms, tables, helper text
 rounded:
-  sm: 0.5rem
-  DEFAULT: 0.75rem
-  md: 0.75rem
-  lg: 1rem
-  xl: 1.25rem
-  full: 9999px
-spacing:
-  base: 8px
-  xs: 4px
-  sm: 12px
-  md: 24px
-  lg: 40px
-  xl: 64px
-  gutter: 20px
-  margin: 24px
-components:
-  button-primary:
-    backgroundColor: "{colors.primary}"
-    textColor: "{colors.on-primary}"
-    typography: "{typography.label-md}"
-    rounded: "{rounded.lg}"
-    padding: 12px
-    height: 48px
-  button-primary-hover:
-    backgroundColor: "#E6640F"
-    textColor: "{colors.on-primary}"
-  button-secondary:
-    backgroundColor: transparent
-    textColor: "{colors.on-surface}"
-    typography: "{typography.label-md}"
-    rounded: "{rounded.lg}"
-    padding: 12px
-    height: 48px
-  button-secondary-hover:
-    backgroundColor: "{colors.surface-container-low}"
-  button-ghost:
-    backgroundColor: transparent
-    textColor: "{colors.primary}"
-    typography: "{typography.label-md}"
-    rounded: "{rounded.lg}"
-    padding: 12px
-  card:
-    backgroundColor: "{colors.surface-container-lowest}"
-    rounded: "{rounded.xl}"
-    padding: "{spacing.md}"
-  card-room:
-    backgroundColor: "{colors.surface-container-lowest}"
-    textColor: "{colors.on-surface}"
-    rounded: "{rounded.xl}"
-    padding: "{spacing.md}"
-  card-room-hover:
-    backgroundColor: "{colors.surface-container-low}"
-  card-stat:
-    backgroundColor: "{colors.surface-container-lowest}"
-    textColor: "{colors.on-surface}"
-    rounded: "{rounded.lg}"
-    padding: "{spacing.sm}"
-  input-field:
-    backgroundColor: "{colors.surface-container-lowest}"
-    textColor: "{colors.on-surface}"
-    typography: "{typography.body-md}"
-    rounded: "{rounded.lg}"
-    padding: 10px
-  sidebar-banner:
-    backgroundColor: "{colors.secondary}"
-    textColor: "{colors.on-secondary}"
-    rounded: "{rounded.xl}"
-    padding: "{spacing.lg}"
-  nav-sidebar:
-    backgroundColor: "{colors.inverse-surface}"
-    textColor: "{colors.inverse-on-surface}"
-    padding: "{spacing.md}"
-  nav-item-active:
-    backgroundColor: rgba(255, 117, 24, 0.12)
-    textColor: "{colors.primary}"
-    rounded: "{rounded.md}"
-    padding: 10px
-  list-item:
-    backgroundColor: transparent
-    textColor: "{colors.on-surface}"
-    rounded: "{rounded.md}"
-    padding: "{spacing.sm}"
-  list-item-hover:
-    backgroundColor: "{colors.surface-container-low}"
-  badge-status:
-    backgroundColor: "{colors.primary-container}"
-    textColor: "{colors.on-primary-container}"
-    typography: "{typography.label-sm}"
-    rounded: "{rounded.full}"
-    padding: 4px
-  badge-success:
-    backgroundColor: "{colors.secondary-container}"
-    textColor: "{colors.on-secondary-container}"
-    typography: "{typography.label-sm}"
-    rounded: "{rounded.full}"
-    padding: 4px
-  badge-vip:
-    backgroundColor: "{colors.tertiary-container}"
-    textColor: "{colors.on-tertiary-container}"
-    typography: "{typography.label-sm}"
-    rounded: "{rounded.full}"
-    padding: 4px
+  button: 12px
+  card: 16px
+  feature-card: 18px
+  pill: 9999px
+shadows:
+  card: 0 10px 34px rgba(31, 43, 37, 0.065)
+  elevated: 0 22px 64px rgba(22, 40, 33, 0.14)
 ---
 
-## Brand & Style
+# Homestay Booking Design System
 
-Homestay Booking phục vụ nhạc sĩ, khách lưu trú và người thuê phòng homestay. Cảm giác cần đạt: **studio cao cấp, ấm áp, có năng lượng** — không lạnh như SaaS generic, không quá tối như festival app.
+## Brand direction
 
-Phong cách: **Warm Studio Premium**. Nền linen ấm (`#F5F2EC`) gợi phòng thu acoustic; cam `#FF7518` là tia năng lượng sáng tạo; xanh rừng đậm là không gian cách âm chuyên nghiệp; vàng amber cho gói VIP và ưu đãi.
+The product uses a **Boutique Nature Stay / Quiet Luxury** direction: calm, warm, local and operationally trustworthy. The interface should feel like a carefully run boutique homestay rather than a generic SaaS template.
 
-## Colors
+- Warm ivory creates an inviting base.
+- Deep forest green communicates calm and reliability.
+- Champagne/bronze is a restrained accent, never a neon action color.
+- Editorial serif headlines add hospitality character; the UI remains clean sans-serif.
+- Photography must show real lodging contexts: bedrooms, bathrooms, common areas, gardens and local surroundings.
 
-- **Primary (Studio Orange #FF7518):** CTA duy nhất mỗi màn — "Đặt phòng", "Xác nhận", "Đăng nhập". Không dùng cho paragraph.
-- **Secondary (Deep Forest #042A16 → #0A4D27):** Banner auth, sidebar dashboard. Gradient `secondary` → `secondary-container`.
-- **Tertiary (Amber Gold #B45309):** Phòng VIP, giá cao cấp, badge ưu đãi — không tranh spotlight với cam.
-- **Neutral (Warm Linen #F5F2EC):** Nền toàn app; mềm hơn xám lạnh, dễ nhìn lâu.
-- **On-surface (#1A1C1E):** Ink đậm cho tiêu đề — contrast cao trên nền ấm.
-- **Surface layers:** Card trắng (`surface-container-lowest`) nổi trên nền linen; viền `outline-variant` hoặc shadow ấm.
+Do not use music, recording-room, instrument or rehearsal imagery and terminology. Do not present unverified ratings, guest counts, operating hours, contact details or testimonials as facts.
+
+## Color rules
+
+- `secondary` is the primary high-contrast action color for important buttons and dashboard navigation.
+- `primary` is an accent for eyebrows, focus rings, status details and decorative rules.
+- `background` is the default page canvas; `surface` is for cards, forms and data panels.
+- Use semantic tokens instead of hard-coded hex values inside components.
+- Text on white uses `text` or `secondary`; small bronze text must meet WCAG AA contrast.
+- Gradients and glow are exceptional, not default. Prefer tonal layers, thin borders and whitespace.
 
 ## Typography
 
-Chiến lược dual-font (theo mẫu GitHub `totality-festival`):
+- Marketing `h1`/`h2`, room names and large KPI values: `font-editorial`.
+- Navigation, controls, labels and product headings: `font-display`.
+- Paragraphs, tables and forms: `font-sans`.
+- Eyebrows use `.eyebrow`: 11–12px, uppercase, strong tracking.
+- Keep body text at 14–18px with line-height between 1.55 and 1.8.
+- Never use more than three visual type levels inside one card.
 
-- **Space Grotesk** — tiêu đề, số liệu, label, nav. Geometric, hơi tech, hợp studio/modern music.
-- **Inter** — body, mô tả phòng, helper text. Dễ đọc, trung tính.
+## Layout
 
-Quy tắc:
-- Hero / tên phòng: `display` hoặc `headline-lg`
-- Dashboard stat number: `headline-md` + Space Grotesk
-- Form label: `label-sm` uppercase, letter-spacing rộng
-- Tối đa 2 font-weight trên một card
+- Public pages: max width 1400px, 20px mobile gutters, 32px desktop gutters.
+- Marketing sections: 80–96px vertical spacing on desktop, 64–80px on mobile.
+- Auth: single column below `lg`; editorial banner and form split from `lg` upward.
+- Admin/staff: 272px desktop sidebar; compact mobile header plus a usable navigation surface.
+- Customer content: max width 1152px with a plain page header and 16px cards.
+- Prefer one page scroll. Nested scroll is reserved for true work surfaces such as long data panels.
 
-## Layout & Spacing
+## Shapes and elevation
 
-Mobile-first. Grid 4 cột (mobile) → 12 cột (desktop, max 1280px).
-
-| Vùng | Quy tắc |
-|------|---------|
-| Auth | Split 50/50; form max 440px; banner ẩn dưới `md` |
-| Dashboard | Sidebar cố định 260px (desktop); content `max-w-6xl` |
-| Danh sách phòng | Grid `1 → 2 → 3` cột; gap `gutter` (20px) |
-| Section gap | `lg` (40px) giữa block; `md` (24px) trong card |
-
-Whitespace là luxury — mỗi card phòng cần ảnh + title + meta + CTA, không nhồi text.
-
-## Elevation & Depth
-
-Depth qua **tonal layers** + **warm ambient shadow** (không glassmorphism).
-
-| Level | Dùng cho | Style |
-|-------|----------|-------|
-| 0 | Page background | `background` linen, không shadow |
-| 1 | Card, form | Trắng + `0 4px 24px rgba(26,28,30,0.06)` |
-| 2 | Modal, popover | `0 12px 48px rgba(26,28,30,0.12)` |
-| Hover | Card phòng | Shadow spread +4px; không đổi màu nền mạnh |
-
-Button primary: `active:scale-[0.98]`, transition 150ms.
-
-## Shapes
-
-**Soft Studio** — bo góc vừa, chuyên nghiệp.
-
-- Button / input: `rounded-lg` (1rem)
-- Card / modal: `rounded-xl` (1.25rem)
-- Badge: `rounded-full`
-- Logo icon box: `rounded-xl`, nền `primary`
-- Ảnh phòng trong card: `rounded-lg`, aspect 16/10
+- Inputs and standard buttons: 12px radius.
+- Cards and modals: 16px radius.
+- Marketing feature cards: up to 18px radius.
+- Pills are reserved for statuses, compact filters and major marketing CTAs.
+- Static cards do not lift on hover. Hover elevation is only for clearly interactive cards.
+- Use a one-pixel neutral border plus the low ambient shadow; elevated shadow is for menus, dialogs and featured panels.
 
 ## Components
 
 ### Buttons
 
-| Variant | Khi nào | Style |
-|---------|---------|-------|
-| Primary | 1 CTA chính / màn | Cam đặc, chữ trắng, `rounded-lg`, h-12 |
-| Secondary | Hủy, quay lại | Viền `outline`, nền transparent |
-| Ghost | Link trong card | Chữ `primary`, không viền |
+- Primary operational action: deep forest background, white text, 44–48px height.
+- Marketing CTA: white-on-forest or forest-on-ivory; pill shape is allowed.
+- Secondary: neutral border, transparent/white background.
+- Destructive: semantic error color and an explicit confirmation step.
+- Every disabled button must retain readable text and clearly explain unavailable state nearby.
 
 ### Cards
 
-- **card:** Container chung — trắng, `rounded-xl`, border `outline-variant`, padding 24px.
-- **card-room:** Card phòng homestay — ảnh trên, badge trạng thái góc phải, giá màu `on-surface`, CTA primary full-width mobile.
-- **card-stat:** Dashboard — số `headline-md`, label `label-sm` màu `on-surface-variant`.
+- Default: white surface, neutral border, 16px radius, 20–24px padding.
+- Room cards: consistent image ratio, clear name, capacity, price unit, availability and two explicit actions.
+- Dashboard metrics: compact label, prominent value and a short operational hint.
+- Avoid decorative blobs, oversized radii and repeated glass effects.
 
-### Inputs
+### Forms
 
-- Nền trắng, border `outline`, `rounded-lg`
-- Focus: border `primary` + ring 1px `primary` ở 30%
-- Label: `label-sm` uppercase
-- Error: `error-container` nền, chữ `error`
+- Labels are sentence case and permanently visible.
+- Inputs are at least 48px high with a visible border and four-pixel soft focus ring.
+- Errors use `role="alert"`; success uses `role="status"`.
+- Use correct `autocomplete`, input type and accessible names.
+- Do not show controls for integrations that are not implemented.
 
 ### Navigation
 
-- **nav-sidebar:** Nền `inverse-surface`, chữ `inverse-on-surface`
-- Item active: nền cam 12% opacity, chữ `primary`, stripe trái 3px cam
-- Logo + "Homestay Booking" ở đầu sidebar
+- Public header: ivory translucent surface, minimal links and one clear room-discovery CTA.
+- Admin/staff sidebar: deep forest with white active item and bronze accent.
+- Mobile navigation must expose every primary route and logout without horizontal guessing.
+- The brand mark links to the relevant homepage/dashboard; it never reloads the current page.
 
-### Badges
+## Content and imagery
 
-| Badge | Màu | Dùng cho |
-|-------|-----|----------|
-| badge-status | Cam nhạt | Chờ duyệt, sắp hết hạn |
-| badge-success | Xanh | Đã xác nhận, còn trống |
-| badge-vip | Vàng amber | Phòng VIP, gói premium |
+- Vietnamese copy should be concise, specific and hospitality-oriented.
+- Keep the current hourly booking model explicit as “khung giờ lưu trú linh hoạt”; do not imply nightly pricing unless the business model changes.
+- Technical implementation terms such as endpoint, webhook, mock, database and provider portal do not belong in customer-facing copy.
+- Generated or stock imagery must have no text, logo or watermark and must match the actual lodging context.
+- Alt text describes what is visibly present, not marketing claims.
 
-## Do's and Don'ts
+## SEO and accessibility
 
-- **Do** dùng Space Grotesk cho headline và label; Inter cho body.
-- **Do** giữ nền linen ấm — không chuyển sang `#F8F9FA` lạnh.
-- **Do** một nút cam primary duy nhất mỗi viewport.
-- **Do** sync token giữa `DESIGN.md` và `globals.css`.
-- **Don't** dùng xanh dương (đã bỏ) — tertiary là amber.
-- **Don't** hardcode hex trong component.
-- **Don't** inline `style={{}}` khi có Tailwind token.
-- **Don't** trộn bo góc `sm` và `xl` trên cùng card.
+- Public routes have unique title, description, canonical, Open Graph and Twitter metadata.
+- Auth, customer account, admin and staff routes are `noindex`.
+- Keep `robots.ts`, `sitemap.ts` and `manifest.ts` aligned with route changes.
+- Use one semantic `h1` per page, meaningful heading order and server-rendered fallback room content.
+- Public layouts provide a skip link to `#main-content`.
+- All interactive controls have keyboard access, visible focus and sufficient contrast.
+- Respect reduced-motion and accessibility preferences already defined in `globals.css`.
+
+## Do / do not
+
+- Do use whitespace, strong photography, restrained borders and concise copy.
+- Do keep behavior stable while incrementally improving shared shells and primitives.
+- Do verify public, auth, customer, staff and admin layouts at mobile and desktop widths.
+- Do not invent social proof, addresses, phone numbers, support hours or social links.
+- Do not use music-related branding or legacy room-studio language.
+- Do not mix multiple radius, shadow and color systems in one bounded context.

@@ -19,6 +19,7 @@ import backend.user.application.port.in.command.UploadCurrentUserAvatarCommand;
 import backend.user.application.port.in.command.UpdateCurrentUserNotificationSettingsCommand;
 import backend.user.application.port.in.command.UpdateCurrentUserProfileCommand;
 import backend.user.application.port.in.query.GetCurrentUserProfileQuery;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -59,14 +60,14 @@ public class UserController {
     @RequestMapping(value = "/me", method = {RequestMethod.PUT, RequestMethod.PATCH})
     public ResponseEntity<UserResponse> updateMe(
             Authentication authentication,
-            @RequestBody(required = false) UpdateProfileRequest request
+            @RequestBody @Valid UpdateProfileRequest request
     ) {
         UserProfileUpdateResult result = updateCurrentUserProfileUseCase.updateProfile(
                 new UpdateCurrentUserProfileCommand(
                         authentication == null ? null : authentication.getName(),
-                        request == null ? null : request.getFullName(),
-                        request == null ? null : request.getEmail(),
-                        request == null ? null : request.getPhone()
+                        request.getFullName(),
+                        request.getEmail(),
+                        request.getPhone()
                 )
         );
 
@@ -92,13 +93,13 @@ public class UserController {
     @RequestMapping(value = {"/me/password", "/me/change-password"}, method = {RequestMethod.PUT, RequestMethod.POST})
     public ResponseEntity<ApiResponse<String>> changePassword(
             Authentication authentication,
-            @RequestBody(required = false) ChangePasswordRequest request
+            @RequestBody @Valid ChangePasswordRequest request
     ) {
         changeCurrentUserPasswordUseCase.changePassword(new ChangeCurrentUserPasswordCommand(
-                authentication == null ? null : authentication.getName(),
-                request == null ? null : request.getCurrentPassword(),
-                request == null ? null : request.getNewPassword(),
-                request == null ? null : request.getConfirmPassword()
+                        authentication == null ? null : authentication.getName(),
+                        request.getCurrentPassword(),
+                        request.getNewPassword(),
+                        request.getConfirmPassword()
         ));
 
         return ResponseEntity.ok(
@@ -119,16 +120,16 @@ public class UserController {
     @PutMapping("/me/notification-settings")
     public NotificationSettingsResponse updateNotificationSettings(
             Authentication authentication,
-            @RequestBody(required = false) NotificationSettingsRequest request
+            @RequestBody @Valid NotificationSettingsRequest request
     ) {
         return updateCurrentUserNotificationSettingsUseCase.updateNotificationSettings(
                 new UpdateCurrentUserNotificationSettingsCommand(
                         authentication == null ? null : authentication.getName(),
-                        request == null ? null : request.getNewBooking(),
-                        request == null ? null : request.getBookingReminder(),
-                        request == null ? null : request.getShiftReminder(),
-                        request == null ? null : request.getRoomIssue(),
-                        request == null ? null : request.getEquipmentIssue()
+                        request.getNewBooking(),
+                        request.getBookingReminder(),
+                        request.getShiftReminder(),
+                        request.getRoomIssue(),
+                        request.getEquipmentIssue()
                 )
         );
     }

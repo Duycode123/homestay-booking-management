@@ -21,7 +21,7 @@ const emptyForm: ChangeCustomerPasswordPayload = {
 const securityTips = [
   {
     title: 'Mật khẩu riêng biệt',
-    description: 'Không dùng chung mật khẩu Homestay Booking với email hoặc mạng xã hội.',
+    description: 'Không dùng chung mật khẩu The Serene Villa với email hoặc mạng xã hội.',
   },
   {
     title: 'Đổi định kỳ',

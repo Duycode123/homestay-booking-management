@@ -4,6 +4,14 @@ import {
   PublicContentPage,
   PublicContentSection,
 } from '@/components/public/PublicContentPage'
+import { createPublicPageMetadata } from '@/lib/seo'
+
+export const metadata = createPublicPageMetadata({
+  title: 'Chính sách hủy booking',
+  description:
+    'Xem điều kiện hủy booking, đổi lịch và hoàn tiền áp dụng cho các phòng đặt qua The Serene Villa.',
+  path: '/cancellation-policy',
+})
 
 export default function CancellationPolicyPage() {
   return (
@@ -17,15 +25,17 @@ export default function CancellationPolicyPage() {
 
       <PublicContentSection title="1. Hủy trước giờ nhận phòng">
         <p>
-          Bạn có thể hủy trực tuyến trong mục{' '}
+          Bạn có thể gửi yêu cầu hủy trực tuyến trong mục{' '}
           <Link href="/customer/bookings" className="font-semibold text-brand-orange hover:underline">
             Booking của tôi
           </Link>
           .
         </p>
         <ul className="list-disc space-y-2 pl-5">
-          <li>Hủy trước ít nhất <strong className="text-on-surface">24 giờ</strong>: được hoàn 100% số tiền đã thanh toán theo phương thức ban đầu.</li>
-          <li>Trong vòng 24 giờ trước giờ nhận phòng: hệ thống không hỗ trợ tự hủy và hoàn tiền; vui lòng liên hệ hỗ trợ nếu có trường hợp đặc biệt.</li>
+          <li>Gửi yêu cầu trước ít nhất <strong className="text-on-surface">24 giờ</strong>: admin kiểm tra và phê duyệt trước khi booking được hủy.</li>
+          <li>Khi được duyệt: hoàn 100% số tiền thực tế đã thu, không vượt quá tổng tiền phòng. Booking đặt cọc chỉ hoàn phần cọc đã thanh toán.</li>
+          <li>Trong lúc chờ duyệt, phòng vẫn được giữ và booking vẫn còn hiệu lực. Yêu cầu bị từ chối không làm thay đổi booking.</li>
+          <li>Trong vòng 24 giờ trước giờ nhận phòng: hệ thống không tiếp nhận yêu cầu tự động; vui lòng liên hệ hỗ trợ nếu có trường hợp đặc biệt.</li>
           <li>Không đến và không hủy (no-show): không hoàn tiền.</li>
         </ul>
       </PublicContentSection>

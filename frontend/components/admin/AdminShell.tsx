@@ -11,6 +11,7 @@ import {
   IconDashboard,
   IconIncidentReports,
   IconLogout,
+  IconRefund,
   IconReviews,
   IconRooms,
   IconStaff,
@@ -20,6 +21,7 @@ import {
 const NAV_ITEMS: AdminNavItem[] = [
   { href: '/admin/dashboard', label: 'Tổng quan', icon: <IconDashboard className="h-5 w-5" /> },
   { href: '/admin/bookings', label: 'Đơn đặt phòng', icon: <IconBookings className="h-5 w-5" /> },
+  { href: '/admin/refunds', label: 'Trung tâm hoàn tiền', icon: <IconRefund className="h-5 w-5" /> },
   { href: '/admin/staff', label: 'Nhân viên', icon: <IconStaff className="h-5 w-5" /> },
   { href: '/admin/staff-schedule', label: 'Lịch nhân viên', icon: <IconBookings className="h-5 w-5" /> },
   { href: '/admin/rooms', label: 'Phòng homestay', icon: <IconRooms className="h-5 w-5" /> },
@@ -42,69 +44,62 @@ function AdminShell({ children }: AdminShellProps) {
 
   return (
     <div className="h-screen overflow-hidden bg-brand-bgGray">
-      {/* Decorative background */}
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 overflow-hidden"
-      >
-        <div className="absolute -right-32 -top-32 h-96 w-96 rounded-full bg-brand-orange/5 blur-3xl" />
-        <div className="absolute -bottom-24 -left-24 h-80 w-80 rounded-full bg-secondary-container/20 blur-3xl" />
-      </div>
-
-      <div className="relative flex h-screen">
-        {/* Sidebar - desktop: full viewport height, footer pinned at bottom */}
-        <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-white/10 bg-gradient-to-b from-brand-greenDark via-brand-greenDark to-brand-greenLight lg:flex">
-          <div className="shrink-0 border-b border-white/10 px-5 py-6">
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-              className="block w-full rounded-xl text-left transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange/50"
-              aria-label="Tải lại trang"
-              title="Tải lại trang"
+      <div className="flex h-screen">
+        <aside className="sticky top-0 hidden h-screen w-[17rem] shrink-0 flex-col border-r border-white/10 bg-brand-greenDark lg:flex">
+          <div className="shrink-0 border-b border-white/10 px-6 py-6">
+            <Link
+              href="/admin/dashboard"
+              className="block w-full rounded-lg text-left transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange/70"
+              aria-label="Về tổng quan quản trị"
             >
               <AdminBrandMark />
-            </button>
+            </Link>
           </div>
 
-          <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-5">
-            {NAV_ITEMS.map((item) => {
-              const active = pathname === item.href
-              const base =
-                'flex items-center gap-3 rounded-xl px-3 py-2.5 font-display text-sm font-medium transition-all'
+          <nav aria-label="Điều hướng quản trị" className="min-h-0 flex-1 overflow-y-auto px-4 py-6">
+            <p className="mb-3 px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">
+              Vận hành homestay
+            </p>
+            <div className="space-y-1">
+              {NAV_ITEMS.map((item) => {
+                const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
+                const base =
+                  'group relative flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 font-display text-sm font-medium transition-colors'
 
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={[
-                    base,
-                    active
-                      ? 'bg-white/15 text-white shadow-inner shadow-black/10'
-                      : 'text-inverse-on-surface/75 hover:bg-white/10 hover:text-white',
-                  ].join(' ')}
-                >
-                  <span className={active ? 'text-brand-orange' : ''}>{item.icon}</span>
-                  {item.label}
-                  {active && (
-                    <span className="ml-auto h-1.5 w-1.5 rounded-full bg-brand-orange shadow-[0_0_8px_rgba(255,117,24,0.8)]" />
-                  )}
-                </Link>
-              )
-            })}
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={[
+                      base,
+                      active
+                        ? 'bg-white text-brand-greenDark shadow-[0_8px_24px_rgba(5,24,19,0.16)]'
+                        : 'text-white/68 hover:bg-white/[0.07] hover:text-white',
+                    ].join(' ')}
+                  >
+                    <span className={active ? 'text-brand-orange' : 'text-white/55 group-hover:text-white'}>{item.icon}</span>
+                    {item.label}
+                    {active && (
+                      <span className="ml-auto h-1.5 w-1.5 rounded-full bg-brand-orange" />
+                    )}
+                  </Link>
+                )
+              })}
+            </div>
           </nav>
 
-          <div className="shrink-0 border-t border-white/10 bg-brand-greenDark/40 p-4 backdrop-blur-sm">
+          <div className="shrink-0 border-t border-white/10 p-4">
             <Link
               href="/customer/profile"
-              className="mb-2 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 font-display text-sm font-medium text-inverse-on-surface/80 transition-colors hover:bg-white/10 hover:text-white"
+              className="mb-1 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 font-display text-sm font-medium text-white/70 transition-colors hover:bg-white/[0.07] hover:text-white"
             >
-              <span className="flex h-5 w-5 items-center justify-center rounded-full border border-current text-[11px]">U</span>
+              <span className="flex h-7 w-7 items-center justify-center rounded-full border border-white/20 bg-white/5 text-[11px]">U</span>
               Hồ sơ cá nhân
             </Link>
             <button
               type="button"
               onClick={() => void handleLogout()}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 font-display text-sm font-medium text-inverse-on-surface/80 transition-colors hover:bg-white/10 hover:text-white"
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 font-display text-sm font-medium text-white/70 transition-colors hover:bg-white/[0.07] hover:text-white"
             >
               <IconLogout className="h-5 w-5" />
               Đăng xuất
@@ -112,32 +107,56 @@ function AdminShell({ children }: AdminShellProps) {
           </div>
         </aside>
 
-        {/* Mobile top nav */}
-        <div className="fixed inset-x-0 top-0 z-30 border-b border-outline-variant bg-white/90 backdrop-blur-md lg:hidden">
-          <div className="flex items-center gap-2 overflow-x-auto px-4 py-3">
+        <div className="fixed inset-x-0 top-0 z-40 lg:hidden">
+          <div className="flex h-16 items-center justify-between border-b border-white/10 bg-brand-greenDark px-4">
+            <Link
+              href="/admin/dashboard"
+              className="rounded-lg text-left"
+              aria-label="Về tổng quan quản trị"
+            >
+              <AdminBrandMark />
+            </Link>
+            <div className="flex items-center gap-1.5">
+              <Link
+                href="/customer/profile"
+                aria-label="Mở hồ sơ cá nhân"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/[0.06] text-xs font-semibold text-white"
+              >
+                U
+              </Link>
+              <button
+                type="button"
+                onClick={() => void handleLogout()}
+                aria-label="Đăng xuất"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+              >
+                <IconLogout className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+          <nav aria-label="Điều hướng quản trị trên di động" className="flex h-[3.25rem] items-center gap-2 overflow-x-auto border-b border-outline-variant bg-white/95 px-4 backdrop-blur-md">
             {NAV_ITEMS.map((item) => {
-              const active = pathname === item.href
+              const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={[
-                    'flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 font-display text-xs font-medium transition-colors',
+                    'flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg px-3 font-display text-xs font-semibold transition-colors',
                     active
-                      ? 'bg-brand-orange text-white'
-                      : 'bg-surface-container text-on-surface-variant',
+                      ? 'bg-primary-container text-on-primary-container'
+                      : 'text-on-surface-variant hover:bg-surface-container-low',
                   ].join(' ')}
                 >
-                  {item.icon}
+                  <span className={active ? 'text-brand-orange' : ''}>{item.icon}</span>
                   {item.label}
                 </Link>
               )
             })}
-          </div>
+          </nav>
         </div>
 
-        {/* Main */}
-        <main className="flex-1 overflow-y-auto overscroll-contain pt-14 lg:pt-0">{children}</main>
+        <main className="min-w-0 flex-1 overflow-y-auto overscroll-contain pt-[7.25rem] lg:pt-0">{children}</main>
       </div>
     </div>
   )

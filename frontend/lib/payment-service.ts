@@ -1,7 +1,7 @@
 import axios from 'axios'
 import api from '@/lib/api'
 
-export type PaymentMethod = 'bank_transfer' | 'e_wallet' | 'cash'
+export type PaymentMethod = 'bank_transfer'
 export type PaymentOption = 'deposit' | 'full'
 
 export type PaymentStatus = 'success' | 'failed' | 'pending' | 'cancelled'
@@ -10,10 +10,11 @@ export type CreatePaymentSessionPayload = {
   bookingId: number
   method: PaymentMethod
   paymentOption: PaymentOption
+  couponCode?: string
 }
 
 export type CreatePaymentSessionResponse = {
-  paymentUrl: string
+  paymentUrl?: string | null
   paymentId: string
   status: PaymentStatus
   amount: number
@@ -51,7 +52,7 @@ type BackendPaymentSession = {
   paymentOption: PaymentOption
   status: PaymentStatus
   amount: number | string
-  paymentUrl: string
+  paymentUrl?: string | null
   expiresAt?: string | null
 }
 
@@ -93,6 +94,7 @@ export async function createPaymentSession(
       bookingId: payload.bookingId,
       method: payload.method,
       paymentOption: payload.paymentOption,
+      couponCode: payload.couponCode,
     })
 
     return {

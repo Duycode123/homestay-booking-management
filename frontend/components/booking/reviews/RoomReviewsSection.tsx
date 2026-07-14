@@ -1,5 +1,7 @@
 'use client'
 
+import ProjectSelect from '@/components/ui/ProjectSelect'
+
 import { useEffect, useMemo, useState } from 'react'
 import RoomRatingSummary from '@/components/booking/reviews/RoomRatingSummary'
 import RoomReviewCard from '@/components/booking/reviews/RoomReviewCard'
@@ -136,7 +138,7 @@ export default function RoomReviewsSection({ roomId }: RoomReviewsSectionProps) 
               <span className="mb-1.5 block font-display text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">
                 Lọc theo sao
               </span>
-              <select
+              <ProjectSelect
                 value={ratingFilter === 'all' ? 'all' : String(ratingFilter)}
                 onChange={(event) => {
                   const value = event.target.value
@@ -149,14 +151,14 @@ export default function RoomReviewsSection({ roomId }: RoomReviewsSectionProps) 
                     {option.label}
                   </option>
                 ))}
-              </select>
+              </ProjectSelect>
             </label>
 
             <label className="block">
               <span className="mb-1.5 block font-display text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">
                 Sắp xếp
               </span>
-              <select
+              <ProjectSelect
                 value={sortBy}
                 onChange={(event) => setSortBy(event.target.value as ReviewSortOption)}
                 className="h-11 w-full rounded-xl border border-outline bg-surface-container-lowest px-3 text-sm text-on-surface outline-none focus:border-brand-orange focus:ring-2 focus:ring-brand-orange/15"
@@ -166,7 +168,7 @@ export default function RoomReviewsSection({ roomId }: RoomReviewsSectionProps) 
                     {option.label}
                   </option>
                 ))}
-              </select>
+              </ProjectSelect>
             </label>
           </div>
 

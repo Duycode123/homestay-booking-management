@@ -15,6 +15,7 @@ export type AdminRoom = {
   status: RoomStatus
   image: string
   imageUrl?: string
+  imageUrls?: string[]
   equipmentCount: number
   equipments: string[]
   todaySchedule: string
@@ -45,6 +46,7 @@ export type RoomFormData = {
   description: string
   equipments: string
   image: string
+  additionalImages: string[]
 }
 
 export type RoomFormErrors = Partial<Record<keyof RoomFormData, string>>

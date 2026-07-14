@@ -409,7 +409,7 @@ export default function StaffCheckInPage() {
                             onClick={actionConfig.onClick}
                             disabled={actionConfig.disabled || isLoading}
                             className={[
-                              'inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-6 font-display text-sm font-bold shadow-[0_14px_30px_rgba(255,117,24,0.22)] transition',
+                              'inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-6 font-display text-sm font-bold shadow-[0_14px_30px_rgba(178,132,85,0.22)] transition',
                               actionConfig.disabled || isLoading
                                 ? 'cursor-not-allowed bg-surface-container-high text-on-surface-variant shadow-none'
                                 : 'bg-brand-orange text-white hover:bg-brand-orangeHover',

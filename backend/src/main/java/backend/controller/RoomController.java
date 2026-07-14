@@ -99,6 +99,7 @@ public class RoomController {
                 request.getRoomTypeId(),
                 request.getMaxPeople(),
                 request.getImageUrl(),
+                request.getAdditionalImageUrls(),
                 request.getStatus(),
                 authentication.getName()
         ));
@@ -122,6 +123,7 @@ public class RoomController {
                 request.getRoomTypeId(),
                 request.getMaxPeople(),
                 request.getImageUrl(),
+                request.getAdditionalImageUrls(),
                 request.getStatus(),
                 authentication.getName()
         ));

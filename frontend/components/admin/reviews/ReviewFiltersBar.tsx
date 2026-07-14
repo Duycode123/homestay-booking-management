@@ -1,5 +1,7 @@
 'use client'
 
+import ProjectSelect from '@/components/ui/ProjectSelect'
+
 import {
   REVIEW_APPROVAL_STATUS_OPTIONS,
   REVIEW_APPROVAL_STATUS_LABELS,
@@ -56,7 +58,7 @@ export default function ReviewFiltersBar({ filters, rooms, onChange, totalElemen
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <label className="block">
             <span className={labelClass}>Phòng</span>
-            <select
+            <ProjectSelect
               value={filters.roomId === 'ALL' ? 'ALL' : String(filters.roomId)}
               onChange={(event) =>
                 set({ roomId: event.target.value === 'ALL' ? 'ALL' : Number(event.target.value) })
@@ -69,12 +71,12 @@ export default function ReviewFiltersBar({ filters, rooms, onChange, totalElemen
                   {room.roomName}
                 </option>
               ))}
-            </select>
+            </ProjectSelect>
           </label>
 
           <label className="block">
             <span className={labelClass}>Trạng thái</span>
-            <select
+            <ProjectSelect
               value={filters.approvalStatus}
               onChange={(event) =>
                 set({ approvalStatus: event.target.value as ReviewFilters['approvalStatus'] })
@@ -86,12 +88,12 @@ export default function ReviewFiltersBar({ filters, rooms, onChange, totalElemen
                   {REVIEW_APPROVAL_STATUS_LABELS[status]}
                 </option>
               ))}
-            </select>
+            </ProjectSelect>
           </label>
 
           <label className="block">
             <span className={labelClass}>Số sao</span>
-            <select
+            <ProjectSelect
               value={filters.rating === 'ALL' ? 'ALL' : String(filters.rating)}
               onChange={(event) =>
                 set({ rating: event.target.value === 'ALL' ? 'ALL' : Number(event.target.value) })
@@ -103,7 +105,7 @@ export default function ReviewFiltersBar({ filters, rooms, onChange, totalElemen
                   {formatReviewRatingLabel(rating)}
                 </option>
               ))}
-            </select>
+            </ProjectSelect>
           </label>
 
           <label className="block">

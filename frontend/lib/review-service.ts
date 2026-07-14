@@ -40,6 +40,7 @@ export type RoomReviewStats = {
 export type ReviewDraft = {
   rating: number
   content: string
+  imageUrls: string[]
 }
 
 export type SubmitBookingReviewPayload = {
@@ -49,6 +50,7 @@ export type SubmitBookingReviewPayload = {
   customerName?: string
   rating: number
   content: string
+  imageUrls?: string[]
 }
 
 const DRAFT_KEY_PREFIX = 'homestay_review_draft_'
@@ -147,6 +149,9 @@ export function loadReviewDraft(bookingId: string): ReviewDraft | null {
     return {
       rating: Number.isInteger(draft.rating) ? Number(draft.rating) : 0,
       content: draft.content || '',
+      imageUrls: Array.isArray(draft.imageUrls)
+        ? draft.imageUrls.filter((url): url is string => typeof url === 'string').slice(0, 4)
+        : [],
     }
   } catch {
     return null

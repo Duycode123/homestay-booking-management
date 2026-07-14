@@ -20,6 +20,7 @@ Allow a customer to register, verify their email address, sign in, refresh sessi
 - `POST /api/auth/refresh`
 - `POST /api/auth/logout`
 - `GET /api/auth/session`
+- `GET /api/auth/csrf`
 - `POST /api/auth/forgot-password`
 - `POST /api/auth/reset-password`
 
@@ -81,7 +82,7 @@ Allow a customer to register, verify their email address, sign in, refresh sessi
 ### Forgot / Reset Password
 
 1. Customer submits email for password recovery.
-2. Backend creates a reset token and stores an expiration time.
+2. Backend creates a reset token, stores only its SHA-256 hash, and stores an expiration time.
 3. Backend sends reset email with reset link.
 4. Customer submits new password with reset token.
 5. Backend validates token and updates the password.
@@ -92,24 +93,35 @@ Allow a customer to register, verify their email address, sign in, refresh sessi
 - Disposable email domain: backend rejects registration.
 - Unverified login: backend rejects login until email verification is completed.
 - Expired or invalid verification token: backend denies verification and clears stale token data when applicable.
-- Resend too soon: backend rejects repeated verification email requests within the cooldown window.
+- Resend too soon, already verified, disabled, or unknown email: backend returns the same generic success response without sending mail.
 - Invalid credentials: backend returns authentication failure.
 - Missing or invalid refresh token: backend denies refresh.
-- Unknown email on forgot-password: backend returns an error.
+- Unknown or disabled email on forgot-password: backend returns the same generic success response to prevent account enumeration.
 - Expired or invalid reset token: backend denies reset.
-- Email delivery failure: backend returns server error for forgot-password.
+- Email delivery failure: registration, forgot-password, and resend-verification roll back their token/account changes and return HTTP 503 instead of reporting a false success.
 
 ## Business Rules
 
 - Passwords must never be stored in plain text.
+- New and reset passwords must contain 8-72 characters, including at least one letter and one number.
 - Newly registered customer accounts must remain blocked from login until `account.email_verified = true`.
 - Email verification tokens must be stored as hashes, not raw tokens.
+- Email verification and password-reset tokens use UUID format and malformed tokens are rejected before persistence lookup.
 - Email verification tokens expire after 24 hours.
 - Verification email resend is limited by a 60-second cooldown.
+- Registration validates customer name length, email shape and length, Vietnamese mobile number shape, date of birth, and the minimum age rule.
 - Session tokens must be rotated via refresh.
 - Logout must make old tokens unusable.
 - Session inspection must return unauthorized when the principal is invalid.
 - Password reset tokens must expire.
+- Password reset tokens must be stored as SHA-256 hashes, never as raw bearer values.
+- Successful password change/reset increments `account.credentials_version`; every older access and refresh JWT then becomes invalid.
+- Direct profile email changes are blocked until a dedicated verify-new-email flow is implemented.
+- Credentialed CORS uses an exact origin allowlist; production must not use wildcard origins.
+- Browser mutations require CSRF tokens, except authenticated payment-provider webhook/IPN endpoints.
+- A missing or mismatched CSRF token returns HTTP 403 with code `CSRF_TOKEN_INVALID`; the browser obtains a fresh token and retries the original request at most once.
+- Generic HTTP 401 responses must not clear authentication cookies because an older in-flight request could otherwise erase a newly established login session. Cookie clearing belongs to the explicit logout flow.
+- Login, registration, forgot/reset password, and verification resend endpoints are limited to 10 requests per IP/path per 15-minute window.
 
 ## Data Touched
 
@@ -122,9 +134,16 @@ Allow a customer to register, verify their email address, sign in, refresh sessi
 ## Current Implementation Notes
 
 - The backend sets both access and refresh cookies on login and refresh.
-- The backend also returns token values in the response body today.
+- Logout is a writable application transaction because revoking access and refresh tokens inserts records into `revoked_token`; it must override the auth service's read-only query default.
+- Access and refresh token fields are excluded from serialized response bodies; browsers receive them only through HttpOnly cookies.
 - `GET /api/auth/session` currently returns the authenticated role only.
-- Forgot-password and email verification links use `app.frontend.base-url` with a local default.
+- Forgot-password and email verification links are built through a shared URL builder. `app.frontend.base-url` must be an absolute HTTP/HTTPS origin; a missing or blank local value falls back to `http://localhost:3000`.
+- Verification and password-reset messages include responsive HTML and a plain-text fallback. Customer, staff, and password-reset emails share the branded template and show the raw URL as a fallback when the CTA cannot be opened.
+- Mail credentials are provided through `MAIL_USERNAME` and `MAIL_PASSWORD`; they must not be committed to source control.
+- JWT signing configuration comes from `app.jwt.*`; `JWT_SECRET` is required outside the ignored local-development configuration and must decode to at least 32 random bytes.
+- `GET /api/auth/csrf` issues the token that the frontend Axios client explicitly attaches to unsafe requests. Axios's default XSRF-cookie reader is disabled so a legacy cookie cannot overwrite that header.
+- The CSRF cookie uses the project-specific name `HOMESTAY-XSRF-TOKEN`, path `/`, and the configured secure-cookie policy. This isolates current sessions from stale framework-default `XSRF-TOKEN` cookies.
+- When a browser sends duplicate legacy/current access cookies, the JWT inbound adapter evaluates every raw cookie candidate and authenticates with the newest valid, non-revoked access token.
 - Auth application service owns the core registration, login, verification, resend, and reset flows behind use case ports.
 
 ## Known Gaps / Follow-up

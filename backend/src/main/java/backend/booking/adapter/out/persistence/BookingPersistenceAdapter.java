@@ -19,6 +19,7 @@ import backend.entity.Booking;
 import backend.entity.BookingStatus;
 import backend.entity.Customer;
 import backend.entity.PaymentTransaction;
+import backend.entity.PaymentTransactionStatus;
 import backend.entity.Room;
 import backend.entity.User;
 import backend.repository.BookingRepository;
@@ -91,7 +92,10 @@ public class BookingPersistenceAdapter implements
 
     @Override
     public java.math.BigDecimal loadSuccessfulPaymentAmount(Integer bookingId) {
-        java.math.BigDecimal amount = paymentTransactionRepository.sumSuccessfulAmountByBookingId(bookingId);
+        java.math.BigDecimal amount = paymentTransactionRepository.sumAmountByBookingIdAndStatus(
+                bookingId,
+                PaymentTransactionStatus.SUCCEEDED
+        );
         return amount == null ? java.math.BigDecimal.ZERO : amount;
     }
 
@@ -108,6 +112,11 @@ public class BookingPersistenceAdapter implements
     @Override
     public Optional<Booking> loadBooking(Integer bookingId) {
         return bookingRepository.findById(bookingId);
+    }
+
+    @Override
+    public Optional<Booking> loadBookingForUpdate(Integer bookingId) {
+        return bookingRepository.findByIdForUpdate(bookingId);
     }
 
     @Override

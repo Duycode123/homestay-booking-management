@@ -1,5 +1,7 @@
 'use client'
 
+import ProjectSelect from '@/components/ui/ProjectSelect'
+
 import {
   COUPON_EXPIRY_STATUS_LABELS,
   COUPON_EXPIRY_STATUS_OPTIONS,
@@ -79,7 +81,7 @@ export default function CouponFiltersBar({ filters, onChange, resultCount }: Cou
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <label className="block">
             <span className={labelClass}>Loại giảm</span>
-            <select
+            <ProjectSelect
               value={filters.type}
               onChange={(event) => set({ type: event.target.value as CouponFilters['type'] })}
               className={inputClass}
@@ -90,12 +92,12 @@ export default function CouponFiltersBar({ filters, onChange, resultCount }: Cou
                   {DISCOUNT_TYPE_LABELS[type]}
                 </option>
               ))}
-            </select>
+            </ProjectSelect>
           </label>
 
           <label className="block">
             <span className={labelClass}>Trạng thái</span>
-            <select
+            <ProjectSelect
               value={filters.expiryStatus}
               onChange={(event) => set({ expiryStatus: event.target.value as CouponFilters['expiryStatus'] })}
               className={inputClass}
@@ -106,12 +108,12 @@ export default function CouponFiltersBar({ filters, onChange, resultCount }: Cou
                   {COUPON_EXPIRY_STATUS_LABELS[status]}
                 </option>
               ))}
-            </select>
+            </ProjectSelect>
           </label>
 
           <label className="block">
             <span className={labelClass}>Sắp xếp theo</span>
-            <select
+            <ProjectSelect
               value={filters.sortBy}
               onChange={(event) => set({ sortBy: event.target.value as CouponFilters['sortBy'] })}
               className={inputClass}
@@ -119,19 +121,19 @@ export default function CouponFiltersBar({ filters, onChange, resultCount }: Cou
               <option value="code">Mã</option>
               <option value="value">Giá trị</option>
               <option value="expiresAt">Hết hạn</option>
-            </select>
+            </ProjectSelect>
           </label>
 
           <label className="block">
             <span className={labelClass}>Thứ tự</span>
-            <select
+            <ProjectSelect
               value={filters.sortOrder}
               onChange={(event) => set({ sortOrder: event.target.value as CouponFilters['sortOrder'] })}
               className={inputClass}
             >
               <option value="asc">Tăng dần</option>
               <option value="desc">Giảm dần</option>
-            </select>
+            </ProjectSelect>
           </label>
         </div>
       </div>

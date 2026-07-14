@@ -1,3 +1,4 @@
+import ProjectSelect from '@/components/ui/ProjectSelect'
 import { IconSearch } from '@/components/admin/AdminIcons'
 import type { StaffAccountFilters } from '@/lib/admin/staff/adminStaffApi'
 
@@ -25,7 +26,7 @@ export default function AdminStaffFiltersBar({ filters, resultCount, onChange }:
         </label>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <select
+          <ProjectSelect
             value={filters.status}
             onChange={(event) =>
               onChange({ ...filters, status: event.target.value as StaffAccountFilters['status'] })
@@ -35,9 +36,9 @@ export default function AdminStaffFiltersBar({ filters, resultCount, onChange }:
             <option value="ALL">Tất cả trạng thái</option>
             <option value="ACTIVE">Đang hoạt động</option>
             <option value="DISABLED">Đã vô hiệu</option>
-          </select>
+          </ProjectSelect>
 
-          <select
+          <ProjectSelect
             value={filters.verification}
             onChange={(event) =>
               onChange({ ...filters, verification: event.target.value as StaffAccountFilters['verification'] })
@@ -47,7 +48,7 @@ export default function AdminStaffFiltersBar({ filters, resultCount, onChange }:
             <option value="ALL">Tất cả email</option>
             <option value="VERIFIED">Đã xác minh</option>
             <option value="UNVERIFIED">Chưa xác minh</option>
-          </select>
+          </ProjectSelect>
 
           <p className="rounded-xl bg-surface-container-low px-3 py-2 text-sm font-semibold text-on-surface-variant">
             {resultCount} kết quả

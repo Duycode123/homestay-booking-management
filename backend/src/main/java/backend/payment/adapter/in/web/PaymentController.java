@@ -8,6 +8,7 @@ import backend.payment.application.model.SePayCheckoutForm;
 import backend.payment.application.port.in.CreatePaymentSessionUseCase;
 import backend.payment.application.port.in.GetPaymentTransactionUseCase;
 import backend.payment.application.port.in.GetSePayCheckoutFormUseCase;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -27,13 +28,14 @@ public class PaymentController {
 
     @PostMapping("/sessions")
     public ResponseEntity<ApiResponse<PaymentSessionResult>> createPaymentSession(
-            @RequestBody CreatePaymentSessionRequest request,
+            @RequestBody @Valid CreatePaymentSessionRequest request,
             Authentication authentication
     ) {
         PaymentSessionResult data = createPaymentSessionUseCase.createPaymentSession(
                 request.getBookingId(),
                 request.getMethod(),
                 request.getPaymentOption(),
+                request.getCouponCode(),
                 authentication.getName()
         );
 

@@ -1,4 +1,5 @@
 import api from '@/lib/api'
+import { getNightlyDisplayPrice } from '@/components/booking/booking-data'
 import type { ChatbotReply } from './types'
 
 type BackendChatbotReply = {
@@ -43,7 +44,7 @@ const RESPONSE_RULES: Array<{ keywords: string[]; reply: ChatbotReply }> = [
     keywords: ['giá', 'gia', 'price', 'bao nhiêu', 'chi phí', 'phí'],
     reply: {
       content:
-        'Giá phụ thuộc hạng phòng và khung giờ. Standard từ 350.000đ, Deluxe từ 550.000đ và Family từ 750.000đ. Bạn chọn phòng cụ thể để xem giá chính xác trên lịch trống.',
+        'Giá được niêm yết theo một đêm và phụ thuộc vào hạng phòng, sức chứa cùng tiện nghi. Bạn chọn phòng cụ thể để xem mức giá và lịch trống chính xác.',
       quickReplies: [
         { id: 'qr-types', label: 'Các loại phòng', message: 'Có những loại phòng nào?' },
       ],
@@ -53,7 +54,7 @@ const RESPONSE_RULES: Array<{ keywords: string[]; reply: ChatbotReply }> = [
     keywords: ['loại phòng', 'phòng nào', 'standard', 'deluxe', 'family', 'homestay'],
     reply: {
       content:
-        'Homestay Booking có 3 hạng phòng Standard, Deluxe và Family. Mỗi phòng có Wi-Fi, điều hòa, TV và máy nước nóng. Bạn cho mình biết số khách, ngân sách và thời gian lưu trú để mình gợi ý phòng phù hợp!',
+        'The Serene Villa có 3 hạng phòng Standard, Deluxe và Family. Mỗi phòng có Wi-Fi, điều hòa, TV và máy nước nóng. Bạn cho mình biết số khách, ngân sách và thời gian lưu trú để mình gợi ý phòng phù hợp!',
     },
   },
   {
@@ -103,7 +104,7 @@ const RESPONSE_RULES: Array<{ keywords: string[]; reply: ChatbotReply }> = [
   {
     keywords: ['xin chào', 'hello', 'hi', 'chào', 'hey'],
     reply: {
-      content: 'Chào bạn! Mình là **HomeBot** — trợ lý tư vấn phòng của Homestay Booking. Bạn muốn đặt phòng, hỏi giá hay tìm phòng theo tiện nghi?',
+      content: 'Chào bạn! Mình là **HomeBot** — trợ lý tư vấn phòng của The Serene Villa. Bạn muốn đặt phòng, hỏi giá hay tìm phòng theo tiện nghi?',
       quickReplies: [
         { id: 'qr-1', label: 'Đặt phòng', message: 'Tôi muốn đặt phòng' },
         { id: 'qr-2', label: 'Giá phòng', message: 'Giá thuê phòng bao nhiêu?' },
@@ -115,7 +116,7 @@ const RESPONSE_RULES: Array<{ keywords: string[]; reply: ChatbotReply }> = [
 
 const DEFAULT_REPLY: ChatbotReply = {
   content:
-    'Mình chưa chắc về câu này — bạn thử hỏi về **đặt phòng**, **giá**, **hủy lịch** hoặc **thanh toán**. Nếu cần người thật, gọi hotline hoặc vào mục **Trợ giúp** nhé!',
+    'Mình chưa chắc về câu này — bạn thử hỏi về **đặt phòng**, **giá**, **hủy lịch** hoặc **thanh toán**. Nếu cần thêm trợ giúp, hãy mở **Trung tâm hỗ trợ** nhé!',
   quickReplies: [
     { id: 'qr-fallback-1', label: 'Đặt phòng', message: 'Hướng dẫn đặt phòng' },
     { id: 'qr-fallback-2', label: 'Liên hệ hỗ trợ', message: 'Làm sao liên hệ nhân viên?' },
@@ -147,7 +148,7 @@ async function sendBackendChatbotMessage(message: string): Promise<ChatbotReply>
 
 const SUPPORT_REPLY: ChatbotReply = {
   content:
-    'Bạn có thể liên hệ qua hotline **1900 xxxx** hoặc email **support@homestay.local**. Hoặc vào **Trợ giúp** (`/customer/support`) để xem FAQ.',
+    'Bạn có thể vào **Trung tâm hỗ trợ** (`/support`) để xem câu hỏi thường gặp. Nếu đã đăng nhập, hãy gửi **Báo cáo sự cố** để đội ngũ vận hành theo dõi đúng đơn đặt phòng.',
 }
 
 const ROOM_FALLBACK_QUICK_REPLIES = [
@@ -186,20 +187,22 @@ function extractMaxPrice(normalized: string) {
 function formatMoney(value: number | string | null | undefined) {
   const numberValue = typeof value === 'string' ? Number(value) : value
   if (!numberValue || Number.isNaN(numberValue)) return 'chưa có giá'
-  return `${numberValue.toLocaleString('vi-VN')}đ/giờ`
+  return `${numberValue.toLocaleString('vi-VN')}đ/đêm`
 }
 
 function normalizeRoomPrice(room: RoomApiItem) {
   const value = room.roomType?.pricePerHour
   const numberValue = typeof value === 'string' ? Number(value) : value
-  return Number.isFinite(numberValue) ? Number(numberValue) : Number.MAX_SAFE_INTEGER
+  return Number.isFinite(numberValue)
+    ? getNightlyDisplayPrice(Number(numberValue))
+    : Number.MAX_SAFE_INTEGER
 }
 
 function roomSummary(room: RoomApiItem) {
   const typeName = room.roomType?.typeName ? ` - ${room.roomType.typeName}` : ''
   const capacity = room.maxPeople ? `, tối đa ${room.maxPeople} người` : ''
   const status = room.status && room.status !== 'AVAILABLE' ? `, trạng thái ${room.status}` : ''
-  return `${room.roomName}${typeName}, ${formatMoney(room.roomType?.pricePerHour)}${capacity}${status}`
+  return `${room.roomName}${typeName}, ${formatMoney(normalizeRoomPrice(room))}${capacity}${status}`
 }
 
 function buildRoomAdvice(room: RoomApiItem, peopleCount: number | null, maxPrice: number | null) {
@@ -215,7 +218,7 @@ function buildRoomAdvice(room: RoomApiItem, peopleCount: number | null, maxPrice
   }
 
   const reasonText = reasons.length > 0 ? ` vì phòng này ${reasons.join(', ')}` : ''
-  return `Mình gợi ý **${room.roomName}**${reasonText}. Đây là phòng ${room.roomType?.typeName ?? 'phù hợp'}, giá ${formatMoney(room.roomType?.pricePerHour)}${room.maxPeople ? `, sức chứa tối đa ${room.maxPeople} người` : ''}.`
+  return `Mình gợi ý **${room.roomName}**${reasonText}. Đây là phòng ${room.roomType?.typeName ?? 'phù hợp'}, giá ${formatMoney(normalizeRoomPrice(room))}${room.maxPeople ? `, sức chứa tối đa ${room.maxPeople} người` : ''}.`
 }
 
 function isAskingPrice(normalized: string) {
@@ -482,7 +485,7 @@ function delay(ms: number) {
 
 export const CHATBOT_WELCOME: ChatbotReply = {
   content:
-    'Xin chào! Mình là **HomeBot** — luôn sẵn sàng tư vấn hạng phòng, tiện nghi, giá và lịch trống của Homestay Booking.',
+    'Xin chào! Mình là **HomeBot** — luôn sẵn sàng tư vấn hạng phòng, tiện nghi, giá và lịch trống của The Serene Villa.',
   quickReplies: [
     { id: 'w-1', label: 'Đặt phòng ngay', message: 'Tôi muốn đặt phòng' },
     { id: 'w-2', label: 'Xem giá phòng', message: 'Giá các phòng thế nào?' },

@@ -313,7 +313,7 @@ public class AiConsultantServiceImpl implements AiConsultantService {
             return Optional.of("Để đặt phòng, bạn chọn phòng phù hợp, chọn ngày và khung giờ còn trống, kiểm tra tổng tiền, nhập coupon nếu có, rồi xác nhận đặt phòng. Sau đó hệ thống sẽ chuyển sang bước thanh toán SePay.");
         }
         if (isAskingPayment(normalizedMessage)) {
-            return Optional.of("Hệ thống đang hỗ trợ thanh toán online qua SePay. Ở bước checkout, bạn có thể đặt cọc 50.000đ hoặc thanh toán toàn bộ tiền phòng. Nếu tạo booking nhưng không thanh toán, lịch pending có thể hết hạn sau khoảng 15 phút.");
+            return Optional.of("Hệ thống hỗ trợ thanh toán tiền mặt tại homestay hoặc thanh toán online qua SePay. Với online, bạn có thể đặt cọc 30% hoặc thanh toán toàn bộ tiền phòng. Phiên QR chưa thanh toán có thể hết hạn sau khoảng 15 phút.");
         }
         if (isAskingCancellation(normalizedMessage)) {
             return Optional.of("Bạn có thể hủy lịch của mình nếu còn trước giờ nhận phòng tối thiểu 24 tiếng. Luồng hiện tại tính hoàn 100% số tiền đã thanh toán, nhưng việc chuyển tiền hoàn từ cổng thanh toán thật vẫn là bước vận hành riêng.");
@@ -327,7 +327,7 @@ public class AiConsultantServiceImpl implements AiConsultantService {
 
     private String buildSystemPrompt() {
         return """
-                You are the Homestay Booking Management room consultant.
+                You are the The Serene Villa Management room consultant.
                 Answer in friendly Vietnamese without markdown tables.
                 Use only the provided room, booking, price, and policy context.
                 Room context can include tier description, image URL, amenities, unavailable amenities, review rating, status, capacity, and requested-time availability.

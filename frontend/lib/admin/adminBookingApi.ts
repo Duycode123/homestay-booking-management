@@ -1,6 +1,6 @@
 import axios from 'axios'
 import api from '@/lib/api'
-import type { AdminBooking, BookingFilters, BookingStatus, PaymentStatus } from './types'
+import type { AdminBooking, BookingFilters, BookingStatus, CancellationRequestStatus, PaymentStatus } from './types'
 import { formatAdminRoomTypeLabel } from './bookingLabels'
 
 type ApiResponse<T> = {
@@ -24,10 +24,21 @@ type BackendBooking = {
   endTime: string
   totalHours?: number | string | null
   totalAmount?: number | string | null
+  paidAmount?: number | string | null
+  remainingAmount?: number | string | null
   status: BookingStatus
   paymentMethod?: BackendPaymentMethod | null
   note?: string | null
   equipmentNotes?: string | null
+  cancellationRequestStatus?: CancellationRequestStatus | null
+  cancellationReason?: string | null
+  cancellationRequestedAt?: string | null
+  cancellationReviewedAt?: string | null
+  cancellationAdminNote?: string | null
+  refundAmount?: number | string | null
+  refundPercentage?: number | null
+  refundMethod?: string | null
+  expectedRefundAt?: string | null
 }
 
 type ApiErrorResponse = {
@@ -81,15 +92,15 @@ function calculateDurationHours(startTime: string, endTime: string) {
   return durationMs / (1000 * 60 * 60)
 }
 
-function derivePaymentStatus(status: BookingStatus): PaymentStatus {
+function derivePaymentStatus(paidAmount: number, remainingAmount: number, status: BookingStatus): PaymentStatus {
+  if (paidAmount > 0 && remainingAmount <= 0) return 'PAID'
+  if (paidAmount > 0 && remainingAmount > 0) return 'PARTIALLY_PAID'
+
   switch (status) {
-    case 'PAID':
-    case 'CHECKED_IN':
-    case 'COMPLETED':
-      return 'PAID'
     case 'PENDING_PAYMENT':
-    case 'DEPOSIT_PAID':
       return 'PENDING'
+    case 'DEPOSIT_PAID':
+      return 'PARTIALLY_PAID'
     case 'CANCELLED':
     default:
       return 'UNPAID'
@@ -118,6 +129,9 @@ function mapEquipmentNotes(equipmentNotes?: string | null) {
 function mapBackendBooking(booking: BackendBooking): AdminBooking {
   const totalHours = parseNumeric(booking.totalHours)
   const durationHours = totalHours > 0 ? totalHours : calculateDurationHours(booking.startTime, booking.endTime)
+  const totalPrice = parseNumeric(booking.totalAmount)
+  const paidAmount = Math.min(totalPrice, Math.max(0, parseNumeric(booking.paidAmount)))
+  const remainingAmount = Math.max(0, parseNumeric(booking.remainingAmount) || totalPrice - paidAmount)
 
   return {
     bookingId: booking.bookingId,
@@ -132,12 +146,23 @@ function mapBackendBooking(booking: BackendBooking): AdminBooking {
     endTime: booking.endTime,
     durationHours,
     equipment: mapEquipmentNotes(booking.equipmentNotes),
-    totalPrice: parseNumeric(booking.totalAmount),
-    paymentStatus: derivePaymentStatus(booking.status),
+    totalPrice,
+    paidAmount,
+    remainingAmount,
+    paymentStatus: derivePaymentStatus(paidAmount, remainingAmount, booking.status),
     bookingStatus: booking.status,
     note: normalizeText(booking.note) || undefined,
     paymentMethod: mapPaymentMethod(booking.paymentMethod),
     paymentMethodCode: booking.paymentMethod ?? undefined,
+    cancellationRequestStatus: booking.cancellationRequestStatus ?? undefined,
+    cancellationReason: normalizeText(booking.cancellationReason) || undefined,
+    cancellationRequestedAt: booking.cancellationRequestedAt ?? undefined,
+    cancellationReviewedAt: booking.cancellationReviewedAt ?? undefined,
+    cancellationAdminNote: normalizeText(booking.cancellationAdminNote) || undefined,
+    refundAmount: booking.refundAmount == null ? undefined : parseNumeric(booking.refundAmount),
+    refundPercentage: booking.refundPercentage ?? undefined,
+    refundMethod: normalizeText(booking.refundMethod) || undefined,
+    expectedRefundAt: booking.expectedRefundAt ?? undefined,
   }
 }
 
@@ -289,11 +314,37 @@ export async function cancelAdminBooking(
   }
 }
 
+export async function settleAdminBookingAtCheckout(bookingId: number): Promise<AdminBooking> {
+  try {
+    const response = await api.post<ApiResponse<BackendBooking>>(`/api/admin/bookings/${bookingId}/settle-checkout`)
+    return mapBackendBooking(response.data.data)
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error, 'Không thể kết toán phần tiền còn lại khi checkout.'))
+  }
+}
+
 export async function getAdminBookingById(bookingId: number): Promise<AdminBooking | null> {
   try {
     const response = await api.get<ApiResponse<BackendBooking>>(`/api/admin/bookings/${bookingId}`)
     return mapBackendBooking(response.data.data)
   } catch (error) {
     throw new Error(getApiErrorMessage(error, 'Không thể tải chi tiết đơn đặt.'))
+  }
+}
+
+export async function reviewCancellationRequest(
+  bookingId: number,
+  approved: boolean,
+  adminNote?: string,
+): Promise<AdminBooking> {
+  try {
+    const action = approved ? 'approve' : 'reject'
+    const response = await api.post<ApiResponse<{ booking: BackendBooking }>>(
+      `/api/admin/bookings/${bookingId}/cancellation-request/${action}`,
+      adminNote?.trim() ? { adminNote: adminNote.trim() } : {},
+    )
+    return mapBackendBooking(response.data.data.booking)
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error, 'Không thể xử lý yêu cầu hủy phòng.'))
   }
 }

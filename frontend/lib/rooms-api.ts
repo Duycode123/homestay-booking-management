@@ -1,6 +1,6 @@
 import api from '@/lib/api'
 
-export type BackendRoomStatus = 'AVAILABLE' | 'IN_USE' | 'MAINTENANCE'
+export type BackendRoomStatus = 'AVAILABLE' | 'IN_USE' | 'MAINTENANCE' | 'NEED_CLEANING' | 'INACTIVE'
 
 export type BackendRoomType = {
   id: number
@@ -19,6 +19,7 @@ export type BackendRoom = {
   status?: BackendRoomStatus | null
   description?: string | null
   imageUrl?: string | null
+  imageUrls?: string[] | null
 }
 
 type ApiResponse<T> = {
@@ -32,6 +33,7 @@ export type CreateBackendRoomPayload = {
   roomTypeId: number
   maxPeople: number
   imageUrl?: string | null
+  additionalImageUrls?: string[]
   status?: BackendRoomStatus
 }
 
@@ -40,6 +42,7 @@ export type UpdateBackendRoomPayload = {
   roomTypeId: number
   maxPeople: number
   imageUrl?: string | null
+  additionalImageUrls?: string[]
   status: BackendRoomStatus
 }
 

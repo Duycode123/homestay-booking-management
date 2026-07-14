@@ -1,6 +1,7 @@
 import type { BookingHistoryItem, CustomerBookingStatus } from '@/lib/customer-booking-service'
 
 export type BookingHistoryFilterState = {
+  query: string
   startDate: string
   endDate: string
   startTime: string
@@ -9,6 +10,7 @@ export type BookingHistoryFilterState = {
 }
 
 export const defaultBookingHistoryFilters: BookingHistoryFilterState = {
+  query: '',
   startDate: '',
   endDate: '',
   startTime: '',
@@ -50,6 +52,7 @@ export function applyBookingDatePreset(days: number): Pick<BookingHistoryFilterS
 export function hasActiveBookingHistoryFilters(filters: BookingHistoryFilterState) {
   return Boolean(
     filters.startDate ||
+      filters.query.trim() ||
       filters.endDate ||
       filters.startTime ||
       filters.endTime ||
@@ -62,6 +65,12 @@ export function filterBookingHistory(
   filters: BookingHistoryFilterState,
 ): BookingHistoryItem[] {
   return bookings.filter((booking) => {
+    const query = filters.query.trim().toLocaleLowerCase('vi-VN')
+    if (query) {
+      const searchableValue = `${booking.bookingId} ${booking.roomName}`.toLocaleLowerCase('vi-VN')
+      if (!searchableValue.includes(query)) return false
+    }
+
     const bookingDateKey = parseBookingDateKey(booking.date)
 
     if (filters.startDate && bookingDateKey && bookingDateKey < filters.startDate) {
