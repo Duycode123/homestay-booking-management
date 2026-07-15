@@ -76,6 +76,8 @@ Allow an authenticated customer to select a valid room/time range, see the expec
 - An online checkout session must create a pending `payment_transaction` before showing the QR or redirecting the user to a payment portal.
 - Creating a new checkout session for the same booking cancels any older open payment sessions with `PAYMENT_SESSION_REPLACED`.
 - A pending checkout holds the selected room/time slot until payment success, portal cancel/failure, or timeout.
+- Public room availability exposes only a non-sensitive blocking classification: `PAYMENT_HOLD` for an unpaid five-minute hold and `BOOKED` for a confirmed stay. It never exposes the customer or booking identity.
+- The room catalog displays `PAYMENT_HOLD` separately as `Đang giữ chỗ`, excludes it from the available-room count, and refreshes when the reported hold countdown expires. After the expiry sweep cancels an unpaid booking, the room returns to the available count automatically.
 - Deposit success moves the booking to `DEPOSIT_PAID`; full-payment success moves it to `PAID`.
 - A valid coupon entered at checkout changes the pending booking total before the payment transaction is created, but does not create `coupon_usage` until payment is confirmed.
 

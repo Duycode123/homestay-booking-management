@@ -9,6 +9,19 @@ public record RoomAvailabilityResponse(
         LocalDateTime from,
         LocalDateTime to,
         boolean operational,
-        List<TimeSlotResponse> availableSlots
+        List<TimeSlotResponse> availableSlots,
+        RoomAvailabilityBlockType blockType,
+        LocalDateTime holdExpiresAt,
+        Long holdRemainingSeconds
 ) {
+    public RoomAvailabilityResponse(
+            Integer roomId,
+            String roomName,
+            LocalDateTime from,
+            LocalDateTime to,
+            boolean operational,
+            List<TimeSlotResponse> availableSlots
+    ) {
+        this(roomId, roomName, from, to, operational, availableSlots, null, null, null);
+    }
 }

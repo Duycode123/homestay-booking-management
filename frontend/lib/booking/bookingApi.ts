@@ -44,6 +44,9 @@ type RoomAvailabilityResponse = {
   to: string
   operational: boolean
   availableSlots: AvailabilityRangeResponse[]
+  blockType?: 'PAYMENT_HOLD' | 'BOOKED' | null
+  holdExpiresAt?: string | null
+  holdRemainingSeconds?: number | null
 }
 
 export type BookingResponse = {
@@ -262,6 +265,9 @@ export async function fetchAvailableSlots(roomId: string, date: string): Promise
     ...slot,
     status: resolveSlotStatus(date, slot, availableRanges, operational, now),
     backendAvailable: operational && availableRanges.some((range) => isSlotCoveredByRange(date, slot, range)),
+    blockType: availability?.blockType ?? undefined,
+    holdExpiresAt: availability?.holdExpiresAt ?? undefined,
+    holdRemainingSeconds: availability?.holdRemainingSeconds ?? undefined,
   }))
 }
 

@@ -9,6 +9,7 @@ export type RoomCardAvailabilityState = {
   canBookFutureDate: boolean
   canStartBooking: boolean
   hasBookingToday: boolean
+  isPaymentHeld: boolean
 }
 
 export function applyTodayAvailability(
@@ -57,6 +58,24 @@ export function applyTodayAvailability(
   const todayCheckInAvailable = todaySlots.some((slot) => {
     return slot.start === '14:00' && slot.backendAvailable === true
   })
+  const paymentHoldSlot = todaySlots.find((slot) => slot.blockType === 'PAYMENT_HOLD')
+
+  if (paymentHoldSlot) {
+    const holdExpiresAt = typeof paymentHoldSlot.holdRemainingSeconds === 'number'
+      ? new Date(now.getTime() + (paymentHoldSlot.holdRemainingSeconds * 1_000)).toISOString()
+      : paymentHoldSlot.holdExpiresAt
+    return {
+      ...room,
+      availabilityStatus: 'ALMOST_FULL',
+      remainingSlots: tomorrowBookableSlots.length,
+      isAvailable: tomorrowBookableSlots.length > 0,
+      availabilityKnown: true,
+      todayAvailabilityReason: 'PAYMENT_HOLD',
+      nextAvailableSlot: tomorrowStartTime ? `Ngày mai, ${tomorrowStartTime}` : undefined,
+      nextAvailableTime: undefined,
+      holdExpiresAt,
+    }
+  }
   const availabilityStatus: RoomAvailabilityStatus = remainingSlots === 0 ? 'FULL_TODAY' : 'AVAILABLE'
 
   return {
@@ -76,6 +95,7 @@ export function applyTodayAvailability(
         ? `Ngày mai, ${tomorrowStartTime}`
         : undefined,
     nextAvailableTime,
+    holdExpiresAt: undefined,
   }
 }
 
@@ -105,7 +125,9 @@ export function getRoomCardAvailabilityState(room: Room): RoomCardAvailabilitySt
   const isUnavailable = isRoomTemporarilyUnavailable(room)
   const isChecking = !isUnavailable && !room.availabilityKnown
   const canBookFutureDate = room.todayAvailabilityReason === 'NEXT_DAY'
+    || room.todayAvailabilityReason === 'PAYMENT_HOLD'
   const hasBookingToday = room.todayAvailabilityReason === 'TODAY_BOOKED'
+  const isPaymentHeld = room.todayAvailabilityReason === 'PAYMENT_HOLD'
   const canBookToday = !isUnavailable
     && !isChecking
     && room.todayAvailabilityReason === undefined
@@ -120,6 +142,7 @@ export function getRoomCardAvailabilityState(room: Room): RoomCardAvailabilitySt
     canBookFutureDate,
     canStartBooking: canBookToday || canBookFutureDate,
     hasBookingToday,
+    isPaymentHeld,
   }
 }
 

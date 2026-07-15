@@ -51,7 +51,7 @@ const NIGHTLY_PRICE_STEP = 100_000
 const availabilityOptions: Array<{ value: 'all' | RoomAvailabilityStatus; label: string }> = [
   { value: 'all', label: 'Tất cả trạng thái' },
   { value: 'AVAILABLE', label: 'Còn trống hôm nay' },
-  { value: 'ALMOST_FULL', label: 'Sắp kín lịch' },
+  { value: 'ALMOST_FULL', label: 'Đang giữ chỗ' },
   { value: 'FULL_TODAY', label: 'Kín lịch hôm nay' },
 ]
 
@@ -114,7 +114,12 @@ export default function RoomsPublicPage() {
   const filteredRooms = useMemo(() => filterRooms(liveRooms, filters), [liveRooms, filters])
   const todayRoomSummary = useMemo(() => summarizeTodayRooms(liveRooms), [liveRooms])
   const isInitialScheduleLoading = isLoading || (isTodayScheduleLoading && scheduleUpdatedAt === null)
-  const bookableRoomCount = todayRoomSummary.available + todayRoomSummary.almostFull
+  const bookableRoomCount = todayRoomSummary.available
+  const nearestHoldExpiry = useMemo(() => liveRooms
+    .filter((room) => room.todayAvailabilityReason === 'PAYMENT_HOLD' && room.holdExpiresAt)
+    .map((room) => new Date(room.holdExpiresAt as string).getTime())
+    .filter(Number.isFinite)
+    .sort((left, right) => left - right)[0], [liveRooms])
   const scheduleCoverage = liveRooms.length > 0
     ? Math.round((bookableRoomCount / liveRooms.length) * 100)
     : 0
@@ -204,6 +209,19 @@ export default function RoomsPublicPage() {
 
     return () => window.clearInterval(intervalId)
   }, [])
+
+  useEffect(() => {
+    if (nearestHoldExpiry === undefined) return
+
+    // Give the backend expiry sweep a short window to release the booking,
+    // then refresh immediately instead of waiting for the regular 60s poll.
+    const refreshDelay = Math.max(nearestHoldExpiry - Date.now() + 1_500, 10_000)
+    const timeoutId = window.setTimeout(() => {
+      setScheduleRefreshKey((current) => current + 1)
+    }, refreshDelay)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [nearestHoldExpiry])
 
   useEffect(() => {
     if (!shouldReopenQuickBooking(window.location.search)) return
@@ -335,7 +353,7 @@ export default function RoomsPublicPage() {
                 />
                 <AvailabilityMetric
                   value={isInitialScheduleLoading ? '--' : String(todayRoomSummary.almostFull)}
-                  label="Sắp kín"
+                  label="Đang giữ"
                   tone="limited"
                   onClick={() => showRoomsByAvailability('ALMOST_FULL')}
                 />
@@ -530,11 +548,14 @@ function RoomCard({
   const canBookNow = availabilityState.canBookToday
   const canBookFutureDate = availabilityState.canBookFutureDate
   const canStartBooking = availabilityState.canStartBooking
+  const isPaymentHeld = availabilityState.isPaymentHeld
   const isFullToday = availabilityState.hasBookingToday || room.todayAvailabilityReason === 'BOOKED'
   const isUnavailable = availabilityState.isUnavailable
   const nextAvailableSlotToday = getNextAvailableSlotToday(room, now, todaySlots)
   const bookingBadge = isCheckingAvailability
     ? 'Đang kiểm tra'
+    : isPaymentHeld
+      ? 'Chọn ngày khác'
     : canStartBooking
       ? 'Có thể đặt phòng'
       : isUnavailable
@@ -542,6 +563,8 @@ function RoomCard({
         : 'Chọn ngày khác'
   const bookingHint = canBookNow
     ? `Hôm nay, ${nextAvailableSlotToday}`
+    : isPaymentHeld
+      ? `Đang giữ chỗ chờ thanh toán${formatHoldExpiry(room.holdExpiresAt)}`
     : canBookFutureDate
       ? 'Chọn ngày lưu trú phù hợp'
     : isUnavailable
@@ -1081,11 +1104,37 @@ function summarizeTodayRooms(rooms: Room[]): TodayRoomSummary {
       return summary
     }
 
+    if (room.todayAvailabilityReason === 'PAYMENT_HOLD') {
+      summary.almostFull += 1
+      return summary
+    }
+
+    // A room can still be bookable for a future date while its current
+    // overnight stay is occupied. The dashboard summarizes today's occupancy,
+    // so do not count that room as available merely because tomorrow is free.
+    if (room.todayAvailabilityReason === 'TODAY_BOOKED'
+      || room.todayAvailabilityReason === 'BOOKED') {
+      summary.full += 1
+      return summary
+    }
+
     if (room.availabilityStatus === 'AVAILABLE') summary.available += 1
     if (room.availabilityStatus === 'ALMOST_FULL') summary.almostFull += 1
     if (room.availabilityStatus === 'FULL_TODAY') summary.full += 1
     return summary
   }, { available: 0, almostFull: 0, full: 0, unavailable: 0, unknown: 0 })
+}
+
+function formatHoldExpiry(holdExpiresAt?: string) {
+  if (!holdExpiresAt) return ''
+  const expiry = new Date(holdExpiresAt)
+  if (Number.isNaN(expiry.getTime())) return ''
+
+  return ` đến ${new Intl.DateTimeFormat('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).format(expiry)}`
 }
 
 function formatScheduleUpdateTime(value: Date) {

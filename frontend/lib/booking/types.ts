@@ -23,6 +23,9 @@ export type TimeSlot = {
   label: string
   status: SlotStatus
   backendAvailable?: boolean
+  blockType?: 'PAYMENT_HOLD' | 'BOOKED'
+  holdExpiresAt?: string
+  holdRemainingSeconds?: number
 }
 
 export type BookingDraft = {

@@ -363,7 +363,9 @@ function TopRatedRoomCard({
     ? 'Kiểm tra lịch'
     : availabilityState.isUnavailable
       ? 'Tạm ngưng'
-      : availabilityState.canStartBooking
+      : availabilityState.isPaymentHeld
+        ? 'Chọn ngày khác'
+        : availabilityState.canStartBooking
         ? 'Đặt phòng'
         : 'Chọn ngày khác'
 

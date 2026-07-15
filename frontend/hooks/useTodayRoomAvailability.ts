@@ -72,5 +72,24 @@ export function useTodayRoomAvailability(rooms: Room[]) {
     [availabilityByRoomId, rooms],
   )
 
+  const nearestHoldExpiry = useMemo(() => liveRooms
+    .filter((room) => room.todayAvailabilityReason === 'PAYMENT_HOLD' && room.holdExpiresAt)
+    .map((room) => new Date(room.holdExpiresAt as string).getTime())
+    .filter(Number.isFinite)
+    .sort((left, right) => left - right)[0], [liveRooms])
+
+  useEffect(() => {
+    if (nearestHoldExpiry === undefined) return
+
+    // BookingExpiryService sweeps every 10 seconds. Refresh shortly after the
+    // hold expires so the homepage releases the room without waiting 60 seconds.
+    const refreshDelay = Math.max(nearestHoldExpiry - Date.now() + 1_500, 10_000)
+    const timeoutId = window.setTimeout(() => {
+      setRefreshKey((current) => current + 1)
+    }, refreshDelay)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [nearestHoldExpiry])
+
   return { rooms: liveRooms, isLoading }
 }

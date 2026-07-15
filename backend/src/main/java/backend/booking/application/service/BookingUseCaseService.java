@@ -49,6 +49,7 @@ import backend.dto.response.BookingResponse;
 import backend.dto.response.CustomerBookingCancellationResponse;
 import backend.dto.response.PagedResponse;
 import backend.dto.response.RoomAvailabilityResponse;
+import backend.dto.response.RoomAvailabilityBlockType;
 import backend.dto.response.TimeSlotResponse;
 import backend.entity.Booking;
 import backend.entity.BookingStatus;
@@ -67,6 +68,7 @@ import backend.exception.ForbiddenException;
 import backend.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -133,6 +135,9 @@ public class BookingUseCaseService implements
     private final ValidateCouponUseCase validateCouponUseCase;
     private final BookingStatusTransitionPolicy bookingStatusTransitionPolicy;
     private final Clock clock;
+
+    @Value("${app.booking.payment-expiration-seconds:300}")
+    private long paymentExpirationSeconds = 300;
 
     @Override
     public BookingCostResponse calculateCost(CalculateBookingCostCommand command) {
@@ -279,7 +284,10 @@ public class BookingUseCaseService implements
                     query.from(),
                     query.to(),
                     false,
-                    List.of()
+                    List.of(),
+                    null,
+                    null,
+                    null
             );
         }
 
@@ -289,6 +297,7 @@ public class BookingUseCaseService implements
                 query.to(),
                 blockingBookings
         );
+        AvailabilityBlock availabilityBlock = resolveAvailabilityBlock(blockingBookings);
 
         return new RoomAvailabilityResponse(
                 room.getId(),
@@ -296,7 +305,10 @@ public class BookingUseCaseService implements
                 query.from(),
                 query.to(),
                 true,
-                availableSlots
+                availableSlots,
+                availabilityBlock.type(),
+                availabilityBlock.holdExpiresAt(),
+                availabilityBlock.holdRemainingSeconds()
         );
     }
 
@@ -820,6 +832,40 @@ public class BookingUseCaseService implements
 
     private BigDecimal normalizeMoney(BigDecimal value) {
         return (value == null ? BigDecimal.ZERO : value).setScale(MONEY_SCALE, RoundingMode.HALF_UP);
+    }
+
+    private AvailabilityBlock resolveAvailabilityBlock(List<Booking> blockingBookings) {
+        if (blockingBookings.isEmpty()) {
+            return new AvailabilityBlock(null, null, null);
+        }
+
+        boolean containsConfirmedBooking = blockingBookings.stream()
+                .anyMatch(booking -> booking.getStatus() != BookingStatus.PENDING_PAYMENT);
+        if (containsConfirmedBooking) {
+            return new AvailabilityBlock(RoomAvailabilityBlockType.BOOKED, null, null);
+        }
+
+        LocalDateTime holdExpiresAt = blockingBookings.stream()
+                .map(Booking::getCreatedAt)
+                .filter(createdAt -> createdAt != null)
+                .map(createdAt -> createdAt.plusSeconds(paymentExpirationSeconds))
+                .min(LocalDateTime::compareTo)
+                .orElse(null);
+        Long holdRemainingSeconds = holdExpiresAt == null
+                ? null
+                : Math.max(0, Duration.between(LocalDateTime.now(clock), holdExpiresAt).getSeconds());
+        return new AvailabilityBlock(
+                RoomAvailabilityBlockType.PAYMENT_HOLD,
+                holdExpiresAt,
+                holdRemainingSeconds
+        );
+    }
+
+    private record AvailabilityBlock(
+            RoomAvailabilityBlockType type,
+            LocalDateTime holdExpiresAt,
+            Long holdRemainingSeconds
+    ) {
     }
 
     private void validateCustomerCancellationPolicy(Booking booking) {

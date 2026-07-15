@@ -33,6 +33,7 @@ import backend.dto.response.BookingCostResponse;
 import backend.dto.response.BookingResponse;
 import backend.dto.response.PagedResponse;
 import backend.dto.response.RoomAvailabilityResponse;
+import backend.dto.response.RoomAvailabilityBlockType;
 import backend.entity.Booking;
 import backend.entity.BookingStatus;
 import backend.entity.Customer;
@@ -512,6 +513,37 @@ class BookingUseCaseServiceTest {
         assertEquals(last.getStartTime(), response.availableSlots().get(1).endTime());
         assertEquals(last.getEndTime(), response.availableSlots().get(2).startTime());
         assertEquals(to, response.availableSlots().get(2).endTime());
+        assertEquals(RoomAvailabilityBlockType.BOOKED, response.blockType());
+    }
+
+    @Test
+    void reportsTemporaryPaymentHoldAndItsExpiry() {
+        LocalDateTime from = LocalDateTime.of(2030, 1, 10, 8, 0);
+        LocalDateTime to = LocalDateTime.of(2030, 1, 10, 23, 59);
+        LocalDateTime createdAt = LocalDateTime.now(clock);
+        Room room = availableRoom();
+        Booking pendingBooking = bookingAt(
+                LocalDateTime.of(2030, 1, 10, 14, 0),
+                LocalDateTime.of(2030, 1, 11, 12, 0)
+        );
+        pendingBooking.setStatus(BookingStatus.PENDING_PAYMENT);
+        pendingBooking.setCreatedAt(createdAt);
+
+        when(loadRoomPort.loadRoom(1)).thenReturn(Optional.of(room));
+        when(loadBookingPort.loadBlockingBookings(
+                eq(1),
+                eq(from),
+                eq(to),
+                eq(blockingStatuses())
+        )).thenReturn(List.of(pendingBooking));
+
+        RoomAvailabilityResponse response = bookingUseCaseService.getAvailableSlots(
+                new GetRoomAvailabilityQuery(1, from, to)
+        );
+
+        assertEquals(RoomAvailabilityBlockType.PAYMENT_HOLD, response.blockType());
+        assertEquals(createdAt.plusMinutes(5), response.holdExpiresAt());
+        assertEquals(300L, response.holdRemainingSeconds());
     }
 
     @Test
