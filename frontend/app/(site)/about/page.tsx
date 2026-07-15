@@ -38,13 +38,13 @@ const teamStories = [
   },
   {
     number: '02',
-    category: 'Khoảnh khắc bên nhau',
-    title: 'Một bữa tiệc nhỏ, một đội ngũ gần nhau hơn',
+    category: 'Dấu chân bình yên',
+    title: 'Giữa núi trời, chúng tôi tìm thấy ý nghĩa của sự an trú',
     excerpt:
-      'Một bữa ăn ấm cúng và dịp sinh nhật giản dị đã nhắc chúng tôi rằng sự hiếu khách luôn bắt đầu từ cảm giác được sẻ chia. Chính những khoảnh khắc gần gũi này giúp cả đội thấu hiểu nhau hơn và cùng tạo nên trải nghiệm lưu trú chân thành cho mỗi vị khách.',
-    image: '/images/picnic.png',
-    imageAlt: 'Nhóm The Serene Villa quây quần trong một bữa tiệc sinh nhật ấm cúng',
-    objectPosition: 'center 56%',
+      'Một hành trình qua miền núi đã cho chúng tôi khoảng lặng để lắng nghe thiên nhiên và chính mình. Từ khoảnh khắc ấy, The Serene Villa theo đuổi một trải nghiệm lưu trú nơi mỗi khung cửa mở ra cảnh sắc bình yên, còn mỗi vị khách đều có thể chậm lại và tìm thấy sự thư thái theo cách riêng.',
+    image: '/images/story-mountain-journey.png',
+    imageAlt: 'Khoảnh khắc giữa núi trời truyền cảm hứng cho câu chuyện The Serene Villa',
+    objectPosition: 'center 42%',
   },
 ] as const
 

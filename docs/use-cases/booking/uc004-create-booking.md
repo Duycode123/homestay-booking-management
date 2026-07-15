@@ -57,7 +57,7 @@ Allow an authenticated customer to select a valid room/time range, see the expec
 - Invalid, expired, or ineligible coupon at checkout: backend rejects payment-session creation with the coupon validation reason and does not create a transaction.
 - Customer cancels on the SePay portal: backend accepts the SePay cancel/void notification, marks the pending transaction as `CANCELLED`, and marks the held booking as `CANCELLED` to release the slot.
 - Portal payment fails: backend marks the pending transaction as `FAILED` and marks the held booking as `CANCELLED`.
-- Payment timeout: pending checkout sessions older than `app.booking.payment-expiration-seconds` (default `300`, or 5 minutes) are marked `CANCELLED` by the poll endpoint or scheduled expiry job; their still-pending bookings are also marked `CANCELLED` so availability is released.
+- Payment timeout: the single deadline is `booking.created_at + app.booking.payment-expiration-seconds` (default `300`, or 5 minutes). Both the room hold and every initial-payment SePay QR use this exact deadline. Creating another QR for the same booking never extends the hold. At the deadline, the transaction and still-pending booking are marked `CANCELLED`, releasing availability.
 - If SePay reports that money arrived after session expiry, the transaction is retained as `SUCCEEDED` with response code `LATE_PAYMENT_REQUIRES_REFUND`, while the booking stays cancelled to avoid reclaiming a room that may already have been released. The customer must contact support for reconciliation instead of paying again.
 
 ## Business Rules

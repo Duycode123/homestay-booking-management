@@ -99,6 +99,8 @@ class PaymentCheckoutUseCaseServiceTest {
     @Test
     void createsDepositPaymentSessionAndKeepsBookingPending() {
         Booking booking = booking(12, PaymentMethod.CASH);
+        LocalDateTime bookingCreatedAt = LocalDateTime.now().minusSeconds(45);
+        booking.setCreatedAt(bookingCreatedAt);
         when(bookingRepository.findByIdAndCustomer_Account_Email(12, "customer@example.com"))
                 .thenReturn(Optional.of(booking));
         when(paymentTransactionRepository.save(any(PaymentTransaction.class))).thenAnswer(invocation -> {
@@ -129,6 +131,7 @@ class PaymentCheckoutUseCaseServiceTest {
         assertEquals(booking.getBookingCode(), result.bookingCode());
         assertEquals(true, result.paymentUrl().startsWith("https://vietqr.app/img?"));
         assertEquals(true, result.paymentUrl().contains("des=" + savedTransaction.getTransactionReference()));
+        assertEquals(bookingCreatedAt.plusSeconds(300), result.expiresAt());
     }
 
     @Test
@@ -168,6 +171,8 @@ class PaymentCheckoutUseCaseServiceTest {
     @Test
     void replacesExistingOpenPaymentSessionBeforeCreatingANewOne() {
         Booking booking = booking(25, PaymentMethod.ONLINE);
+        LocalDateTime bookingCreatedAt = LocalDateTime.now().minusSeconds(120);
+        booking.setCreatedAt(bookingCreatedAt);
         PaymentTransaction existing = PaymentTransaction.builder()
                 .booking(booking)
                 .transactionReference("PAYOLD")
@@ -184,7 +189,7 @@ class PaymentCheckoutUseCaseServiceTest {
             return saved;
         });
 
-        paymentCheckoutUseCaseService.createPaymentSession(
+        PaymentSessionResult result = paymentCheckoutUseCaseService.createPaymentSession(
                 25,
                 "bank_transfer",
                 "full",
@@ -199,6 +204,33 @@ class PaymentCheckoutUseCaseServiceTest {
         assertEquals(PaymentTransactionStatus.CANCELLED, closed.getStatus());
         assertEquals("PAYMENT_SESSION_REPLACED", closed.getResponseCode());
         assertEquals(BookingStatus.PENDING_PAYMENT, booking.getStatus());
+        assertEquals(bookingCreatedAt.plusSeconds(300), result.expiresAt());
+    }
+
+    @Test
+    void rejectsNewQrAndReleasesRoomWhenBookingHoldHasExpired() {
+        Booking booking = booking(27, PaymentMethod.ONLINE);
+        booking.setCreatedAt(LocalDateTime.now().minusSeconds(301));
+        when(bookingRepository.findByIdAndCustomer_Account_Email(27, "customer@example.com"))
+                .thenReturn(Optional.of(booking));
+
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                () -> paymentCheckoutUseCaseService.createPaymentSession(
+                        27,
+                        "bank_transfer",
+                        "full",
+                        "customer@example.com"
+                )
+        );
+
+        assertEquals(
+                "Thoi gian giu phong 5 phut da het. Vui long chon lai phong va tao don moi",
+                exception.getMessage()
+        );
+        assertEquals(BookingStatus.CANCELLED, booking.getStatus());
+        verify(bookingRepository).save(booking);
+        verify(paymentTransactionRepository, never()).save(any(PaymentTransaction.class));
     }
 
     @Test
@@ -284,6 +316,7 @@ class PaymentCheckoutUseCaseServiceTest {
     @Test
     void pollingTransactionCancelsExpiredPaymentWhenSePayApiHasNoMatch() {
         Booking booking = booking(12, PaymentMethod.ONLINE);
+        booking.setCreatedAt(LocalDateTime.now().minusSeconds(301));
         PaymentTransaction transaction = PaymentTransaction.builder()
                 .booking(booking)
                 .provider(PaymentProvider.SEPAY)
@@ -426,6 +459,7 @@ class PaymentCheckoutUseCaseServiceTest {
     @Test
     void pollingRetainsLateIncomingMoneyForRefundReconciliation() {
         Booking booking = booking(12, PaymentMethod.ONLINE);
+        booking.setCreatedAt(LocalDateTime.now().minusSeconds(301));
         booking.setStatus(BookingStatus.CANCELLED);
         PaymentTransaction transaction = PaymentTransaction.builder()
                 .booking(booking)

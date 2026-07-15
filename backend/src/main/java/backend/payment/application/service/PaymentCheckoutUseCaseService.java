@@ -16,6 +16,7 @@ import backend.coupon.domain.port.in.ValidateCouponUseCase;
 import backend.payment.application.model.PaymentSessionResult;
 import backend.payment.application.model.PaymentTransactionDetail;
 import backend.payment.application.model.SePayCheckoutForm;
+import backend.payment.application.exception.PaymentHoldExpiredException;
 import backend.payment.application.port.in.CreatePaymentSessionUseCase;
 import backend.payment.application.port.in.CreateCheckoutBalancePaymentUseCase;
 import backend.payment.application.port.in.GetPaymentTransactionUseCase;
@@ -132,7 +133,7 @@ public class PaymentCheckoutUseCaseService implements
     }
 
     @Override
-    @Transactional
+    @Transactional(noRollbackFor = PaymentHoldExpiredException.class)
     public PaymentSessionResult createPaymentSession(
             Integer bookingId,
             String rawMethod,
@@ -158,6 +159,16 @@ public class PaymentCheckoutUseCaseService implements
                 || booking.getStatus() == BookingStatus.CHECKED_IN
                 || booking.getStatus() == BookingStatus.COMPLETED) {
             throw new IllegalStateException("Don dat phong nay da duoc thanh toan");
+        }
+
+        LocalDateTime bookingPaymentExpiresAt = resolveBookingPaymentExpiresAt(booking, null);
+        if (bookingPaymentExpiresAt != null && !LocalDateTime.now().isBefore(bookingPaymentExpiresAt)) {
+            booking.setStatus(BookingStatus.CANCELLED);
+            bookingRepository.save(booking);
+            closeExistingOpenTransactions(booking.getId());
+            throw new PaymentHoldExpiredException(
+                    "Thoi gian giu phong 5 phut da het. Vui long chon lai phong va tao don moi"
+            );
         }
 
         boolean pricingChanged = applyCouponIfRequested(booking, rawCouponCode);
@@ -207,7 +218,7 @@ public class PaymentCheckoutUseCaseService implements
                 paymentTransaction.getAmount(),
                 buildSePayCheckoutPort.buildVietQrUrl(paymentId, paymentTransaction.getAmount()),
                 paymentTransaction.getCreatedAt(),
-                resolveExpiresAt(paymentTransaction.getCreatedAt()),
+                resolveBookingPaymentExpiresAt(booking, paymentTransaction.getCreatedAt()),
                 paymentTransaction.getPaidAt()
         );
     }
@@ -353,7 +364,7 @@ public class PaymentCheckoutUseCaseService implements
             return;
         }
 
-        LocalDateTime expiresAt = resolveExpiresAt(transaction.getCreatedAt());
+        LocalDateTime expiresAt = resolveTransactionExpiresAt(transaction);
         SePayIncomingPaymentQuery query = new SePayIncomingPaymentQuery(
                 transaction.getTransactionReference(),
                 transaction.getAmount(),
@@ -484,6 +495,22 @@ public class PaymentCheckoutUseCaseService implements
         return createdAt.plusSeconds(paymentExpirationSeconds);
     }
 
+    private LocalDateTime resolveBookingPaymentExpiresAt(Booking booking, LocalDateTime fallbackCreatedAt) {
+        if (booking != null && booking.getCreatedAt() != null) {
+            return resolveExpiresAt(booking.getCreatedAt());
+        }
+
+        return resolveExpiresAt(fallbackCreatedAt);
+    }
+
+    private LocalDateTime resolveTransactionExpiresAt(PaymentTransaction transaction) {
+        if (isCheckoutBalanceTransaction(transaction)) {
+            return resolveExpiresAt(transaction.getCreatedAt());
+        }
+
+        return resolveBookingPaymentExpiresAt(transaction.getBooking(), transaction.getCreatedAt());
+    }
+
     private String mapStatus(PaymentTransactionStatus status, Booking booking) {
         if (status == PaymentTransactionStatus.SUCCEEDED
                 && booking != null
@@ -519,7 +546,7 @@ public class PaymentCheckoutUseCaseService implements
                 mapStatus(paymentTransaction.getStatus(), paymentTransaction.getBooking()),
                 paymentTransaction.getAmount(),
                 paymentTransaction.getCreatedAt(),
-                resolveExpiresAt(paymentTransaction.getCreatedAt()),
+                resolveTransactionExpiresAt(paymentTransaction),
                 paymentTransaction.getPaidAt()
         );
     }

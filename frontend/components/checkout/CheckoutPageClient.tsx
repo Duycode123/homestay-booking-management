@@ -245,6 +245,10 @@ export default function CheckoutPageClient() {
     () => getSecondsUntilExpiry(paymentSession?.expiresAt, now),
     [now, paymentSession?.expiresAt],
   )
+  const isActivePaymentSession = paymentSession?.status === 'pending'
+    && secondsUntilExpiry !== null
+    && secondsUntilExpiry > 0
+  const isPaymentSessionExpired = paymentSession?.status === 'pending' && secondsUntilExpiry === 0
 
   const handleApplyCoupon = (discount: AppliedDiscount) => {
     if (!booking) return
@@ -364,6 +368,12 @@ export default function CheckoutPageClient() {
     } finally {
       setIsPaying(false)
     }
+  }
+
+  const handleSelectAgain = () => {
+    clearPendingBooking()
+    clearCheckoutSession()
+    router.push(booking?.roomId ? `/rooms/${booking.roomId}` : '/rooms')
   }
 
   return (
@@ -501,14 +511,25 @@ export default function CheckoutPageClient() {
                       <p className="font-display text-lg font-bold text-[#242A27]">Quét mã để thanh toán</p>
                       <p className="mt-1 text-sm leading-6 text-[#6A6C66]">Mở ứng dụng ngân hàng và quét mã QR bên dưới.</p>
                     </div>
-                    <span className="rounded-full bg-[#FFF3DD] px-3 py-1.5 text-xs font-bold text-[#98611C]">
-                      {secondsUntilExpiry !== null && secondsUntilExpiry > 0 ? formatCountdown(secondsUntilExpiry) : 'Đang chờ'}
+                    <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${isPaymentSessionExpired ? 'bg-[#FCEEEF] text-[#A3293A]' : 'bg-[#FFF3DD] text-[#98611C]'}`}>
+                      {isPaymentSessionExpired
+                        ? 'QR đã hết hạn'
+                        : secondsUntilExpiry !== null && secondsUntilExpiry > 0
+                          ? formatCountdown(secondsUntilExpiry)
+                          : 'Đang chờ'}
                     </span>
                   </div>
 
                   <div className="mt-4 grid gap-4 sm:grid-cols-[220px_1fr] sm:items-center">
-                    <div className="overflow-hidden rounded-[20px] border border-[#E4DED3] bg-white p-3 shadow-sm">
-                      <img src={paymentSession.paymentUrl} alt={`Mã QR thanh toán ${paymentSession.paymentId}`} className="mx-auto aspect-square w-full object-contain" />
+                    <div className="relative overflow-hidden rounded-[20px] border border-[#E4DED3] bg-white p-3 shadow-sm">
+                      <img src={paymentSession.paymentUrl} alt={`Mã QR thanh toán ${paymentSession.paymentId}`} className={`mx-auto aspect-square w-full object-contain transition ${isPaymentSessionExpired ? 'opacity-25 grayscale' : ''}`} />
+                      {isPaymentSessionExpired && (
+                        <div className="absolute inset-0 flex items-center justify-center p-5 text-center">
+                          <span className="rounded-full bg-white/95 px-4 py-2 text-sm font-bold text-[#A3293A] shadow-sm">
+                            Mã QR đã hết hạn
+                          </span>
+                        </div>
+                      )}
                     </div>
                     <div className="grid gap-2 text-sm">
                       <PaymentSessionRow label="Số tiền" value={formatCurrency(paymentSession.amount)} />
@@ -536,14 +557,16 @@ export default function CheckoutPageClient() {
 
               <button
                 type="button"
-                onClick={handlePay}
-                disabled={isPaying}
+                onClick={isPaymentSessionExpired ? handleSelectAgain : handlePay}
+                disabled={isPaying || isActivePaymentSession}
                 className="mt-5 flex min-h-[56px] w-full items-center justify-center gap-2 rounded-full border border-[#173A31] bg-[#173A31] px-6 font-display text-base font-bold text-white shadow-[0_14px_30px_rgba(23,58,49,.24)] transition hover:-translate-y-0.5 hover:border-[#245545] hover:bg-[#245545] hover:shadow-[0_18px_36px_rgba(23,58,49,.3)] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isPaying
                   ? 'Đang xử lý...'
-                  : paymentSession?.status === 'pending'
-                    ? 'Tạo lại mã QR'
+                  : isPaymentSessionExpired
+                    ? 'Chọn lại kỳ lưu trú'
+                    : isActivePaymentSession
+                      ? `Đang giữ phòng · ${formatCountdown(secondsUntilExpiry ?? 0)}`
                     : <>Tạo mã QR · {formatCurrency(amountToPayNow)} <ArrowRightIcon /></>}
               </button>
                 <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-[#74776F]">
