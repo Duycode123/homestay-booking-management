@@ -14,8 +14,8 @@ export default function CustomerCheckoutPage() {
 
 function CheckoutFallback() {
   return (
-    <main className="min-h-screen bg-[#F6F3ED] px-6 py-10 text-[#242A27]">
-      <div className="mx-auto max-w-7xl rounded-[24px] border border-[#E4DED3] bg-white p-6 shadow-[0_4px_24px_rgba(26,28,30,0.06)]">
+    <main id="main-content" tabIndex={-1} className="min-h-screen bg-[#F6F3ED] px-4 py-6 text-[#242A27] sm:px-6 sm:py-10">
+      <div className="mx-auto max-w-7xl rounded-[20px] border border-[#E4DED3] bg-white p-4 shadow-[0_4px_24px_rgba(26,28,30,0.06)] sm:rounded-[24px] sm:p-6">
         <p className="font-display text-lg font-semibold">Đang tải checkout...</p>
       </div>
     </main>

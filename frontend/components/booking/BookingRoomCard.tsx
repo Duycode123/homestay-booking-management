@@ -7,6 +7,7 @@ import { formatCurrency, getNightlyDisplayPrice, type BookingRoom } from '@/comp
 import { HeartIcon } from '@/components/layout/FavoriteRoomsMenu'
 import { useAuth } from '@/contexts/AuthContext'
 import { useFavorites } from '@/contexts/FavoritesContext'
+import { shouldBypassImageOptimization } from '@/lib/image-optimization'
 
 type BookingRoomCardProps = {
   room: BookingRoom
@@ -162,7 +163,8 @@ export default function BookingRoomCard({ room, renderIcon, onOpenDetail, onBook
             src={room.image}
             alt={room.name}
             fill
-            unoptimized
+            quality={90}
+            unoptimized={shouldBypassImageOptimization(room.image)}
             sizes="(min-width: 768px) 33vw, 100vw"
             className={`object-cover transition-transform duration-300 group-hover:scale-105 ${room.imageClassName}`}
           />

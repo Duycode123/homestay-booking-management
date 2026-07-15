@@ -12,6 +12,7 @@ export function CustomerPageShell({
   return (
     <main
       id="main-content"
+      tabIndex={-1}
       className={
         contained
           ? 'flex h-[calc(100dvh-5rem)] flex-col overflow-hidden bg-brand-bgGray text-on-surface'
@@ -23,7 +24,7 @@ export function CustomerPageShell({
           className={
             contained
               ? 'mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col overflow-hidden px-5 py-6 sm:px-8 sm:py-8'
-              : 'mx-auto max-w-6xl px-5 py-8 sm:px-8 sm:py-10'
+              : 'mx-auto max-w-6xl px-4 py-6 sm:px-8 sm:py-10'
           }
         >
           {children}

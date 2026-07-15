@@ -6,6 +6,7 @@ import { useEffect, useRef } from 'react'
 import { getNightlyDisplayPrice } from '@/components/booking/booking-data'
 import { useFavorites } from '@/contexts/FavoritesContext'
 import { openQuickBookingOnCurrentPage } from '@/lib/quick-booking-navigation'
+import { shouldBypassImageOptimization } from '@/lib/image-optimization'
 
 type FavoriteRoomsMenuProps = {
   onNavigate?: () => void
@@ -111,7 +112,15 @@ export default function FavoriteRoomsMenu({ onNavigate }: FavoriteRoomsMenuProps
                     <div className="flex gap-3">
                       <div className="relative h-20 w-24 shrink-0 overflow-hidden rounded-xl bg-[#eee6da]">
                         {favorite.imageUrl ? (
-                          <Image src={favorite.imageUrl} alt={favorite.roomName} fill unoptimized sizes="96px" className="object-cover" />
+                          <Image
+                            src={favorite.imageUrl}
+                            alt={favorite.roomName}
+                            fill
+                            quality={75}
+                            unoptimized={shouldBypassImageOptimization(favorite.imageUrl)}
+                            sizes="96px"
+                            className="object-cover"
+                          />
                         ) : (
                           <span className="flex h-full items-center justify-center text-[#9a8061]"><HeartIcon className="h-5 w-5" /></span>
                         )}

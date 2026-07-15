@@ -12,6 +12,7 @@ import {
   type QuickBookingSourceRoute,
 } from '@/components/booking/quick-booking-draft'
 import { useAuth } from '@/contexts/AuthContext'
+import { shouldBypassImageOptimization } from '@/lib/image-optimization'
 import {
   DEFAULT_DURATION,
   FIRST_NIGHT_STAY_HOURS,
@@ -209,9 +210,9 @@ export default function BookingQuickModal({
               alt={room.name}
               width={340}
               height={250}
-              unoptimized
+              quality={90}
+              unoptimized={shouldBypassImageOptimization(room.image)}
               className={`h-[150px] w-full rounded-2xl object-cover ${room.imageClassName}`}
-              priority
             />
           ) : (
             <div className="flex h-[150px] w-full items-center justify-center rounded-2xl bg-[radial-gradient(circle_at_top,#EDE0CF,transparent_55%),linear-gradient(135deg,#F6F3ED,#E4DED3)] px-4 text-center">

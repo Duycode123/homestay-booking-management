@@ -22,6 +22,7 @@ import {
 import { usePublicRoomCatalog } from '@/hooks/usePublicRoomCatalog'
 import { fetchAvailableSlots } from '@/lib/booking/bookingApi'
 import type { TimeSlot } from '@/lib/booking/types'
+import { shouldBypassImageOptimization } from '@/lib/image-optimization'
 import { fetchRoomTypes, type BackendRoomType } from '@/lib/rooms-api'
 import { getPublicRoomTierLabel, inferRoomCategoryFromTypeName } from '@/lib/room-mappers'
 import {
@@ -611,7 +612,8 @@ function RoomCard({
           src={imageSrc}
           alt={room.name}
           fill
-          unoptimized
+          quality={90}
+          unoptimized={shouldBypassImageOptimization(imageSrc)}
           sizes="(min-width: 1280px) 33vw, (min-width: 768px) 50vw, 100vw"
           className={[
             'object-cover transition duration-300 group-hover:scale-105',

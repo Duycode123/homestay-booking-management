@@ -261,7 +261,14 @@ function AccountAvatar({
       ].join(' ')}
     >
       {avatarUrl ? (
-        <img src={avatarUrl} alt="Ảnh đại diện" className="h-full w-full object-cover" />
+        <img
+          src={avatarUrl}
+          alt="Ảnh đại diện"
+          width={size === 'large' ? 64 : 40}
+          height={size === 'large' ? 64 : 40}
+          decoding="async"
+          className="h-full w-full object-cover"
+        />
       ) : (
         initial
       )}

@@ -67,7 +67,7 @@ export default function CustomerBookingsPage() {
 
   return (
     <CustomerPageShell>
-      <section className="relative mb-6 overflow-hidden rounded-[28px] bg-gradient-to-br from-[#123C31] via-[#1C4B3E] to-[#315E50] px-6 py-8 text-white shadow-[0_24px_60px_rgba(20,55,46,0.18)] sm:px-8 sm:py-10">
+      <section className="relative mb-5 overflow-hidden rounded-[22px] bg-gradient-to-br from-[#123C31] via-[#1C4B3E] to-[#315E50] px-5 py-6 text-white shadow-[0_24px_60px_rgba(20,55,46,0.18)] sm:mb-6 sm:rounded-[28px] sm:px-8 sm:py-10">
         <div aria-hidden className="absolute -right-20 -top-24 h-72 w-72 rounded-full border border-white/10" />
         <div aria-hidden className="absolute right-8 top-8 h-40 w-40 rounded-full border border-white/10" />
         <div className="relative flex flex-col justify-between gap-7 lg:flex-row lg:items-end">
@@ -76,12 +76,12 @@ export default function CustomerBookingsPage() {
               <span aria-hidden className="h-px w-8 bg-[#D4A26C]" />
               <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#E8C49D]">Hành trình của bạn</p>
             </div>
-            <h1 className="mt-4 font-editorial text-4xl font-normal leading-tight sm:text-5xl">Lịch sử đặt phòng</h1>
+            <h1 className="mt-4 font-editorial text-3xl font-normal leading-tight sm:text-5xl">Lịch sử đặt phòng</h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-white/70 sm:text-base">
               Quản lý tất cả kỳ lưu trú, theo dõi thanh toán và mở nhanh chi tiết từng booking.
             </p>
           </div>
-          <Link href="/rooms" className="inline-flex min-h-[50px] w-fit items-center justify-center gap-2 rounded-2xl bg-[#D0A06B] px-6 font-display text-sm font-bold text-white shadow-[0_12px_28px_rgba(10,35,29,0.2)] transition hover:-translate-y-0.5 hover:bg-[#BB8752]">
+          <Link href="/rooms" className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-[#D0A06B] px-6 font-display text-sm font-bold text-white shadow-[0_12px_28px_rgba(10,35,29,0.2)] transition hover:-translate-y-0.5 hover:bg-[#BB8752] sm:w-fit">
             <PlusIcon /> Đặt phòng mới
           </Link>
         </div>

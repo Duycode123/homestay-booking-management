@@ -375,7 +375,14 @@ function AvatarPreview({
       ].join(' ')}
     >
       {avatarUrl ? (
-        <img src={avatarUrl} alt="Ảnh đại diện" className="h-full w-full object-cover" />
+        <img
+          src={avatarUrl}
+          alt="Ảnh đại diện"
+          width={size === 'large' ? 96 : 56}
+          height={size === 'large' ? 96 : 56}
+          decoding="async"
+          className="h-full w-full object-cover"
+        />
       ) : (
         initial
       )}
@@ -407,6 +414,8 @@ function MessageBox({ message }: { message: Message }) {
 
   return (
     <p
+      role={isSuccess ? 'status' : 'alert'}
+      aria-live={isSuccess ? 'polite' : 'assertive'}
       className={[
         'mt-4 rounded-2xl border px-4 py-3 text-sm',
         isSuccess ? 'border-[#245545]/25 bg-[#F1F8F2] text-[#245545]' : 'border-[#C62828]/20 bg-[#FFEBEE] text-[#C62828]',

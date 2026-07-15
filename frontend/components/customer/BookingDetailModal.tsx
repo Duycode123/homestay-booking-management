@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { formatCurrency } from '@/components/booking/booking-data'
 import BookingStatusBadge from '@/components/customer/BookingStatusBadge'
 import ProjectSelect from '@/components/ui/ProjectSelect'
@@ -40,6 +40,50 @@ export default function BookingDetailModal({
   onClose,
   onReviewSubmitted,
 }: BookingDetailModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (!booking) return
+
+    const previouslyFocused = document.activeElement as HTMLElement | null
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    const focusCloseButton = window.requestAnimationFrame(() => closeButtonRef.current?.focus())
+    const handleKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        onClose()
+        return
+      }
+
+      if (event.key !== 'Tab' || !dialogRef.current) return
+      const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      )).filter((element) => !element.hasAttribute('hidden'))
+      if (focusable.length === 0) return
+
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.cancelAnimationFrame(focusCloseButton)
+      document.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = previousOverflow
+      previouslyFocused?.focus()
+    }
+  }, [booking, onClose])
+
   if (!booking) return null
 
   return (
@@ -48,10 +92,13 @@ export default function BookingDetailModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="booking-detail-title"
+      aria-describedby="booking-detail-description"
       onClick={onClose}
     >
       <div
-        className="max-h-[92vh] w-full max-w-[900px] overflow-y-auto rounded-t-[28px] border border-outline-variant bg-surface sm:rounded-[28px] shadow-[var(--shadow-elevated)]"
+        ref={dialogRef}
+        tabIndex={-1}
+        className="mobile-safe-bottom max-h-[calc(100dvh-1rem)] w-full max-w-[900px] overscroll-contain overflow-y-auto rounded-t-[24px] border border-outline-variant bg-surface shadow-[var(--shadow-elevated)] sm:max-h-[92vh] sm:rounded-[28px]"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="relative overflow-hidden border-b border-outline-variant bg-white px-5 py-6 sm:px-7">
@@ -67,9 +114,10 @@ export default function BookingDetailModal({
               <h2 id="booking-detail-title" className="mt-2 font-display text-2xl font-bold text-on-surface">
                 {booking.roomName}
               </h2>
-              <p className="mt-1 text-sm text-on-surface-variant">Mã: {booking.bookingId}</p>
+              <p id="booking-detail-description" className="mt-1 text-sm text-on-surface-variant">Mã: {booking.bookingId}</p>
             </div>
             <button
+              ref={closeButtonRef}
               type="button"
               onClick={onClose}
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-outline-variant bg-white text-on-surface transition hover:border-brand-orange/40 hover:bg-primary-container"

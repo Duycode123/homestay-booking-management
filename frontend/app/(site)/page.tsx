@@ -20,6 +20,7 @@ import {
   type AvailabilityTone,
 } from '@/lib/homepage-live-service'
 import { getAvailabilityLabel } from '@/lib/public/room-filters'
+import { shouldBypassImageOptimization } from '@/lib/image-optimization'
 import {
   getRoomCardAvailabilityState,
   isRoomTemporarilyUnavailable,
@@ -377,7 +378,8 @@ function TopRatedRoomCard({
             src={imageSrc}
             alt={room.name}
             fill
-            unoptimized
+            quality={90}
+            unoptimized={shouldBypassImageOptimization(imageSrc)}
             sizes="(min-width: 1280px) 292px, (min-width: 768px) 46vw, 82vw"
             className={['object-cover transition duration-300 group-hover:scale-105', room.imageClassName].join(' ')}
           />

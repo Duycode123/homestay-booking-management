@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 
 type HomepageModalShellProps = {
   open: boolean
@@ -34,6 +34,9 @@ export default function HomepageModalShell({
   const [isClosing, setIsClosing] = useState(false)
   const isClosingRef = useRef(false)
   const closeTimerRef = useRef<number | null>(null)
+  const dialogRef = useRef<HTMLElement>(null)
+  const generatedTitleId = useId()
+  const titleId = labelledBy || generatedTitleId
 
   const requestClose = useCallback(() => {
     if (isClosingRef.current) return
@@ -55,20 +58,43 @@ export default function HomepageModalShell({
     }
 
     const originalOverflow = document.body.style.overflow
+    const previouslyFocused = document.activeElement as HTMLElement | null
     document.body.style.overflow = 'hidden'
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault()
         requestClose()
+        return
+      }
+
+      if (event.key !== 'Tab' || !dialogRef.current) return
+      const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      )).filter((element) => !element.hasAttribute('hidden'))
+      if (focusable.length === 0) return
+
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
+    const focusFirstControl = window.requestAnimationFrame(() => {
+      dialogRef.current?.querySelector<HTMLElement>('button:not([disabled]), input:not([disabled]), a[href]')?.focus()
+    })
 
     return () => {
+      window.cancelAnimationFrame(focusFirstControl)
       document.body.style.overflow = originalOverflow
       window.removeEventListener('keydown', handleKeyDown)
+      previouslyFocused?.focus()
 
       if (closeTimerRef.current) {
         window.clearTimeout(closeTimerRef.current)
@@ -84,17 +110,20 @@ export default function HomepageModalShell({
   return (
     <div
       className={[
-        'fixed inset-0 z-[100] flex items-center justify-center bg-[rgba(20,24,28,0.45)] p-3 backdrop-blur-[3px] sm:p-5',
+        'fixed inset-0 z-[100] flex items-end justify-center bg-[rgba(20,24,28,0.45)] p-0 backdrop-blur-[3px] sm:items-center sm:p-5',
         isClosing ? 'animate-[homepageModalOverlayOut_180ms_ease-in_forwards]' : 'animate-[homepageModalOverlayIn_180ms_ease-out_forwards]',
       ].join(' ')}
       onClick={requestClose}
       aria-modal="true"
       role="dialog"
-      aria-labelledby={labelledBy}
+      aria-labelledby={title || labelledBy ? titleId : undefined}
+      aria-label={!title && !labelledBy ? eyebrow || 'Hộp thoại' : undefined}
     >
       <section
+        ref={dialogRef}
+        tabIndex={-1}
         className={[
-          'flex max-h-[90vh] w-[min(96vw,1040px)] flex-col overflow-hidden rounded-[28px] border border-[#E4DED3] bg-white shadow-[0_24px_80px_rgba(26,28,30,0.18)]',
+          'flex max-h-[calc(100dvh-1rem)] w-full flex-col overflow-hidden rounded-t-[24px] border border-[#E4DED3] bg-white shadow-[0_24px_80px_rgba(26,28,30,0.18)] sm:max-h-[90vh] sm:w-[min(96vw,1040px)] sm:rounded-[28px]',
           maxWidthClassName,
           isClosing ? 'animate-[homepageModalOut_180ms_ease-in_forwards]' : 'animate-[homepageModalIn_200ms_cubic-bezier(0.16,1,0.3,1)_forwards]',
         ].join(' ')}
@@ -103,7 +132,7 @@ export default function HomepageModalShell({
         {(title || eyebrow || description) && (
           <header className={['sticky top-0 z-10 border-b border-[#E4DED3] bg-white px-5 py-5 sm:px-6', headerClassName].join(' ')}>
             {eyebrow && <p className="font-display text-xs font-bold uppercase tracking-[0.18em] text-[#B28455]">{eyebrow}</p>}
-            {title && <h2 id={labelledBy} className="mt-1 font-display text-2xl font-bold tracking-tight text-[#242A27]">{title}</h2>}
+            {title && <h2 id={titleId} className="mt-1 font-display text-2xl font-bold tracking-tight text-[#242A27]">{title}</h2>}
             {description && <p className="mt-1 max-w-2xl text-sm leading-6 text-[#6A6C66]">{description}</p>}
           </header>
         )}
@@ -113,7 +142,7 @@ export default function HomepageModalShell({
         </div>
 
         {footer && (
-          <footer className="sticky bottom-0 z-10 border-t border-[#E4DED3] bg-white px-5 py-4 sm:px-6">
+          <footer className="mobile-safe-bottom sticky bottom-0 z-10 border-t border-[#E4DED3] bg-white px-5 pt-4 sm:px-6 sm:pb-4">
             {footer}
           </footer>
         )}

@@ -21,6 +21,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { clearQuickBookingDraft } from '@/components/booking/quick-booking-draft'
 import { resolveBookingRoom } from '@/lib/booking-room-service'
 import { savePendingBooking } from '@/lib/pending-booking'
+import { shouldBypassImageOptimization } from '@/lib/image-optimization'
 
 export default function BookingConfirmationClient() {
   const router = useRouter()
@@ -191,7 +192,8 @@ export default function BookingConfirmationClient() {
                 alt={displayRoom.name}
                 width={900}
                 height={420}
-                unoptimized
+                quality={90}
+                unoptimized={shouldBypassImageOptimization(displayRoom.image)}
                 className={`h-[260px] w-full rounded-2xl object-cover ${displayRoom.imageClassName}`}
                 priority
               />
