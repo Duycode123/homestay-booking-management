@@ -46,6 +46,26 @@ $env:MAIL_PASSWORD="your_gmail_app_password"
 
 `APP_FRONTEND_BASE_URL` chỉ chứa origin của frontend, không thêm `/verify-email`. Khi triển khai production, thay giá trị localhost bằng domain HTTPS thật. `MAIL_PASSWORD` phải là Gmail App Password và không được commit vào repository.
 
+### Email trên Render Free
+
+Render Free chặn các cổng SMTP 25, 465 và 587. Để giữ nguyên luồng SMTP khi deploy,
+cấu hình một SMTP relay hỗ trợ cổng 2525 (ví dụ Brevo) trong Environment Variables:
+
+```text
+MAIL_PROTOCOL=smtp
+MAIL_HOST=smtp-relay.brevo.com
+MAIL_PORT=2525
+MAIL_USERNAME=<Brevo SMTP login>
+MAIL_PASSWORD=<Brevo SMTP key, không phải API key>
+MAIL_FROM_ADDRESS=<địa chỉ người gửi đã xác minh trên Brevo>
+MAIL_SMTP_AUTH=true
+MAIL_STARTTLS=false
+MAIL_STARTTLS_REQUIRED=false
+MAIL_SSL_ENABLE=false
+```
+
+Gmail SMTP 587 vẫn được giữ làm cấu hình local. Không được đưa SMTP key vào Git.
+
 ## Chạy frontend
 
 ```powershell

@@ -19,14 +19,21 @@ spring.flyway.baseline-on-migrate=true
 spring.flyway.baseline-version=0
 
 # ===== Mail =====
-# Render Free blocks the common SMTP ports. Use an SMTP relay that supports
-# port 2525 in production; Gmail 587 remains a convenient local default.
+# Render Free blocks SMTP ports 25, 465 and 587. Use an SMTP relay that supports
+# port 2525 in production; Gmail 587 remains the local-development default.
+spring.mail.protocol=${MAIL_PROTOCOL:smtp}
 spring.mail.host=${MAIL_HOST:smtp.gmail.com}
 spring.mail.port=${MAIL_PORT:587}
 spring.mail.username=${MAIL_USERNAME:}
 spring.mail.password=${MAIL_PASSWORD:}
-spring.mail.properties.mail.smtp.auth=true
+spring.mail.default-encoding=UTF-8
+spring.mail.properties.mail.smtp.auth=${MAIL_SMTP_AUTH:true}
 spring.mail.properties.mail.smtp.starttls.enable=${MAIL_STARTTLS:true}
+spring.mail.properties.mail.smtp.starttls.required=${MAIL_STARTTLS_REQUIRED:false}
+spring.mail.properties.mail.smtp.ssl.enable=${MAIL_SSL_ENABLE:false}
+# Used as the visible From address when the relay login is not an email address.
+# The address must be verified by the selected mail provider.
+spring.mail.properties.mail.from=${MAIL_FROM_ADDRESS:${MAIL_USERNAME:}}
 spring.mail.properties.mail.smtp.connectiontimeout=5000
 spring.mail.properties.mail.smtp.timeout=5000
 spring.mail.properties.mail.smtp.writetimeout=5000
