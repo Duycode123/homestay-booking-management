@@ -6,6 +6,8 @@ import backend.entity.PaymentMethod;
 import backend.entity.PaymentProvider;
 import backend.entity.PaymentTransaction;
 import backend.entity.PaymentTransactionStatus;
+import backend.entity.Role;
+import backend.entity.User;
 import backend.exception.ResourceNotFoundException;
 import backend.booking.application.port.out.LoadDiscountCodeForBookingPort;
 import backend.coupon.domain.model.CouponValidationResult;
@@ -15,6 +17,7 @@ import backend.payment.application.model.PaymentSessionResult;
 import backend.payment.application.model.PaymentTransactionDetail;
 import backend.payment.application.model.SePayCheckoutForm;
 import backend.payment.application.port.in.CreatePaymentSessionUseCase;
+import backend.payment.application.port.in.CreateCheckoutBalancePaymentUseCase;
 import backend.payment.application.port.in.GetPaymentTransactionUseCase;
 import backend.payment.application.port.in.GetSePayCheckoutFormUseCase;
 import backend.payment.application.port.out.BuildSePayCheckoutPort;
@@ -24,6 +27,7 @@ import backend.payment.application.port.out.model.SePayIncomingPaymentQuery;
 import backend.payment.application.port.out.model.SePayPortalCheckoutRequest;
 import backend.repository.BookingRepository;
 import backend.repository.PaymentTransactionRepository;
+import backend.repository.UserRepository;
 import backend.service.CouponUsageTrackingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,21 +46,81 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class PaymentCheckoutUseCaseService implements
         CreatePaymentSessionUseCase,
+        CreateCheckoutBalancePaymentUseCase,
         GetPaymentTransactionUseCase,
         GetSePayCheckoutFormUseCase {
 
     private final BookingRepository bookingRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
+    private final UserRepository userRepository;
     private final BuildSePayCheckoutPort buildSePayCheckoutPort;
     private final FindSePayIncomingPaymentPort findSePayIncomingPaymentPort;
     private final CouponUsageTrackingService couponUsageTrackingService;
     private final ValidateCouponUseCase validateCouponUseCase;
     private final LoadDiscountCodeForBookingPort loadDiscountCodeForBookingPort;
 
-    @Value("${app.booking.payment-expiration-seconds:900}")
+    @Value("${app.booking.payment-expiration-seconds:300}")
     private long paymentExpirationSeconds;
 
     private static final BigDecimal DEPOSIT_RATE = new BigDecimal("0.50");
+    private static final String CHECKOUT_BALANCE_PENDING = "CHECKOUT_BALANCE_PENDING";
+
+    @Override
+    @Transactional
+    public PaymentSessionResult createCheckoutBalancePayment(Integer bookingId, String currentUserEmail) {
+        if (bookingId == null) {
+            throw new IllegalArgumentException("bookingId khong duoc de trong");
+        }
+        User currentUser = requireManagementUser(currentUserEmail);
+
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay don dat phong"));
+        if (booking.getStatus() != BookingStatus.CHECKED_IN) {
+            throw new IllegalStateException("Chi co the thu phan con lai khi booking dang check-in");
+        }
+
+        BigDecimal totalAmount = resolveAmount(booking).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal paidAmount = paymentTransactionRepository.sumAmountByBookingIdAndStatus(
+                bookingId,
+                PaymentTransactionStatus.SUCCEEDED
+        );
+        BigDecimal remainingAmount = totalAmount
+                .subtract(paidAmount == null ? BigDecimal.ZERO : paidAmount)
+                .max(BigDecimal.ZERO)
+                .setScale(2, RoundingMode.HALF_UP);
+        if (remainingAmount.signum() <= 0) {
+            throw new IllegalStateException("Booking da duoc thanh toan day du");
+        }
+
+        closeExistingOpenTransactions(bookingId);
+
+        String paymentId = "BAL" + UUID.randomUUID().toString().replace("-", "")
+                .substring(0, 16).toUpperCase();
+        PaymentTransaction transaction = PaymentTransaction.builder()
+                .booking(booking)
+                .processedBy(currentUser)
+                .provider(PaymentProvider.SEPAY)
+                .transactionReference(paymentId)
+                .amount(remainingAmount)
+                .status(PaymentTransactionStatus.PENDING)
+                .responseCode(CHECKOUT_BALANCE_PENDING)
+                .build();
+        paymentTransactionRepository.save(transaction);
+
+        return new PaymentSessionResult(
+                paymentId,
+                booking.getId(),
+                booking.getBookingCode(),
+                "bank_transfer",
+                "balance",
+                "pending",
+                remainingAmount,
+                buildSePayCheckoutPort.buildVietQrUrl(paymentId, remainingAmount),
+                transaction.getCreatedAt(),
+                resolveExpiresAt(transaction.getCreatedAt()),
+                null
+        );
+    }
 
     public PaymentSessionResult createPaymentSession(
             Integer bookingId,
@@ -155,9 +219,7 @@ public class PaymentCheckoutUseCaseService implements
             throw new IllegalArgumentException("paymentId khong duoc de trong");
         }
 
-        PaymentTransaction paymentTransaction = paymentTransactionRepository
-                .findByTransactionReferenceAndBooking_Customer_Account_Email(paymentId.trim(), customerEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay giao dich thanh toan"));
+        PaymentTransaction paymentTransaction = findAccessibleTransaction(paymentId.trim(), customerEmail);
 
         syncSePayTransaction(paymentTransaction);
         return toPaymentTransactionDetail(paymentTransaction);
@@ -253,7 +315,7 @@ public class PaymentCheckoutUseCaseService implements
 
         String normalized = rawPaymentOption.trim().toLowerCase();
         for (PaymentOption value : PaymentOption.values()) {
-            if (value.apiValue.equals(normalized)) {
+            if (value != PaymentOption.BALANCE && value.apiValue.equals(normalized)) {
                 return value;
             }
         }
@@ -331,7 +393,8 @@ public class PaymentCheckoutUseCaseService implements
         transaction.setPaidAt(payment.transactionDate() == null ? LocalDateTime.now() : payment.transactionDate());
 
         Booking booking = transaction.getBooking();
-        if (latePayment) {
+        boolean checkoutBalance = isCheckoutBalanceTransaction(transaction);
+        if (latePayment && !checkoutBalance) {
             transaction.setResponseCode("LATE_PAYMENT_REQUIRES_REFUND");
             if (booking != null && booking.getStatus() == BookingStatus.PENDING_PAYMENT) {
                 booking.setStatus(BookingStatus.CANCELLED);
@@ -341,8 +404,12 @@ public class PaymentCheckoutUseCaseService implements
             return;
         }
 
-        transaction.setResponseCode("SEPAY_API_SUCCESS");
-        if (booking.getStatus() == BookingStatus.PENDING_PAYMENT) {
+        transaction.setResponseCode(checkoutBalance ? "CHECKOUT_BALANCE_SETTLED" : "SEPAY_API_SUCCESS");
+        if (checkoutBalance && booking.getStatus() == BookingStatus.CHECKED_IN) {
+            booking.setStatus(BookingStatus.COMPLETED);
+            booking.setCheckoutTime(transaction.getPaidAt());
+            bookingRepository.save(booking);
+        } else if (booking.getStatus() == BookingStatus.PENDING_PAYMENT) {
             booking.setStatus(resolveSuccessfulBookingStatus(transaction));
             bookingRepository.save(booking);
         }
@@ -366,6 +433,35 @@ public class PaymentCheckoutUseCaseService implements
         }
 
         paymentTransactionRepository.save(transaction);
+    }
+
+    private PaymentTransaction findAccessibleTransaction(String paymentId, String currentUserEmail) {
+        Optional<PaymentTransaction> customerTransaction = paymentTransactionRepository
+                .findByTransactionReferenceAndBooking_Customer_Account_Email(paymentId, currentUserEmail);
+        if (customerTransaction.isPresent()) {
+            return customerTransaction.get();
+        }
+
+        requireManagementUser(currentUserEmail);
+        return paymentTransactionRepository.findByTransactionReference(paymentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay giao dich thanh toan"));
+    }
+
+    private User requireManagementUser(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay tai khoan"));
+        if (user.getRole() != Role.ADMIN && user.getRole() != Role.STAFF) {
+            throw new IllegalStateException("Chi admin hoac nhan vien moi duoc ket toan checkout");
+        }
+        return user;
+    }
+
+    private boolean isCheckoutBalanceTransaction(PaymentTransaction transaction) {
+        String reference = transaction.getTransactionReference();
+        String responseCode = transaction.getResponseCode();
+        return (reference != null && reference.startsWith("BAL"))
+                || CHECKOUT_BALANCE_PENDING.equals(responseCode)
+                || "CHECKOUT_BALANCE_SETTLED".equals(responseCode);
     }
 
     private BookingStatus resolveSuccessfulBookingStatus(PaymentTransaction transaction) {
@@ -429,6 +525,9 @@ public class PaymentCheckoutUseCaseService implements
     }
 
     private PaymentOption resolvePaymentOption(PaymentTransaction transaction) {
+        if (isCheckoutBalanceTransaction(transaction)) {
+            return PaymentOption.BALANCE;
+        }
         BigDecimal bookingAmount = resolveAmount(transaction.getBooking());
         if (transaction.getAmount() != null && transaction.getAmount().compareTo(bookingAmount) < 0) {
             return PaymentOption.DEPOSIT;
@@ -453,7 +552,8 @@ public class PaymentCheckoutUseCaseService implements
 
     private enum PaymentOption {
         DEPOSIT("deposit"),
-        FULL("full");
+        FULL("full"),
+        BALANCE("balance");
 
         private final String apiValue;
 

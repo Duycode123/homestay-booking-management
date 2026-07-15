@@ -13,6 +13,7 @@ import backend.entity.PaymentMethod;
 import backend.entity.PaymentProvider;
 import backend.entity.PaymentTransaction;
 import backend.entity.PaymentTransactionStatus;
+import backend.entity.Role;
 import backend.entity.User;
 import backend.payment.application.model.PaymentSessionResult;
 import backend.payment.application.model.SePayCheckoutForm;
@@ -21,6 +22,7 @@ import backend.payment.application.port.out.model.SePayIncomingPayment;
 import backend.payment.adapter.out.sepay.SePayCheckoutAdapter;
 import backend.repository.BookingRepository;
 import backend.repository.PaymentTransactionRepository;
+import backend.repository.UserRepository;
 import backend.service.CouponUsageTrackingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -57,6 +59,9 @@ class PaymentCheckoutUseCaseServiceTest {
     private PaymentTransactionRepository paymentTransactionRepository;
 
     @Mock
+    private UserRepository userRepository;
+
+    @Mock
     private FindSePayIncomingPaymentPort findSePayIncomingPaymentPort;
 
     @Mock
@@ -81,6 +86,7 @@ class PaymentCheckoutUseCaseServiceTest {
         paymentCheckoutUseCaseService = new PaymentCheckoutUseCaseService(
                 bookingRepository,
                 paymentTransactionRepository,
+                userRepository,
                 new SePayCheckoutAdapter(sePayProperties),
                 findSePayIncomingPaymentPort,
                 couponUsageTrackingService,
@@ -305,6 +311,65 @@ class PaymentCheckoutUseCaseServiceTest {
         verify(bookingRepository).save(booking);
         verify(paymentTransactionRepository).save(transaction);
         verify(couponUsageTrackingService, never()).recordPaidBookingUsage(booking);
+    }
+
+    @Test
+    void createsAndConfirmsCheckoutBalanceTransferForStaff() {
+        User staff = User.builder().id(9).email("staff@example.com").role(Role.STAFF).build();
+        Booking booking = booking(31, PaymentMethod.ONLINE);
+        booking.setStatus(BookingStatus.CHECKED_IN);
+        booking.setTotalAmount(new BigDecimal("500000.00"));
+
+        when(userRepository.findByEmail(staff.getEmail())).thenReturn(Optional.of(staff));
+        when(bookingRepository.findById(31)).thenReturn(Optional.of(booking));
+        when(paymentTransactionRepository.sumAmountByBookingIdAndStatus(31, PaymentTransactionStatus.SUCCEEDED))
+                .thenReturn(new BigDecimal("250000.00"));
+        when(paymentTransactionRepository.save(any(PaymentTransaction.class))).thenAnswer(invocation -> {
+            PaymentTransaction saved = invocation.getArgument(0);
+            if (saved.getCreatedAt() == null) {
+                saved.prePersist();
+            }
+            return saved;
+        });
+
+        PaymentSessionResult session = paymentCheckoutUseCaseService.createCheckoutBalancePayment(
+                31,
+                staff.getEmail()
+        );
+
+        assertEquals(new BigDecimal("250000.00"), session.amount());
+        assertEquals("balance", session.paymentOption());
+        assertEquals(true, session.paymentId().startsWith("BAL"));
+
+        ArgumentCaptor<PaymentTransaction> captor = ArgumentCaptor.forClass(PaymentTransaction.class);
+        verify(paymentTransactionRepository).save(captor.capture());
+        PaymentTransaction transaction = captor.getValue();
+        assertEquals(staff, transaction.getProcessedBy());
+        when(paymentTransactionRepository.findByTransactionReferenceAndBooking_Customer_Account_Email(
+                session.paymentId(),
+                staff.getEmail()
+        )).thenReturn(Optional.empty());
+        when(paymentTransactionRepository.findByTransactionReference(session.paymentId()))
+                .thenReturn(Optional.of(transaction));
+        when(findSePayIncomingPaymentPort.findIncomingPayment(any()))
+                .thenReturn(Optional.of(new SePayIncomingPayment(
+                        "SEPAY-BALANCE-31",
+                        new BigDecimal("250000.00"),
+                        "Thanh toan " + session.paymentId(),
+                        session.paymentId(),
+                        LocalDateTime.now()
+                )));
+
+        var detail = paymentCheckoutUseCaseService.getPaymentTransactionDetail(
+                session.paymentId(),
+                staff.getEmail()
+        );
+
+        assertEquals("success", detail.status());
+        assertEquals("balance", detail.paymentOption());
+        assertEquals("CHECKOUT_BALANCE_SETTLED", transaction.getResponseCode());
+        assertEquals(BookingStatus.COMPLETED, booking.getStatus());
+        verify(bookingRepository).save(booking);
     }
 
     @Test

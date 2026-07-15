@@ -5,6 +5,7 @@ import backend.booking.application.port.in.command.CreateBookingCommand;
 import backend.booking.application.port.in.command.CancelCustomerBookingCommand;
 import backend.booking.application.port.in.command.UpdateBookingStatusCommand;
 import backend.booking.application.port.in.command.SettleBookingAtCheckoutCommand;
+import backend.booking.application.port.in.command.CheckoutSettlementMethod;
 import backend.booking.application.port.in.command.ReviewCustomerCancellationCommand;
 import backend.booking.application.port.in.query.CustomerBookingHistoryQuery;
 import backend.booking.application.port.in.query.GetCustomerBookingDetailQuery;
@@ -327,13 +328,14 @@ class BookingUseCaseServiceTest {
         when(saveBookingPort.save(booking)).thenReturn(booking);
 
         BookingResponse response = bookingUseCaseService.settleBookingAtCheckout(
-                new SettleBookingAtCheckoutCommand(17, staffUser.getEmail())
+                new SettleBookingAtCheckoutCommand(17, CheckoutSettlementMethod.CASH, staffUser.getEmail())
         );
 
         ArgumentCaptor<PaymentTransaction> transactionCaptor = ArgumentCaptor.forClass(PaymentTransaction.class);
         verify(savePaymentTransactionPort).savePaymentTransaction(transactionCaptor.capture());
         PaymentTransaction settlement = transactionCaptor.getValue();
         assertEquals(PaymentProvider.COUNTER, settlement.getProvider());
+        assertEquals(staffUser, settlement.getProcessedBy());
         assertEquals(PaymentTransactionStatus.SUCCEEDED, settlement.getStatus());
         assertEquals(new BigDecimal("250000.00"), settlement.getAmount());
         assertEquals(BookingStatus.COMPLETED, response.getStatus());

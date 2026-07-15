@@ -21,7 +21,7 @@ export default function BookingButton({
   initialDate,
   initialStartTime,
   initialDuration,
-  className = 'rounded-lg bg-brand-orange px-4 py-2.5 font-display text-xs font-semibold text-white transition-colors hover:bg-brand-orangeHover',
+  className = 'rounded-full bg-secondary px-5 py-2.5 font-display text-xs font-semibold text-white shadow-[0_10px_26px_rgba(23,58,49,0.22)] transition hover:-translate-y-0.5 hover:bg-secondary-container',
   children = 'Đặt ngay',
   stopPropagation = false,
 }: BookingButtonProps) {

@@ -294,7 +294,7 @@ export default function RoomDetailModal({ room, open, onClose, onBook }: RoomDet
               <button
                 type="button"
                 onClick={() => onBook(room)}
-                className="rounded-lg bg-[#B28455] px-5 py-3.5 font-display text-sm font-bold text-white shadow-[0_14px_34px_rgba(178,132,85,0.28)] transition hover:bg-[#946A42]"
+                className="rounded-full bg-secondary px-6 py-3.5 font-display text-sm font-bold text-white shadow-[0_14px_34px_rgba(23,58,49,0.24)] transition hover:-translate-y-0.5 hover:bg-secondary-container"
               >
                 Đặt phòng này
               </button>

@@ -123,7 +123,7 @@ export default function NightStayPicker({ roomId, initialDate, initialEndDate, o
           <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
             {quickDates.map((date) => {
               const selected = date === checkInDate
-              return <button key={date} type="button" onClick={() => selectCheckIn(date)} className={['min-w-[76px] rounded-2xl border px-3 py-3 text-center transition', selected ? 'border-[#b28455] bg-[#b28455] text-white shadow-[0_10px_24px_rgba(178,132,85,.22)]' : 'border-[#e1d7c9] bg-white text-[#33413c] hover:border-[#b28455]'].join(' ')}><span className="block text-[10px] font-bold uppercase opacity-70">{formatWeekday(date)}</span><span className="mt-1 block text-xl font-bold">{formatDay(date)}</span><span className="mt-1 block text-[10px] opacity-70">{formatMonth(date)}</span></button>
+              return <button key={date} type="button" onClick={() => selectCheckIn(date)} className={['min-w-[76px] rounded-2xl border px-3 py-3 text-center transition', selected ? 'border-secondary bg-secondary text-white shadow-[0_10px_24px_rgba(23,58,49,.22)]' : 'border-[#e1d7c9] bg-white text-[#33413c] hover:border-secondary'].join(' ')}><span className="block text-[10px] font-bold uppercase opacity-70">{formatWeekday(date)}</span><span className="mt-1 block text-xl font-bold">{formatDay(date)}</span><span className="mt-1 block text-[10px] opacity-70">{formatMonth(date)}</span></button>
             })}
           </div>
         </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { IconChevronLeft, IconChevronRight, IconRefresh, IconSearch } from '@/components/admin/AdminIcons'
+import { IconChevronLeft, IconChevronRight, IconSearch } from '@/components/admin/AdminIcons'
 
 type StaffScheduleToolbarProps = {
   rangeLabel: string
@@ -13,7 +13,6 @@ type StaffScheduleToolbarProps = {
   onNextWeek: () => void
   onQueryChange: (value: string) => void
   onStaffIdChange: (value: string) => void
-  onRefresh: () => void
   isLoading: boolean
 }
 
@@ -28,7 +27,6 @@ export default function StaffScheduleToolbar({
   onNextWeek,
   onQueryChange,
   onStaffIdChange,
-  onRefresh,
   isLoading,
 }: StaffScheduleToolbarProps) {
   return (
@@ -81,31 +79,6 @@ export default function StaffScheduleToolbar({
             Tuần tới
           </button>
 
-          <span className="mx-0.5 hidden h-5 w-px bg-outline-variant sm:block" aria-hidden />
-
-          <button
-            type="button"
-            onClick={onRefresh}
-            disabled={isLoading}
-            title="Làm mới"
-            aria-label="Làm mới"
-            className={[
-              'group relative flex h-11 w-11 items-center justify-center rounded-full',
-              'bg-primary-container/70 text-brand-orange',
-              'shadow-sm ring-1 ring-brand-orange/15',
-              'transition-all duration-200',
-              'hover:bg-brand-orange hover:text-white hover:shadow-md hover:ring-brand-orange/30',
-              'active:scale-95',
-              'disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-primary-container/70 disabled:hover:text-brand-orange disabled:hover:shadow-sm',
-            ].join(' ')}
-          >
-            <IconRefresh
-              className={[
-                'h-[15px] w-[15px] transition-transform duration-300',
-                isLoading ? 'animate-spin' : 'group-hover:rotate-180',
-              ].join(' ')}
-            />
-          </button>
         </div>
 
         <div className="grid w-full gap-2 sm:grid-cols-[minmax(240px,1fr)_150px] xl:max-w-[520px]">
@@ -114,16 +87,19 @@ export default function StaffScheduleToolbar({
             <input
               value={query}
               onChange={(event) => onQueryChange(event.target.value)}
+              disabled={isLoading}
               placeholder="Tìm tên / email nhân viên…"
-              className="h-11 w-full rounded-2xl border border-[#ded3c5] bg-white pl-10 pr-4 text-sm font-medium outline-none transition placeholder:text-on-surface-variant/65 focus:border-brand-orange focus:shadow-[0_0_0_3px_rgba(184,136,87,0.10)]"
+              className="h-11 w-full rounded-2xl border border-[#ded3c5] bg-white pl-10 pr-4 text-sm font-medium outline-none transition placeholder:text-on-surface-variant/65 focus:border-secondary focus:shadow-[0_0_0_3px_rgba(23,58,49,0.10)] disabled:opacity-60"
             />
           </label>
           <input
             value={staffId}
             onChange={(event) => onStaffIdChange(event.target.value.replace(/[^\d]/g, ''))}
+            disabled={isLoading}
             placeholder="Mã nhân viên"
             inputMode="numeric"
-            className="h-11 rounded-2xl border border-[#ded3c5] bg-white px-4 text-sm font-medium outline-none transition placeholder:text-on-surface-variant/65 focus:border-brand-orange focus:shadow-[0_0_0_3px_rgba(184,136,87,0.10)]"
+            aria-label="Lọc theo mã nhân viên"
+            className="h-11 rounded-2xl border border-[#ded3c5] bg-white px-4 text-sm font-medium outline-none transition placeholder:text-on-surface-variant/65 focus:border-secondary focus:shadow-[0_0_0_3px_rgba(23,58,49,0.10)] disabled:opacity-60"
           />
         </div>
       </div>

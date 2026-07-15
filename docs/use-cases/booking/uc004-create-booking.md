@@ -36,12 +36,12 @@ Allow an authenticated customer to select a valid room/time range, see the expec
 4. Customer selects a start time and end time, then confirms the booking without entering a coupon.
 5. Frontend requests cost calculation.
 6. Backend calculates the original price based on room hourly rate and duration.
-7. Customer confirms booking.
-8. Backend validates the request again, checks availability under concurrency control, and creates the booking.
-9. Backend stores the booking with pending-payment status and returns booking summary data.
-10. At checkout, the customer may enter an optional coupon before creating the online payment session. Backend validates the coupon, stores it on the still-pending booking, and recalculates the payable total before deriving the 50% deposit or 100% payment amount.
-11. For cash payment, backend keeps the booking in `PENDING_PAYMENT`, records `payment_method = CASH`, creates no online transaction, and the customer pays the full balance at the homestay.
-12. For online SePay payment, the customer chooses either a 50% deposit or 100% payment. Backend creates a pending payment transaction using a `PAY...` transfer reference, keeps the booking in `PENDING_PAYMENT` to hold the room/time slot, and returns a VietQR image URL as `paymentUrl`.
+7. Customer confirms the details. Frontend saves only a browser-side checkout draft and opens checkout; no database booking exists and the room remains available to other customers.
+8. At checkout, the customer may validate an optional coupon and chooses either a 50% deposit or 100% payment.
+9. When the customer clicks `Tạo mã QR`, frontend sends the booking request. Backend validates the request again, locks the room, checks availability under concurrency control, and creates the booking in `PENDING_PAYMENT`.
+10. Frontend immediately requests the online payment session for that booking. Backend validates and stores the optional coupon, calculates the payable amount, and creates a pending payment transaction using a `PAY...` transfer reference.
+11. The pending booking holds the room/time slot for at most five minutes and backend returns a VietQR image URL plus the exact expiry time.
+12. If payment-session creation fails after booking creation, the same pending booking remains reusable for retry only until its five-minute expiry; the expiry sweep then cancels it and releases the room.
 13. Frontend renders the QR code and polls `GET /api/payments/transactions/{paymentId}` about every 10 seconds.
 14. On each poll, backend queries SePay Transactions API when `payment.sepay.api-access-token` is configured, matches an incoming transfer by amount plus `PAY...` reference in the SePay `code` or transaction content, then marks the transaction as succeeded and the booking as `DEPOSIT_PAID` for a partial deposit or `PAID` for full payment.
 15. If no matching SePay transaction is found before the configured payment expiry, the same poll endpoint marks the transaction and held booking as `CANCELLED`.
@@ -57,7 +57,7 @@ Allow an authenticated customer to select a valid room/time range, see the expec
 - Invalid, expired, or ineligible coupon at checkout: backend rejects payment-session creation with the coupon validation reason and does not create a transaction.
 - Customer cancels on the SePay portal: backend accepts the SePay cancel/void notification, marks the pending transaction as `CANCELLED`, and marks the held booking as `CANCELLED` to release the slot.
 - Portal payment fails: backend marks the pending transaction as `FAILED` and marks the held booking as `CANCELLED`.
-- Payment timeout: pending checkout sessions older than `app.booking.payment-expiration-seconds` (default `900`, or 15 minutes) are marked `CANCELLED` by the poll endpoint or scheduled expiry job; their still-pending bookings are also marked `CANCELLED` so availability is released.
+- Payment timeout: pending checkout sessions older than `app.booking.payment-expiration-seconds` (default `300`, or 5 minutes) are marked `CANCELLED` by the poll endpoint or scheduled expiry job; their still-pending bookings are also marked `CANCELLED` so availability is released.
 - If SePay reports that money arrived after session expiry, the transaction is retained as `SUCCEEDED` with response code `LATE_PAYMENT_REQUIRES_REFUND`, while the booking stays cancelled to avoid reclaiming a room that may already have been released. The customer must contact support for reconciliation instead of paying again.
 
 ## Business Rules
@@ -98,7 +98,8 @@ Allow an authenticated customer to select a valid room/time range, see the expec
 - Cost calculation is exposed as a separate endpoint before creation.
 - Booking creation uses room locking plus overlap checks to reduce race conditions.
 - The service catches persistence conflicts and converts them into booking conflict errors.
-- A scheduled expiry job exists to auto-cancel stale unpaid payment sessions after the configured timeout (`app.booking.payment-expiration-seconds`, default `900`, or 15 minutes).
+- Viewing a room, selecting dates, and reviewing the confirmation page only create a browser-side draft; they do not create a database booking or block the room. The frontend creates the booking immediately before requesting the VietQR session when the customer clicks `Tạo mã QR`.
+- A scheduled expiry job exists to auto-cancel stale unpaid payment sessions after the configured timeout (`app.booking.payment-expiration-seconds`, default `300`, or 5 minutes). The default sweep interval is 10 seconds so abandoned holds are released promptly.
 - Checkout now asks the backend to create a `payment_transaction` record instead of simulating payment only in the frontend.
 - Customer checkout only supports online payment through SePay: either a 50% deposit or the full amount, both via VietQR plus SePay transaction lookup. `cash` is rejected by `POST /api/payments/sessions`; the booking payment method is always set to `ONLINE` by checkout.
 - Booking creation stores the original room total. Payment-session creation reuses the coupon validation use case and applies an optional coupon atomically before calculating the deposit/full-payment amount.

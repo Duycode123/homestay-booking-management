@@ -73,8 +73,9 @@ gemini.ai.base-url=${GEMINI_AI_BASE_URL:https://generativelanguage.googleapis.co
 gemini.ai.max-output-tokens=${GEMINI_AI_MAX_OUTPUT_TOKENS:1200}
 gemini.ai.temperature=${GEMINI_AI_TEMPERATURE:0.35}
 
-# Hold an unpaid room slot for 15 minutes before releasing it.
-app.booking.payment-expiration-seconds=${BOOKING_PAYMENT_EXPIRATION_SECONDS:900}
+# Hold an unpaid room slot for 5 minutes before releasing it.
+app.booking.payment-expiration-seconds=${BOOKING_PAYMENT_EXPIRATION_SECONDS:300}
+app.booking.expiry-sweep-interval-ms=${BOOKING_EXPIRY_SWEEP_INTERVAL_MS:10000}
 
 # ===== SePay =====
 # Online deposit flow redirects customers to the configured SePay/VietQR checkout URL.

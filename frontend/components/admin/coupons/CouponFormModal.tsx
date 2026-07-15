@@ -1,6 +1,7 @@
 'use client'
 
 import ProjectSelect from '@/components/ui/ProjectSelect'
+import AdminDatePicker from '@/components/admin/AdminDatePicker'
 
 import { useEffect, useState } from 'react'
 import {
@@ -245,15 +246,15 @@ export default function CouponFormModal({
                   {errors.minOrderValue && <p className="mt-1 text-xs text-error">{errors.minOrderValue}</p>}
                 </label>
 
-                <label className="block">
+                <div className="block">
                   <span className={labelClass}>Ngày hết hạn</span>
-                  <input
-                    type="date"
+                  <AdminDatePicker
                     value={form.expiresAt}
-                    onChange={(event) => set({ expiresAt: event.target.value })}
-                    className={inputClass}
+                    onChange={(expiresAt) => set({ expiresAt })}
+                    placeholder="Không giới hạn"
+                    ariaLabel="Chọn ngày hết hạn mã giảm giá"
                   />
-                </label>
+                </div>
               </div>
 
               <section className="rounded-2xl border border-outline-variant bg-surface-container-low/40 p-4">

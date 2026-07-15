@@ -44,7 +44,7 @@ const slotStateClasses: Record<SlotViewState, string> = {
   available:
     'border-[#C9C1B4] bg-white text-[#242A27] hover:border-[#B28455] hover:bg-[#FFF8F2] hover:shadow-[0_10px_26px_rgba(178,132,85,0.10)]',
   selected:
-    'border-[#B28455] bg-[#B28455] text-white shadow-[0_12px_28px_rgba(178,132,85,0.25)]',
+    'border-secondary bg-secondary text-white shadow-[0_12px_28px_rgba(23,58,49,0.24)]',
   booked:
     'border-[#E4DED3] bg-[#EFEAE1] text-[#8A8176] opacity-70 line-through',
   past:
@@ -352,7 +352,7 @@ export default function BookingSchedulePicker({
                 className={[
                   'min-h-[98px] min-w-[96px] rounded-[20px] border px-3 py-3 text-left transition focus:outline-none focus:ring-2 focus:ring-[#B28455]/30 sm:min-w-[104px]',
                   selected
-                    ? 'border-[#B28455] bg-[#B28455] text-white shadow-[0_12px_28px_rgba(178,132,85,0.25)]'
+                    ? 'border-secondary bg-secondary text-white shadow-[0_12px_28px_rgba(23,58,49,0.24)]'
                     : 'border-[#E4DED3] bg-[#FBF9F5] text-[#242A27] hover:border-[#B28455] hover:bg-[#FFF8F2]',
                 ].join(' ')}
                 aria-label={`Chọn ngày ${date}`}
@@ -462,7 +462,7 @@ export default function BookingSchedulePicker({
 
       <div className="mt-5 flex flex-wrap gap-3 text-xs font-semibold text-[#6A6C66]">
         <LegendItem className="border-[#C9C1B4] bg-white" label="Trống" />
-        <LegendItem className="border-[#B28455] bg-[#B28455]" label="Đã chọn" dark />
+        <LegendItem className="border-secondary bg-secondary" label="Đã chọn" dark />
         <LegendItem className="border-[#E4DED3] bg-[#EFEAE1]" label="Đã đặt" />
         <LegendItem className="border-[#E4DED3] bg-[#FBF9F5]" label="Không khả dụng" />
       </div>

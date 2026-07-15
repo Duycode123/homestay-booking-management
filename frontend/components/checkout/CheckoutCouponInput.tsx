@@ -135,7 +135,7 @@ export default function CheckoutCouponInput({
             type="button"
             onClick={() => void handleApply()}
             disabled={disabled || isApplying || !code.trim()}
-            className="h-11 shrink-0 rounded-xl bg-[#B28455] px-4 font-display text-sm font-semibold text-white transition hover:bg-[#946A42] disabled:cursor-not-allowed disabled:opacity-60"
+            className="h-11 shrink-0 rounded-full bg-secondary px-5 font-display text-sm font-semibold text-white shadow-[0_10px_24px_rgba(23,58,49,.18)] transition hover:-translate-y-0.5 hover:bg-secondary-container disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isApplying ? 'Đang kiểm tra...' : 'Áp dụng'}
           </button>

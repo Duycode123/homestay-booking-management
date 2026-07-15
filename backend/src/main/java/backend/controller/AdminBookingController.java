@@ -8,6 +8,7 @@ import backend.booking.application.port.in.UpdateBookingStatusUseCase;
 import backend.booking.application.port.in.ReviewCustomerCancellationUseCase;
 import backend.booking.application.port.in.command.CancelBookingForManagementCommand;
 import backend.booking.application.port.in.command.SettleBookingAtCheckoutCommand;
+import backend.controller.request.SettleBookingAtCheckoutRequest;
 import backend.booking.application.port.in.command.UpdateBookingStatusCommand;
 import backend.booking.application.port.in.command.ReviewCustomerCancellationCommand;
 import backend.booking.application.port.in.query.GetBookingManagementDetailQuery;
@@ -145,10 +146,11 @@ public class AdminBookingController {
     @PostMapping("/{id}/settle-checkout")
     public ResponseEntity<?> settleAtCheckout(
             @PathVariable Integer id,
+            @RequestBody @Valid SettleBookingAtCheckoutRequest request,
             Authentication authentication
     ) {
         BookingResponse data = settleBookingAtCheckoutUseCase.settleBookingAtCheckout(
-                new SettleBookingAtCheckoutCommand(id, authentication.getName())
+                new SettleBookingAtCheckoutCommand(id, request.getMethod(), authentication.getName())
         );
 
         return ResponseEntity.ok(success("Ket toan va checkout thanh cong", data));

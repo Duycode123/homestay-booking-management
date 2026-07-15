@@ -2,12 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import AdminPageHeader from '@/components/admin/AdminPageHeader'
-import AdminStatCard from '@/components/admin/AdminStatCard'
 import AdminToast from '@/components/admin/AdminToast'
-import { IconBookings, IconCheckCircle, IconClock, IconRefresh } from '@/components/admin/AdminIcons'
+import { IconRefresh } from '@/components/admin/AdminIcons'
+import StaffScheduleApprovalQueue from '@/components/admin/staff-schedule/StaffScheduleApprovalQueue'
 import StaffScheduleHourGrid from '@/components/admin/staff-schedule/StaffScheduleHourGrid'
+import StaffScheduleRejectDialog from '@/components/admin/staff-schedule/StaffScheduleRejectDialog'
 import StaffScheduleToolbar from '@/components/admin/staff-schedule/StaffScheduleToolbar'
-import StaffScheduleWeekStrip, { scrollToScheduleDay } from '@/components/admin/staff-schedule/StaffScheduleWeekStrip'
 import {
   decideAdminShiftRegistration,
   fetchAdminShiftRegistrations,
@@ -19,8 +19,9 @@ import {
   getThisWeekRange,
   getVisibleDays,
   getVisibleRange,
-  groupRegistrationsByDate,
+  matchShiftFrame,
   parseDate,
+  SHIFT_FRAMES,
 } from '@/lib/admin/staff-schedule/staffScheduleUtils'
 
 const DEFAULT_RANGE = getNextWeekRange()
@@ -38,8 +39,9 @@ type QueueStatusFilter = 'PENDING' | 'APPROVED' | 'ALL'
 export default function AdminStaffSchedulePage() {
   const [anchorDate, setAnchorDate] = useState(() => parseDate(DEFAULT_RANGE.fromDate))
   const [filters, setFilters] = useState<ShiftRegistrationFilters>(DEFAULT_FILTERS)
-  const [statusFilter, setStatusFilter] = useState<QueueStatusFilter>('PENDING')
+  const [statusFilter, setStatusFilter] = useState<QueueStatusFilter>('ALL')
   const [highlightDate, setHighlightDate] = useState<string | null>(null)
+  const [rejectingRegistration, setRejectingRegistration] = useState<AdminShiftRegistration | null>(null)
   const [registrations, setRegistrations] = useState<AdminShiftRegistration[]>([])
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [isLoading, setIsLoading] = useState(true)
@@ -91,15 +93,27 @@ export default function AdminStaffSchedulePage() {
     return () => clearTimeout(timer)
   }, [toast])
 
-  const registrationsByDate = useMemo(() => groupRegistrationsByDate(registrations), [registrations])
-
   const stats = useMemo(
-    () => ({
-      total: registrations.length,
-      pending: registrations.filter((item) => item.status === 'PENDING').length,
-      approved: registrations.filter((item) => item.status === 'APPROVED').length,
-    }),
-    [registrations],
+    () => {
+      const approved = registrations.filter((item) => item.status === 'APPROVED')
+      const coveredSlots = new Set(
+        approved.flatMap((item) => {
+          const frame = matchShiftFrame(item.startTime, item.endTime)
+          return frame.id === 'other' ? [] : [`${item.workDate}|${frame.id}`]
+        }),
+      )
+      const totalStandardSlots = visibleDays.length * SHIFT_FRAMES.length
+
+      return {
+        total: registrations.length,
+        pending: registrations.filter((item) => item.status === 'PENDING').length,
+        approved: approved.length,
+        scheduledStaff: new Set(approved.map((item) => item.staffId)).size,
+        uncoveredSlots: Math.max(0, totalStandardSlots - coveredSlots.size),
+        coverage: totalStandardSlots > 0 ? Math.round((coveredSlots.size / totalStandardSlots) * 100) : 0,
+      }
+    },
+    [registrations, visibleDays.length],
   )
 
   const approveRegistrations = async (items: AdminShiftRegistration[]) => {
@@ -141,6 +155,29 @@ export default function AdminStaffSchedulePage() {
     void approveRegistrations([registration])
   }
 
+  const handleReject = async (reason: string) => {
+    if (!rejectingRegistration) return
+
+    setIsSaving(true)
+    setErrorMessage('')
+
+    try {
+      await decideAdminShiftRegistration(rejectingRegistration.id, false, reason)
+      setSelectedIds((current) => {
+        const next = new Set(current)
+        next.delete(rejectingRegistration.id)
+        return next
+      })
+      setToast(`Đã từ chối ca của ${rejectingRegistration.staffName} và lưu lý do để nhân viên theo dõi.`)
+      setRejectingRegistration(null)
+      await loadRegistrations()
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Không thể từ chối ca.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   const selectAllPending = () => {
     const pendingIds = registrations
       .filter((item) => {
@@ -155,9 +192,6 @@ export default function AdminStaffSchedulePage() {
 
   const handleDayFilter = (date: string | null) => {
     setHighlightDate(date)
-    if (date) {
-      window.setTimeout(() => scrollToScheduleDay(date), 100)
-    }
   }
 
   const jumpToWeek = (fromDate: string) => {
@@ -209,28 +243,7 @@ export default function AdminStaffSchedulePage() {
             </div>
           )}
 
-          <div className="grid gap-3 sm:grid-cols-3 xl:max-w-[920px]">
-            <AdminStatCard
-              label="Chờ duyệt"
-              value={isLoading ? '…' : stats.pending}
-              hint="Cần duyệt để lên lịch"
-              accent="tertiary"
-              icon={<IconClock className="h-5 w-5" />}
-            />
-            <AdminStatCard
-              label="Đã lên lịch"
-              value={isLoading ? '…' : stats.approved}
-              hint="Nhân viên đã thấy trên lịch"
-              accent="secondary"
-              icon={<IconCheckCircle className="h-5 w-5" />}
-            />
-            <AdminStatCard
-              label="Tổng đăng ký"
-              value={isLoading ? '…' : stats.total}
-              hint="Trong tuần đang xem"
-              icon={<IconBookings className="h-5 w-5" />}
-            />
-          </div>
+          <ScheduleOverview stats={stats} isLoading={isLoading} />
 
           <StaffScheduleToolbar
             rangeLabel={formatWeekRangeLabel(visibleRange.fromDate, visibleRange.toDate)}
@@ -251,42 +264,97 @@ export default function AdminStaffSchedulePage() {
             onNextWeek={() => jumpToWeek(getNextWeekRange().fromDate)}
             onQueryChange={(value) => setFilters((current) => ({ ...current, query: value }))}
             onStaffIdChange={(value) => setFilters((current) => ({ ...current, staffId: value }))}
-            onRefresh={() => void loadRegistrations()}
             isLoading={isLoading}
           />
 
-          <StaffScheduleWeekStrip
-            days={visibleDays}
-            registrationsByDate={registrationsByDate}
-            activeDate={highlightDate}
-            onSelectDate={handleDayFilter}
-          />
+          <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_350px]">
+            <StaffScheduleHourGrid
+              days={visibleDays}
+              registrations={registrations}
+              selectedIds={selectedIds}
+              isLoading={isLoading}
+              isSaving={isSaving}
+              statusFilter={statusFilter}
+              highlightDate={highlightDate}
+              onStatusFilterChange={setStatusFilter}
+              onHighlightDate={handleDayFilter}
+              onToggle={(registration) => {
+                if (registration.status !== 'PENDING') return
+                setSelectedIds((current) => {
+                  const next = new Set(current)
+                  if (next.has(registration.id)) next.delete(registration.id)
+                  else next.add(registration.id)
+                  return next
+                })
+              }}
+              onSelectAllPending={selectAllPending}
+              onClearSelection={() => setSelectedIds(new Set())}
+              onApproveOne={handleApproveOne}
+              onRejectOne={setRejectingRegistration}
+              onApproveMany={(items) => void approveRegistrations(items)}
+              onApproveSelected={handleApproveSelected}
+            />
 
-          <StaffScheduleHourGrid
-            days={visibleDays}
-            registrations={registrations}
-            selectedIds={selectedIds}
-            isLoading={isLoading}
-            isSaving={isSaving}
-            statusFilter={statusFilter}
-            highlightDate={highlightDate}
-            onStatusFilterChange={setStatusFilter}
-            onToggle={(registration) => {
-              if (registration.status !== 'PENDING') return
-              setSelectedIds((current) => {
-                const next = new Set(current)
-                if (next.has(registration.id)) next.delete(registration.id)
-                else next.add(registration.id)
-                return next
-              })
-            }}
-            onSelectAllPending={selectAllPending}
-            onClearSelection={() => setSelectedIds(new Set())}
-            onApproveOne={handleApproveOne}
-            onApproveSelected={handleApproveSelected}
-          />
+            <StaffScheduleApprovalQueue
+              registrations={registrations}
+              highlightDate={highlightDate}
+              isLoading={isLoading}
+              isSaving={isSaving}
+              onApprove={handleApproveOne}
+              onApproveMany={(items) => void approveRegistrations(items)}
+              onReject={setRejectingRegistration}
+            />
+          </div>
         </div>
+
+        <StaffScheduleRejectDialog
+          registration={rejectingRegistration}
+          isSaving={isSaving}
+          onClose={() => setRejectingRegistration(null)}
+          onConfirm={(reason) => void handleReject(reason)}
+        />
     </>
+  )
+}
+
+function ScheduleOverview({
+  stats,
+  isLoading,
+}: {
+  stats: {
+    total: number
+    pending: number
+    approved: number
+    scheduledStaff: number
+    uncoveredSlots: number
+    coverage: number
+  }
+  isLoading: boolean
+}) {
+  const items = [
+    { label: 'Chờ quyết định', value: stats.pending, helper: 'cần admin xử lý', tone: 'text-[#9a6435]', dot: 'bg-[#bd8a58]' },
+    { label: 'Ca đã duyệt', value: stats.approved, helper: 'trong tuần đang xem', tone: 'text-secondary', dot: 'bg-secondary' },
+    { label: 'Nhân viên đã xếp', value: stats.scheduledStaff, helper: 'nhân sự khác nhau', tone: 'text-on-surface', dot: 'bg-[#749486]' },
+    { label: 'Độ phủ ca chuẩn', value: `${stats.coverage}%`, helper: `${stats.uncoveredSlots} khung chưa bố trí`, tone: stats.uncoveredSlots > 0 ? 'text-error' : 'text-secondary', dot: stats.uncoveredSlots > 0 ? 'bg-error' : 'bg-secondary' },
+  ]
+
+  return (
+    <section className="overflow-hidden rounded-[22px] border border-[#ded2c3] bg-white shadow-[0_14px_40px_rgba(31,54,44,0.07)]">
+      <div className="grid divide-y divide-[#e8dfd4] sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+        {items.map((item) => (
+          <div key={item.label} className="flex items-center gap-3 px-4 py-4 sm:px-5">
+            <span className={['h-2.5 w-2.5 shrink-0 rounded-full shadow-[0_0_0_5px_rgba(23,58,49,0.05)]', item.dot].join(' ')} />
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-on-surface-variant">{item.label}</p>
+              <div className="mt-1 flex items-baseline gap-2">
+                <strong className={['font-editorial text-2xl font-normal', item.tone].join(' ')}>{isLoading ? '…' : item.value}</strong>
+                <span className="truncate text-[11px] text-on-surface-variant">{item.helper}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
   )
 }
 

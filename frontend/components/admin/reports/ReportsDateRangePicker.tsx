@@ -1,4 +1,5 @@
 import type { ReportDateRange } from '@/lib/admin/reportsTypes'
+import AdminDatePicker from '@/components/admin/AdminDatePicker'
 
 type ReportsDateRangePickerProps = {
   value: ReportDateRange
@@ -34,33 +35,33 @@ export default function ReportsDateRangePicker({
   return (
     <div className="rounded-xl border border-outline-variant bg-white p-4 shadow-[var(--shadow-card)]">
       <div className="flex flex-wrap items-end gap-3">
-        <label className="block min-w-[10rem] flex-1">
+        <div className="block min-w-[12rem] flex-1">
           <span className="mb-1 block font-display text-[10px] font-medium uppercase tracking-wider text-on-surface-variant">
             Từ ngày
           </span>
-          <input
-            type="date"
+          <AdminDatePicker
             value={value.startDate}
             max={value.endDate}
             disabled={disabled}
-            onChange={(e) => set({ startDate: e.target.value })}
-            className="h-10 w-full rounded-lg border border-outline bg-white px-3 text-sm text-on-surface outline-none transition-colors focus:border-brand-orange focus:ring-2 focus:ring-brand-orange/20 disabled:opacity-60"
+            allowClear={false}
+            ariaLabel="Chọn ngày bắt đầu báo cáo"
+            onChange={(date) => set({ startDate: date })}
           />
-        </label>
+        </div>
 
-        <label className="block min-w-[10rem] flex-1">
+        <div className="block min-w-[12rem] flex-1">
           <span className="mb-1 block font-display text-[10px] font-medium uppercase tracking-wider text-on-surface-variant">
             Đến ngày
           </span>
-          <input
-            type="date"
+          <AdminDatePicker
             value={value.endDate}
             min={value.startDate}
             disabled={disabled}
-            onChange={(e) => set({ endDate: e.target.value })}
-            className="h-10 w-full rounded-lg border border-outline bg-white px-3 text-sm text-on-surface outline-none transition-colors focus:border-brand-orange focus:ring-2 focus:ring-brand-orange/20 disabled:opacity-60"
+            allowClear={false}
+            ariaLabel="Chọn ngày kết thúc báo cáo"
+            onChange={(date) => set({ endDate: date })}
           />
-        </label>
+        </div>
 
         <div className="flex flex-wrap gap-2">
           {PRESETS.map((preset) => (

@@ -2,7 +2,7 @@ import axios from 'axios'
 import api from '@/lib/api'
 
 export type PaymentMethod = 'bank_transfer'
-export type PaymentOption = 'deposit' | 'full'
+export type PaymentOption = 'deposit' | 'full' | 'balance'
 
 export type PaymentStatus = 'success' | 'failed' | 'pending' | 'cancelled'
 
@@ -110,6 +110,31 @@ export async function createPaymentSession(
     }
   } catch (error) {
     throw new Error(getApiErrorMessage(error, 'Không thể tạo giao dịch thanh toán.'))
+  }
+}
+
+export async function createCheckoutBalancePaymentSession(
+  bookingId: number,
+): Promise<CreatePaymentSessionResponse> {
+  try {
+    const response = await api.post<ApiResponse<BackendPaymentSession>>(
+      '/api/payments/checkout-balance/sessions',
+      { bookingId },
+    )
+
+    return {
+      paymentUrl: response.data.data.paymentUrl,
+      paymentId: response.data.data.paymentId,
+      status: response.data.data.status,
+      amount: parseAmount(response.data.data.amount),
+      bookingId: response.data.data.bookingId,
+      bookingCode: response.data.data.bookingCode,
+      method: response.data.data.method,
+      paymentOption: response.data.data.paymentOption,
+      expiresAt: response.data.data.expiresAt,
+    }
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error, 'Không thể tạo mã QR thanh toán phần còn lại.'))
   }
 }
 

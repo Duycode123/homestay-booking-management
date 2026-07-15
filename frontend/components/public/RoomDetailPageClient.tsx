@@ -13,7 +13,7 @@ import { fetchPublicRoomEquipment } from '@/lib/public-room-equipment-service'
 import { fetchPublicReviewsByRoomId } from '@/lib/public-room-review-service'
 import type { BookingReview } from '@/lib/review-service'
 import { mapBackendRoomToBookingRoom } from '@/lib/room-mappers'
-import { fetchRoom } from '@/lib/rooms-api'
+import { fetchRoom, fetchRooms, type BackendRoom } from '@/lib/rooms-api'
 
 export default function RoomDetailPageClient({ roomId }: { roomId: string }) {
   const { isAuthenticated } = useAuth()
@@ -21,6 +21,7 @@ export default function RoomDetailPageClient({ roomId }: { roomId: string }) {
   const [room, setRoom] = useState<BookingRoom | null>(null)
   const [commonAmenities, setCommonAmenities] = useState<CommonAmenity[]>([])
   const [reviews, setReviews] = useState<BookingReview[]>([])
+  const [similarRooms, setSimilarRooms] = useState<BookingRoom[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [bookingOpen, setBookingOpen] = useState(false)
@@ -30,12 +31,14 @@ export default function RoomDetailPageClient({ roomId }: { roomId: string }) {
   useEffect(() => {
     let mounted = true
     setIsLoading(true)
+    setSimilarRooms([])
     Promise.all([
       fetchRoom(roomId),
       fetchPublicRoomEquipment({ roomId }).catch(() => []),
       fetchPublicReviewsByRoomId(roomId).catch(() => []),
       fetchCommonAmenities().catch(() => []),
-    ]).then(([backendRoom, equipment, roomReviews, amenities]) => {
+      fetchRooms().catch(() => []),
+    ]).then(async ([backendRoom, equipment, roomReviews, amenities, allRooms]) => {
       if (!mounted) return
       if (!backendRoom) {
         setError('Không tìm thấy phòng homestay.')
@@ -47,6 +50,18 @@ export default function RoomDetailPageClient({ roomId }: { roomId: string }) {
       setRoom(mapBackendRoomToBookingRoom(backendRoom, 0, { averageRating, reviewCount: roomReviews.length }, equipment))
       setReviews(roomReviews)
       setCommonAmenities(amenities)
+      const candidates = getSimilarRoomCandidates(backendRoom, allRooms).slice(0, 4)
+      const recommendations = await Promise.all(candidates.map(async (candidate, index) => {
+        const candidateReviews = await fetchPublicReviewsByRoomId(String(candidate.id)).catch(() => [])
+        const averageRating = candidateReviews.length
+          ? candidateReviews.reduce((total, review) => total + review.rating, 0) / candidateReviews.length
+          : 0
+        return mapBackendRoomToBookingRoom(candidate, index, {
+          averageRating,
+          reviewCount: candidateReviews.length,
+        })
+      }))
+      if (mounted) setSimilarRooms(recommendations)
     }).catch(() => {
       if (mounted) setError('Không thể tải chi tiết phòng. Vui lòng thử lại.')
     }).finally(() => {
@@ -94,10 +109,111 @@ export default function RoomDetailPageClient({ roomId }: { roomId: string }) {
 
           <aside className="lg:sticky lg:top-28 lg:self-start"><div className="rounded-[26px] border border-[#dbc6a9] bg-white p-6 shadow-[0_24px_70px_rgba(29,49,41,.13)]"><p className="text-sm text-on-surface-variant">Giá tham khảo mỗi đêm</p><p className="mt-1 font-editorial text-4xl font-semibold text-secondary">{formatCurrency(getNightlyDisplayPrice(room.pricePerHour))}<span className="font-display text-sm font-medium text-on-surface-variant"> / đêm</span></p><div className="my-5 h-px bg-outline-variant" /><p className="rounded-2xl bg-primary-container/50 px-4 py-3 text-sm leading-6 text-on-primary-container">Nhận phòng 14:00 · Trả phòng 12:00 · Giá chính xác được tính theo toàn bộ thời gian lưu trú.</p><button type="button" onClick={() => setBookingOpen(true)} className="mt-5 h-14 w-full rounded-2xl bg-brand-orange font-bold text-white shadow-lg transition hover:bg-brand-orangeHover">Chọn ngày lưu trú</button><p className="mt-3 text-center text-xs text-on-surface-variant">Chưa tính phí phát sinh hoặc mã giảm giá</p></div></aside>
         </div>
+
+        <SimilarStaysSection rooms={similarRooms} />
       </section>
       <BookingQuickModal room={room} open={bookingOpen} sourceRoute="/rooms" returnPath={`/rooms/${roomId}`} onClose={() => setBookingOpen(false)} />
     </main>
   )
+}
+
+function getSimilarRoomCandidates(currentRoom: BackendRoom, rooms: BackendRoom[]) {
+  const currentTierId = currentRoom.roomType?.id
+  const currentTierName = currentRoom.roomType?.typeName?.trim().toLocaleLowerCase('vi-VN')
+
+  return rooms
+    .filter((candidate) => {
+      if (candidate.id === currentRoom.id || candidate.status === 'INACTIVE') return false
+      if (currentTierId != null) return candidate.roomType?.id === currentTierId
+      return Boolean(currentTierName && candidate.roomType?.typeName?.trim().toLocaleLowerCase('vi-VN') === currentTierName)
+    })
+    .sort((first, second) => {
+      const firstAvailable = first.status === 'AVAILABLE' ? 0 : 1
+      const secondAvailable = second.status === 'AVAILABLE' ? 0 : 1
+      if (firstAvailable !== secondAvailable) return firstAvailable - secondAvailable
+      return first.roomName.localeCompare(second.roomName, 'vi')
+    })
+}
+
+function SimilarStaysSection({ rooms }: { rooms: BookingRoom[] }) {
+  return (
+    <section className="mt-16 border-t border-[#ded3c5] pt-10" aria-labelledby="similar-stays-title">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="eyebrow text-brand-orange">Gợi ý dành cho bạn</p>
+          <h2 id="similar-stays-title" className="mt-1 font-editorial text-3xl font-semibold text-secondary sm:text-4xl">Chỗ ở tương tự</h2>
+          <p className="mt-2 max-w-2xl text-sm text-on-surface-variant">Một vài lựa chọn có trải nghiệm lưu trú tương đương.</p>
+        </div>
+        <Link href="/rooms" className="inline-flex items-center gap-2 self-start text-sm font-bold text-secondary transition hover:text-brand-orange sm:self-auto">
+          Xem tất cả phòng
+          <ArrowIcon />
+        </Link>
+      </div>
+
+      {rooms.length > 0 ? (
+        <div className="mt-6 flex snap-x gap-4 overflow-x-auto pb-4 [scrollbar-width:thin]">
+          {rooms.map((similarRoom) => <SimilarStayCard key={similarRoom.id} room={similarRoom} />)}
+        </div>
+      ) : (
+        <div className="mt-8 rounded-[24px] border border-dashed border-[#d8cbbb] bg-white/70 px-6 py-10 text-center">
+          <p className="font-display text-base font-bold text-secondary">Chưa có phòng cùng hạng để gợi ý</p>
+          <p className="mt-2 text-sm text-on-surface-variant">Bạn có thể xem thêm các hạng phòng khác trong danh sách phòng homestay.</p>
+        </div>
+      )}
+    </section>
+  )
+}
+
+function SimilarStayCard({ room }: { room: BookingRoom }) {
+  const nightlyPrice = getNightlyDisplayPrice(room.pricePerHour)
+  const amenities = room.includedEquipments.slice(0, 2)
+  const isUnavailableToday = room.operationalStatus === 'IN_USE' || room.operationalStatus === 'MAINTENANCE'
+
+  return (
+    <article className="group w-[82vw] max-w-[300px] shrink-0 snap-start overflow-hidden rounded-[20px] border border-[#ded2c3] bg-white shadow-[0_12px_34px_rgba(31,54,44,0.07)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_46px_rgba(31,54,44,0.12)] sm:w-[290px]">
+      <Link href={`/rooms/${room.id}`} className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-orange" aria-label={`Xem chi tiết ${room.name}`}>
+        <div className="relative aspect-[16/10] overflow-hidden bg-[#e9e3d8]">
+          <Image src={room.image || room.images?.[0] || '/images/homestay-luxury-hero.webp'} alt={room.name} fill quality={90} sizes="300px" className="object-cover transition duration-700 group-hover:scale-[1.035]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0b211a]/75 via-transparent to-[#0b211a]/5" />
+          <div className="absolute inset-x-3 bottom-3 flex items-end justify-between gap-2 text-white">
+            <span className="rounded-full border border-white/20 bg-black/25 px-2.5 py-1 text-[10px] font-semibold backdrop-blur-md">{room.capacity}</span>
+            <span className="rounded-full border border-white/20 bg-black/25 px-2.5 py-1 text-[10px] font-bold backdrop-blur-md">
+              <span className="text-[#f2c15f]">★</span> {room.rating ? `${room.rating.toFixed(1)} (${room.reviews})` : 'Chưa đánh giá'}
+            </span>
+          </div>
+        </div>
+
+        <div className="p-4">
+          <h3 className="line-clamp-1 font-editorial text-[22px] font-semibold leading-tight text-secondary transition group-hover:text-brand-orange">{room.name}</h3>
+          <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-[#4d806d]"><LocationIcon />{room.location}</p>
+
+          <div className="mt-3 flex min-h-6 flex-nowrap gap-1.5 overflow-hidden">
+            {amenities.length > 0 ? amenities.map((amenity) => (
+              <span key={amenity} className="shrink-0 rounded-full border border-[#e1d6c9] bg-[#fbf8f3] px-2 py-1 text-[9px] font-semibold text-on-surface-variant">{amenity}</span>
+            )) : <span className="text-xs text-on-surface-variant">Đầy đủ tiện nghi lưu trú</span>}
+          </div>
+
+          <div className="mt-4 flex items-end justify-between gap-2 border-t border-[#e8dfd4] pt-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-on-surface-variant">Từ</p>
+              <p className="mt-0.5 font-editorial text-xl font-semibold text-brand-orange">{formatCurrency(nightlyPrice)}<span className="font-display text-[10px] font-medium text-on-surface-variant"> / đêm</span></p>
+            </div>
+            <span className={['inline-flex min-h-9 items-center rounded-full px-3 text-[10px] font-bold transition', isUnavailableToday ? 'border border-[#d6c9bb] bg-[#f6f1ea] text-on-surface-variant' : 'bg-secondary text-white group-hover:bg-brand-orange'].join(' ')}>
+              {isUnavailableToday ? 'Chọn ngày khác' : 'Xem phòng'}
+            </span>
+          </div>
+        </div>
+      </Link>
+    </article>
+  )
+}
+
+function ArrowIcon() {
+  return <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14m-5-5 5 5-5 5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+}
+
+function LocationIcon() {
+  return <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" /><circle cx="12" cy="10" r="2.5" /></svg>
 }
 
 function Gallery({ images, roomName }: { images: string[]; roomName: string }) {

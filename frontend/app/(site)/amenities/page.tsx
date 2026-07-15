@@ -149,7 +149,7 @@ export default function AmenitiesPage() {
       <section className="bg-secondary px-5 py-16 text-center text-white sm:px-8 sm:py-20">
         <p className="eyebrow text-primary-fixed">Sẵn sàng cho kỳ nghỉ</p>
         <h2 className="font-editorial mx-auto mt-4 max-w-2xl text-4xl font-semibold">Chọn không gian phù hợp với nhịp nghỉ của bạn.</h2>
-        <Link href="/rooms" className="mt-8 inline-flex rounded-full bg-primary-fixed px-7 py-3.5 font-display text-sm font-semibold text-secondary transition hover:bg-white">Khám phá phòng homestay</Link>
+        <Link href="/rooms" className="mt-8 inline-flex rounded-full border border-white/20 bg-[#0f2f27] px-7 py-3.5 font-display text-sm font-semibold text-white shadow-[0_14px_30px_rgba(0,0,0,.22)] transition hover:-translate-y-0.5 hover:bg-secondary-container">Khám phá phòng homestay</Link>
       </section>
     </main>
   )

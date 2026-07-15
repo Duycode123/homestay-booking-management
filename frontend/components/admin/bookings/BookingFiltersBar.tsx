@@ -7,6 +7,7 @@ import {
 } from '@/lib/admin/bookingLabels'
 import { toLocalDateInputValue } from '@/lib/admin/adminBookingApi'
 import { IconSearch } from '@/components/admin/AdminIcons'
+import AdminDatePicker from '@/components/admin/AdminDatePicker'
 import type { BookingFilters } from '@/lib/admin/types'
 
 type BookingFiltersBarProps = {
@@ -117,15 +118,16 @@ export default function BookingFiltersBar({ filters, onChange, resultCount }: Bo
             </ProjectSelect>
           </label>
 
-          <label className="block">
+          <div className="block">
             <span className={labelClass}>Ngày sử dụng</span>
-            <input
-              type="date"
+            <AdminDatePicker
               value={filters.date}
-              onChange={(e) => set({ date: e.target.value })}
-              className={inputClass}
+              onChange={(date) => set({ date })}
+              placeholder="Tất cả ngày"
+              ariaLabel="Chọn ngày sử dụng phòng"
+              className="h-10"
             />
-          </label>
+          </div>
         </div>
       </div>
 

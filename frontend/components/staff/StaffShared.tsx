@@ -27,7 +27,7 @@ export function StaffSidebar() {
 
   return (
     <>
-      <aside className="hidden w-[17rem] shrink-0 border-r border-white/10 bg-brand-greenDark px-4 py-6 text-inverse-on-surface lg:flex lg:flex-col">
+      <aside className="hidden w-[17rem] shrink-0 border-r border-white/10 bg-brand-greenDark px-4 py-6 text-inverse-on-surface lg:sticky lg:top-0 lg:flex lg:h-screen lg:self-start lg:flex-col lg:overflow-hidden">
         <div className="flex items-center gap-3 px-2">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-brand-orange text-white">
             <IconLogo />
@@ -52,7 +52,7 @@ export function StaffSidebar() {
           </div>
         </div>
 
-        <nav aria-label="Điều hướng nhân viên" className="mt-6 space-y-1">
+        <nav aria-label="Điều hướng nhân viên" className="mt-6 min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-1 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.18)_transparent]">
           {menuItems.map((item) => {
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
             return (
@@ -75,7 +75,7 @@ export function StaffSidebar() {
           })}
         </nav>
 
-        <div className="mt-auto">
+        <div className="mt-4 shrink-0 border-t border-white/10 pt-4">
           <button
             type="button"
             onClick={() => setIsLogoutConfirmOpen(true)}

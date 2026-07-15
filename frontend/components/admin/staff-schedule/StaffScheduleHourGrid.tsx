@@ -1,6 +1,7 @@
 'use client'
 
-import RegistrationStatusBadge from '@/components/admin/staff-schedule/RegistrationStatusBadge'
+import { useState } from 'react'
+import StaffScheduleSlotDialog from '@/components/admin/staff-schedule/StaffScheduleSlotDialog'
 import type { AdminShiftRegistration } from '@/lib/admin/staff-schedule/adminShiftRegistrationApi'
 import {
   formatDayNumber,
@@ -8,7 +9,6 @@ import {
   isToday,
   matchShiftFrame,
   SHIFT_FRAMES,
-  staffInitials,
   type ShiftFrame,
 } from '@/lib/admin/staff-schedule/staffScheduleUtils'
 
@@ -21,10 +21,13 @@ type StaffScheduleHourGridProps = {
   statusFilter: 'PENDING' | 'APPROVED' | 'ALL'
   highlightDate: string | null
   onStatusFilterChange: (filter: 'PENDING' | 'APPROVED' | 'ALL') => void
+  onHighlightDate: (date: string | null) => void
   onToggle: (registration: AdminShiftRegistration) => void
   onSelectAllPending: () => void
   onClearSelection: () => void
   onApproveOne: (registration: AdminShiftRegistration) => void
+  onRejectOne: (registration: AdminShiftRegistration) => void
+  onApproveMany: (registrations: AdminShiftRegistration[]) => void
   onApproveSelected: () => void
 }
 
@@ -37,12 +40,16 @@ export default function StaffScheduleHourGrid({
   statusFilter,
   highlightDate,
   onStatusFilterChange,
+  onHighlightDate,
   onToggle,
   onSelectAllPending,
   onClearSelection,
   onApproveOne,
+  onRejectOne,
+  onApproveMany,
   onApproveSelected,
 }: StaffScheduleHourGridProps) {
+  const [activeSlot, setActiveSlot] = useState<{ date: string; frameId: ShiftFrame['id'] } | null>(null)
   const filtered = registrations.filter((item) => {
     if (statusFilter !== 'ALL' && item.status !== statusFilter) return false
     if (highlightDate && item.workDate !== highlightDate) return false
@@ -59,6 +66,8 @@ export default function StaffScheduleHourGrid({
     : SHIFT_FRAMES
 
   const cellMap = buildCellMap(filtered)
+  const activeFrame = activeSlot ? frames.find((frame) => frame.id === activeSlot.frameId) ?? null : null
+  const activeRegistrations = activeSlot ? cellMap.get(cellKey(activeSlot.date, activeSlot.frameId)) ?? [] : []
 
   const tabs: { id: 'PENDING' | 'APPROVED' | 'ALL'; label: string; count: number }[] = [
     {
@@ -75,12 +84,13 @@ export default function StaffScheduleHourGrid({
   ]
 
   return (
+    <>
     <section className="flex max-h-[min(75vh,760px)] flex-col overflow-hidden rounded-[24px] border border-[#e2d7ca] bg-white shadow-[0_18px_52px_rgba(31,54,44,0.08)]">
       <div className="flex shrink-0 flex-col gap-3 border-b border-[#e8dfd4] bg-[linear-gradient(135deg,#fff,#fbf8f3)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
         <div>
           <h2 className="font-display text-lg font-bold text-on-surface">Lịch theo khung giờ</h2>
           <p className="mt-0.5 text-sm text-on-surface-variant">
-            Hàng = ca sáng / chiều / tối · Cột = ngày trong tuần
+            Mỗi ô là một ca · bấm vào ô để xem danh sách nhân viên
           </p>
         </div>
 
@@ -151,23 +161,24 @@ export default function StaffScheduleHourGrid({
                         dimmed ? 'opacity-40' : '',
                       ].join(' ')}
                     >
-                      <p
+                      <button
+                        type="button"
+                        onClick={() => onHighlightDate(highlightDate === date ? null : date)}
                         className={[
-                          'text-[10px] font-bold uppercase tracking-wide',
-                          today ? 'text-brand-orange' : 'text-on-surface-variant',
+                          'mx-auto w-full rounded-xl px-2 py-1.5 transition',
+                          highlightDate === date ? 'bg-secondary text-white shadow-sm' : 'hover:bg-white',
                         ].join(' ')}
+                        aria-pressed={highlightDate === date}
+                        aria-label={`Lọc lịch ngày ${formatDayNumber(date)}`}
                       >
-                        {formatWeekday(date)}
-                      </p>
-                      <p
-                        className={[
-                          'mt-0.5 font-display text-sm font-bold',
-                          today ? 'text-brand-orange' : 'text-on-surface',
-                        ].join(' ')}
-                      >
-                        {formatDayNumber(date)}
-                      </p>
-                      {today && <p className="mt-0.5 text-[10px] font-semibold text-brand-orange">Hôm nay</p>}
+                        <span className={['block text-[10px] font-bold uppercase tracking-wide', highlightDate === date ? 'text-white/70' : today ? 'text-brand-orange' : 'text-on-surface-variant'].join(' ')}>
+                          {formatWeekday(date)}
+                        </span>
+                        <span className={['mt-0.5 block font-display text-sm font-bold', highlightDate === date ? 'text-white' : today ? 'text-brand-orange' : 'text-on-surface'].join(' ')}>
+                          {formatDayNumber(date)}
+                        </span>
+                        {today && <span className={['mt-0.5 block text-[10px] font-semibold', highlightDate === date ? 'text-white/75' : 'text-brand-orange'].join(' ')}>Hôm nay</span>}
+                      </button>
                     </th>
                   )
                 })}
@@ -213,20 +224,12 @@ export default function StaffScheduleHourGrid({
                             <span className="text-[11px] text-on-surface-variant/60">Trống</span>
                           </div>
                         ) : (
-                          <div className="flex min-h-[88px] flex-col gap-1.5">
-                            {items.map((registration) => (
-                              <ShiftChip
-                                key={registration.id}
-                                registration={registration}
-                                frameId={frame.id}
-                                checked={selectedIds.has(registration.id)}
-                                isSaving={isSaving}
-                                showCustomTime={frame.id === 'other'}
-                                onToggle={() => onToggle(registration)}
-                                onApprove={() => onApproveOne(registration)}
-                              />
-                            ))}
-                          </div>
+                          <ShiftSlotSummary
+                            items={items}
+                            frameId={frame.id}
+                            selectedIds={selectedIds}
+                            onOpen={() => setActiveSlot({ date, frameId: frame.id })}
+                          />
                         )}
                       </td>
                     )
@@ -290,93 +293,87 @@ export default function StaffScheduleHourGrid({
         </div>
       )}
     </section>
+    {activeSlot && activeFrame && (
+      <StaffScheduleSlotDialog
+        open
+        date={activeSlot.date}
+        frame={activeFrame}
+        registrations={activeRegistrations}
+        selectedIds={selectedIds}
+        isSaving={isSaving}
+        onClose={() => setActiveSlot(null)}
+        onToggle={onToggle}
+        onApprove={onApproveOne}
+        onApproveMany={onApproveMany}
+        onReject={onRejectOne}
+      />
+    )}
+    </>
   )
 }
 
-function ShiftChip({
-  registration,
+function ShiftSlotSummary({
+  items,
   frameId,
-  checked,
-  isSaving,
-  showCustomTime,
-  onToggle,
-  onApprove,
+  selectedIds,
+  onOpen,
 }: {
-  registration: AdminShiftRegistration
+  items: AdminShiftRegistration[]
   frameId: ShiftFrame['id']
-  checked: boolean
-  isSaving: boolean
-  showCustomTime: boolean
-  onToggle: () => void
-  onApprove: () => void
+  selectedIds: Set<number>
+  onOpen: () => void
 }) {
-  const isPending = registration.status === 'PENDING'
-  const isApproved = registration.status === 'APPROVED'
-  const isRejected = registration.status === 'REJECTED'
+  const pending = items.filter((item) => item.status === 'PENDING').length
+  const approved = items.filter((item) => item.status === 'APPROVED').length
+  const selected = items.filter((item) => selectedIds.has(item.id)).length
   const tone = shiftChipTone(frameId)
+  const preview = items.slice(0, 3)
 
   return (
-    <div
+    <button
+      type="button"
+      onClick={onOpen}
       className={[
-        'rounded-lg border-l-4 px-2.5 py-2 shadow-sm transition',
-        checked
-          ? 'border-l-brand-orange border border-brand-orange bg-primary-container ring-1 ring-brand-orange/25'
-          : isRejected
-            ? 'border-l-error border border-error/25 bg-error-container/40'
-            : [tone.border, tone.bg, isPending ? 'border border-dashed' : 'border'].join(' '),
+        'group flex min-h-[88px] w-full flex-col rounded-xl border-l-4 px-3 py-2.5 text-left shadow-sm transition',
+        tone.border,
+        tone.bg,
+        'hover:-translate-y-0.5 hover:border-secondary/45 hover:shadow-[0_10px_24px_rgba(31,54,44,0.10)]',
+        selected > 0 ? 'ring-2 ring-brand-orange/20' : '',
       ].join(' ')}
     >
-      <div className="flex items-start gap-1.5">
-        {isPending ? (
-          <input
-            type="checkbox"
-            checked={checked}
-            onChange={onToggle}
-            className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-outline text-brand-orange focus:ring-brand-orange"
-            aria-label={`Chọn ca của ${registration.staffName}`}
-          />
-        ) : (
-          <span className={['mt-0.5 flex h-3.5 w-3.5 shrink-0 items-center justify-center text-[10px] font-bold', tone.accent].join(' ')}>
-            {isApproved ? '✓' : '×'}
-          </span>
-        )}
-
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <span
-              className={[
-                'flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[8px] font-bold text-white',
-                isRejected ? 'bg-error' : tone.avatar,
-              ].join(' ')}
-            >
-              {staffInitials(registration.staffName)}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex -space-x-1.5">
+          {preview.map((item, index) => (
+            <span key={item.id} className={['flex h-7 w-7 items-center justify-center rounded-full border-2 border-white text-[8px] font-bold text-white', index === 0 ? tone.avatar : 'bg-[#6f887d]'].join(' ')} title={item.staffName}>
+              {initials(item.staffName)}
             </span>
-            <p className="truncate text-xs font-bold text-on-surface">{registration.staffName}</p>
-          </div>
-
-          {showCustomTime && (
-            <p className="mt-1 text-[10px] font-semibold tabular-nums text-on-surface-variant">
-              {registration.startTime} – {registration.endTime}
-            </p>
+          ))}
+          {items.length > preview.length && (
+            <span className="flex h-7 min-w-7 items-center justify-center rounded-full border-2 border-white bg-[#eee5da] px-1 text-[8px] font-bold text-on-surface-variant">
+              +{items.length - preview.length}
+            </span>
           )}
-
-          <div className="mt-1.5 flex flex-wrap items-center gap-1">
-            <RegistrationStatusBadge status={registration.status} frameId={frameId} />
-            {isPending && (
-              <button
-                type="button"
-                onClick={onApprove}
-                disabled={isSaving}
-                className="rounded-md bg-brand-orange px-2 py-0.5 text-[10px] font-bold text-white transition hover:bg-brand-orangeHover disabled:opacity-50"
-              >
-                Duyệt
-              </button>
-            )}
-          </div>
         </div>
+        <span className="font-editorial text-xl text-on-surface">{items.length}</span>
       </div>
-    </div>
+
+      <div className="mt-auto flex items-end justify-between gap-2 pt-2">
+        <div className="flex flex-wrap gap-1">
+          {approved > 0 && <span className="rounded-md bg-secondary/10 px-1.5 py-0.5 text-[9px] font-bold text-secondary">{approved} đã duyệt</span>}
+          {pending > 0 && <span className="rounded-md bg-[#f2e2d0] px-1.5 py-0.5 text-[9px] font-bold text-[#8c6238]">{pending} chờ</span>}
+          {selected > 0 && <span className="rounded-md bg-brand-orange px-1.5 py-0.5 text-[9px] font-bold text-white">{selected} chọn</span>}
+        </div>
+        <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-on-surface-variant transition group-hover:translate-x-0.5 group-hover:text-secondary" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 6 6 6-6 6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+      </div>
+    </button>
   )
+}
+
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
 }
 
 /** Màu theo ca: sáng = cam, chiều = hổ phách, tối = xanh brand */

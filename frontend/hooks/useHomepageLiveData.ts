@@ -2,21 +2,17 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  fetchNextAvailableSlot,
   fetchRecentActivities,
   fetchTodayAvailability,
   getFallbackAvailabilityStatus,
-  getFallbackNextAvailableSlot,
   getFallbackRecentActivities,
   type AvailabilityStatus,
-  type NextAvailableSlot,
   type RecentActivity,
 } from '@/lib/homepage-live-service'
 
 type HomepageLiveData = {
   availabilityStatus: AvailabilityStatus
   recentActivities: RecentActivity[]
-  nextAvailableSlot: NextAvailableSlot | null
   isLoading: boolean
   error: string | null
   refresh: () => Promise<void>
@@ -28,7 +24,6 @@ export function useHomepageLiveData(): HomepageLiveData {
   const mountedRef = useRef(false)
   const [availabilityStatus, setAvailabilityStatus] = useState<AvailabilityStatus>(() => getFallbackAvailabilityStatus())
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>(() => getFallbackRecentActivities())
-  const [nextAvailableSlot, setNextAvailableSlot] = useState<NextAvailableSlot | null>(() => getFallbackNextAvailableSlot())
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -36,17 +31,15 @@ export function useHomepageLiveData(): HomepageLiveData {
     if (!silent) setIsLoading(true)
 
     try {
-      const [availability, activities, slot] = await Promise.all([
+      const [availability, activities] = await Promise.all([
         fetchTodayAvailability(),
         fetchRecentActivities(),
-        fetchNextAvailableSlot(),
       ])
 
       if (!mountedRef.current) return
 
       setAvailabilityStatus(availability)
       setRecentActivities(activities)
-      setNextAvailableSlot(slot)
       setError(null)
     } catch {
       if (!mountedRef.current) return
@@ -82,7 +75,6 @@ export function useHomepageLiveData(): HomepageLiveData {
   return {
     availabilityStatus,
     recentActivities,
-    nextAvailableSlot,
     isLoading,
     error,
     refresh: () => loadData(false),

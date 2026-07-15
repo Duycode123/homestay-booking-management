@@ -2,10 +2,12 @@ package backend.payment.adapter.in.web;
 
 import backend.common.ApiResponse;
 import backend.payment.adapter.in.web.dto.request.CreatePaymentSessionRequest;
+import backend.payment.adapter.in.web.dto.request.CreateCheckoutBalancePaymentRequest;
 import backend.payment.application.model.PaymentSessionResult;
 import backend.payment.application.model.PaymentTransactionDetail;
 import backend.payment.application.model.SePayCheckoutForm;
 import backend.payment.application.port.in.CreatePaymentSessionUseCase;
+import backend.payment.application.port.in.CreateCheckoutBalancePaymentUseCase;
 import backend.payment.application.port.in.GetPaymentTransactionUseCase;
 import backend.payment.application.port.in.GetSePayCheckoutFormUseCase;
 import jakarta.validation.Valid;
@@ -23,6 +25,7 @@ import java.util.Map;
 public class PaymentController {
 
     private final CreatePaymentSessionUseCase createPaymentSessionUseCase;
+    private final CreateCheckoutBalancePaymentUseCase createCheckoutBalancePaymentUseCase;
     private final GetPaymentTransactionUseCase getPaymentTransactionUseCase;
     private final GetSePayCheckoutFormUseCase getSePayCheckoutFormUseCase;
 
@@ -40,6 +43,19 @@ public class PaymentController {
         );
 
         return ResponseEntity.ok(success("Tao phien thanh toan thanh cong", data));
+    }
+
+    @PostMapping("/checkout-balance/sessions")
+    public ResponseEntity<ApiResponse<PaymentSessionResult>> createCheckoutBalancePayment(
+            @RequestBody @Valid CreateCheckoutBalancePaymentRequest request,
+            Authentication authentication
+    ) {
+        PaymentSessionResult data = createCheckoutBalancePaymentUseCase.createCheckoutBalancePayment(
+                request.getBookingId(),
+                authentication.getName()
+        );
+
+        return ResponseEntity.ok(success("Tao phien thanh toan so tien con lai thanh cong", data));
     }
 
     @GetMapping("/transactions/{paymentId}")

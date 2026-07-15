@@ -316,7 +316,10 @@ export async function cancelAdminBooking(
 
 export async function settleAdminBookingAtCheckout(bookingId: number): Promise<AdminBooking> {
   try {
-    const response = await api.post<ApiResponse<BackendBooking>>(`/api/admin/bookings/${bookingId}/settle-checkout`)
+    const response = await api.post<ApiResponse<BackendBooking>>(
+      `/api/admin/bookings/${bookingId}/settle-checkout`,
+      { method: 'CASH' },
+    )
     return mapBackendBooking(response.data.data)
   } catch (error) {
     throw new Error(getApiErrorMessage(error, 'Không thể kết toán phần tiền còn lại khi checkout.'))

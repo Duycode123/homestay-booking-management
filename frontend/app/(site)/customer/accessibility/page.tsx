@@ -218,7 +218,7 @@ function SettingSwitch({
         className={[
           "relative h-8 w-14 shrink-0 rounded-full border transition focus:outline-none focus:ring-2 focus:ring-[#B28455]/40 disabled:cursor-not-allowed disabled:opacity-60",
           checked
-            ? "border-[#B28455] bg-[#B28455]"
+            ? "border-secondary bg-secondary"
             : "border-[#C9C1B4] bg-white",
         ].join(" ")}
       >
@@ -266,7 +266,7 @@ function FontSizeControl({
               className={[
                 "rounded-2xl border px-4 py-3 text-left transition focus:outline-none focus:ring-2 focus:ring-[#B28455]/40 disabled:cursor-not-allowed disabled:opacity-60",
                 selected
-                  ? "border-[#B28455] bg-[#EDE0CF] text-[#5E4328]"
+                  ? "border-secondary bg-secondary text-white"
                   : "border-[#C9C1B4] bg-white text-[#242A27] hover:bg-[#FFF7EF]",
               ].join(" ")}
             >

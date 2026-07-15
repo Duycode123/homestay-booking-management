@@ -16,6 +16,19 @@ const WIDTH = 800
 const HEIGHT = 280
 const PAD = { top: 24, right: 20, bottom: 40, left: 56 }
 
+function formatCompactPrice(value: number) {
+  if (value >= 1_000_000_000) {
+    return `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 1 }).format(value / 1_000_000_000)} tỷ`
+  }
+  if (value >= 1_000_000) {
+    return `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 1 }).format(value / 1_000_000)} tr`
+  }
+  if (value >= 1_000) {
+    return `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(value / 1_000)} k`
+  }
+  return new Intl.NumberFormat('vi-VN').format(value)
+}
+
 export default function RevenueLineChart({ data }: RevenueLineChartProps) {
   const [tooltip, setTooltip] = useState<TooltipState>(null)
 
@@ -38,7 +51,7 @@ export default function RevenueLineChart({ data }: RevenueLineChartProps) {
 
     const yTicks = [0, 0.25, 0.5, 0.75, 1].map((ratio) => ({
       y: PAD.top + innerH - ratio * innerH,
-      label: formatAdminPrice(maxRevenue * ratio),
+      label: formatCompactPrice(maxRevenue * ratio),
     }))
 
     const xLabelStep = data.length > 14 ? Math.ceil(data.length / 7) : data.length > 7 ? 2 : 1

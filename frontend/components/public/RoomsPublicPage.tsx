@@ -4,7 +4,11 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import BookingQuickModal from '@/components/booking/BookingQuickModal'
-import { formatCurrency, getNightlyDisplayPrice } from '@/components/booking/booking-data'
+import {
+  formatCurrency,
+  getNightlyDisplayPrice,
+  MINIMUM_BOOKING_HOURS,
+} from '@/components/booking/booking-data'
 import { BOOKING_SLOT_TIMES, getTodayKey } from '@/components/booking/booking-time-utils'
 import { HeartIcon } from '@/components/layout/FavoriteRoomsMenu'
 import RoomCatalogSkeleton from '@/components/public/RoomCatalogSkeleton'
@@ -32,6 +36,12 @@ import {
   type RoomCapacityFilter,
   type RoomFilters,
 } from '@/lib/public/room-filters'
+import {
+  applyTodayAvailability,
+  getBookableStartSlotsToday,
+  isRoomTemporarilyUnavailable,
+  isSlotInFuture,
+} from '@/lib/public/today-room-availability'
 
 const MIN_NIGHTLY_PRICE = 1_000_000
 const MAX_NIGHTLY_PRICE = 5_000_000
@@ -60,9 +70,17 @@ const defaultFilters: RoomFilters = {
   maxNightlyPrice: MAX_NIGHTLY_PRICE,
 }
 
-type RoomBookingStatus = 'AVAILABLE_NOW' | 'AVAILABLE_OTHER_TIME' | 'UNAVAILABLE'
+type RoomBookingStatus = 'CHECKING' | 'AVAILABLE_NOW' | 'AVAILABLE_OTHER_TIME' | 'UNAVAILABLE'
 
 type RoomSlotsById = Record<string, TimeSlot[] | undefined>
+
+type TodayRoomSummary = {
+  available: number
+  almostFull: number
+  full: number
+  unavailable: number
+  unknown: number
+}
 
 type QuickBookingState = {
   room: Room
@@ -80,7 +98,21 @@ export default function RoomsPublicPage() {
   const [roomTiers, setRoomTiers] = useState<BackendRoomType[]>([])
   const [quickBooking, setQuickBooking] = useState<QuickBookingState | null>(null)
   const [todaySlotsByRoomId, setTodaySlotsByRoomId] = useState<RoomSlotsById>({})
-  const filteredRooms = useMemo(() => filterRooms(rooms, filters), [rooms, filters])
+  const [isTodayScheduleLoading, setIsTodayScheduleLoading] = useState(true)
+  const [scheduleUpdatedAt, setScheduleUpdatedAt] = useState<Date | null>(null)
+  const [scheduleErrorCount, setScheduleErrorCount] = useState(0)
+  const [scheduleRefreshKey, setScheduleRefreshKey] = useState(0)
+  const liveRooms = useMemo(
+    () => rooms.map((room) => applyTodayAvailability(room, todaySlotsByRoomId[room.id], new Date())),
+    [rooms, todaySlotsByRoomId],
+  )
+  const filteredRooms = useMemo(() => filterRooms(liveRooms, filters), [liveRooms, filters])
+  const todayRoomSummary = useMemo(() => summarizeTodayRooms(liveRooms), [liveRooms])
+  const isInitialScheduleLoading = isLoading || (isTodayScheduleLoading && scheduleUpdatedAt === null)
+  const bookableRoomCount = todayRoomSummary.available + todayRoomSummary.almostFull
+  const scheduleCoverage = liveRooms.length > 0
+    ? Math.round((bookableRoomCount / liveRooms.length) * 100)
+    : 0
   const hasActiveFilters =
     filters.search.trim() !== '' ||
     filters.roomTierId !== 'all' ||
@@ -108,34 +140,49 @@ export default function RoomsPublicPage() {
   useEffect(() => {
     if (rooms.length === 0) {
       setTodaySlotsByRoomId({})
+      setIsTodayScheduleLoading(false)
+      setScheduleUpdatedAt(null)
+      setScheduleErrorCount(0)
       return
     }
 
     let isMounted = true
     const todayKey = getTodayKey()
+    setIsTodayScheduleLoading(true)
 
     void Promise.all(
       rooms.map(async (room) => {
         if (isRoomTemporarilyUnavailable(room) || !/^\d+$/.test(room.id)) {
-          return [room.id, undefined] as const
+          return { roomId: room.id, slots: [] as TimeSlot[], failed: false }
         }
 
         try {
           const slots = await fetchAvailableSlots(room.id, todayKey)
-          return [room.id, slots] as const
+          return { roomId: room.id, slots, failed: false }
         } catch {
-          return [room.id, undefined] as const
+          return { roomId: room.id, slots: undefined, failed: true }
         }
       }),
-    ).then((entries) => {
+    ).then((results) => {
       if (!isMounted) return
-      setTodaySlotsByRoomId(Object.fromEntries(entries))
+      setTodaySlotsByRoomId(Object.fromEntries(results.map((result) => [result.roomId, result.slots])))
+      setScheduleErrorCount(results.filter((result) => result.failed).length)
+      setScheduleUpdatedAt(new Date())
+      setIsTodayScheduleLoading(false)
     })
 
     return () => {
       isMounted = false
     }
-  }, [rooms])
+  }, [rooms, scheduleRefreshKey])
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setScheduleRefreshKey((current) => current + 1)
+    }, 60_000)
+
+    return () => window.clearInterval(intervalId)
+  }, [])
 
   useEffect(() => {
     if (!shouldReopenQuickBooking(window.location.search)) return
@@ -148,7 +195,7 @@ export default function RoomsPublicPage() {
 
     try {
       const draftRoom = draft.selectedRoom ?? draft.room
-      const restoredRoom = rooms.find((room) => room.id === draftRoom?.id) ?? draftRoom
+      const restoredRoom = liveRooms.find((room) => room.id === draftRoom?.id) ?? draftRoom
 
       if (restoredRoom) {
         setQuickBooking({
@@ -165,17 +212,17 @@ export default function RoomsPublicPage() {
     } finally {
       window.history.replaceState(window.history.state, '', '/rooms')
     }
-  }, [rooms])
+  }, [liveRooms])
 
   useEffect(() => {
-    if (isLoading || rooms.length === 0) return
+    if (isLoading || liveRooms.length === 0) return
     if (shouldReopenQuickBooking(window.location.search)) return
 
     const params = new URLSearchParams(window.location.search)
     const roomId = params.get('roomId')
     if (!roomId) return
 
-    const matchedRoom = rooms.find((room) => room.id === roomId)
+    const matchedRoom = liveRooms.find((room) => room.id === roomId)
     if (!matchedRoom) return
 
     const durationParam = params.get('duration')
@@ -187,23 +234,30 @@ export default function RoomsPublicPage() {
       initialDuration: durationParam ? Number(durationParam) : undefined,
     })
     window.history.replaceState(window.history.state, '', '/rooms')
-  }, [isLoading, rooms])
+  }, [isLoading, liveRooms])
 
   useEffect(() => {
     const openFavoriteRoomBooking = (event: Event) => {
       const roomId = (event as CustomEvent<OpenQuickBookingEventDetail>).detail?.roomId
       if (!roomId) return
 
-      const matchedRoom = rooms.find((room) => room.id === roomId)
+      const matchedRoom = liveRooms.find((room) => room.id === roomId)
       if (matchedRoom) setQuickBooking({ room: matchedRoom })
     }
 
     window.addEventListener(OPEN_QUICK_BOOKING_EVENT, openFavoriteRoomBooking)
     return () => window.removeEventListener(OPEN_QUICK_BOOKING_EVENT, openFavoriteRoomBooking)
-  }, [rooms])
+  }, [liveRooms])
 
   const updateFilter = <Key extends keyof RoomFilters>(key: Key, value: RoomFilters[Key]) => {
     setFilters((current) => ({ ...current, [key]: value }))
+  }
+
+  const showRoomsByAvailability = (availability: RoomAvailabilityStatus) => {
+    setFilters((current) => ({ ...current, availability }))
+    window.requestAnimationFrame(() => {
+      document.getElementById('room-catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
   }
 
   return (
@@ -219,7 +273,7 @@ export default function RoomsPublicPage() {
           className="object-cover object-center"
         />
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(17,42,35,0.96)_0%,rgba(17,42,35,0.78)_44%,rgba(17,42,35,0.2)_100%)]" />
-        <div className="relative mx-auto grid min-h-[460px] max-w-[1400px] gap-8 px-5 py-20 sm:px-8 lg:grid-cols-[1fr_420px] lg:items-end">
+        <div className="relative mx-auto grid min-h-[460px] max-w-[1400px] gap-8 px-5 py-20 sm:px-8 lg:grid-cols-[1fr_390px] lg:items-end">
           <div>
             <p className="eyebrow text-primary-fixed">Danh mục lưu trú</p>
             <h1 className="font-editorial mt-4 text-5xl font-semibold tracking-[-0.03em] sm:text-6xl">Tìm căn phòng của bạn</h1>
@@ -227,27 +281,85 @@ export default function RoomsPublicPage() {
               So sánh sức chứa, tiện nghi, mức giá và lịch trống để chọn không gian phù hợp.
             </p>
           </div>
-          <div className="rounded-[18px] border border-white/15 bg-secondary/72 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.20)] backdrop-blur-xl">
-            <p className="font-display text-sm font-bold text-white">Lịch phòng hôm nay</p>
-            <div className="mt-4 grid grid-cols-3 gap-3 text-center">
-              <Metric
-                value={isLoading ? '--' : String(rooms.filter((room) => room.availabilityStatus === 'AVAILABLE').length)}
-                label="Còn trống"
-              />
-              <Metric
-                value={isLoading ? '--' : String(rooms.filter((room) => room.availabilityStatus === 'ALMOST_FULL').length)}
-                label="Sắp kín"
-              />
-              <Metric
-                value={isLoading ? '--' : String(rooms.filter((room) => room.availabilityStatus === 'FULL_TODAY').length)}
-                label="Kín lịch"
+          <div className="w-full max-w-[390px] justify-self-end rounded-[20px] border border-white/16 bg-[#173a31]/88 p-4 shadow-[0_22px_64px_rgba(0,0,0,0.26)] backdrop-blur-2xl sm:p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#8dd7b4] opacity-50" />
+                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#8dd7b4]" />
+                  </span>
+                  <p className="font-display text-sm font-bold text-white">Lịch phòng hôm nay</p>
+                </div>
+                <p className="mt-1 text-[11px] text-white/50">Dữ liệu booking thật · tối thiểu {MINIMUM_BOOKING_HOURS} giờ</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setScheduleRefreshKey((current) => current + 1)}
+                disabled={isTodayScheduleLoading}
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/12 bg-white/[0.06] text-white/72 transition hover:border-white/25 hover:bg-white/[0.12] hover:text-white disabled:cursor-wait disabled:opacity-45"
+                aria-label="Cập nhật lại lịch phòng"
+                title="Cập nhật lại lịch phòng"
+              >
+                <RefreshIcon className={isTodayScheduleLoading ? 'h-3.5 w-3.5 animate-spin' : 'h-3.5 w-3.5'} />
+              </button>
+            </div>
+
+            <div className="mt-3.5 grid grid-cols-4 gap-2">
+                <AvailabilityMetric
+                  value={isInitialScheduleLoading ? '--' : String(todayRoomSummary.available)}
+                  label="Còn trống"
+                  tone="available"
+                  onClick={() => showRoomsByAvailability('AVAILABLE')}
+                />
+                <AvailabilityMetric
+                  value={isInitialScheduleLoading ? '--' : String(todayRoomSummary.almostFull)}
+                  label="Sắp kín"
+                  tone="limited"
+                  onClick={() => showRoomsByAvailability('ALMOST_FULL')}
+                />
+                <AvailabilityMetric
+                  value={isInitialScheduleLoading ? '--' : String(todayRoomSummary.full)}
+                  label="Kín hôm nay"
+                  tone="full"
+                  onClick={() => showRoomsByAvailability('FULL_TODAY')}
+                />
+                <AvailabilityMetric
+                  value={isInitialScheduleLoading ? '--' : String(todayRoomSummary.unavailable)}
+                  label="Tạm ngưng"
+                  tone="paused"
+                />
+            </div>
+
+            <div className="mt-3.5 flex items-center justify-between gap-3 text-[11px]">
+              <span className="font-medium text-white/72">
+                {isInitialScheduleLoading
+                  ? 'Đang đối chiếu lịch...'
+                  : `${bookableRoomCount}/${liveRooms.length} phòng có thể đặt`}
+              </span>
+              <span className="font-display font-bold text-[#f1d2a9]">
+                {isInitialScheduleLoading ? '--' : `${scheduleCoverage}%`}
+              </span>
+            </div>
+            <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-[linear-gradient(90deg,#83c8a8,#f1d2a9)] transition-[width] duration-500"
+                style={{ width: `${isInitialScheduleLoading ? 0 : scheduleCoverage}%` }}
               />
             </div>
+
+            <p className="mt-3 text-[10px] text-white/42">
+              {scheduleErrorCount > 0
+                ? `${scheduleErrorCount} phòng chưa đồng bộ được lịch`
+                : scheduleUpdatedAt
+                  ? `Cập nhật ${formatScheduleUpdateTime(scheduleUpdatedAt)} · tự động mỗi 60 giây`
+                  : 'Đang kết nối dữ liệu lịch phòng'}
+            </p>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-[1400px] px-5 py-12 sm:px-8 sm:py-14">
+      <section id="room-catalog" className="mx-auto max-w-[1400px] scroll-mt-24 px-5 py-12 sm:px-8 sm:py-14">
         <div className="rounded-[22px] border border-[#ded5c9] bg-white p-3 shadow-[0_18px_50px_rgba(29,49,41,0.09)] sm:p-4">
           <div className="flex flex-col gap-3 border-b border-[#eee7de] px-2 pb-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -393,15 +505,25 @@ function RoomCard({
   const isFavorite = canFavorite && favoriteIds.has(numericRoomId)
   const now = new Date()
   const bookingStatus = getRoomBookingStatus(room, now, todaySlots)
+  const isCheckingAvailability = bookingStatus === 'CHECKING'
   const canBookNow = bookingStatus === 'AVAILABLE_NOW'
+  const isFullToday = bookingStatus === 'AVAILABLE_OTHER_TIME'
   const isUnavailable = bookingStatus === 'UNAVAILABLE'
   const nextAvailableSlotToday = getNextAvailableSlotToday(room, now, todaySlots)
-  const bookingBadge = canBookNow ? 'Có thể đặt ngay' : isUnavailable ? 'Tạm ngưng' : 'Chọn ngày khác'
+  const bookingBadge = isCheckingAvailability
+    ? 'Đang kiểm tra'
+    : canBookNow
+      ? 'Có thể đặt ngay'
+      : isUnavailable
+        ? 'Tạm ngưng'
+        : 'Chọn ngày khác'
   const bookingHint = canBookNow
     ? `Hôm nay, ${nextAvailableSlotToday}`
     : isUnavailable
       ? 'Phòng đang tạm ngưng nhận lịch'
-      : 'Không có khung giờ còn đặt được hôm nay'
+      : isCheckingAvailability
+        ? 'Đang đồng bộ lịch phòng'
+        : 'Hôm nay đã kín lịch'
 
   const handleFavorite = async () => {
     if (!isAuthenticated) {
@@ -425,7 +547,9 @@ function RoomCard({
           ? 'border-brand-orange/30'
           : isUnavailable
             ? 'border-outline-variant bg-surface-container-low opacity-60'
-            : 'border-outline-variant bg-surface-container-low opacity-80',
+            : isCheckingAvailability
+              ? 'border-outline-variant bg-surface-container-low opacity-90'
+              : 'border-outline-variant bg-surface-container-low opacity-[0.86]',
       ].join(' ')}
     >
       <div className="relative aspect-[16/10] w-full overflow-hidden bg-surface-container">
@@ -441,16 +565,23 @@ function RoomCard({
           fill
           unoptimized
           sizes="(min-width: 1280px) 33vw, (min-width: 768px) 50vw, 100vw"
-          className={['object-cover transition duration-300 group-hover:scale-105', room.imageClassName].join(' ')}
+          className={[
+            'object-cover transition duration-300 group-hover:scale-105',
+            isFullToday ? 'brightness-[0.82] saturate-[0.78]' : '',
+            isUnavailable ? 'brightness-75 saturate-50' : '',
+            room.imageClassName,
+          ].join(' ')}
         />
         <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(23,58,49,0.62),transparent_58%)]" />
         <span
           className={[
             'absolute left-4 top-4 rounded-full border px-3 py-1 font-display text-xs font-bold',
-            getAvailabilityClassName(availabilityStatus, isUnavailable),
+            isCheckingAvailability
+              ? 'border-white/20 bg-white/90 text-on-surface-variant'
+              : getAvailabilityClassName(availabilityStatus, isUnavailable),
           ].join(' ')}
         >
-          {isUnavailable ? 'Tạm ngưng' : getAvailabilityLabel(availabilityStatus)}
+          {isUnavailable ? 'Tạm ngưng' : isCheckingAvailability ? 'Đang cập nhật lịch' : getAvailabilityLabel(availabilityStatus)}
         </span>
         <span
           className={[
@@ -511,7 +642,7 @@ function RoomCard({
         </div>
 
         <div className="mt-auto flex items-center justify-between gap-3 border-t border-outline-variant pt-4">
-          <p className="text-sm text-on-surface-variant">{bookingHint}</p>
+          <p className="min-w-0 flex-1 text-sm text-on-surface-variant">{bookingHint}</p>
           <div
             className="flex flex-wrap justify-end gap-2"
             onClick={(event) => event.stopPropagation()}
@@ -522,10 +653,21 @@ function RoomCard({
                 event.stopPropagation()
                 onBook(room)
               }}
-              disabled={isUnavailable}
-              className={canBookNow ? 'btn-warm' : 'btn-secondary'}
+              disabled={isUnavailable || isCheckingAvailability}
+              className={[
+                !isUnavailable && !isCheckingAvailability
+                  ? 'border border-[#173A31] bg-[#173A31] text-white shadow-[0_12px_28px_rgba(23,58,49,.22)] hover:-translate-y-0.5 hover:border-[#245545] hover:bg-[#245545] hover:shadow-[0_16px_34px_rgba(23,58,49,.28)]'
+                  : 'border border-outline-variant bg-surface-container text-on-surface-variant shadow-none',
+                'inline-flex min-h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-full px-5 font-display text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-55',
+              ].join(' ')}
             >
-              {canBookNow ? 'Đặt phòng' : isUnavailable ? 'Tạm ngưng' : 'Chọn ngày khác'}
+              {isCheckingAvailability
+                ? 'Đang kiểm tra'
+                : canBookNow
+                  ? 'Đặt phòng'
+                  : isUnavailable
+                    ? 'Tạm ngưng'
+                    : 'Chọn ngày khác'}
             </button>
           </div>
         </div>
@@ -832,12 +974,64 @@ function ChevronDownIcon({ className }: { className?: string }) {
   )
 }
 
-function Metric({ value, label }: { value: string; label: string }) {
+function AvailabilityMetric({
+  value,
+  label,
+  tone,
+  onClick,
+}: {
+  value: string
+  label: string
+  tone: 'available' | 'limited' | 'full' | 'paused'
+  onClick?: () => void
+}) {
+  const toneClasses = {
+    available: 'border-[#8dd7b4]/24 bg-[#8dd7b4]/10 text-[#a9e4c7]',
+    limited: 'border-[#f1d2a9]/24 bg-[#f1d2a9]/10 text-[#f1d2a9]',
+    full: 'border-white/14 bg-white/[0.06] text-white/82',
+    paused: 'border-[#d9a3a3]/18 bg-[#d9a3a3]/[0.07] text-[#e8bcbc]',
+  }[tone]
+  const content = (
+    <>
+      <div className="flex items-center justify-between gap-3">
+        <span className="h-1.5 w-1.5 rounded-full bg-current opacity-80" />
+        {onClick ? <ArrowUpRightIcon className="h-3 w-3 opacity-45" /> : null}
+      </div>
+      <p className="mt-2 font-display text-xl font-bold leading-none">{value}</p>
+      <p className="mt-1.5 text-[10px] font-medium leading-4 text-white/60">{label}</p>
+    </>
+  )
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={`min-w-0 rounded-[13px] border px-2.5 py-2.5 text-left transition hover:-translate-y-0.5 hover:border-white/28 hover:bg-white/[0.12] ${toneClasses}`}
+        aria-label={`Xem phòng: ${label}`}
+      >
+        {content}
+      </button>
+    )
+  }
+
+  return <div className={`min-w-0 rounded-[13px] border px-2.5 py-2.5 ${toneClasses}`}>{content}</div>
+}
+
+function RefreshIcon({ className }: { className?: string }) {
   return (
-    <div className="rounded-xl border border-white/12 bg-white/[0.07] px-3 py-4">
-      <p className="font-display text-2xl font-bold text-primary-fixed">{value}</p>
-      <p className="mt-1 text-xs text-white/58">{label}</p>
-    </div>
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className={className}>
+      <path d="M19 8a7.5 7.5 0 1 0 .2 7.65" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M19 4v4h-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function ArrowUpRightIcon({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" className={className}>
+      <path d="M6 14 14 6m-6 0h6v6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   )
 }
 
@@ -850,41 +1044,36 @@ function InfoPill({ label, value }: { label: string; value: string }) {
   )
 }
 
-function isSlotInFuture(slot: string | undefined, now: Date) {
-  if (!slot) return false
+function summarizeTodayRooms(rooms: Room[]): TodayRoomSummary {
+  return rooms.reduce<TodayRoomSummary>((summary, room) => {
+    if (isRoomTemporarilyUnavailable(room)) {
+      summary.unavailable += 1
+      return summary
+    }
 
-  const [hourValue, minuteValue] = slot.split(':').map(Number)
-  if (!Number.isFinite(hourValue) || !Number.isFinite(minuteValue)) return false
+    if (!room.availabilityKnown || !room.availabilityStatus) {
+      summary.unknown += 1
+      return summary
+    }
 
-  const slotDate = new Date(now)
-  slotDate.setHours(hourValue, minuteValue, 0, 0)
-
-  if (slot === '24:00') {
-    slotDate.setDate(slotDate.getDate() + 1)
-    slotDate.setHours(0, 0, 0, 0)
-  }
-
-  return slotDate.getTime() > now.getTime()
+    if (room.availabilityStatus === 'AVAILABLE') summary.available += 1
+    if (room.availabilityStatus === 'ALMOST_FULL') summary.almostFull += 1
+    if (room.availabilityStatus === 'FULL_TODAY') summary.full += 1
+    return summary
+  }, { available: 0, almostFull: 0, full: 0, unavailable: 0, unknown: 0 })
 }
 
-function getAvailableFutureSlotsToday(room: Room, now: Date, todaySlots?: TimeSlot[]) {
-  if (todaySlots) {
-    return todaySlots.filter((slot) => isAvailableSlot(slot) && isSlotInFuture(slot.start, now))
-  }
-
-  if (!room.isAvailable || room.availabilityStatus === 'FULL_TODAY' || (room.remainingSlots ?? 0) <= 0) {
-    return []
-  }
-
-  const nextSlot = getNextAvailableSlotToday(room, now)
-  if (nextSlot) return [nextSlot]
-
-  return BOOKING_SLOT_TIMES.filter((slot) => isSlotInFuture(slot, now)).slice(0, room.remainingSlots)
+function formatScheduleUpdateTime(value: Date) {
+  return new Intl.DateTimeFormat('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(value)
 }
 
 function getNextAvailableSlotToday(room: Room, now: Date, todaySlots?: TimeSlot[]) {
-  const futureAvailableSlot = todaySlots?.find((slot) => isAvailableSlot(slot) && isSlotInFuture(slot.start, now))
-  if (futureAvailableSlot) return futureAvailableSlot.start
+  const bookableStartSlot = getBookableStartSlotsToday(room, now, todaySlots)[0]
+  if (typeof bookableStartSlot === 'string') return bookableStartSlot
+  if (bookableStartSlot) return bookableStartSlot.start
 
   const slotFromTime = room.nextAvailableTime?.match(/^(\d{2}:\d{2})$/)?.[1]
   if (slotFromTime && isSlotInFuture(slotFromTime, now)) {
@@ -905,16 +1094,9 @@ function getNextAvailableSlotToday(room: Room, now: Date, todaySlots?: TimeSlot[
 
 function getRoomBookingStatus(room: Room, now: Date, todaySlots?: TimeSlot[]): RoomBookingStatus {
   if (isRoomTemporarilyUnavailable(room)) return 'UNAVAILABLE'
+  if (todaySlots === undefined && !room.availabilityKnown) return 'CHECKING'
 
-  return getAvailableFutureSlotsToday(room, now, todaySlots).length > 0 ? 'AVAILABLE_NOW' : 'AVAILABLE_OTHER_TIME'
-}
-
-function isRoomTemporarilyUnavailable(room: Room) {
-  return ['MAINTENANCE', 'INACTIVE', 'UNAVAILABLE', 'DISABLED', 'CLOSED'].includes(room.operationalStatus ?? '')
-}
-
-function isAvailableSlot(slot: TimeSlot) {
-  return slot.status === 'available' && (slot as TimeSlot & { canSelect?: boolean }).canSelect !== false
+  return getBookableStartSlotsToday(room, now, todaySlots).length > 0 ? 'AVAILABLE_NOW' : 'AVAILABLE_OTHER_TIME'
 }
 
 function getAvailabilityClassName(status: RoomAvailabilityStatus, isUnavailable = false) {

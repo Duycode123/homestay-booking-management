@@ -12,6 +12,9 @@
 - `GET /api/admin/bookings/{id}`
 - `PATCH /api/admin/bookings/{id}/status`
 - `PUT /api/admin/bookings/{id}/cancel`
+- `POST /api/admin/bookings/{id}/settle-checkout`
+- `POST /api/payments/checkout-balance/sessions`
+- `GET /api/payments/transactions/{paymentId}`
 
 ## Goal
 
@@ -54,6 +57,15 @@ Allow operational staff to inspect bookings, review details, update booking stat
 3. Backend blocks cancellation for cancelled, checked-in, or completed bookings. A reason is mandatory after any payment/deposit has been collected.
 4. Backend updates status to cancelled and appends cancellation reason when provided.
 
+### Settle Remaining Balance And Checkout
+
+1. Staff opens a checked-in booking that still has a balance.
+2. UI shows total, successful amount already collected, and the exact remaining balance.
+3. For cash, staff explicitly confirms receipt; backend records a successful `COUNTER` transaction for the exact remainder and completes checkout atomically.
+4. For bank transfer, backend creates a five-minute SePay balance transaction and returns a VietQR containing the immutable amount and unique `BAL...` reference.
+5. The staff UI polls transaction status every three seconds. The booking stays `CHECKED_IN` while payment is pending.
+6. When SePay finds the matching incoming transfer, backend marks the transaction successful, records checkout time, and changes the booking to `COMPLETED`.
+
 ## Alternate and Error Flows
 
 - Caller lacks management permission: backend rejects the request.
@@ -66,7 +78,11 @@ Allow operational staff to inspect bookings, review details, update booking stat
 - Only admin/staff management roles can use the admin booking endpoints.
 - A deposit-paid booking can move from `DEPOSIT_PAID -> CHECKED_IN`; full-payment bookings move from `PAID -> CHECKED_IN`.
 - Management responses expose the successful amount already collected and the remaining balance.
-- `CHECKED_IN -> COMPLETED` is rejected while a balance remains. Admin/staff uses `POST /api/admin/bookings/{id}/settle-checkout` to record a successful `COUNTER` transaction for the exact remainder and complete checkout atomically.
+- `CHECKED_IN -> COMPLETED` is rejected while a balance remains.
+- Cash settlement requires an explicit `CASH` method and records `BALANCE_CASH_SETTLED`; it must never be inferred from merely opening the dialog.
+- Bank-transfer settlement records a pending SePay transaction with `CHECKOUT_BALANCE_PENDING`. Only a matched provider transaction changes it to `CHECKOUT_BALANCE_SETTLED` and completes checkout.
+- Creating a replacement balance QR cancels older open payment transactions for the same booking, preventing two active references.
+- Staff/admin may poll balance transactions; customers may only poll transactions belonging to their own booking.
 - The settlement use case locks the booking row while calculating and recording the remainder, preventing duplicate collection from concurrent staff actions.
 - Online `PENDING_PAYMENT` bookings are confirmed only by the payment integration, not manually through booking management.
 - Check-in is accepted from 5 minutes before the planned start until before the planned end.
@@ -78,6 +94,7 @@ Allow operational staff to inspect bookings, review details, update booking stat
 
 - `Booking`
 - `User`
+- `PaymentTransaction`
 
 ## Current Implementation Notes
 
@@ -103,6 +120,8 @@ Inbound ports:
 - `GetBookingManagementDetailUseCase`
 - `UpdateBookingStatusUseCase`
 - `CancelBookingForManagementUseCase`
+- `SettleBookingAtCheckoutUseCase`
+- `CreateCheckoutBalancePaymentUseCase`
 
 Outbound ports:
 

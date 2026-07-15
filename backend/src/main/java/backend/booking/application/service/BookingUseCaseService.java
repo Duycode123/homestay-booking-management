@@ -428,6 +428,9 @@ public class BookingUseCaseService implements
         if (booking.getStatus() != BookingStatus.CHECKED_IN) {
             throw new IllegalStateException("Chi co the ket toan booking dang check-in");
         }
+        if (command.method() == null) {
+            throw new IllegalArgumentException("Phuong thuc thanh toan khong duoc de trong");
+        }
 
         BigDecimal paidAmount = loadPaidAmount(booking);
         BigDecimal totalAmount = normalizeMoney(booking.getTotalAmount());
@@ -439,12 +442,13 @@ public class BookingUseCaseService implements
         LocalDateTime now = LocalDateTime.now(clock);
         PaymentTransaction settlement = PaymentTransaction.builder()
                 .booking(booking)
+                .processedBy(currentUser)
                 .provider(PaymentProvider.COUNTER)
                 .transactionReference("CHECKOUT-" + booking.getId() + "-"
                         + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase())
                 .amount(remainingAmount)
                 .status(PaymentTransactionStatus.SUCCEEDED)
-                .responseCode("BALANCE_SETTLED")
+                .responseCode("BALANCE_CASH_SETTLED")
                 .paidAt(now)
                 .build();
 

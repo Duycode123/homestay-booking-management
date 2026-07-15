@@ -164,7 +164,7 @@ export default function ProcessPage() {
                 Từ lúc tìm phòng đến khi checkout, bạn luôn biết bước tiếp theo là gì, khoản nào đã thanh toán và đội ngũ homestay đang chuẩn bị điều gì.
               </p>
               <div className="mt-9 flex flex-wrap gap-3">
-                <Link href="/rooms" className="rounded-full bg-primary-fixed px-6 py-3.5 font-display text-sm font-semibold text-secondary shadow-[0_16px_38px_rgba(0,0,0,0.18)] transition hover:-translate-y-0.5 hover:bg-white">
+                <Link href="/rooms" className="rounded-full border border-white/20 bg-[#0f2f27] px-6 py-3.5 font-display text-sm font-semibold text-white shadow-[0_16px_38px_rgba(0,0,0,0.22)] transition hover:-translate-y-0.5 hover:bg-secondary-container">
                   Bắt đầu chọn phòng
                 </Link>
                 <Link href="/booking-policy" className="rounded-full border border-white/25 px-6 py-3.5 font-display text-sm font-semibold text-white transition hover:bg-white/10">

@@ -12,13 +12,14 @@ import {
 } from '@/components/booking/quick-booking-draft'
 import { useHomepageLiveData } from '@/hooks/useHomepageLiveData'
 import { usePublicRoomCatalog } from '@/hooks/usePublicRoomCatalog'
+import { useTodayRoomAvailability } from '@/hooks/useTodayRoomAvailability'
 import {
   formatRelativeTime,
-  formatSlotDateLabel,
   getActivityActionLabel,
   maskCustomerName,
   type AvailabilityTone,
 } from '@/lib/homepage-live-service'
+import { isRoomTemporarilyUnavailable } from '@/lib/public/today-room-availability'
 
 const stats = [
   { value: 'Rõ ràng', label: 'Lịch trống & giá' },
@@ -208,17 +209,13 @@ function getAvailabilityDotClassName(tone: AvailabilityTone) {
 
 function getTopRatedRooms(rooms: BookingRoom[]) {
   return rooms
-    .filter((room) => typeof room.rating === 'number' && room.rating > 4 && !isRoomUnavailable(room))
+    .filter((room) => typeof room.rating === 'number' && room.rating > 4 && !isRoomTemporarilyUnavailable(room))
     .sort((a, b) => {
       const ratingDiff = (b.rating ?? 0) - (a.rating ?? 0)
       if (ratingDiff !== 0) return ratingDiff
       return (b.reviews ?? 0) - (a.reviews ?? 0)
     })
     .slice(0, 8)
-}
-
-function isRoomUnavailable(room: BookingRoom) {
-  return ['MAINTENANCE', 'INACTIVE', 'UNAVAILABLE', 'DISABLED', 'CLOSED'].includes(room.operationalStatus ?? '')
 }
 
 function TopRatedRoomsSection({
@@ -369,7 +366,11 @@ function TopRatedRoomCard({
             ★ {(room.rating ?? 0).toFixed(1)}
           </span>
           <span className="absolute bottom-4 left-4 rounded-full border border-white/20 bg-white/92 px-3 py-1 font-display text-xs font-bold text-[#6A6C66]">
-            {room.availabilityStatus === 'FULL_TODAY' ? 'Chọn ngày khác' : 'Có thể đặt lịch'}
+            {!room.availabilityKnown
+              ? 'Đang cập nhật lịch'
+              : room.availabilityStatus === 'FULL_TODAY'
+                ? 'Kín lịch hôm nay'
+                : 'Có thể đặt lịch'}
           </span>
         </div>
       </button>
@@ -418,7 +419,11 @@ function TopRatedRoomCard({
             onClick={() => onBook(room)}
             className="rounded-xl bg-secondary px-4 py-2.5 font-display text-sm font-semibold text-white shadow-[0_10px_24px_rgba(23,58,49,0.16)] transition-colors hover:bg-secondary-container"
           >
-            Đặt phòng
+            {!room.availabilityKnown
+              ? 'Kiểm tra lịch'
+              : room.availabilityStatus === 'FULL_TODAY'
+                ? 'Chọn ngày khác'
+                : 'Đặt phòng'}
           </button>
         </div>
       </div>
@@ -448,14 +453,17 @@ export default function HomePage() {
   const {
     availabilityStatus,
     recentActivities,
-    nextAvailableSlot,
     isLoading: isLiveDataLoading,
     error: liveDataError,
   } = useHomepageLiveData()
   const { rooms, isLoading: isRoomCatalogLoading } = usePublicRoomCatalog()
   const [availabilityHintVisible, setAvailabilityHintVisible] = useState(false)
   const [quickBooking, setQuickBooking] = useState<QuickBookingState | null>(null)
-  const topRatedRooms = useMemo(() => getTopRatedRooms(rooms), [rooms])
+  const topRatedCandidates = useMemo(() => getTopRatedRooms(rooms), [rooms])
+  const {
+    rooms: topRatedRooms,
+    isLoading: isTopRatedAvailabilityLoading,
+  } = useTodayRoomAvailability(topRatedCandidates)
 
   useEffect(() => {
     if (!shouldReopenQuickBooking(window.location.search)) return
@@ -494,21 +502,6 @@ export default function HomePage() {
     }
 
     goToRooms()
-  }
-
-  const handleNextSlotBooking = () => {
-    if (!nextAvailableSlot) {
-      goToRooms()
-      return
-    }
-
-    const params = new URLSearchParams({
-      roomId: nextAvailableSlot.roomId,
-      date: nextAvailableSlot.date,
-      startTime: nextAvailableSlot.startTime,
-      duration: String(nextAvailableSlot.duration),
-    })
-    router.push(`/rooms?${params.toString()}`)
   }
 
   return (
@@ -585,63 +578,56 @@ export default function HomePage() {
             </div>
           </div>
 
-          <aside className="hidden space-y-4 lg:block">
-            <div className="rounded-[18px] border border-white/16 bg-[#173A31]/78 p-5 shadow-[0_20px_54px_rgba(0,0,0,0.22)] backdrop-blur-xl">
-              <div className="mb-4 flex items-center justify-between">
-                <p className="font-display text-xs font-semibold uppercase text-brand-orange">Hoạt động trực tiếp</p>
-                <span className="h-2 w-2 rounded-full bg-brand-orange" />
+          <aside className="hidden lg:block">
+            <div className="overflow-hidden rounded-[20px] border border-white/16 bg-[#173A31]/82 p-4 shadow-[0_20px_54px_rgba(0,0,0,0.22)] backdrop-blur-xl">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#8dd7b4] opacity-40" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-[#8dd7b4]" />
+                    </span>
+                    <p className="font-display text-sm font-bold text-white">Đặt phòng gần đây</p>
+                  </div>
+                  <p className="mt-1 text-[11px] text-white/45">Cập nhật trực tiếp từ hệ thống</p>
+                </div>
+                <span className="rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-1 text-[10px] font-semibold text-white/55">
+                  {recentActivities.length} hoạt động
+                </span>
               </div>
-              <div className="space-y-3">
+
+              <div className="mt-3 divide-y divide-white/[0.08] overflow-hidden rounded-[14px] border border-white/10 bg-black/10">
                 {recentActivities.length > 0 ? (
                   recentActivities.map((activity) => (
-                    <div key={activity.id} className="flex items-center justify-between gap-3 text-sm">
-                      <p>
-                        <span className="font-semibold text-white">{maskCustomerName(activity.customerName)}</span>
-                        <span className="text-white/45"> {getActivityActionLabel(activity.action)} </span>
-                        <span className="font-semibold text-primary-fixed">{activity.roomName}</span>
-                      </p>
-                      <span className="shrink-0 text-xs text-white/35">{formatRelativeTime(activity.createdAt)}</span>
+                    <div key={activity.id} className="grid grid-cols-[10px_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2.5">
+                      <span
+                        className={[
+                          'h-2 w-2 rounded-full',
+                          activity.action === 'CHECKED_IN'
+                            ? 'bg-[#8dd7b4]'
+                            : activity.action === 'PAID'
+                              ? 'bg-[#e0ad76]'
+                              : 'bg-white/45',
+                        ].join(' ')}
+                      />
+                      <div className="min-w-0">
+                        <p className="truncate text-xs text-white/58">
+                          <span className="font-semibold text-white">{maskCustomerName(activity.customerName)}</span>{' '}
+                          {getActivityActionLabel(activity.action)}
+                        </p>
+                        <p className="mt-0.5 truncate text-[11px] font-semibold text-primary-fixed">{activity.roomName}</p>
+                      </div>
+                      <span className="shrink-0 text-[10px] text-white/32">{formatRelativeTime(activity.createdAt)}</span>
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-white/45">Chưa có hoạt động mới</p>
+                  <p className="px-3 py-4 text-xs text-white/45">
+                    {isLiveDataLoading ? 'Đang cập nhật hoạt động...' : 'Chưa có lượt đặt phòng mới.'}
+                  </p>
                 )}
               </div>
-              {liveDataError && <p className="mt-4 text-xs text-white/40">{liveDataError}</p>}
-            </div>
 
-            <div className="rounded-[18px] border border-white/15 bg-[#173A31]/78 p-5 shadow-[0_20px_54px_rgba(0,0,0,0.22)] backdrop-blur-xl">
-              <p className="font-display text-xs font-semibold uppercase text-on-secondary-container">Khung giờ tiếp theo</p>
-              {nextAvailableSlot ? (
-                <div className="mt-3 flex items-end justify-between gap-4">
-                  <div>
-                    <p className="font-display text-lg font-bold text-white">{nextAvailableSlot.roomName}</p>
-                    <p className="mt-1 text-sm text-white/45">
-                      {formatSlotDateLabel(nextAvailableSlot.date)} · {nextAvailableSlot.startTime} đến{' '}
-                      {nextAvailableSlot.endTime}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleNextSlotBooking}
-                    className="rounded-lg bg-brand-orange px-4 py-2 font-display text-xs font-semibold text-white hover:bg-brand-orangeHover"
-                  >
-                    Đặt
-                  </button>
-                </div>
-              ) : (
-                <div className="mt-3">
-                  <p className="font-display text-lg font-bold text-white">Hôm nay đã kín lịch</p>
-                  <p className="mt-1 text-sm text-white/45">Vui lòng chọn ngày khác để đặt phòng.</p>
-                  <button
-                    type="button"
-                    onClick={handleNextSlotBooking}
-                    className="mt-4 rounded-lg border border-white/20 px-4 py-2 font-display text-xs font-semibold text-white/80 hover:bg-white/10"
-                  >
-                    Chọn ngày khác
-                  </button>
-                </div>
-              )}
+              {liveDataError && <p className="mt-2 text-[10px] text-[#f1d2a9]/70">Đang hiển thị dữ liệu gần nhất.</p>}
             </div>
           </aside>
         </div>
@@ -699,7 +685,7 @@ export default function HomePage() {
 
       <TopRatedRoomsSection
         rooms={topRatedRooms}
-        isLoading={isRoomCatalogLoading}
+        isLoading={isRoomCatalogLoading || isTopRatedAvailabilityLoading}
         onOpenDetail={(room) => router.push(`/rooms/${room.id}`)}
         onBook={(room) => setQuickBooking({ room })}
       />

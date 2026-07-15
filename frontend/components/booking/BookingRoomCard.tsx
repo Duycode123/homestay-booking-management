@@ -36,7 +36,7 @@ function getRoomAvailabilityMeta(room: BookingRoom): AvailabilityCardMeta {
       badgeClassName: 'border-outline bg-white/95 text-on-surface shadow-[0_8px_20px_rgba(26,28,30,0.08)]',
       subStatusClassName: 'border-outline-variant bg-surface-container-low text-on-surface-variant',
       ctaClassName:
-        'border border-outline bg-white text-on-surface shadow-none hover:border-brand-orange/50 hover:bg-primary-container/35 hover:text-brand-orange',
+        'border border-secondary bg-secondary text-white shadow-[0_10px_26px_rgba(23,58,49,0.2)] hover:border-secondary-container hover:bg-secondary-container',
       cardClassName: 'bg-white/88 shadow-[var(--shadow-card)]',
       imageClassName: 'opacity-72 saturate-[0.82]',
       overlayClassName: 'bg-[linear-gradient(to_top,rgba(255,255,255,0.74),rgba(255,255,255,0.18)_52%,rgba(255,255,255,0.08))]',
@@ -51,7 +51,7 @@ function getRoomAvailabilityMeta(room: BookingRoom): AvailabilityCardMeta {
       badgeClassName: 'border-[#B28455]/35 bg-[#FFF2E8] text-[#9A4A08] shadow-[0_10px_24px_rgba(178,132,85,0.14)]',
       subStatusClassName: 'border-[#B28455]/28 bg-[#FFF7EF] text-[#9A4A08]',
       ctaClassName:
-        'bg-brand-orange text-white shadow-[0_10px_26px_rgba(178,132,85,0.24)] hover:bg-brand-orangeHover group-hover:shadow-[0_14px_32px_rgba(178,132,85,0.32)]',
+        'bg-secondary text-white shadow-[0_10px_26px_rgba(23,58,49,0.22)] hover:bg-secondary-container group-hover:shadow-[0_14px_32px_rgba(23,58,49,0.28)]',
       cardClassName: 'bg-white shadow-[var(--shadow-card)]',
       imageClassName: '',
       overlayClassName: 'bg-[linear-gradient(to_top,rgba(4,42,22,0.6),rgba(4,42,22,0.08)_58%,transparent)]',
@@ -65,7 +65,7 @@ function getRoomAvailabilityMeta(room: BookingRoom): AvailabilityCardMeta {
     badgeClassName: 'border-secondary-container/50 bg-secondary-container/30 text-secondary',
     subStatusClassName: 'border-primary-container/60 bg-primary-container/30 text-on-primary-container',
     ctaClassName:
-      'bg-brand-orange text-white shadow-[0_10px_26px_rgba(178,132,85,0.22)] hover:bg-brand-orangeHover group-hover:shadow-[0_14px_32px_rgba(178,132,85,0.3)]',
+      'bg-secondary text-white shadow-[0_10px_26px_rgba(23,58,49,0.22)] hover:bg-secondary-container group-hover:shadow-[0_14px_32px_rgba(23,58,49,0.28)]',
     cardClassName: 'bg-white shadow-[var(--shadow-card)]',
     imageClassName: '',
     overlayClassName: 'bg-[linear-gradient(to_top,rgba(4,42,22,0.6),rgba(4,42,22,0.08)_58%,transparent)]',
@@ -236,7 +236,7 @@ export default function BookingRoomCard({ room, renderIcon, onOpenDetail, onBook
             type="button"
             onClick={handleBook}
             className={[
-              'rounded-lg px-4 py-2.5 font-display text-xs font-semibold transition-all duration-300 active:scale-[0.98]',
+              'rounded-full px-5 py-2.5 font-display text-xs font-semibold transition-all duration-300 active:scale-[0.98]',
               availabilityMeta.ctaClassName,
             ].join(' ')}
           >

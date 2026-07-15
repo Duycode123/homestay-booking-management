@@ -84,6 +84,7 @@ Core model/entity classes currently present in backend source:
 - `database/migrations/20260714_create_favorite_rooms.sql`
 - `database/migrations/20260714_expand_homestay_amenities_and_room_gallery.sql`
 - `database/migrations/20260714_add_room_archiving.sql`
+- `database/migrations/20260715_add_checkout_payment_operator.sql`
 - `database/sample-data/seed_accounts_and_customers.sql`
 - `database/sample-data/seed_rooms_and_equipment.sql`
 - `database/sample-data/seed_bookings_and_reviews.sql`
@@ -247,11 +248,12 @@ If the change is part of the Vietnamese-to-English rename:
 - Review moderation keeps `approved = false` by default until an admin approves the review.
 - Each review can have at most one admin response stored in `review_response`.
 - `review_image` stores up to four Cloudinary HTTPS images for each verified-stay review. Images are ordered by `display_order` and are removed automatically when their review is deleted.
-- Payment and booking timeout behavior should stay aligned with booking-expiry logic in the backend. Checkout sessions expire after `app.booking.payment-expiration-seconds` seconds by default (`900`, or 15 minutes), cancelling both the pending `payment_transaction` and its still-pending booking. The customer payment-status polling endpoint also applies this timeout so a VietQR checkout can release the held slot without waiting for the scheduled sweep.
+- Payment and booking timeout behavior must stay aligned with booking-expiry logic in the backend. Browsing and confirming booking details do not create a database booking or block availability. The booking and payment transaction are created only when the customer requests a VietQR payment session. Checkout sessions expire after `app.booking.payment-expiration-seconds` seconds by default (`300`, or 5 minutes), cancelling both the pending `payment_transaction` and its still-pending booking. The customer payment-status polling endpoint applies this timeout, while the scheduled sweep runs every 10 seconds by default to release abandoned holds promptly.
 - `payment_transaction.response_code` is `varchar(50)` and stores application-level outcome codes (`PAYMENT_TIMEOUT`, `PAYMENT_SESSION_REPLACED`, `SEPAY_SUCCESS`, `SEPAY_ORDER_FAILED`, `SEPAY_TRANSACTION_VOID`, VNPay numeric codes). Keep new codes within 50 characters.
+- `payment_transaction.processed_by_user_id` is nullable for historical/customer payments and references the admin/staff account that initiated a checkout balance QR or confirmed cash collection. This supports end-of-shift reconciliation without changing historical rows.
 - Enum-backed statuses deserve explicit documentation because they affect filters, transitions, and reporting.
 - `booking_status.DEPOSIT_PAID` means the customer paid only the online deposit. Full online payment still uses `PAID`.
-- Online deposits are 50% of the final booking total. An optional coupon is validated and persisted on the still-pending booking when the customer creates the checkout session, before the deposit/full-payment amount is calculated. The remaining 50% is collected by admin/staff when the guest checks out.
+- Online deposits are 50% of the final booking total. An optional coupon is validated and persisted on the still-pending booking when the customer creates the checkout session, before the deposit/full-payment amount is calculated. At checkout, the remainder is either recorded immediately as a successful `COUNTER` cash transaction (`BALANCE_CASH_SETTLED`) or collected through a pending `SEPAY` VietQR transaction (`CHECKOUT_BALANCE_PENDING`). A transfer completes the booking only after provider reconciliation changes the response code to `CHECKOUT_BALANCE_SETTLED`.
 
 ### Refund reconciliation
 

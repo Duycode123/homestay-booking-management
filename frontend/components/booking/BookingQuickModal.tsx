@@ -195,7 +195,7 @@ export default function BookingQuickModal({
             type="button"
             onClick={handleContinue}
             disabled={!endDate || duration < MINIMUM_BOOKING_HOURS}
-            className="h-12 rounded-2xl bg-[#B28455] font-display font-semibold text-white transition hover:bg-[#946A42] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            className="h-12 rounded-full bg-secondary px-6 font-display font-semibold text-white shadow-[0_12px_28px_rgba(23,58,49,.22)] transition hover:-translate-y-0.5 hover:bg-secondary-container active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           >
             Tiếp tục đặt phòng
           </button>

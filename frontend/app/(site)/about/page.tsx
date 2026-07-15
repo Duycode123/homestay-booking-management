@@ -251,7 +251,7 @@ export default function AboutPage() {
             <h2 className="font-editorial mt-4 text-4xl font-semibold leading-tight sm:text-5xl">Không chỉ là một căn phòng. Đó là cảm giác được đón tiếp chu đáo.</h2>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Link href="/rooms" className="rounded-full bg-primary-fixed px-6 py-3.5 font-display text-sm font-semibold text-secondary transition hover:bg-white">Khám phá phòng</Link>
+            <Link href="/rooms" className="rounded-full border border-white/20 bg-[#0f2f27] px-6 py-3.5 font-display text-sm font-semibold text-white shadow-[0_14px_30px_rgba(0,0,0,.22)] transition hover:-translate-y-0.5 hover:bg-secondary-container">Khám phá phòng</Link>
             <Link href="/support" className="rounded-full border border-white/25 px-6 py-3.5 font-display text-sm font-semibold transition hover:bg-white/10">Liên hệ hỗ trợ</Link>
           </div>
         </div>

@@ -40,6 +40,10 @@ public class PaymentTransaction {
     @JoinColumn(name = "booking_id", nullable = false)
     private Booking booking;
 
+    @ManyToOne
+    @JoinColumn(name = "processed_by_user_id")
+    private User processedBy;
+
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "provider", nullable = false, columnDefinition = "payment_provider")

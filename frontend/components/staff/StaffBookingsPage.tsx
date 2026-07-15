@@ -1,11 +1,12 @@
 'use client'
 
 import ProjectSelect from '@/components/ui/ProjectSelect'
+import StaffCheckoutSettlementDialog from '@/components/staff/StaffCheckoutSettlementDialog'
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import AuthGuard from '@/components/AuthGuard'
 import { EmptyState, StaffPageShell, StatCard, Toast } from './StaffShared'
-import { cancelAdminBooking, fetchAdminBookings, getAdminBookingById, settleAdminBookingAtCheckout, updateAdminBookingStatus } from '@/lib/admin/adminBookingApi'
+import { cancelAdminBooking, fetchAdminBookings, getAdminBookingById, updateAdminBookingStatus } from '@/lib/admin/adminBookingApi'
 import { BOOKING_STATUS_LABELS, PAYMENT_STATUS_LABELS } from '@/lib/admin/bookingLabels'
 import { type AdminBooking, type BookingFilters, type BookingStatus, type PaymentStatus } from '@/lib/admin/types'
 
@@ -37,6 +38,7 @@ export default function StaffBookingsPage() {
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState('')
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null)
+  const [settlementBooking, setSettlementBooking] = useState<AdminBooking | null>(null)
 
   const apiFilters = useMemo<BookingFilters>(() => {
     return {
@@ -147,18 +149,7 @@ export default function StaffBookingsPage() {
     }
 
     if (action.kind === 'settle') {
-      setConfirmAction({
-        title: 'Thu phần còn lại và checkout?',
-        description: `${booking.bookingCode} còn ${formatCurrency(booking.remainingAmount)}. Hệ thống sẽ ghi nhận đã thu đủ và hoàn tất checkout.`,
-        confirmLabel: 'Xác nhận đã thu & checkout',
-        variant: 'primary',
-        run: async () => {
-          const updated = await settleAdminBookingAtCheckout(booking.bookingId)
-          setToastMessage(`Đã kết toán và checkout ${updated.bookingCode}.`)
-          await loadBookings()
-          setSelectedBooking(updated)
-        },
-      })
+      setSettlementBooking(booking)
       return
     }
 
@@ -309,6 +300,19 @@ export default function StaffBookingsPage() {
             action={confirmAction}
             onCancel={() => setConfirmAction(null)}
             onDone={() => setConfirmAction(null)}
+          />
+        )}
+
+        {settlementBooking && (
+          <StaffCheckoutSettlementDialog
+            booking={settlementBooking}
+            onClose={() => setSettlementBooking(null)}
+            onCompleted={async (message) => {
+              setToastMessage(message)
+              setSettlementBooking(null)
+              setSelectedBooking(null)
+              await loadBookings()
+            }}
           />
         )}
 
@@ -705,6 +709,7 @@ function ConfirmDialog({
             />
           </label>
         )}
+
         {error && <p className="mt-4 rounded-2xl border border-error/30 bg-error-container/30 px-4 py-3 text-xs text-error">{error}</p>}
         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <button type="button" onClick={onCancel} disabled={isSubmitting} className="btn-secondary disabled:cursor-not-allowed disabled:opacity-70">Hủy</button>

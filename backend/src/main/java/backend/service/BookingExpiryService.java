@@ -27,10 +27,10 @@ public class BookingExpiryService {
 
     private final ExpireStalePendingBookingsPort expireStalePendingBookingsPort;
 
-    @Value("${app.booking.payment-expiration-seconds:900}")
+    @Value("${app.booking.payment-expiration-seconds:300}")
     private long paymentExpirationSeconds;
 
-    @Scheduled(fixedDelayString = "${app.booking.expiry-sweep-interval-ms:60000}")
+    @Scheduled(fixedDelayString = "${app.booking.expiry-sweep-interval-ms:10000}")
     @Transactional
     public void expireStalePendingBookings() {
         if (paymentExpirationSeconds <= 0) {

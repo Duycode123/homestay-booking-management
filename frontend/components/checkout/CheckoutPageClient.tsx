@@ -35,6 +35,7 @@ import {
   type CreatePaymentSessionResponse,
   type PaymentOption,
 } from '@/lib/payment-service'
+import { createBooking, mapPaymentMethodToBackend } from '@/lib/booking/bookingApi'
 
 const DEPOSIT_RATE = 0.5
 
@@ -286,18 +287,53 @@ export default function CheckoutPageClient() {
       return
     }
 
-    if (!booking.backendBookingId) {
-      setPaymentError('Không tìm thấy mã booking hợp lệ để tạo giao dịch thanh toán.')
-      return
-    }
-
     setIsPaying(true)
     setPaymentError('')
     setPaymentSession(null)
 
     try {
+      let payableBooking = booking
+
+      if (!payableBooking.backendBookingId) {
+        const draft = getPendingBooking()
+        if (!draft || draft.bookingId !== payableBooking.bookingId) {
+          throw new Error('Không tìm thấy thông tin đơn tạm thời. Vui lòng quay lại chọn phòng.')
+        }
+
+        const createdBooking = await createBooking({
+          roomId: payableBooking.roomId,
+          date: payableBooking.date,
+          endDate: payableBooking.endDate,
+          startTime: payableBooking.startTime,
+          endTime: payableBooking.endTime,
+          paymentMethod: mapPaymentMethodToBackend('bank_transfer'),
+          couponCode: appliedDiscount?.code,
+          note: payableBooking.note,
+        })
+
+        payableBooking = {
+          ...payableBooking,
+          bookingId: createdBooking.bookingCode || String(createdBooking.bookingId),
+          backendBookingId: createdBooking.bookingId,
+          status: createdBooking.status,
+        }
+        setBooking(payableBooking)
+        savePendingBooking({
+          ...draft,
+          bookingId: payableBooking.bookingId,
+          discountCode: appliedDiscount?.code,
+          discountAmount: appliedDiscount?.discountAmount,
+        })
+        replaceCheckoutBookingParams(payableBooking, searchParams)
+      }
+
+      const backendBookingId = payableBooking.backendBookingId
+      if (!backendBookingId) {
+        throw new Error('Không thể xác định booking vừa tạo. Vui lòng thử lại.')
+      }
+
       const session = await createPaymentSession({
-        bookingId: booking.backendBookingId,
+        bookingId: backendBookingId,
         method: 'bank_transfer',
         paymentOption,
         couponCode: appliedDiscount?.code,
@@ -347,7 +383,7 @@ export default function CheckoutPageClient() {
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#B28455]">Bước cuối cùng</p>
               <h1 className="mt-2 font-display text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">Hoàn tất thanh toán</h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-[#686D68] sm:text-base">
-                Kiểm tra lại booking, chọn trả toàn bộ hoặc đặt cọc 50%, sau đó quét mã để xác nhận giữ phòng.
+                Chọn trả toàn bộ hoặc đặt cọc 50%. Phòng chỉ bắt đầu được giữ trong 5 phút khi bạn bấm tạo mã QR.
               </p>
             </div>
             <CheckoutProgress />
@@ -385,10 +421,12 @@ export default function CheckoutPageClient() {
                   <div>
                     <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#B28455]">Thanh toán bảo mật</p>
                     <h2 className="mt-2 font-display text-2xl font-bold">Chọn khoản thanh toán</h2>
-                    <p className="mt-1 text-sm text-[#6A6C66]">Booking {booking.bookingId}</p>
+                    <p className="mt-1 text-sm text-[#6A6C66]">
+                      {booking.backendBookingId ? `Booking ${booking.bookingId}` : 'Đơn tạm thời · chưa khóa phòng'}
+                    </p>
                   </div>
                   <span className="inline-flex items-center gap-2 rounded-full bg-[#EAF4EF] px-3 py-2 text-xs font-bold text-[#205746]">
-                    <ShieldCheckIcon /> Đã giữ chỗ
+                    <ShieldCheckIcon /> {getHoldStatusLabel(booking, paymentSession, secondsUntilExpiry)}
                   </span>
                 </div>
               </div>
@@ -500,7 +538,7 @@ export default function CheckoutPageClient() {
                 type="button"
                 onClick={handlePay}
                 disabled={isPaying}
-                className="mt-5 flex min-h-[56px] w-full items-center justify-center gap-2 rounded-2xl bg-[#B88752] px-5 font-display text-base font-bold text-white shadow-[0_14px_30px_rgba(178,132,85,0.26)] transition hover:-translate-y-0.5 hover:bg-[#986B3E] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-5 flex min-h-[56px] w-full items-center justify-center gap-2 rounded-full border border-[#173A31] bg-[#173A31] px-6 font-display text-base font-bold text-white shadow-[0_14px_30px_rgba(23,58,49,.24)] transition hover:-translate-y-0.5 hover:border-[#245545] hover:bg-[#245545] hover:shadow-[0_18px_36px_rgba(23,58,49,.3)] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isPaying
                   ? 'Đang xử lý...'
@@ -544,6 +582,23 @@ function CheckoutProgress() {
       ))}
     </ol>
   )
+}
+
+function getHoldStatusLabel(
+  booking: CheckoutBooking,
+  paymentSession: CreatePaymentSessionResponse | null,
+  secondsUntilExpiry: number | null,
+) {
+  if (paymentSession?.status === 'cancelled' || paymentSession?.status === 'failed') {
+    return 'Đã giải phóng phòng'
+  }
+  if (paymentSession?.status === 'pending' && secondsUntilExpiry !== null) {
+    return secondsUntilExpiry > 0 ? `Giữ chỗ còn ${formatCountdown(secondsUntilExpiry)}` : 'Đang giải phóng phòng'
+  }
+  if (booking.backendBookingId) {
+    return 'Đang tạo phiên giữ chỗ'
+  }
+  return 'Chưa giữ chỗ'
 }
 
 function AlertIcon() {
@@ -628,4 +683,17 @@ function readDiscountFromParams(searchParams: URLSearchParams): AppliedDiscount 
   }
 
   return { code, discountAmount }
+}
+
+function replaceCheckoutBookingParams(
+  booking: Pick<CheckoutBooking, 'bookingId' | 'backendBookingId' | 'roomId'>,
+  currentSearchParams: { toString(): string },
+) {
+  if (typeof window === 'undefined' || !booking.backendBookingId) return
+
+  const params = new URLSearchParams(currentSearchParams.toString())
+  params.set('bookingId', booking.bookingId)
+  params.set('backendBookingId', String(booking.backendBookingId))
+  params.set('roomId', booking.roomId)
+  window.history.replaceState(window.history.state, '', `/customer/checkout?${params.toString()}`)
 }

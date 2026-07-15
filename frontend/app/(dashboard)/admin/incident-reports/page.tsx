@@ -7,6 +7,7 @@ import AdminPageHeader from '@/components/admin/AdminPageHeader'
 import AdminStatCard from '@/components/admin/AdminStatCard'
 import AdminToast from '@/components/admin/AdminToast'
 import AdminFacilityReportsPanel from '@/components/admin/facility/AdminFacilityReportsPanel'
+import AdminDatePicker from '@/components/admin/AdminDatePicker'
 import { IconIncidentReports, IconRefresh, IconSearch } from '@/components/admin/AdminIcons'
 import {
   fetchAdminIncidentReportDetail,
@@ -273,15 +274,15 @@ function IncidentFiltersBar({
             </ProjectSelect>
           </label>
 
-          <label className="block">
+          <div className="block">
             <span className={labelClass}>Ngày gửi</span>
-            <input
-              type="date"
+            <AdminDatePicker
               value={filters.submittedDate}
-              onChange={(event) => set({ submittedDate: event.target.value })}
-              className={inputClass}
+              onChange={(submittedDate) => set({ submittedDate })}
+              placeholder="Tất cả ngày"
+              ariaLabel="Chọn ngày gửi báo cáo sự cố"
             />
-          </label>
+          </div>
         </div>
       </div>
     </div>

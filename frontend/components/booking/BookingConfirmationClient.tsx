@@ -1,6 +1,5 @@
 'use client'
 
-import axios from 'axios'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -21,7 +20,6 @@ import {
 import { useAuth } from '@/contexts/AuthContext'
 import { clearQuickBookingDraft } from '@/components/booking/quick-booking-draft'
 import { resolveBookingRoom } from '@/lib/booking-room-service'
-import { createBooking, mapPaymentMethodToBackend } from '@/lib/booking/bookingApi'
 import { savePendingBooking } from '@/lib/pending-booking'
 
 export default function BookingConfirmationClient() {
@@ -107,18 +105,9 @@ export default function BookingConfirmationClient() {
     setIsSubmitting(true)
 
     try {
-      const booking = await createBooking({
-        roomId: displayRoom.id,
-        date,
-        endDate,
-        startTime,
-        endTime,
-        paymentMethod: mapPaymentMethodToBackend(paymentMethod),
-        note: note === EMPTY_NOTE_TEXT ? '' : note,
-      })
-
+      const checkoutDraftId = `DRAFT-${displayRoom.id}-${Date.now()}`
       savePendingBooking({
-        bookingId: booking.bookingCode || String(booking.bookingId),
+        bookingId: checkoutDraftId,
         roomId: displayRoom.id,
         date,
         endDate,
@@ -133,15 +122,14 @@ export default function BookingConfirmationClient() {
       clearQuickBookingDraft()
 
       const params = new URLSearchParams({
-        bookingId: booking.bookingCode || String(booking.bookingId),
-        backendBookingId: String(booking.bookingId),
+        bookingId: checkoutDraftId,
         roomId: displayRoom.id,
         method: paymentMethod,
       })
 
       router.push(`/customer/checkout?${params.toString()}`)
-    } catch (error) {
-      setConfirmError(getBookingErrorMessage(error))
+    } catch {
+      setConfirmError('Không thể mở bước thanh toán. Vui lòng thử lại.')
     } finally {
       setIsSubmitting(false)
     }
@@ -166,7 +154,7 @@ export default function BookingConfirmationClient() {
             </div>
 
             <h1 className="font-display text-4xl font-bold tracking-tight">Xác nhận đặt phòng</h1>
-            <p className="mt-2 text-[#6A6C66]">Kiểm tra lần cuối lịch phòng, tiện nghi và cách thanh toán.</p>
+            <p className="mt-2 text-[#6A6C66]">Kiểm tra lần cuối. Phòng chỉ được giữ khi bạn tạo mã QR ở bước thanh toán.</p>
           </div>
 
           <span className="w-fit rounded-full bg-[#245545] px-4 py-2 font-display text-sm font-semibold text-white">
@@ -249,10 +237,10 @@ export default function BookingConfirmationClient() {
                   <p className="font-display text-xs font-bold uppercase tracking-wider text-[#6A6C66]">
                     Tóm tắt thanh toán
                   </p>
-                  <p className="mt-1 font-display font-semibold">Booking sẽ được tạo trước khi vào checkout</p>
+                  <p className="mt-1 font-display font-semibold">Chưa tạo booking và chưa giữ phòng ở bước này</p>
                 </div>
                 <span className="rounded-full bg-[#EDE0CF] px-3 py-1 font-display text-xs font-bold text-[#5E4328]">
-                  Chờ thanh toán
+                  Chưa giữ chỗ
                 </span>
               </div>
 
@@ -282,9 +270,9 @@ export default function BookingConfirmationClient() {
               type="button"
               onClick={() => void handleConfirm()}
               disabled={isSubmitting}
-              className="mt-6 h-12 w-full rounded-2xl bg-[#B28455] font-display font-semibold text-white transition hover:bg-[#946A42] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+              className="mt-6 h-12 w-full rounded-full bg-secondary px-6 font-display font-semibold text-white shadow-[0_12px_28px_rgba(23,58,49,.22)] transition hover:-translate-y-0.5 hover:bg-secondary-container active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {isSubmitting ? 'Đang xử lý...' : 'Xác nhận đặt phòng'}
+              {isSubmitting ? 'Đang chuyển bước...' : 'Tiếp tục đến thanh toán'}
             </button>
 
             <Link
@@ -366,14 +354,6 @@ function PaymentRow({ label, value, green = false }: { label: string; value: str
       <span className={['font-semibold', green ? 'text-[#245545]' : 'text-[#242A27]'].join(' ')}>{value}</span>
     </div>
   )
-}
-
-function getBookingErrorMessage(error: unknown) {
-  if (axios.isAxiosError<{ message?: string }>(error)) {
-    return error.response?.data?.message || 'Không thể tạo booking. Vui lòng thử lại.'
-  }
-
-  return error instanceof Error ? error.message : 'Không thể tạo booking. Vui lòng thử lại.'
 }
 
 function getBookingDuration(searchParams: { get(name: string): string | null }) {

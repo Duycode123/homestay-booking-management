@@ -2,6 +2,7 @@
 
 import AdminModuleCard from '@/components/admin/AdminModuleCard'
 import AdminPageHeader from '@/components/admin/AdminPageHeader'
+import AdminReportsOverview from '@/components/admin/reports/AdminReportsOverview'
 import {
   IconBookings,
   IconRefund,
@@ -85,6 +86,28 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
             </div>
+          </section>
+
+          <section aria-labelledby="business-overview-title">
+            <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="font-display text-[10px] font-semibold uppercase tracking-[0.22em] text-brand-orange">
+                  Dữ liệu vận hành
+                </p>
+                <h2 id="business-overview-title" className="mt-1 font-editorial text-3xl font-normal text-on-surface">
+                  Tổng quan kinh doanh
+                </h2>
+                <p className="mt-1 max-w-2xl text-sm leading-6 text-on-surface-variant">
+                  Theo dõi booking, doanh thu và hiệu suất phòng trực tiếp từ dữ liệu hệ thống.
+                </p>
+              </div>
+              <span className="inline-flex w-fit items-center gap-2 rounded-full border border-secondary/15 bg-secondary/5 px-3 py-1.5 text-xs font-semibold text-secondary">
+                <span className="h-2 w-2 rounded-full bg-secondary shadow-[0_0_0_4px_rgba(20,69,57,0.1)]" />
+                Đồng bộ từ cơ sở dữ liệu
+              </span>
+            </div>
+
+            <AdminReportsOverview />
           </section>
 
           <section>

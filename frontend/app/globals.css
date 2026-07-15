@@ -175,20 +175,23 @@ html body input.room-catalog-search-input:focus-visible {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border-radius: 12px;
-  background: var(--color-brand-orange);
+  border: 1px solid var(--color-secondary);
+  border-radius: 9999px;
+  background: var(--color-secondary);
   padding: 0 18px;
   font-family: var(--font-display);
   font-size: 14px;
   font-weight: 700;
   color: #FFFFFF;
-  box-shadow: 0 14px 30px rgba(148, 106, 66, 0.2);
-  transition: background-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+  box-shadow: 0 14px 30px rgba(23, 58, 49, 0.2);
+  transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
 }
 
 .btn-warm:hover {
-  background: var(--color-brand-orangeHover);
+  border-color: var(--color-secondary-container);
+  background: var(--color-secondary-container);
   transform: translateY(-1px);
+  box-shadow: 0 17px 34px rgba(23, 58, 49, 0.25);
 }
 
 .btn-secondary {
@@ -212,6 +215,60 @@ html body input.room-catalog-search-input:focus-visible {
 .btn-secondary:hover {
   background: var(--color-surface-container-low);
   border-color: var(--color-outline);
+}
+
+.btn-date-choice {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-secondary);
+  border-radius: 9999px;
+  background: var(--color-secondary);
+  padding: 0 16px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  box-shadow: 0 9px 20px rgba(23, 58, 49, 0.2);
+  transition: transform 180ms ease, border-color 180ms ease, color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.btn-date-choice:hover {
+  transform: translateY(-1px);
+  border-color: var(--color-secondary-container);
+  background: var(--color-secondary-container);
+  color: #ffffff;
+  box-shadow: 0 12px 26px rgba(23, 58, 49, 0.27);
+}
+
+.btn-date-choice:active {
+  transform: translateY(0);
+}
+
+.btn-date-choice:focus-visible {
+  outline: 3px solid rgba(23, 58, 49, 0.24);
+  outline-offset: 2px;
+}
+
+/* Keep every bronze primary action consistent with the public booking CTA.
+   Decorative bronze accents are intentionally excluded. */
+button.bg-brand-orange,
+a.bg-brand-orange,
+[role="button"].bg-brand-orange {
+  border-color: var(--color-secondary);
+  border-radius: 9999px;
+  background-color: var(--color-secondary);
+  color: #ffffff;
+  box-shadow: 0 14px 30px rgba(23, 58, 49, 0.2);
+}
+
+button.bg-brand-orange:hover,
+a.bg-brand-orange:hover,
+[role="button"].bg-brand-orange:hover {
+  border-color: var(--color-secondary-container);
+  background-color: var(--color-secondary-container);
+  box-shadow: 0 17px 34px rgba(23, 58, 49, 0.25);
 }
 
 .icon-button {

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, type FormEvent } from 'react'
+import AdminDatePicker from '@/components/admin/AdminDatePicker'
 import {
   EMPTY_STAFF_ACCOUNT_FORM,
   validateStaffAccountForm,
@@ -134,15 +135,15 @@ export default function AdminStaffCreateModal({ open, onClose, onSubmit }: Admin
                   />
                 </label>
 
-                <label className="block">
+                <div className="block">
                   <span className={labelClass}>Ngày sinh</span>
-                  <input
-                    type="date"
+                  <AdminDatePicker
                     value={form.dateOfBirth}
-                    onChange={(event) => set({ dateOfBirth: event.target.value })}
-                    className={inputClass}
+                    onChange={(dateOfBirth) => set({ dateOfBirth })}
+                    placeholder="Chọn ngày sinh"
+                    ariaLabel="Chọn ngày sinh nhân viên"
                   />
-                </label>
+                </div>
               </div>
 
               <label className="block">

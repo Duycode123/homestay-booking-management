@@ -19,16 +19,6 @@ export type RecentActivity = {
   createdAt: string
 }
 
-export type NextAvailableSlot = {
-  roomId: string
-  roomName: string
-  date: string
-  startTime: string
-  endTime: string
-  duration: number
-  pricePerHour: number
-}
-
 type ApiResponse<T> = {
   success: boolean
   message: string
@@ -53,12 +43,6 @@ function getTodayKey(now = new Date()) {
   const day = String(now.getDate()).padStart(2, '0')
 
   return `${year}-${month}-${day}`
-}
-
-function getTomorrowKey(now = new Date()) {
-  const tomorrow = new Date(now)
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  return getTodayKey(tomorrow)
 }
 
 function timeToMinutes(value: string) {
@@ -165,16 +149,6 @@ export function getRecentActivities(activities: RecentActivity[]) {
     .slice(0, 3)
 }
 
-export function formatSlotDateLabel(date: string, now = new Date()) {
-  if (date === getTodayKey(now)) return 'Hôm nay'
-  if (date === getTomorrowKey(now)) return 'Ngày mai'
-
-  return new Intl.DateTimeFormat('vi-VN', {
-    day: '2-digit',
-    month: '2-digit',
-  }).format(new Date(`${date}T00:00:00`))
-}
-
 export function getFallbackAvailabilityStatus() {
   return {
     status: 'CLOSED',
@@ -188,44 +162,12 @@ export function getFallbackRecentActivities() {
   return [] satisfies RecentActivity[]
 }
 
-export function getFallbackNextAvailableSlot() {
-  return null
-}
-
 function isRoomOperational(room: HomestayRoom) {
   return room.status !== 'MAINTENANCE'
 }
 
 function getAvailableRoomCount(slotsByRoom: TimeSlot[][]) {
   return slotsByRoom.filter((slots) => slots.some((slot) => slot.status === 'available')).length
-}
-
-function getSlotTimestamp(date: string, time: string) {
-  return new Date(`${date}T${time === '24:00' ? '23:59:59' : `${time}:00`}`).getTime()
-}
-
-function buildNextAvailableCandidate(room: HomestayRoom, date: string, slots: TimeSlot[]): NextAvailableSlot | null {
-  const firstAvailableIndex = slots.findIndex((slot) => slot.status === 'available')
-  if (firstAvailableIndex < 0) return null
-
-  let duration = 1
-  let endTime = slots[firstAvailableIndex].end
-
-  for (let index = firstAvailableIndex + 1; index < slots.length; index++) {
-    if (slots[index].status !== 'available') break
-    duration += 1
-    endTime = slots[index].end
-  }
-
-  return {
-    roomId: room.id,
-    roomName: room.name,
-    date,
-    startTime: slots[firstAvailableIndex].start,
-    endTime,
-    duration,
-    pricePerHour: room.pricePerHour,
-  }
 }
 
 export async function fetchTodayAvailability(): Promise<AvailabilityStatus> {
@@ -241,33 +183,4 @@ export async function fetchTodayAvailability(): Promise<AvailabilityStatus> {
 export async function fetchRecentActivities(): Promise<RecentActivity[]> {
   const response = await api.get<ApiResponse<RecentActivity[]>>('/api/homepage/recent-activities')
   return getRecentActivities(response.data.data ?? [])
-}
-
-export async function fetchNextAvailableSlot(): Promise<NextAvailableSlot | null> {
-  const now = new Date()
-  const dates = [getTodayKey(now), getTomorrowKey(now)]
-  const rooms = (await fetchRooms()).filter(isRoomOperational)
-  const candidates: NextAvailableSlot[] = []
-
-  for (const date of dates) {
-    const slotResponses = await Promise.all(rooms.map((room) => fetchAvailableSlots(room.id, date)))
-
-    slotResponses.forEach((slots, index) => {
-      const room = rooms[index]
-      if (!room) return
-
-      const candidate = buildNextAvailableCandidate(room, date, slots)
-      if (candidate) {
-        candidates.push(candidate)
-      }
-    })
-
-    if (candidates.length > 0) {
-      break
-    }
-  }
-
-  return candidates.sort((first, second) => {
-    return getSlotTimestamp(first.date, first.startTime) - getSlotTimestamp(second.date, second.startTime)
-  })[0] ?? null
 }
