@@ -2,6 +2,17 @@
 
 This folder contains the repository-owned database documentation and migrations.
 
+## Fresh Deployment Bootstrap
+
+`Homestay_Database.sql` is the canonical PostgreSQL schema for a new database.
+The backend Docker build prepends this baseline to the incremental runtime
+additions in `backend/src/main/resources/schema-postgresql.sql`. This creates a
+new Neon/Render database before Hibernate validates the mapped schema while
+preserving existing objects through idempotent `IF NOT EXISTS` statements.
+
+The Docker build context must be the repository root so the build can read both
+`backend/` and `database/Homestay_Database.sql`.
+
 ## Current Source of Truth
 
 Use the following order when reasoning about schema:

@@ -1,9 +1,12 @@
 FROM maven:3.9.11-eclipse-temurin-21 AS build
 
 WORKDIR /app
-COPY pom.xml ./
-COPY src ./src
+COPY backend/pom.xml ./
+COPY backend/src ./src
+COPY database/Homestay_Database.sql /tmp/schema-base-postgresql.sql
 RUN cp src/main/resources/application.properties.example src/main/resources/application.properties \
+    && cat /tmp/schema-base-postgresql.sql src/main/resources/schema-postgresql.sql > /tmp/schema-postgresql.sql \
+    && mv /tmp/schema-postgresql.sql src/main/resources/schema-postgresql.sql \
     && mvn -B -DskipTests clean package
 
 FROM eclipse-temurin:21-jre
