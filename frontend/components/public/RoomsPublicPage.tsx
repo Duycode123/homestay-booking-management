@@ -7,9 +7,9 @@ import BookingQuickModal from '@/components/booking/BookingQuickModal'
 import {
   formatCurrency,
   getNightlyDisplayPrice,
-  MINIMUM_BOOKING_HOURS,
+  FIRST_NIGHT_STAY_HOURS,
 } from '@/components/booking/booking-data'
-import { BOOKING_SLOT_TIMES, getTodayKey } from '@/components/booking/booking-time-utils'
+import { addDays, BOOKING_SLOT_TIMES, getTodayKey } from '@/components/booking/booking-time-utils'
 import { HeartIcon } from '@/components/layout/FavoriteRoomsMenu'
 import RoomCatalogSkeleton from '@/components/public/RoomCatalogSkeleton'
 import { useAuth } from '@/contexts/AuthContext'
@@ -98,13 +98,19 @@ export default function RoomsPublicPage() {
   const [roomTiers, setRoomTiers] = useState<BackendRoomType[]>([])
   const [quickBooking, setQuickBooking] = useState<QuickBookingState | null>(null)
   const [todaySlotsByRoomId, setTodaySlotsByRoomId] = useState<RoomSlotsById>({})
+  const [tomorrowSlotsByRoomId, setTomorrowSlotsByRoomId] = useState<RoomSlotsById>({})
   const [isTodayScheduleLoading, setIsTodayScheduleLoading] = useState(true)
   const [scheduleUpdatedAt, setScheduleUpdatedAt] = useState<Date | null>(null)
   const [scheduleErrorCount, setScheduleErrorCount] = useState(0)
   const [scheduleRefreshKey, setScheduleRefreshKey] = useState(0)
   const liveRooms = useMemo(
-    () => rooms.map((room) => applyTodayAvailability(room, todaySlotsByRoomId[room.id], new Date())),
-    [rooms, todaySlotsByRoomId],
+    () => rooms.map((room) => applyTodayAvailability(
+      room,
+      todaySlotsByRoomId[room.id],
+      new Date(),
+      tomorrowSlotsByRoomId[room.id],
+    )),
+    [rooms, todaySlotsByRoomId, tomorrowSlotsByRoomId],
   )
   const filteredRooms = useMemo(() => filterRooms(liveRooms, filters), [liveRooms, filters])
   const todayRoomSummary = useMemo(() => summarizeTodayRooms(liveRooms), [liveRooms])
@@ -140,6 +146,7 @@ export default function RoomsPublicPage() {
   useEffect(() => {
     if (rooms.length === 0) {
       setTodaySlotsByRoomId({})
+      setTomorrowSlotsByRoomId({})
       setIsTodayScheduleLoading(false)
       setScheduleUpdatedAt(null)
       setScheduleErrorCount(0)
@@ -148,24 +155,39 @@ export default function RoomsPublicPage() {
 
     let isMounted = true
     const todayKey = getTodayKey()
+    const tomorrowKey = addDays(todayKey, 1)
     setIsTodayScheduleLoading(true)
 
     void Promise.all(
       rooms.map(async (room) => {
         if (isRoomTemporarilyUnavailable(room) || !/^\d+$/.test(room.id)) {
-          return { roomId: room.id, slots: [] as TimeSlot[], failed: false }
+          return {
+            roomId: room.id,
+            todaySlots: [] as TimeSlot[],
+            tomorrowSlots: [] as TimeSlot[],
+            failed: false,
+          }
         }
 
         try {
-          const slots = await fetchAvailableSlots(room.id, todayKey)
-          return { roomId: room.id, slots, failed: false }
+          const [todaySlots, tomorrowSlots] = await Promise.all([
+            fetchAvailableSlots(room.id, todayKey),
+            fetchAvailableSlots(room.id, tomorrowKey),
+          ])
+          return { roomId: room.id, todaySlots, tomorrowSlots, failed: false }
         } catch {
-          return { roomId: room.id, slots: undefined, failed: true }
+          return {
+            roomId: room.id,
+            todaySlots: undefined,
+            tomorrowSlots: undefined,
+            failed: true,
+          }
         }
       }),
     ).then((results) => {
       if (!isMounted) return
-      setTodaySlotsByRoomId(Object.fromEntries(results.map((result) => [result.roomId, result.slots])))
+      setTodaySlotsByRoomId(Object.fromEntries(results.map((result) => [result.roomId, result.todaySlots])))
+      setTomorrowSlotsByRoomId(Object.fromEntries(results.map((result) => [result.roomId, result.tomorrowSlots])))
       setScheduleErrorCount(results.filter((result) => result.failed).length)
       setScheduleUpdatedAt(new Date())
       setIsTodayScheduleLoading(false)
@@ -291,7 +313,7 @@ export default function RoomsPublicPage() {
                   </span>
                   <p className="font-display text-sm font-bold text-white">Lịch phòng hôm nay</p>
                 </div>
-                <p className="mt-1 text-[11px] text-white/50">Dữ liệu booking thật · tối thiểu {MINIMUM_BOOKING_HOURS} giờ</p>
+                <p className="mt-1 text-[11px] text-white/50">Dữ liệu booking thật · 1 đêm = {FIRST_NIGHT_STAY_HOURS} giờ</p>
               </div>
               <button
                 type="button"
@@ -320,7 +342,7 @@ export default function RoomsPublicPage() {
                 />
                 <AvailabilityMetric
                   value={isInitialScheduleLoading ? '--' : String(todayRoomSummary.full)}
-                  label="Kín hôm nay"
+                  label="Kín lịch"
                   tone="full"
                   onClick={() => showRoomsByAvailability('FULL_TODAY')}
                 />
@@ -523,7 +545,9 @@ function RoomCard({
       ? 'Phòng đang tạm ngưng nhận lịch'
       : isCheckingAvailability
         ? 'Đang đồng bộ lịch phòng'
-        : 'Hôm nay đã kín lịch'
+        : room.todayAvailabilityReason === 'NEXT_DAY'
+          ? `Còn lịch cho kỳ lưu trú từ ngày mai${room.nextAvailableSlot ? ` · ${room.nextAvailableSlot}` : ''}`
+          : `Hôm nay đã kín lịch${room.nextAvailableSlot ? ` · ${room.nextAvailableSlot}` : ''}`
 
   const handleFavorite = async () => {
     if (!isAuthenticated) {
@@ -581,7 +605,7 @@ function RoomCard({
               : getAvailabilityClassName(availabilityStatus, isUnavailable),
           ].join(' ')}
         >
-          {isUnavailable ? 'Tạm ngưng' : isCheckingAvailability ? 'Đang cập nhật lịch' : getAvailabilityLabel(availabilityStatus)}
+          {isUnavailable ? 'Tạm ngưng' : isCheckingAvailability ? 'Đang cập nhật lịch' : getAvailabilityLabel(availabilityStatus, room)}
         </span>
         <span
           className={[

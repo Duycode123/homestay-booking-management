@@ -64,9 +64,10 @@ Allow an authenticated customer to select a valid room/time range, see the expec
 
 - Booking start time must be before end time.
 - Booking cannot be created in the past.
-- Minimum booking duration is eight consecutive hours. The backend enforces this rule for both cost calculation and booking creation; the frontend must not enable continuation for a shorter stay.
+- Every booking is a night stay. Check-in is fixed at `14:00`, checkout is fixed at `12:00` on a later date, and the minimum selection is one night (22 actual hours for the first night). Backend cost calculation and booking creation both enforce this rule.
 - Rooms in maintenance are not bookable.
-- Cancelled bookings do not block availability.
+- Only bookings in `PENDING_PAYMENT`, `DEPOSIT_PAID`, `PAID`, or `CHECKED_IN` block availability. `COMPLETED` and `CANCELLED` bookings remain in history without holding the room.
+- After today's check-in time has passed, the public catalog guides the customer to the next available date instead of applying an hourly cutoff or describing every room as genuinely booked.
 - A new booking starts in `PENDING_PAYMENT` state.
 - Online deposit amount is exactly 50% of the discounted booking total, rounded to two decimal places. Full online payment uses 100% of that total.
 - Cash payment does not create a `payment_transaction`; it remains pending until staff collects and confirms the full payment at the homestay.

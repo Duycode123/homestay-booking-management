@@ -39,6 +39,13 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AiConsultantServiceImpl implements AiConsultantService {
 
+    private static final List<BookingStatus> ROOM_BLOCKING_STATUSES = List.of(
+            BookingStatus.PENDING_PAYMENT,
+            BookingStatus.DEPOSIT_PAID,
+            BookingStatus.PAID,
+            BookingStatus.CHECKED_IN
+    );
+
     private static final List<String> SUGGESTED_QUESTIONS = List.of(
             "Tối nay 18h đến 20h còn phòng nào trống?",
             "Tôi đi 4 người, phòng nào phù hợp?",
@@ -180,7 +187,7 @@ public class AiConsultantServiceImpl implements AiConsultantService {
             return bookingRepository.findUpcomingRoomBookingStats(
                             now,
                             now.plusDays(14),
-                            BookingStatus.CANCELLED
+                            ROOM_BLOCKING_STATUSES
                     )
                     .stream()
                     .collect(Collectors.toMap(
@@ -205,7 +212,7 @@ public class AiConsultantServiceImpl implements AiConsultantService {
                     room.getId(),
                     timeRange.startTime(),
                     timeRange.endTime(),
-                    BookingStatus.CANCELLED
+                    ROOM_BLOCKING_STATUSES
             );
             available = blockingBookings.isEmpty();
         }

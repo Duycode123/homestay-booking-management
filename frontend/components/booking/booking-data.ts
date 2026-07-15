@@ -2,6 +2,7 @@ import type { HomestayRoom } from '@/lib/booking/types'
 
 export type RoomCategory = 'standard' | 'deluxe' | 'family'
 export type RoomAvailabilityStatus = 'AVAILABLE' | 'ALMOST_FULL' | 'FULL_TODAY'
+export type TodayAvailabilityReason = 'BOOKED' | 'NEXT_DAY' | 'OPERATIONAL'
 export type RoomOperationalStatus = 'AVAILABLE' | 'IN_USE' | 'MAINTENANCE' | 'NEED_CLEANING' | 'INACTIVE' | 'UNAVAILABLE' | 'DISABLED' | 'CLOSED'
 
 export type RoomCategoryOption = {
@@ -34,6 +35,7 @@ export type BookingRoom = {
   addons: string[]
   description?: string
   availabilityStatus?: RoomAvailabilityStatus
+  todayAvailabilityReason?: TodayAvailabilityReason
   remainingSlots?: number
   nextAvailableSlot?: string
   isAvailable: boolean
@@ -64,9 +66,7 @@ export function getTodayDateString() {
 export const DEFAULT_BOOKING_DATE = getTodayDateString()
 export const DEFAULT_START_TIME = ''
 export const DEFAULT_DURATION = 0
-export const MINIMUM_BOOKING_HOURS = 8
 export const FIRST_NIGHT_STAY_HOURS = 22
-export const BOOKING_DURATION_OPTIONS = [8, 9, 10, 11, 12, 13, 14, 15, 16] as const
 export const EMPTY_NOTE_TEXT = 'Không có ghi chú thêm.'
 
 export const roomCategories: RoomCategoryOption[] = [

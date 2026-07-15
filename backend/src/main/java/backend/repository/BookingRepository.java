@@ -35,7 +35,7 @@ public interface BookingRepository extends JpaRepository<Booking, Integer>, JpaS
             SELECT b
             FROM Booking b
             WHERE b.room.id = :roomId
-              AND b.status <> :cancelledStatus
+              AND b.status IN :blockingStatuses
               AND b.startTime < :endTime
               AND b.endTime > :startTime
             ORDER BY b.startTime ASC, b.endTime ASC
@@ -44,7 +44,7 @@ public interface BookingRepository extends JpaRepository<Booking, Integer>, JpaS
             @Param("roomId") Integer roomId,
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime,
-            @Param("cancelledStatus") BookingStatus cancelledStatus
+            @Param("blockingStatuses") List<BookingStatus> blockingStatuses
     );
 
     @Query("""
@@ -82,7 +82,7 @@ public interface BookingRepository extends JpaRepository<Booking, Integer>, JpaS
                    count(b.id) as upcomingBookingCount,
                    min(b.startTime) as nextStartTime
             from Booking b
-            where b.status <> :cancelledStatus
+            where b.status in :blockingStatuses
               and b.endTime > :fromTime
               and b.startTime < :toTime
             group by b.room.id
@@ -90,7 +90,7 @@ public interface BookingRepository extends JpaRepository<Booking, Integer>, JpaS
     List<RoomUpcomingBookingStatsProjection> findUpcomingRoomBookingStats(
             @Param("fromTime") LocalDateTime fromTime,
             @Param("toTime") LocalDateTime toTime,
-            @Param("cancelledStatus") BookingStatus cancelledStatus
+            @Param("blockingStatuses") List<BookingStatus> blockingStatuses
     );
 
     interface RoomUpcomingBookingStatsProjection {

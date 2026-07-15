@@ -16,6 +16,6 @@ public interface LoadBookingPort {
             Integer roomId,
             LocalDateTime startTime,
             LocalDateTime endTime,
-            BookingStatus cancelledStatus
+            List<BookingStatus> blockingStatuses
     );
 }

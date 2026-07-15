@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { getTodayKey } from '@/components/booking/booking-time-utils'
+import { addDays, getTodayKey } from '@/components/booking/booking-time-utils'
 import { fetchAvailableSlots } from '@/lib/booking/bookingApi'
 import type { TimeSlot } from '@/lib/booking/types'
 import type { Room } from '@/lib/public/room-filters'
@@ -10,37 +10,45 @@ import {
   isRoomTemporarilyUnavailable,
 } from '@/lib/public/today-room-availability'
 
-type RoomSlotsById = Record<string, TimeSlot[] | undefined>
+type RoomAvailabilityById = Record<string, {
+  today: TimeSlot[] | undefined
+  tomorrow: TimeSlot[] | undefined
+}>
 
 export function useTodayRoomAvailability(rooms: Room[]) {
-  const [slotsByRoomId, setSlotsByRoomId] = useState<RoomSlotsById>({})
+  const [availabilityByRoomId, setAvailabilityByRoomId] = useState<RoomAvailabilityById>({})
   const [isLoading, setIsLoading] = useState(true)
   const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
     if (rooms.length === 0) {
-      setSlotsByRoomId({})
+      setAvailabilityByRoomId({})
       setIsLoading(false)
       return
     }
 
     let mounted = true
     const today = getTodayKey()
+    const tomorrow = addDays(today, 1)
     setIsLoading(true)
 
     void Promise.all(rooms.map(async (room) => {
       if (isRoomTemporarilyUnavailable(room) || !/^\d+$/.test(room.id)) {
-        return [room.id, [] as TimeSlot[]] as const
+        return [room.id, { today: [] as TimeSlot[], tomorrow: [] as TimeSlot[] }] as const
       }
 
       try {
-        return [room.id, await fetchAvailableSlots(room.id, today)] as const
+        const [todaySlots, tomorrowSlots] = await Promise.all([
+          fetchAvailableSlots(room.id, today),
+          fetchAvailableSlots(room.id, tomorrow),
+        ])
+        return [room.id, { today: todaySlots, tomorrow: tomorrowSlots }] as const
       } catch {
-        return [room.id, undefined] as const
+        return [room.id, { today: undefined, tomorrow: undefined }] as const
       }
     })).then((entries) => {
       if (!mounted) return
-      setSlotsByRoomId(Object.fromEntries(entries))
+      setAvailabilityByRoomId(Object.fromEntries(entries))
       setIsLoading(false)
     })
 
@@ -55,8 +63,13 @@ export function useTodayRoomAvailability(rooms: Room[]) {
   }, [])
 
   const liveRooms = useMemo(
-    () => rooms.map((room) => applyTodayAvailability(room, slotsByRoomId[room.id], new Date())),
-    [rooms, slotsByRoomId],
+    () => rooms.map((room) => applyTodayAvailability(
+      room,
+      availabilityByRoomId[room.id]?.today,
+      new Date(),
+      availabilityByRoomId[room.id]?.tomorrow,
+    )),
+    [availabilityByRoomId, rooms],
   )
 
   return { rooms: liveRooms, isLoading }

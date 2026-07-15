@@ -498,7 +498,7 @@ class BookingUseCaseServiceTest {
                 eq(1),
                 eq(from),
                 eq(to),
-                eq(BookingStatus.CANCELLED)
+                eq(blockingStatuses())
         )).thenReturn(List.of(first, overlapping, last));
 
         RoomAvailabilityResponse response = bookingUseCaseService.getAvailableSlots(
@@ -516,8 +516,8 @@ class BookingUseCaseServiceTest {
 
     @Test
     void rejectsBookingWhenRequestedTimeOverlaps() {
-        LocalDateTime startTime = LocalDateTime.now().plusDays(2).withMinute(0).withSecond(0).withNano(0);
-        LocalDateTime endTime = startTime.plusHours(8);
+        LocalDateTime startTime = LocalDateTime.now().plusDays(2).withHour(14).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime endTime = startTime.plusHours(22);
         Room room = availableRoom();
         User account = User.builder().id(7).email("customer@example.com").build();
         Customer customer = Customer.builder().id(7).account(account).build();
@@ -528,7 +528,7 @@ class BookingUseCaseServiceTest {
                 eq(1),
                 eq(startTime),
                 eq(endTime),
-                eq(BookingStatus.CANCELLED)
+                eq(blockingStatuses())
         )).thenReturn(List.of(bookingAt(startTime.plusMinutes(30), endTime.plusHours(1))));
 
         CreateBookingCommand command = new CreateBookingCommand(
@@ -550,8 +550,8 @@ class BookingUseCaseServiceTest {
 
     @Test
     void calculatesCostWithValidatedCoupon() {
-        LocalDateTime startTime = LocalDateTime.of(2030, 1, 10, 10, 0);
-        LocalDateTime endTime = startTime.plusHours(8);
+        LocalDateTime startTime = LocalDateTime.of(2030, 1, 10, 14, 0);
+        LocalDateTime endTime = startTime.plusHours(22);
         Room room = availableRoom();
 
         when(loadRoomPort.loadRoom(1)).thenReturn(Optional.of(room));
@@ -562,9 +562,9 @@ class BookingUseCaseServiceTest {
                 DiscountType.PERCENTAGE,
                 new BigDecimal("25.00"),
                 BigDecimal.ZERO.setScale(2),
-                new BigDecimal("1200000.00"),
-                new BigDecimal("300000.00"),
-                new BigDecimal("900000.00")
+                new BigDecimal("3300000.00"),
+                new BigDecimal("825000.00"),
+                new BigDecimal("2475000.00")
         ));
 
         BookingCostResponse response = bookingUseCaseService.calculateCost(
@@ -576,14 +576,14 @@ class BookingUseCaseServiceTest {
                 )
         );
 
-        assertEquals(new BigDecimal("1200000.00"), response.getOriginalAmount());
+        assertEquals(new BigDecimal("3300000.00"), response.getOriginalAmount());
         assertEquals("SUMMER25", response.getCouponCode());
-        assertEquals(new BigDecimal("300000.00"), response.getDiscountAmount());
-        assertEquals(new BigDecimal("900000.00"), response.getTotalAmount());
+        assertEquals(new BigDecimal("825000.00"), response.getDiscountAmount());
+        assertEquals(new BigDecimal("2475000.00"), response.getTotalAmount());
     }
 
     @Test
-    void rejectsBookingCostBelowEightHours() {
+    void rejectsBookingCostThatDoesNotUseStandardNightStayTimes() {
         LocalDateTime startTime = LocalDateTime.of(2030, 1, 10, 10, 0);
 
         IllegalArgumentException error = assertThrows(
@@ -592,20 +592,23 @@ class BookingUseCaseServiceTest {
                         new backend.booking.application.port.in.command.CalculateBookingCostCommand(
                                 1,
                                 startTime,
-                                startTime.plusHours(7),
+                                startTime.plusHours(22),
                                 null
                         )
                 )
         );
 
-        assertEquals("Thoi luong thue toi thieu la 8 gio", error.getMessage());
+        assertEquals(
+                "Ky luu tru toi thieu 1 dem: nhan phong luc 14:00 va tra phong luc 12:00 ngay hom sau",
+                error.getMessage()
+        );
         verifyNoInteractions(loadRoomPort);
     }
 
     @Test
     void allowsBookingThatStartsWhenPreviousBookingEnds() {
-        LocalDateTime startTime = LocalDateTime.now().plusDays(2).withMinute(0).withSecond(0).withNano(0);
-        LocalDateTime endTime = startTime.plusHours(8);
+        LocalDateTime startTime = LocalDateTime.now().plusDays(2).withHour(14).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime endTime = startTime.plusHours(22);
         Room room = availableRoom();
         User account = User.builder().id(7).email("customer@example.com").build();
         Customer customer = Customer.builder().id(7).account(account).build();
@@ -616,7 +619,7 @@ class BookingUseCaseServiceTest {
                 eq(1),
                 eq(startTime),
                 eq(endTime),
-                eq(BookingStatus.CANCELLED)
+                eq(blockingStatuses())
         )).thenReturn(List.of());
         when(saveBookingPort.saveAndFlush(any(Booking.class))).thenAnswer(invocation -> {
             Booking saved = invocation.getArgument(0);
@@ -775,5 +778,14 @@ class BookingUseCaseServiceTest {
                 .endTime(endTime)
                 .status(BookingStatus.PAID)
                 .build();
+    }
+
+    private List<BookingStatus> blockingStatuses() {
+        return List.of(
+                BookingStatus.PENDING_PAYMENT,
+                BookingStatus.DEPOSIT_PAID,
+                BookingStatus.PAID,
+                BookingStatus.CHECKED_IN
+        );
     }
 }

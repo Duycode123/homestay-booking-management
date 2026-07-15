@@ -14,7 +14,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext'
 import {
   DEFAULT_DURATION,
-  MINIMUM_BOOKING_HOURS,
+  FIRST_NIGHT_STAY_HOURS,
   formatCurrency,
   getNightlyDisplayPrice,
   getTodayDateString,
@@ -97,8 +97,8 @@ export default function BookingQuickModal({
   if (!open) return null
 
   const handleContinue = () => {
-    if (!date || !endDate || !startTime || !endTime || duration < MINIMUM_BOOKING_HOURS) {
-      setError(`Vui lòng chọn thời gian lưu trú tối thiểu ${MINIMUM_BOOKING_HOURS} giờ.`)
+    if (!date || !endDate || !startTime || !endTime || duration < FIRST_NIGHT_STAY_HOURS) {
+      setError('Vui lòng chọn tối thiểu 1 đêm (nhận phòng 14:00, trả phòng 12:00 hôm sau).')
       return
     }
 
@@ -194,7 +194,7 @@ export default function BookingQuickModal({
           <button
             type="button"
             onClick={handleContinue}
-            disabled={!endDate || duration < MINIMUM_BOOKING_HOURS}
+            disabled={!endDate || duration < FIRST_NIGHT_STAY_HOURS}
             className="h-12 rounded-full bg-secondary px-6 font-display font-semibold text-white shadow-[0_12px_28px_rgba(23,58,49,.22)] transition hover:-translate-y-0.5 hover:bg-secondary-container active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           >
             Tiếp tục đặt phòng

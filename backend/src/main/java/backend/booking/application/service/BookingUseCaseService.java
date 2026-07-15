@@ -75,6 +75,7 @@ import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -99,8 +100,15 @@ public class BookingUseCaseService implements
         ReviewCustomerCancellationUseCase {
 
     private static final long CUSTOMER_CANCELLATION_DEADLINE_HOURS = 24;
-    public static final int MINIMUM_BOOKING_HOURS = 8;
-    private static final long MINIMUM_BOOKING_MINUTES = MINIMUM_BOOKING_HOURS * 60L;
+    public static final int FIRST_NIGHT_STAY_HOURS = 22;
+    private static final LocalTime STANDARD_CHECK_IN_TIME = LocalTime.of(14, 0);
+    private static final LocalTime STANDARD_CHECK_OUT_TIME = LocalTime.of(12, 0);
+    private static final List<BookingStatus> ROOM_BLOCKING_STATUSES = List.of(
+            BookingStatus.PENDING_PAYMENT,
+            BookingStatus.DEPOSIT_PAID,
+            BookingStatus.PAID,
+            BookingStatus.CHECKED_IN
+    );
     private static final int FULL_REFUND_PERCENTAGE = 100;
     private static final int MONEY_SCALE = 2;
     private static final BigDecimal ZERO_MONEY = BigDecimal.ZERO.setScale(MONEY_SCALE, RoundingMode.HALF_UP);
@@ -623,11 +631,7 @@ public class BookingUseCaseService implements
             throw new IllegalArgumentException("Khong the tinh phi cho thoi gian trong qua khu");
         }
 
-        long minutes = Duration.between(command.startTime(), command.endTime()).toMinutes();
-
-        if (minutes < MINIMUM_BOOKING_MINUTES) {
-            throw new IllegalArgumentException("Thoi luong thue toi thieu la 8 gio");
-        }
+        validateNightStay(command.startTime(), command.endTime());
     }
 
     private void validateCreateBookingRequest(CreateBookingCommand command) {
@@ -651,10 +655,18 @@ public class BookingUseCaseService implements
             throw new IllegalArgumentException("Khong the dat lich trong qua khu");
         }
 
-        long minutes = Duration.between(command.startTime(), command.endTime()).toMinutes();
+        validateNightStay(command.startTime(), command.endTime());
+    }
 
-        if (minutes < MINIMUM_BOOKING_MINUTES) {
-            throw new IllegalArgumentException("Thoi luong thue toi thieu la 8 gio");
+    private void validateNightStay(LocalDateTime startTime, LocalDateTime endTime) {
+        boolean standardTimes = startTime.toLocalTime().equals(STANDARD_CHECK_IN_TIME)
+                && endTime.toLocalTime().equals(STANDARD_CHECK_OUT_TIME);
+        boolean atLeastOneNight = endTime.toLocalDate().isAfter(startTime.toLocalDate());
+
+        if (!standardTimes || !atLeastOneNight) {
+            throw new IllegalArgumentException(
+                    "Ky luu tru toi thieu 1 dem: nhan phong luc 14:00 va tra phong luc 12:00 ngay hom sau"
+            );
         }
     }
 
@@ -727,7 +739,7 @@ public class BookingUseCaseService implements
                 roomId,
                 startTime,
                 endTime,
-                BookingStatus.CANCELLED
+                ROOM_BLOCKING_STATUSES
         );
     }
 

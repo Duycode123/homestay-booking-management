@@ -28,10 +28,24 @@ type AvailabilityCardMeta = {
 }
 
 function getRoomAvailabilityMeta(room: BookingRoom): AvailabilityCardMeta {
+  if (room.todayAvailabilityReason === 'NEXT_DAY') {
+    return {
+      badgeLabel: 'Còn lịch từ ngày mai',
+      subStatus: room.nextAvailableSlot ?? 'Chọn ngày lưu trú',
+      ctaLabel: 'Chọn ngày',
+      badgeClassName: 'border-secondary-container/50 bg-secondary-container/30 text-secondary',
+      subStatusClassName: 'border-primary-container/60 bg-primary-container/30 text-on-primary-container',
+      ctaClassName: 'bg-secondary text-white shadow-[0_10px_26px_rgba(23,58,49,0.22)] hover:bg-secondary-container',
+      cardClassName: 'bg-white shadow-[var(--shadow-card)]',
+      imageClassName: '',
+      overlayClassName: 'bg-[linear-gradient(to_top,rgba(4,42,22,0.6),rgba(4,42,22,0.08)_58%,transparent)]',
+    }
+  }
+
   if (room.availabilityStatus === 'FULL_TODAY') {
     return {
       badgeLabel: 'Kín lịch hôm nay',
-      subStatus: `Lịch gần nhất: ${room.nextAvailableSlot ?? 'Ngày mai, 18:00'}`,
+      subStatus: `Lịch gần nhất: ${room.nextAvailableSlot ?? 'Chưa xác định'}`,
       ctaLabel: 'Chọn ngày khác',
       badgeClassName: 'border-outline bg-white/95 text-on-surface shadow-[0_8px_20px_rgba(26,28,30,0.08)]',
       subStatusClassName: 'border-outline-variant bg-surface-container-low text-on-surface-variant',

@@ -1,11 +1,13 @@
-import {
-  MINIMUM_BOOKING_HOURS,
-} from '@/components/booking/booking-data'
-import { BOOKING_SLOT_TIMES, timeToMinutes } from '@/components/booking/booking-time-utils'
+import { BOOKING_SLOT_TIMES } from '@/components/booking/booking-time-utils'
 import type { TimeSlot } from '@/lib/booking/types'
 import type { Room, RoomAvailabilityStatus } from '@/lib/public/room-filters'
 
-export function applyTodayAvailability(room: Room, todaySlots: TimeSlot[] | undefined, now: Date): Room {
+export function applyTodayAvailability(
+  room: Room,
+  todaySlots: TimeSlot[] | undefined,
+  now: Date,
+  tomorrowSlots?: TimeSlot[],
+): Room {
   if (isRoomTemporarilyUnavailable(room)) {
     return {
       ...room,
@@ -13,6 +15,7 @@ export function applyTodayAvailability(room: Room, todaySlots: TimeSlot[] | unde
       remainingSlots: 0,
       isAvailable: false,
       availabilityKnown: true,
+      todayAvailabilityReason: 'OPERATIONAL',
       nextAvailableSlot: undefined,
       nextAvailableTime: undefined,
     }
@@ -25,6 +28,7 @@ export function applyTodayAvailability(room: Room, todaySlots: TimeSlot[] | unde
       remainingSlots: undefined,
       isAvailable: false,
       availabilityKnown: false,
+      todayAvailabilityReason: undefined,
       nextAvailableSlot: undefined,
       nextAvailableTime: undefined,
     }
@@ -33,12 +37,15 @@ export function applyTodayAvailability(room: Room, todaySlots: TimeSlot[] | unde
   const bookableStartSlots = getBookableStartSlotsToday(room, now, todaySlots)
   const firstStartSlot = bookableStartSlots[0]
   const nextAvailableTime = typeof firstStartSlot === 'string' ? firstStartSlot : firstStartSlot?.start
-  const remainingSlots = bookableStartSlots.length
-  const availabilityStatus: RoomAvailabilityStatus = remainingSlots === 0
-    ? 'FULL_TODAY'
-    : remainingSlots <= 2
-      ? 'ALMOST_FULL'
-      : 'AVAILABLE'
+  const tomorrowBookableSlots = (tomorrowSlots ?? []).filter(isStandardCheckInSlot)
+  const tomorrowStartSlot = bookableStartSlots.length === 0 ? tomorrowBookableSlots[0] : undefined
+  const tomorrowStartTime = typeof tomorrowStartSlot === 'string'
+    ? tomorrowStartSlot
+    : tomorrowStartSlot?.start
+  const remainingSlots = bookableStartSlots.length > 0
+    ? bookableStartSlots.length
+    : tomorrowBookableSlots.length
+  const availabilityStatus: RoomAvailabilityStatus = remainingSlots === 0 ? 'FULL_TODAY' : 'AVAILABLE'
 
   return {
     ...room,
@@ -46,24 +53,22 @@ export function applyTodayAvailability(room: Room, todaySlots: TimeSlot[] | unde
     remainingSlots,
     isAvailable: remainingSlots > 0,
     availabilityKnown: true,
-    nextAvailableSlot: nextAvailableTime ? `Hôm nay, ${nextAvailableTime}` : undefined,
+    todayAvailabilityReason: remainingSlots > 0
+      ? bookableStartSlots.length === 0 ? 'NEXT_DAY' : undefined
+      : 'BOOKED',
+    nextAvailableSlot: nextAvailableTime
+      ? `Hôm nay, ${nextAvailableTime}`
+      : tomorrowStartTime
+        ? `Ngày mai, ${tomorrowStartTime}`
+        : undefined,
     nextAvailableTime,
   }
 }
 
 export function getBookableStartSlotsToday(room: Room, now: Date, todaySlots?: TimeSlot[]) {
   if (todaySlots) {
-    return todaySlots.filter((slot, startIndex) => {
-      if (!isAvailableSlot(slot) || !isSlotInFuture(slot.start, now)) return false
-
-      const bookingWindow = todaySlots.slice(startIndex, startIndex + MINIMUM_BOOKING_HOURS)
-      if (bookingWindow.length < MINIMUM_BOOKING_HOURS) return false
-
-      return bookingWindow.every((windowSlot, index) => {
-        return isAvailableSlot(windowSlot)
-          && timeToMinutes(windowSlot.start) === timeToMinutes(slot.start) + index * 60
-      })
-    })
+    if (now.getHours() >= 14) return []
+    return todaySlots.filter(isStandardCheckInSlot)
   }
 
   if (!room.isAvailable || room.availabilityStatus === 'FULL_TODAY' || (room.remainingSlots ?? 0) <= 0) {
@@ -96,4 +101,8 @@ export function isSlotInFuture(slot: string | undefined, now: Date) {
 
 function isAvailableSlot(slot: TimeSlot) {
   return slot.status === 'available' && (slot as TimeSlot & { canSelect?: boolean }).canSelect !== false
+}
+
+function isStandardCheckInSlot(slot: TimeSlot) {
+  return slot.start === '14:00' && isAvailableSlot(slot)
 }

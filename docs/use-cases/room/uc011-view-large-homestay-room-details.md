@@ -33,7 +33,7 @@ Give guests a full-page view of a room, its four-image gallery, room-specific am
 - Admin manages shared facilities separately from room-specific equipment and may upload a representative Cloudinary image for each shared facility.
 - Only shared facilities with `active = true` are exposed to guests.
 - Deleting a shared facility from the admin application removes it from the catalog permanently; application startup must not seed or reactivate admin-managed facilities.
-- Booking cost calculation and booking creation reject stays shorter than eight consecutive hours.
+- Booking cost calculation and booking creation require at least one night, using the standard `14:00` check-in and `12:00` checkout on a later date.
 - Check-in may be performed at most five minutes before the booked start time, according to the existing check-in policy.
 
 ## Related endpoints
