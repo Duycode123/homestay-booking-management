@@ -529,25 +529,27 @@ function RoomCard({
   const bookingStatus = getRoomBookingStatus(room, now, todaySlots)
   const isCheckingAvailability = bookingStatus === 'CHECKING'
   const canBookNow = bookingStatus === 'AVAILABLE_NOW'
-  const isFullToday = bookingStatus === 'AVAILABLE_OTHER_TIME'
+  const canBookFutureDate = room.todayAvailabilityReason === 'NEXT_DAY'
+  const canStartBooking = canBookNow || canBookFutureDate
+  const isFullToday = bookingStatus === 'AVAILABLE_OTHER_TIME' && !canBookFutureDate
   const isUnavailable = bookingStatus === 'UNAVAILABLE'
   const nextAvailableSlotToday = getNextAvailableSlotToday(room, now, todaySlots)
   const bookingBadge = isCheckingAvailability
     ? 'Đang kiểm tra'
-    : canBookNow
-      ? 'Có thể đặt ngay'
+    : canStartBooking
+      ? 'Có thể đặt phòng'
       : isUnavailable
         ? 'Tạm ngưng'
         : 'Chọn ngày khác'
   const bookingHint = canBookNow
     ? `Hôm nay, ${nextAvailableSlotToday}`
+    : canBookFutureDate
+      ? 'Chọn ngày lưu trú phù hợp'
     : isUnavailable
       ? 'Phòng đang tạm ngưng nhận lịch'
       : isCheckingAvailability
         ? 'Đang đồng bộ lịch phòng'
-        : room.todayAvailabilityReason === 'NEXT_DAY'
-          ? `Còn lịch cho kỳ lưu trú từ ngày mai${room.nextAvailableSlot ? ` · ${room.nextAvailableSlot}` : ''}`
-          : `Hôm nay đã kín lịch${room.nextAvailableSlot ? ` · ${room.nextAvailableSlot}` : ''}`
+        : `Hôm nay đã có lịch${room.nextAvailableSlot ? ` · ${room.nextAvailableSlot}` : ''}`
 
   const handleFavorite = async () => {
     if (!isAuthenticated) {
@@ -567,7 +569,7 @@ function RoomCard({
     <article
       className={[
         'group flex h-full w-full flex-col overflow-hidden rounded-[18px] border bg-white shadow-[var(--shadow-card)] transition-all duration-300 hover:border-brand-orange/45 hover:shadow-[var(--shadow-elevated)]',
-        canBookNow
+        canStartBooking
           ? 'border-brand-orange/30'
           : isUnavailable
             ? 'border-outline-variant bg-surface-container-low opacity-60'
@@ -610,7 +612,7 @@ function RoomCard({
         <span
           className={[
             'absolute bottom-4 left-4 rounded-full border px-3 py-1 font-display text-xs font-bold',
-            canBookNow
+            canStartBooking
               ? 'border-brand-orange/40 bg-primary-container text-on-primary-container'
               : 'border-white/20 bg-white/90 text-on-surface-variant',
           ].join(' ')}
@@ -687,7 +689,7 @@ function RoomCard({
             >
               {isCheckingAvailability
                 ? 'Đang kiểm tra'
-                : canBookNow
+                : canStartBooking
                   ? 'Đặt phòng'
                   : isUnavailable
                     ? 'Tạm ngưng'

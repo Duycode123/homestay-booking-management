@@ -45,6 +45,9 @@ export function applyTodayAvailability(
   const remainingSlots = bookableStartSlots.length > 0
     ? bookableStartSlots.length
     : tomorrowBookableSlots.length
+  const todayCheckInAvailable = todaySlots.some((slot) => {
+    return slot.start === '14:00' && slot.backendAvailable === true
+  })
   const availabilityStatus: RoomAvailabilityStatus = remainingSlots === 0 ? 'FULL_TODAY' : 'AVAILABLE'
 
   return {
@@ -54,7 +57,9 @@ export function applyTodayAvailability(
     isAvailable: remainingSlots > 0,
     availabilityKnown: true,
     todayAvailabilityReason: remainingSlots > 0
-      ? bookableStartSlots.length === 0 ? 'NEXT_DAY' : undefined
+      ? bookableStartSlots.length === 0
+        ? todayCheckInAvailable ? 'NEXT_DAY' : 'TODAY_BOOKED'
+        : undefined
       : 'BOOKED',
     nextAvailableSlot: nextAvailableTime
       ? `Hôm nay, ${nextAvailableTime}`

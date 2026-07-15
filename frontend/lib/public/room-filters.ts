@@ -31,7 +31,8 @@ export function filterRooms(rooms: Room[], filters: RoomFilters) {
 }
 
 export function getAvailabilityLabel(status: RoomAvailabilityStatus, room?: Room) {
-  if (room?.todayAvailabilityReason === 'NEXT_DAY') return 'Còn lịch từ ngày mai'
+  if (room?.todayAvailabilityReason === 'NEXT_DAY') return 'Còn phòng để đặt'
+  if (room?.todayAvailabilityReason === 'TODAY_BOOKED') return 'Hôm nay đã có lịch'
   if (status === 'FULL_TODAY') return 'Kín lịch hôm nay'
   if (status === 'ALMOST_FULL') return 'Sắp kín lịch'
   return 'Còn trống hôm nay'

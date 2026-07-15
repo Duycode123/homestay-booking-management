@@ -261,6 +261,7 @@ export async function fetchAvailableSlots(roomId: string, date: string): Promise
   return baseSlots.map((slot) => ({
     ...slot,
     status: resolveSlotStatus(date, slot, availableRanges, operational, now),
+    backendAvailable: operational && availableRanges.some((range) => isSlotCoveredByRange(date, slot, range)),
   }))
 }
 

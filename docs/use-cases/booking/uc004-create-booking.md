@@ -68,6 +68,7 @@ Allow an authenticated customer to select a valid room/time range, see the expec
 - Rooms in maintenance are not bookable.
 - Only bookings in `PENDING_PAYMENT`, `DEPOSIT_PAID`, `PAID`, or `CHECKED_IN` block availability. `COMPLETED` and `CANCELLED` bookings remain in history without holding the room.
 - After today's check-in time has passed, the public catalog guides the customer to the next available date instead of applying an hourly cutoff or describing every room as genuinely booked.
+- Room cards keep the primary action `Đặt phòng` when today's 14:00 check-in was available but has merely passed; opening the picker starts from the next valid date. `Chọn ngày khác` is reserved for rooms that actually have a blocking booking today.
 - A new booking starts in `PENDING_PAYMENT` state.
 - Online deposit amount is exactly 50% of the discounted booking total, rounded to two decimal places. Full online payment uses 100% of that total.
 - Cash payment does not create a `payment_transaction`; it remains pending until staff collects and confirms the full payment at the homestay.

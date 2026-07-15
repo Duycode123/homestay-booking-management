@@ -22,6 +22,7 @@ export type TimeSlot = {
   end: string
   label: string
   status: SlotStatus
+  backendAvailable?: boolean
 }
 
 export type BookingDraft = {

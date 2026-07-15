@@ -2,7 +2,7 @@ import type { HomestayRoom } from '@/lib/booking/types'
 
 export type RoomCategory = 'standard' | 'deluxe' | 'family'
 export type RoomAvailabilityStatus = 'AVAILABLE' | 'ALMOST_FULL' | 'FULL_TODAY'
-export type TodayAvailabilityReason = 'BOOKED' | 'NEXT_DAY' | 'OPERATIONAL'
+export type TodayAvailabilityReason = 'BOOKED' | 'TODAY_BOOKED' | 'NEXT_DAY' | 'OPERATIONAL'
 export type RoomOperationalStatus = 'AVAILABLE' | 'IN_USE' | 'MAINTENANCE' | 'NEED_CLEANING' | 'INACTIVE' | 'UNAVAILABLE' | 'DISABLED' | 'CLOSED'
 
 export type RoomCategoryOption = {

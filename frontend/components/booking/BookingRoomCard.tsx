@@ -30,15 +30,31 @@ type AvailabilityCardMeta = {
 function getRoomAvailabilityMeta(room: BookingRoom): AvailabilityCardMeta {
   if (room.todayAvailabilityReason === 'NEXT_DAY') {
     return {
-      badgeLabel: 'Còn lịch từ ngày mai',
+      badgeLabel: 'Còn phòng để đặt',
       subStatus: room.nextAvailableSlot ?? 'Chọn ngày lưu trú',
-      ctaLabel: 'Chọn ngày',
+      ctaLabel: 'Đặt phòng',
       badgeClassName: 'border-secondary-container/50 bg-secondary-container/30 text-secondary',
       subStatusClassName: 'border-primary-container/60 bg-primary-container/30 text-on-primary-container',
       ctaClassName: 'bg-secondary text-white shadow-[0_10px_26px_rgba(23,58,49,0.22)] hover:bg-secondary-container',
       cardClassName: 'bg-white shadow-[var(--shadow-card)]',
       imageClassName: '',
       overlayClassName: 'bg-[linear-gradient(to_top,rgba(4,42,22,0.6),rgba(4,42,22,0.08)_58%,transparent)]',
+    }
+  }
+
+  if (room.todayAvailabilityReason === 'TODAY_BOOKED') {
+    return {
+      badgeLabel: 'Hôm nay đã có lịch',
+      subStatus: room.nextAvailableSlot
+        ? `Còn trống ${room.nextAvailableSlot.toLowerCase()}`
+        : 'Vui lòng chọn ngày khác',
+      ctaLabel: 'Chọn ngày khác',
+      badgeClassName: 'border-outline bg-white/95 text-on-surface shadow-[0_8px_20px_rgba(26,28,30,0.08)]',
+      subStatusClassName: 'border-outline-variant bg-surface-container-low text-on-surface-variant',
+      ctaClassName: 'border border-secondary bg-secondary text-white shadow-[0_10px_26px_rgba(23,58,49,0.2)] hover:bg-secondary-container',
+      cardClassName: 'bg-white/92 shadow-[var(--shadow-card)]',
+      imageClassName: 'opacity-80 saturate-[0.9]',
+      overlayClassName: 'bg-[linear-gradient(to_top,rgba(255,255,255,0.62),rgba(255,255,255,0.12)_52%,transparent)]',
     }
   }
 
@@ -254,7 +270,7 @@ export default function BookingRoomCard({ room, renderIcon, onOpenDetail, onBook
               availabilityMeta.ctaClassName,
             ].join(' ')}
           >
-            {room.availabilityKnown ? (room.isAvailable ? 'Đặt ngay' : 'Chọn ngày khác') : 'Xem lịch trống'}
+            {room.availabilityKnown ? availabilityMeta.ctaLabel : 'Xem lịch trống'}
           </button>
         </div>
       </div>
