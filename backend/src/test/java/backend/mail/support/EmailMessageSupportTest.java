@@ -27,7 +27,9 @@ class EmailMessageSupportTest {
 
     @Test
     void createsUtf8MultipartMessageWithPlainAndHtmlAlternatives() throws Exception {
-        MimeMessage message = new MimeMessage(Session.getInstance(new Properties()));
+        Properties properties = new Properties();
+        properties.setProperty("mail.from", "verified-sender@example.com");
+        MimeMessage message = new MimeMessage(Session.getInstance(properties));
         MimeMessageHelper helper = EmailMessageSupport.multipartHelper(message);
         helper.setTo("customer@example.com");
 
@@ -40,6 +42,7 @@ class EmailMessageSupportTest {
         message.saveChanges();
 
         assertEquals("Hoàn tiền thành công", message.getSubject());
+        assertEquals("verified-sender@example.com", message.getFrom()[0].toString());
         assertTrue(message.isMimeType("multipart/*"));
         assertTrue(extractText(message).contains("Hoàn tiền thành công"));
     }

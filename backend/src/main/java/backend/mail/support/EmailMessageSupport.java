@@ -12,6 +12,8 @@ import java.text.Normalizer;
  */
 public final class EmailMessageSupport {
 
+    private static final String MAIL_FROM_PROPERTY = "mail.from";
+
     private EmailMessageSupport() {
     }
 
@@ -29,8 +31,16 @@ public final class EmailMessageSupport {
             String plainText,
             String htmlText
     ) throws MessagingException {
+        setConfiguredFromAddress(helper);
         helper.setSubject(normalize(subject));
         helper.setText(normalize(plainText), normalize(htmlText));
+    }
+
+    private static void setConfiguredFromAddress(MimeMessageHelper helper) throws MessagingException {
+        String fromAddress = helper.getMimeMessage().getSession().getProperty(MAIL_FROM_PROPERTY);
+        if (fromAddress != null && !fromAddress.isBlank()) {
+            helper.setFrom(fromAddress.trim());
+        }
     }
 
     public static String normalize(String value) {
