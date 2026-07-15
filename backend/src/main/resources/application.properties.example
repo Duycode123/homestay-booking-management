@@ -14,19 +14,20 @@ spring.jpa.properties.hibernate.format_sql=${JPA_FORMAT_SQL:false}
 spring.sql.init.mode=always
 spring.sql.init.platform=postgresql
 
-# ===== Mail (Gmail SMTP) =====
-# Use a Gmail App Password (https://myaccount.google.com/apppasswords), NOT your account password.
-spring.mail.host=smtp.gmail.com
-spring.mail.port=587
+# ===== Mail =====
+# Render Free blocks the common SMTP ports. Use an SMTP relay that supports
+# port 2525 in production; Gmail 587 remains a convenient local default.
+spring.mail.host=${MAIL_HOST:smtp.gmail.com}
+spring.mail.port=${MAIL_PORT:587}
 spring.mail.username=${MAIL_USERNAME:}
 spring.mail.password=${MAIL_PASSWORD:}
 spring.mail.properties.mail.smtp.auth=true
-spring.mail.properties.mail.smtp.starttls.enable=true
+spring.mail.properties.mail.smtp.starttls.enable=${MAIL_STARTTLS:true}
 spring.mail.properties.mail.smtp.connectiontimeout=5000
 spring.mail.properties.mail.smtp.timeout=5000
 spring.mail.properties.mail.smtp.writetimeout=5000
 
-server.port=8080
+server.port=${PORT:8080}
 spring.servlet.multipart.max-file-size=12MB
 spring.servlet.multipart.max-request-size=13MB
 
