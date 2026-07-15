@@ -38,6 +38,7 @@ import {
 } from '@/lib/public/room-filters'
 import {
   applyTodayAvailability,
+  getRoomCardAvailabilityState,
   getBookableStartSlotsToday,
   isRoomTemporarilyUnavailable,
   isSlotInFuture,
@@ -69,8 +70,6 @@ const defaultFilters: RoomFilters = {
   minNightlyPrice: MIN_NIGHTLY_PRICE,
   maxNightlyPrice: MAX_NIGHTLY_PRICE,
 }
-
-type RoomBookingStatus = 'CHECKING' | 'AVAILABLE_NOW' | 'AVAILABLE_OTHER_TIME' | 'UNAVAILABLE'
 
 type RoomSlotsById = Record<string, TimeSlot[] | undefined>
 
@@ -526,13 +525,13 @@ function RoomCard({
   const canFavorite = Number.isSafeInteger(numericRoomId) && numericRoomId > 0
   const isFavorite = canFavorite && favoriteIds.has(numericRoomId)
   const now = new Date()
-  const bookingStatus = getRoomBookingStatus(room, now, todaySlots)
-  const isCheckingAvailability = bookingStatus === 'CHECKING'
-  const canBookNow = bookingStatus === 'AVAILABLE_NOW'
-  const canBookFutureDate = room.todayAvailabilityReason === 'NEXT_DAY'
-  const canStartBooking = canBookNow || canBookFutureDate
-  const isFullToday = bookingStatus === 'AVAILABLE_OTHER_TIME' && !canBookFutureDate
-  const isUnavailable = bookingStatus === 'UNAVAILABLE'
+  const availabilityState = getRoomCardAvailabilityState(room)
+  const isCheckingAvailability = availabilityState.isChecking
+  const canBookNow = availabilityState.canBookToday
+  const canBookFutureDate = availabilityState.canBookFutureDate
+  const canStartBooking = availabilityState.canStartBooking
+  const isFullToday = availabilityState.hasBookingToday || room.todayAvailabilityReason === 'BOOKED'
+  const isUnavailable = availabilityState.isUnavailable
   const nextAvailableSlotToday = getNextAvailableSlotToday(room, now, todaySlots)
   const bookingBadge = isCheckingAvailability
     ? 'Đang kiểm tra'
@@ -1116,13 +1115,6 @@ function getNextAvailableSlotToday(room: Room, now: Date, todaySlots?: TimeSlot[
   }
 
   return undefined
-}
-
-function getRoomBookingStatus(room: Room, now: Date, todaySlots?: TimeSlot[]): RoomBookingStatus {
-  if (isRoomTemporarilyUnavailable(room)) return 'UNAVAILABLE'
-  if (todaySlots === undefined && !room.availabilityKnown) return 'CHECKING'
-
-  return getBookableStartSlotsToday(room, now, todaySlots).length > 0 ? 'AVAILABLE_NOW' : 'AVAILABLE_OTHER_TIME'
 }
 
 function getAvailabilityClassName(status: RoomAvailabilityStatus, isUnavailable = false) {

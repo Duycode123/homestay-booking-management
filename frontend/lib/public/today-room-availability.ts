@@ -2,6 +2,15 @@ import { BOOKING_SLOT_TIMES } from '@/components/booking/booking-time-utils'
 import type { TimeSlot } from '@/lib/booking/types'
 import type { Room, RoomAvailabilityStatus } from '@/lib/public/room-filters'
 
+export type RoomCardAvailabilityState = {
+  isChecking: boolean
+  isUnavailable: boolean
+  canBookToday: boolean
+  canBookFutureDate: boolean
+  canStartBooking: boolean
+  hasBookingToday: boolean
+}
+
 export function applyTodayAvailability(
   room: Room,
   todaySlots: TimeSlot[] | undefined,
@@ -85,6 +94,33 @@ export function getBookableStartSlotsToday(room: Room, now: Date, todaySlots?: T
 
 export function isRoomTemporarilyUnavailable(room: Room) {
   return ['MAINTENANCE', 'NEED_CLEANING', 'INACTIVE', 'UNAVAILABLE', 'DISABLED', 'CLOSED'].includes(room.operationalStatus ?? '')
+}
+
+/**
+ * Single source of truth for availability badges and CTAs on public room cards.
+ * Both the homepage and the room catalog must use this state so a room cannot
+ * be presented differently merely because tomorrow still has availability.
+ */
+export function getRoomCardAvailabilityState(room: Room): RoomCardAvailabilityState {
+  const isUnavailable = isRoomTemporarilyUnavailable(room)
+  const isChecking = !isUnavailable && !room.availabilityKnown
+  const canBookFutureDate = room.todayAvailabilityReason === 'NEXT_DAY'
+  const hasBookingToday = room.todayAvailabilityReason === 'TODAY_BOOKED'
+  const canBookToday = !isUnavailable
+    && !isChecking
+    && room.todayAvailabilityReason === undefined
+    && room.isAvailable
+    && room.availabilityStatus !== 'FULL_TODAY'
+    && (room.remainingSlots ?? 0) > 0
+
+  return {
+    isChecking,
+    isUnavailable,
+    canBookToday,
+    canBookFutureDate,
+    canStartBooking: canBookToday || canBookFutureDate,
+    hasBookingToday,
+  }
 }
 
 export function isSlotInFuture(slot: string | undefined, now: Date) {

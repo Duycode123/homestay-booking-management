@@ -19,7 +19,11 @@ import {
   maskCustomerName,
   type AvailabilityTone,
 } from '@/lib/homepage-live-service'
-import { isRoomTemporarilyUnavailable } from '@/lib/public/today-room-availability'
+import { getAvailabilityLabel } from '@/lib/public/room-filters'
+import {
+  getRoomCardAvailabilityState,
+  isRoomTemporarilyUnavailable,
+} from '@/lib/public/today-room-availability'
 
 const stats = [
   { value: 'Rõ ràng', label: 'Lịch trống & giá' },
@@ -348,6 +352,20 @@ function TopRatedRoomCard({
   onBook: (room: BookingRoom) => void
 }) {
   const imageSrc = room.image ?? '/images/homestay-luxury-hero.webp'
+  const availabilityState = getRoomCardAvailabilityState(room)
+  const availabilityStatus = room.availabilityStatus ?? 'AVAILABLE'
+  const availabilityLabel = availabilityState.isUnavailable
+    ? 'Tạm ngưng'
+    : availabilityState.isChecking
+      ? 'Đang cập nhật lịch'
+      : getAvailabilityLabel(availabilityStatus, room)
+  const bookingLabel = availabilityState.isChecking
+    ? 'Kiểm tra lịch'
+    : availabilityState.isUnavailable
+      ? 'Tạm ngưng'
+      : availabilityState.canStartBooking
+        ? 'Đặt phòng'
+        : 'Chọn ngày khác'
 
   return (
     <article className="group flex w-[82vw] shrink-0 snap-start flex-col overflow-hidden rounded-[18px] border border-outline-variant bg-white shadow-[var(--shadow-card)] transition-all duration-300 hover:border-brand-orange/45 hover:shadow-[var(--shadow-elevated)] sm:w-[calc((100vw-5rem-1.25rem)/2)] xl:w-[calc((100vw-12rem-3.75rem)/4)] xl:max-w-[310px]">
@@ -366,11 +384,7 @@ function TopRatedRoomCard({
             ★ {(room.rating ?? 0).toFixed(1)}
           </span>
           <span className="absolute bottom-4 left-4 rounded-full border border-white/20 bg-white/92 px-3 py-1 font-display text-xs font-bold text-[#6A6C66]">
-            {!room.availabilityKnown
-              ? 'Đang cập nhật lịch'
-              : room.availabilityStatus === 'FULL_TODAY'
-                ? 'Kín lịch hôm nay'
-                : 'Có thể đặt lịch'}
+            {availabilityLabel}
           </span>
         </div>
       </button>
@@ -417,13 +431,10 @@ function TopRatedRoomCard({
           <button
             type="button"
             onClick={() => onBook(room)}
+            disabled={availabilityState.isUnavailable || availabilityState.isChecking}
             className="rounded-xl bg-secondary px-4 py-2.5 font-display text-sm font-semibold text-white shadow-[0_10px_24px_rgba(23,58,49,0.16)] transition-colors hover:bg-secondary-container"
           >
-            {!room.availabilityKnown
-              ? 'Kiểm tra lịch'
-              : room.availabilityStatus === 'FULL_TODAY'
-                ? 'Chọn ngày khác'
-                : 'Đặt phòng'}
+            {bookingLabel}
           </button>
         </div>
       </div>
