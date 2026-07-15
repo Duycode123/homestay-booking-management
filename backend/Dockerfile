@@ -5,8 +5,9 @@ COPY backend/pom.xml ./
 COPY backend/src ./src
 COPY database/Homestay_Database.sql /tmp/schema-base-postgresql.sql
 RUN cp src/main/resources/application.properties.example src/main/resources/application.properties \
-    && cat /tmp/schema-base-postgresql.sql src/main/resources/schema-postgresql.sql > /tmp/schema-postgresql.sql \
-    && mv /tmp/schema-postgresql.sql src/main/resources/schema-postgresql.sql \
+    && mkdir -p src/main/resources/db/migration \
+    && sed '/^BEGIN;$/d; /^COMMIT;$/d' /tmp/schema-base-postgresql.sql > src/main/resources/db/migration/V1__canonical_schema.sql \
+    && cp src/main/resources/schema-postgresql.sql src/main/resources/db/migration/V2__runtime_additions.sql \
     && mvn -B -DskipTests clean package
 
 FROM eclipse-temurin:21-jre
