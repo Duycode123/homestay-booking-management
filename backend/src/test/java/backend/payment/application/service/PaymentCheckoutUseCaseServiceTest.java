@@ -36,6 +36,7 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
@@ -131,7 +132,10 @@ class PaymentCheckoutUseCaseServiceTest {
         assertEquals(booking.getBookingCode(), result.bookingCode());
         assertEquals(true, result.paymentUrl().startsWith("https://vietqr.app/img?"));
         assertEquals(true, result.paymentUrl().contains("des=" + savedTransaction.getTransactionReference()));
-        assertEquals(bookingCreatedAt.plusSeconds(300), result.expiresAt());
+        assertEquals(
+                bookingCreatedAt.plusSeconds(300).atZone(ZoneId.systemDefault()).toOffsetDateTime(),
+                result.expiresAt()
+        );
     }
 
     @Test
@@ -204,7 +208,47 @@ class PaymentCheckoutUseCaseServiceTest {
         assertEquals(PaymentTransactionStatus.CANCELLED, closed.getStatus());
         assertEquals("PAYMENT_SESSION_REPLACED", closed.getResponseCode());
         assertEquals(BookingStatus.PENDING_PAYMENT, booking.getStatus());
-        assertEquals(bookingCreatedAt.plusSeconds(300), result.expiresAt());
+        assertEquals(
+                bookingCreatedAt.plusSeconds(300).atZone(ZoneId.systemDefault()).toOffsetDateTime(),
+                result.expiresAt()
+        );
+    }
+
+    @Test
+    void givesEachBookingItsOwnIndependentFiveMinuteDeadline() {
+        Booking firstBooking = booking(28, PaymentMethod.ONLINE);
+        Booking secondBooking = booking(29, PaymentMethod.ONLINE);
+        LocalDateTime firstCreatedAt = LocalDateTime.now().minusSeconds(90);
+        LocalDateTime secondCreatedAt = LocalDateTime.now().minusSeconds(15);
+        firstBooking.setCreatedAt(firstCreatedAt);
+        secondBooking.setCreatedAt(secondCreatedAt);
+
+        when(bookingRepository.findByIdAndCustomer_Account_Email(28, "customer@example.com"))
+                .thenReturn(Optional.of(firstBooking));
+        when(bookingRepository.findByIdAndCustomer_Account_Email(29, "customer@example.com"))
+                .thenReturn(Optional.of(secondBooking));
+        when(paymentTransactionRepository.save(any(PaymentTransaction.class))).thenAnswer(invocation -> {
+            PaymentTransaction saved = invocation.getArgument(0);
+            saved.prePersist();
+            return saved;
+        });
+
+        PaymentSessionResult firstResult = paymentCheckoutUseCaseService.createPaymentSession(
+                28, "bank_transfer", "full", "customer@example.com"
+        );
+        PaymentSessionResult secondResult = paymentCheckoutUseCaseService.createPaymentSession(
+                29, "bank_transfer", "full", "customer@example.com"
+        );
+
+        assertEquals(
+                firstCreatedAt.plusSeconds(300).atZone(ZoneId.systemDefault()).toOffsetDateTime(),
+                firstResult.expiresAt()
+        );
+        assertEquals(
+                secondCreatedAt.plusSeconds(300).atZone(ZoneId.systemDefault()).toOffsetDateTime(),
+                secondResult.expiresAt()
+        );
+        assertEquals(75L, java.time.Duration.between(firstResult.expiresAt(), secondResult.expiresAt()).toSeconds());
     }
 
     @Test

@@ -38,6 +38,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -118,7 +120,7 @@ public class PaymentCheckoutUseCaseService implements
                 remainingAmount,
                 buildSePayCheckoutPort.buildVietQrUrl(paymentId, remainingAmount),
                 transaction.getCreatedAt(),
-                resolveExpiresAt(transaction.getCreatedAt()),
+                toApiDateTime(resolveExpiresAt(transaction.getCreatedAt())),
                 null
         );
     }
@@ -218,7 +220,7 @@ public class PaymentCheckoutUseCaseService implements
                 paymentTransaction.getAmount(),
                 buildSePayCheckoutPort.buildVietQrUrl(paymentId, paymentTransaction.getAmount()),
                 paymentTransaction.getCreatedAt(),
-                resolveBookingPaymentExpiresAt(booking, paymentTransaction.getCreatedAt()),
+                toApiDateTime(resolveBookingPaymentExpiresAt(booking, paymentTransaction.getCreatedAt())),
                 paymentTransaction.getPaidAt()
         );
     }
@@ -511,6 +513,14 @@ public class PaymentCheckoutUseCaseService implements
         return resolveBookingPaymentExpiresAt(transaction.getBooking(), transaction.getCreatedAt());
     }
 
+    private OffsetDateTime toApiDateTime(LocalDateTime value) {
+        if (value == null) {
+            return null;
+        }
+
+        return value.atZone(ZoneId.systemDefault()).toOffsetDateTime();
+    }
+
     private String mapStatus(PaymentTransactionStatus status, Booking booking) {
         if (status == PaymentTransactionStatus.SUCCEEDED
                 && booking != null
@@ -546,7 +556,7 @@ public class PaymentCheckoutUseCaseService implements
                 mapStatus(paymentTransaction.getStatus(), paymentTransaction.getBooking()),
                 paymentTransaction.getAmount(),
                 paymentTransaction.getCreatedAt(),
-                resolveTransactionExpiresAt(paymentTransaction),
+                toApiDateTime(resolveTransactionExpiresAt(paymentTransaction)),
                 paymentTransaction.getPaidAt()
         );
     }

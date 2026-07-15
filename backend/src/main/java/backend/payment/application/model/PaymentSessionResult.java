@@ -2,6 +2,7 @@ package backend.payment.application.model;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 public record PaymentSessionResult(
         String paymentId,
@@ -13,7 +14,7 @@ public record PaymentSessionResult(
         BigDecimal amount,
         String paymentUrl,
         LocalDateTime createdAt,
-        LocalDateTime expiresAt,
+        OffsetDateTime expiresAt,
         LocalDateTime paidAt
 ) {
 }
