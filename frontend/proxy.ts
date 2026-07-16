@@ -88,6 +88,8 @@ export const config = {
     '/customer/checkout/:path*',
     '/customer/profile',
     '/customer/profile/:path*',
+    '/customer/account-settings',
+    '/customer/account-settings/:path*',
     '/customer/security',
     '/customer/security/:path*',
     '/customer/bookings',

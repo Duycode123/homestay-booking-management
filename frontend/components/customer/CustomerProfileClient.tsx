@@ -219,7 +219,7 @@ export default function CustomerProfileClient() {
             <div className="min-w-0">
               <div className="flex items-center gap-3">
                 <span aria-hidden className="h-px w-7 bg-primary-fixed" />
-                <p className="font-display text-[10px] font-semibold uppercase tracking-[0.22em] text-primary-fixed">Hồ sơ cá nhân</p>
+                <p className="font-display text-[10px] font-semibold uppercase tracking-[0.22em] text-primary-fixed">Thông tin cá nhân</p>
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-3">
                 <h1 className="font-editorial text-4xl font-semibold leading-tight sm:text-5xl">{isFetchingProfile ? 'Đang tải hồ sơ' : displayName}</h1>
@@ -242,7 +242,7 @@ export default function CustomerProfileClient() {
             className="overflow-hidden"
           >
             <div className="border-b border-outline-variant bg-gradient-to-r from-[#F2F6F3] to-white px-6 py-6 sm:px-8">
-              <p className="eyebrow text-brand-orange">Thông tin tài khoản</p>
+              <p className="eyebrow text-brand-orange">Hồ sơ khách hàng</p>
               <h2 className="font-editorial mt-2 text-3xl font-semibold text-secondary">Chi tiết cá nhân</h2>
               <p className="mt-2 text-sm leading-6 text-on-surface-variant">Cập nhật thông tin được dùng khi đặt phòng và nhận hỗ trợ.</p>
             </div>
@@ -336,11 +336,11 @@ export default function CustomerProfileClient() {
           </CustomerCard>
 
           <CustomerCard>
-            <h2 className="font-editorial text-2xl font-semibold text-secondary">Quản lý tài khoản</h2>
-            <nav className="mt-5 divide-y divide-outline-variant border-y border-outline-variant">
-              <ProfileLink href="/customer/bookings" label="Lịch đặt của tôi" />
-              <ProfileLink href="/customer/security" label="Bảo mật tài khoản" />
-              <ProfileLink href="/customer/support" label="Trung tâm hỗ trợ" />
+            <p className="eyebrow text-brand-orange">Thiết lập riêng</p>
+            <h2 className="mt-2 font-editorial text-2xl font-semibold text-secondary">Cài đặt tài khoản</h2>
+            <p className="mt-3 text-sm leading-6 text-on-surface-variant">Bảo mật, quyền riêng tư và trợ năng được quản lý ở một trang riêng để không trùng với biểu mẫu hồ sơ.</p>
+            <nav className="mt-5 border-y border-outline-variant">
+              <ProfileLink href="/customer/account-settings" label="Mở cài đặt tài khoản" />
             </nav>
           </CustomerCard>
 

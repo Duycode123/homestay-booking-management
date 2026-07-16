@@ -16,38 +16,12 @@ type AccountMenuProps = {
   align?: 'right' | 'full'
 }
 
-type MenuIconName = 'user' | 'lock' | 'history' | 'help' | 'alert' | 'accessibility' | 'logout'
-
-const customerMenuItems: Array<{ icon: MenuIconName; label: string; href: string }> = [
-  { icon: 'lock', label: 'Bảo mật & mật khẩu', href: '/customer/security' },
-  { icon: 'history', label: 'Lịch sử đặt phòng', href: '/customer/bookings' },
-  { icon: 'help', label: 'Trợ giúp và hỗ trợ', href: '/customer/support' },
-  { icon: 'alert', label: 'Báo cáo sự cố', href: '/customer/report-issue' },
-  { icon: 'accessibility', label: 'Màn hình và trợ năng', href: '/customer/accessibility' },
-]
-
-const adminMenuItems: Array<{ icon: MenuIconName; label: string; href: string }> = [
-  { icon: 'user', label: 'Dashboard quản trị', href: '/admin/dashboard' },
-  { icon: 'lock', label: 'Bảo mật & mật khẩu', href: '/customer/security' },
-  { icon: 'accessibility', label: 'Màn hình và trợ năng', href: '/customer/accessibility' },
-]
-
-const staffMenuItems: Array<{ icon: MenuIconName; label: string; href: string }> = [
-  { icon: 'user', label: 'Dashboard nhân viên', href: '/staff/dashboard' },
-  { icon: 'lock', label: 'Bảo mật & mật khẩu', href: '/customer/security' },
-  { icon: 'accessibility', label: 'Màn hình và trợ năng', href: '/customer/accessibility' },
-]
+type IconName = 'user' | 'settings' | 'logout' | 'mail' | 'phone' | 'dashboard'
 
 const roleLabels: Record<UserRole, string> = {
-  ADMIN: 'Admin',
+  ADMIN: 'Quản trị viên',
   STAFF: 'Nhân viên',
   CUSTOMER: 'Khách hàng',
-}
-
-function getMenuItems(role: UserRole) {
-  if (role === 'ADMIN') return adminMenuItems
-  if (role === 'STAFF') return staffMenuItems
-  return customerMenuItems
 }
 
 export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenuProps) {
@@ -56,13 +30,13 @@ export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenu
   const [profile, setProfile] = useState<CustomerProfile | null>(null)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
-  const displayProfile = profile ?? null
-  const displayName = displayProfile ? getCustomerDisplayName(displayProfile) : getCustomerDisplayName(user)
-  const userEmail = displayProfile?.email || user?.email || ''
-  const avatarUrl = displayProfile?.avatarUrl || user?.avatarUrl
-  const avatarInitial = getInitials(displayProfile?.fullName || user?.fullName || user?.name, userEmail)
-  const role = displayProfile?.role || user?.role || 'CUSTOMER'
-  const menuItems = getMenuItems(role)
+
+  const displayName = profile ? getCustomerDisplayName(profile) : getCustomerDisplayName(user)
+  const email = profile?.email || user?.email || ''
+  const phone = profile?.phone || user?.phone || ''
+  const avatarUrl = profile?.avatarUrl || user?.avatarUrl
+  const avatarInitial = getInitials(profile?.fullName || user?.fullName || user?.name, email)
+  const role = profile?.role || user?.role || 'CUSTOMER'
 
   useEffect(() => {
     let mounted = true
@@ -72,13 +46,13 @@ export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenu
       return
     }
 
-    setProfile(null)
-
-    void fetchCurrentUser(user).then((currentUser) => {
-      if (mounted) {
-        setProfile(currentUser)
-      }
-    })
+    void fetchCurrentUser(user)
+      .then((currentUser) => {
+        if (mounted) setProfile(currentUser)
+      })
+      .catch(() => {
+        if (mounted) setProfile(null)
+      })
 
     return () => {
       mounted = false
@@ -89,20 +63,14 @@ export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenu
     if (!open) return
 
     const handlePointerDown = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setOpen(false)
-      }
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) setOpen(false)
     }
-
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setOpen(false)
-      }
+      if (event.key === 'Escape') setOpen(false)
     }
 
     document.addEventListener('mousedown', handlePointerDown)
     document.addEventListener('keydown', handleKeyDown)
-
     return () => {
       document.removeEventListener('mousedown', handlePointerDown)
       document.removeEventListener('keydown', handleKeyDown)
@@ -127,6 +95,12 @@ export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenu
     }
   }
 
+  const workspaceLink = role === 'ADMIN'
+    ? { href: '/admin/dashboard', label: 'Trang quản trị' }
+    : role === 'STAFF'
+      ? { href: '/staff/dashboard', label: 'Trang nhân viên' }
+      : null
+
   return (
     <div ref={menuRef} className="relative">
       <button
@@ -134,216 +108,136 @@ export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenu
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
         aria-haspopup="menu"
-        className="group flex min-h-12 items-center gap-2.5 rounded-full border border-[#d9c6aa] bg-[linear-gradient(135deg,rgba(255,255,255,.98),rgba(248,243,235,.96))] py-1.5 pl-1.5 pr-3 shadow-[0_8px_24px_rgba(36,58,49,.10),inset_0_0_0_1px_rgba(255,255,255,.85)] transition-all duration-300 hover:-translate-y-0.5 hover:border-brand-orange/55 hover:shadow-[0_12px_30px_rgba(36,58,49,.15)] focus:outline-none focus:ring-2 focus:ring-brand-orange/25"
+        aria-label="Mở menu tài khoản"
+        className="group flex min-h-12 items-center gap-2.5 rounded-full border border-[#ddccb4] bg-[#fffdfa] py-1.5 pl-1.5 pr-3 shadow-[0_8px_22px_rgba(32,57,48,.09)] transition duration-300 hover:-translate-y-0.5 hover:border-[#b98853]/55 hover:shadow-[0_12px_28px_rgba(32,57,48,.14)] focus:outline-none focus:ring-2 focus:ring-[#b98853]/25"
       >
         <span className="relative">
-          <AccountAvatar avatarUrl={avatarUrl} initial={avatarInitial} size="small" />
-          <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-[#3f8068]" aria-hidden />
+          <AccountAvatar avatarUrl={avatarUrl} initial={avatarInitial} size="trigger" />
+          <OnlineDot className="bottom-0 right-0" />
         </span>
         <span className="hidden min-w-0 text-left sm:block">
-          <span className="block max-w-[170px] truncate font-display text-sm font-bold text-[#25332d]">{displayName}</span>
-          <span className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a7356]">{roleLabels[role]}</span>
+          <span className="block max-w-[165px] truncate font-display text-sm font-bold text-[#25332d]">{displayName}</span>
+          <span className="block text-[9px] font-bold uppercase tracking-[0.15em] text-[#8a7356]">{roleLabels[role]}</span>
         </span>
-        <svg className={['h-4 w-4 text-[#806b50] transition-transform duration-300', open ? 'rotate-180' : ''].join(' ')} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+        <svg className={`h-4 w-4 text-[#806b50] transition-transform duration-300 ${open ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
           <path d="m7 10 5 5 5-5" />
         </svg>
       </button>
 
-      {open && (
+      {open ? (
         <div
           role="menu"
+          aria-label="Tài khoản"
           className={[
-            'absolute z-[90] mt-3 w-[min(360px,calc(100vw-24px))] overflow-hidden rounded-[26px] border border-[#dfd2bf] bg-[#fffdfa] shadow-[0_24px_70px_rgba(26,47,39,.22)]',
+            'absolute z-[100] mt-3 w-[min(340px,calc(100vw-24px))] overflow-hidden rounded-[22px] border border-[#d8c9b5] bg-[#fffdfa] shadow-[0_26px_70px_rgba(20,47,38,.24)]',
             align === 'full' ? 'right-0' : 'right-0',
           ].join(' ')}
         >
-          <div className="relative overflow-hidden bg-[linear-gradient(145deg,#123f34,#255e4e)] p-5 text-white">
-            <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full border border-white/10" aria-hidden />
-            <div className="pointer-events-none absolute -right-2 top-5 h-24 w-24 rounded-full border border-[#c89861]/25" aria-hidden />
-            <div className="flex items-center gap-3">
-              <AccountAvatar avatarUrl={avatarUrl} initial={avatarInitial} size="large" />
-              <div className="min-w-0">
-                <p className="truncate font-display text-lg font-bold text-white">{displayName}</p>
-                <p className="mt-0.5 truncate text-sm text-white/70">{userEmail}</p>
-                <span className="mt-2 inline-flex rounded-full border border-[#e1bd8a]/35 bg-[#e1bd8a]/15 px-3 py-1 font-display text-[10px] font-bold uppercase tracking-[0.12em] text-[#f6dfbf]">
-                  {roleLabels[role]}
-                </span>
+          <div className="relative border-b border-white/10 bg-[linear-gradient(145deg,#173f35,#254f43)] px-5 py-5 text-white">
+            <div className="pointer-events-none absolute -right-12 -top-16 h-40 w-40 rounded-full border border-white/10" aria-hidden />
+            <div className="relative flex items-center gap-3.5">
+              <span className="relative">
+                <AccountAvatar avatarUrl={avatarUrl} initial={avatarInitial} size="menu" />
+                <OnlineDot className="bottom-0 right-0 border-[#214b3f]" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-display text-base font-bold text-white">{displayName}</p>
+                <p className="mt-0.5 text-xs text-white/65">{roleLabels[role]}</p>
+                <p className="mt-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-[#a9e3c6]">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#6bd19c]" aria-hidden />
+                  Đang hoạt động
+                </p>
               </div>
             </div>
-
-            <Link
-              href="/customer/profile"
-              onClick={handleNavigate}
-              className="relative mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/10 font-display text-sm font-semibold text-white backdrop-blur-sm transition hover:border-[#e1bd8a]/50 hover:bg-white/16 focus:outline-none focus:ring-2 focus:ring-[#e1bd8a]/35"
-              role="menuitem"
-            >
-              <Icon name="user" />
-              Xem hồ sơ cá nhân
-            </Link>
           </div>
 
-          <div className="px-2 pb-2 pt-3">
-            <p className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-[#9a8569]">Tiện ích tài khoản</p>
-            {menuItems.map((item) => (
-              <AccountMenuLink
-                key={item.href}
-                icon={item.icon}
-                label={item.label}
-                href={item.href}
-                onClick={handleNavigate}
-              />
-            ))}
+          <div className="space-y-2 border-b border-[#e8ddcf] px-5 py-4">
+            {email ? <ContactRow icon="mail" value={email} /> : null}
+            {phone ? <ContactRow icon="phone" value={phone} /> : (
+              <p className="text-xs leading-5 text-[#8b877e]">Bổ sung số điện thoại trong Thông tin cá nhân để được hỗ trợ nhanh hơn.</p>
+            )}
           </div>
 
-          <div className="border-t border-[#eadfce] bg-[#fcf8f2] p-2">
+          <div className="space-y-1.5 p-2.5">
+            {workspaceLink ? (
+              <MenuLink href={workspaceLink.href} label={workspaceLink.label} icon="dashboard" onClick={handleNavigate} />
+            ) : null}
+            <MenuLink href="/customer/profile" label="Thông tin cá nhân" icon="user" emphasized onClick={handleNavigate} />
+            <MenuLink href="/customer/account-settings" label="Cài đặt tài khoản" icon="settings" onClick={handleNavigate} />
+          </div>
+
+          <div className="border-t border-[#e8ddcf] bg-[#fbf7f1] p-2.5">
             <button
               type="button"
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition hover:bg-error-container focus:outline-none focus:ring-2 focus:ring-error/20 disabled:cursor-not-allowed disabled:opacity-60"
               role="menuitem"
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[#bd3535] transition hover:bg-[#fff0f0] focus:outline-none focus:ring-2 focus:ring-[#bd3535]/20 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <MenuIcon name="logout" danger />
-              <span className="font-display text-sm font-semibold text-[#C62828]">
-                {isLoggingOut ? 'Đang đăng xuất' : 'Đăng xuất'}
-              </span>
+              <Icon name="logout" />
+              <span className="font-display text-sm font-semibold">{isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}</span>
             </button>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   )
 }
 
-function AccountMenuLink({
-  icon,
-  label,
-  href,
-  onClick,
-}: {
-  icon: MenuIconName
-  label: string
-  href: string
-  onClick: () => void
-}) {
+function MenuLink({ href, label, icon, emphasized = false, onClick }: { href: string; label: string; icon: IconName; emphasized?: boolean; onClick: () => void }) {
   return (
     <Link
       href={href}
       onClick={onClick}
-      className="group flex items-center justify-between rounded-2xl px-3 py-2.5 transition hover:bg-[#f5ede2] focus:outline-none focus:ring-2 focus:ring-brand-orange/20"
       role="menuitem"
+      className={[
+        'group flex items-center justify-between rounded-xl border px-3 py-2.5 transition focus:outline-none focus:ring-2 focus:ring-[#b98853]/25',
+        emphasized
+          ? 'border-[#c7965e] bg-[#f7efe4] text-[#173f35] hover:bg-[#f1e3d1]'
+          : 'border-transparent text-[#303833] hover:border-[#e2d5c3] hover:bg-[#f8f3ec]',
+      ].join(' ')}
     >
       <span className="flex items-center gap-3">
-        <MenuIcon name={icon} />
-        <span className="font-display text-sm font-semibold text-on-surface">{label}</span>
+        <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${emphasized ? 'bg-[#173f35] text-white' : 'bg-[#efe5d7] text-[#74593b]'}`}>
+          <Icon name={icon} />
+        </span>
+        <span className="font-display text-sm font-semibold">{label}</span>
       </span>
       <svg className="h-4 w-4 text-[#a38e72] transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden><path d="m9 6 6 6-6 6" /></svg>
     </Link>
   )
 }
 
-function AccountAvatar({
-  avatarUrl,
-  initial,
-  size,
-}: {
-  avatarUrl?: string
-  initial: string
-  size: 'small' | 'large'
-}) {
-  const classes = size === 'large' ? 'h-16 w-16 border-2 border-[#d9b27e] text-xl shadow-lg' : 'h-9 w-9 text-sm'
-
+function ContactRow({ icon, value }: { icon: 'mail' | 'phone'; value: string }) {
   return (
-    <span
-      className={[
-        'flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-secondary font-display font-bold text-white',
-        classes,
-      ].join(' ')}
-    >
-      {avatarUrl ? (
-        <img
-          src={avatarUrl}
-          alt="Ảnh đại diện"
-          width={size === 'large' ? 64 : 40}
-          height={size === 'large' ? 64 : 40}
-          decoding="async"
-          className="h-full w-full object-cover"
-        />
-      ) : (
-        initial
-      )}
+    <p className="flex min-w-0 items-center gap-2.5 text-xs text-[#6e716b]">
+      <span className="text-[#8a7356]"><Icon name={icon} /></span>
+      <span className="truncate">{value}</span>
+    </p>
+  )
+}
+
+function AccountAvatar({ avatarUrl, initial, size }: { avatarUrl?: string; initial: string; size: 'trigger' | 'menu' }) {
+  const classes = size === 'menu' ? 'h-14 w-14 border-2 border-[#d8b98e] text-lg' : 'h-9 w-9 text-sm'
+  return (
+    <span className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#173f35] font-display font-bold text-white ${classes}`}>
+      {avatarUrl ? <img src={avatarUrl} alt="Ảnh đại diện" width={size === 'menu' ? 56 : 36} height={size === 'menu' ? 56 : 36} decoding="async" className="h-full w-full object-cover" /> : initial}
     </span>
   )
 }
 
-function MenuIcon({ name, danger = false }: { name: MenuIconName; danger?: boolean }) {
-  return (
-    <span
-      className={[
-        'flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl',
-        danger ? 'bg-error-container text-error' : 'bg-[#efe2cf] text-[#785d3d] transition-colors group-hover:bg-[#e5d2b5]',
-      ].join(' ')}
-    >
-      <Icon name={name} />
-    </span>
-  )
+function OnlineDot({ className }: { className: string }) {
+  return <span className={`absolute h-2.5 w-2.5 rounded-full border-2 border-white bg-[#36a26f] ${className}`} aria-hidden />
 }
 
-function Icon({ name }: { name: MenuIconName }) {
-  const paths: Record<MenuIconName, ReactNode> = {
-    user: (
-      <>
-        <circle cx="12" cy="8" r="4" />
-        <path d="M4 21a8 8 0 0 1 16 0" />
-      </>
-    ),
-    lock: (
-      <>
-        <rect x="5" y="10" width="14" height="10" rx="2" />
-        <path d="M8 10V7a4 4 0 0 1 8 0v3" />
-      </>
-    ),
-    history: (
-      <>
-        <path d="M4 7v5h5" />
-        <path d="M5.5 17A8 8 0 1 0 4 12" />
-        <path d="M12 8v5l3 2" />
-      </>
-    ),
-    help: (
-      <>
-        <circle cx="12" cy="12" r="9" />
-        <path d="M9.5 9a2.7 2.7 0 0 1 5 1.4c0 2-2.5 2.1-2.5 4.1" />
-        <path d="M12 18h.01" />
-      </>
-    ),
-    alert: (
-      <>
-        <path d="m12 3 10 18H2L12 3z" />
-        <path d="M12 9v5" />
-        <path d="M12 17h.01" />
-      </>
-    ),
-    accessibility: (
-      <>
-        <circle cx="12" cy="4" r="2" />
-        <path d="M5 8h14" />
-        <path d="M12 10v10" />
-        <path d="M8 20l4-10 4 10" />
-      </>
-    ),
-    logout: (
-      <>
-        <path d="M10 17 15 12l-5-5" />
-        <path d="M15 12H3" />
-        <path d="M21 5v14" />
-      </>
-    ),
+function Icon({ name }: { name: IconName }) {
+  const paths: Record<IconName, ReactNode> = {
+    user: <><circle cx="12" cy="8" r="3.5" /><path d="M5 21a7 7 0 0 1 14 0" /></>,
+    settings: <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z" /></>,
+    logout: <><path d="M10 17 15 12l-5-5" /><path d="M15 12H3" /><path d="M21 5v14" /></>,
+    mail: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m4 7 8 6 8-6" /></>,
+    phone: <path d="M6.6 3h3l1.5 4-2 1.5a15 15 0 0 0 6.4 6.4l1.5-2 4 1.5v3A2.6 2.6 0 0 1 18.4 20C10.5 20 4 13.5 4 5.6A2.6 2.6 0 0 1 6.6 3Z" />,
+    dashboard: <><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></>,
   }
-
-  return (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      {paths[name]}
-    </svg>
-  )
+  return <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{paths[name]}</svg>
 }
