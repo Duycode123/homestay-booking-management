@@ -12,7 +12,7 @@ export type StaySearchCriteria = {
 }
 
 type StaySearchBarProps = {
-  variant?: 'hero' | 'catalog'
+  variant?: 'hero' | 'catalog' | 'sidebar'
   initialValues?: Partial<StaySearchCriteria>
   onSearch?: (criteria: StaySearchCriteria) => void
 }
@@ -109,9 +109,10 @@ export default function StaySearchBar({
   }
 
   const isCatalog = variant === 'catalog'
+  const isSidebar = variant === 'sidebar'
   const fieldClassName = [
     'group flex min-w-0 items-center gap-3 rounded-[18px] border bg-white px-4 text-left transition',
-    isCatalog ? 'h-[68px] border-[#e2d7c9] hover:border-[#b28455]' : 'h-[72px] border-[#e5dacd] hover:border-[#b28455] hover:shadow-[0_10px_28px_rgba(31,48,41,.08)]',
+    isCatalog ? 'h-[68px] border-[#e2d7c9] hover:border-[#b28455]' : isSidebar ? 'h-[60px] border-[#e2d7c9] px-3.5 hover:border-[#b28455]' : 'h-[72px] border-[#e5dacd] hover:border-[#b28455] hover:shadow-[0_10px_28px_rgba(31,48,41,.08)]',
   ].join(' ')
 
   return (
@@ -119,10 +120,10 @@ export default function StaySearchBar({
       aria-label="Tìm phòng theo kỳ lưu trú"
       className={[
         'relative rounded-[26px] border border-[#dfd4c6] bg-[#fffdf9] shadow-[0_24px_70px_rgba(26,47,39,.14)]',
-        isCatalog ? 'p-3 sm:p-4' : 'p-3 sm:p-4',
+        isSidebar ? 'border-0 bg-transparent p-0 shadow-none' : 'p-3 sm:p-4',
       ].join(' ')}
     >
-      <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-[1.35fr_1fr_1fr_1.05fr_auto]">
+      <div className={isSidebar ? 'grid gap-2.5' : 'grid gap-2 md:grid-cols-2 xl:grid-cols-[1.35fr_1fr_1fr_1.05fr_auto]'}>
         <label className={fieldClassName}>
           <SearchIcon />
           <span className="min-w-0 flex-1">
@@ -190,7 +191,7 @@ export default function StaySearchBar({
             <ChevronIcon open={guestPanelOpen} />
           </button>
           {guestPanelOpen && (
-            <div className="absolute right-0 z-40 mt-2 w-full min-w-[300px] rounded-[22px] border border-[#ded2c3] bg-white p-4 shadow-[0_24px_60px_rgba(30,48,40,.18)]">
+            <div className={`absolute right-0 z-40 mt-2 w-full rounded-[22px] border border-[#ded2c3] bg-white p-4 shadow-[0_24px_60px_rgba(30,48,40,.18)] ${isSidebar ? 'min-w-0' : 'min-w-[300px]'}`}>
               <GuestCounter label="Người lớn" note="Từ 13 tuổi" value={adults} min={1} max={20} onChange={setAdults} />
               <div className="my-3 h-px bg-[#eee7de]" />
               <GuestCounter label="Trẻ em" note="Từ 0–12 tuổi" value={children} min={0} max={12} onChange={setChildren} />
@@ -202,7 +203,7 @@ export default function StaySearchBar({
         <button
           type="button"
           onClick={submit}
-          className="inline-flex h-[68px] items-center justify-center gap-2 rounded-[18px] bg-secondary px-6 font-display text-sm font-bold text-white shadow-[0_16px_34px_rgba(23,58,49,.2)] transition hover:-translate-y-0.5 hover:bg-[#225145] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#173a31]/20 xl:h-[72px]"
+          className={`inline-flex items-center justify-center gap-2 rounded-[18px] bg-secondary px-6 font-display text-sm font-bold text-white shadow-[0_16px_34px_rgba(23,58,49,.2)] transition hover:-translate-y-0.5 hover:bg-[#225145] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#173a31]/20 ${isSidebar ? 'h-12' : 'h-[68px] xl:h-[72px]'}`}
         >
           <SearchIcon className="text-white" />
           Tìm phòng

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import BookingQuickModal from '@/components/booking/BookingQuickModal'
 import {
+  default as StaySearchBar,
   buildStaySearchParams,
   readStaySearchCriteria,
   type StaySearchCriteria,
@@ -54,6 +55,8 @@ const MIN_NIGHTLY_PRICE = 1_000_000
 const MAX_NIGHTLY_PRICE = 5_000_000
 const NIGHTLY_PRICE_STEP = 100_000
 
+type RoomSortOption = 'recommended' | 'rating_desc' | 'price_asc' | 'price_desc' | 'capacity_desc'
+
 const availabilityOptions: Array<{ value: 'all' | RoomAvailabilityStatus; label: string }> = [
   { value: 'all', label: 'Tất cả trạng thái' },
   { value: 'AVAILABLE', label: 'Còn trống hôm nay' },
@@ -75,6 +78,7 @@ const defaultFilters: RoomFilters = {
   minGuests: 0,
   minBedrooms: 0,
   amenities: [],
+  minRating: 0,
   availability: 'all',
   minNightlyPrice: MIN_NIGHTLY_PRICE,
   maxNightlyPrice: MAX_NIGHTLY_PRICE,
@@ -103,7 +107,7 @@ type QuickBookingState = {
 export default function RoomsPublicPage() {
   const router = useRouter()
   const [filters, setFilters] = useState<RoomFilters>(defaultFilters)
-  const [isMoreFiltersOpen, setIsMoreFiltersOpen] = useState(false)
+  const [sortBy, setSortBy] = useState<RoomSortOption>('recommended')
   const [stayCriteria, setStayCriteria] = useState<StaySearchCriteria | null>(null)
   const [stayAvailabilityByRoomId, setStayAvailabilityByRoomId] = useState<StayAvailabilityByRoomId>({})
   const [isStayAvailabilityLoading, setIsStayAvailabilityLoading] = useState(false)
@@ -130,9 +134,12 @@ export default function RoomsPublicPage() {
     .sort((left, right) => left.localeCompare(right, 'vi')), [liveRooms])
   const filteredRooms = useMemo(() => {
     const matchesDetailFilters = filterRooms(liveRooms, filters)
-    if (!stayCriteria || isStayAvailabilityLoading) return stayCriteria ? [] : matchesDetailFilters
-    return matchesDetailFilters.filter((room) => stayAvailabilityByRoomId[room.id] === true)
-  }, [filters, isStayAvailabilityLoading, liveRooms, stayAvailabilityByRoomId, stayCriteria])
+    const availableMatches = !stayCriteria || isStayAvailabilityLoading
+      ? (stayCriteria ? [] : matchesDetailFilters)
+      : matchesDetailFilters.filter((room) => stayAvailabilityByRoomId[room.id] === true)
+
+    return sortPublicRooms(availableMatches, sortBy)
+  }, [filters, isStayAvailabilityLoading, liveRooms, sortBy, stayAvailabilityByRoomId, stayCriteria])
   const todayRoomSummary = useMemo(() => summarizeTodayRooms(liveRooms), [liveRooms])
   const isInitialScheduleLoading = isLoading || (isTodayScheduleLoading && scheduleUpdatedAt === null)
   const bookableRoomCount = todayRoomSummary.available
@@ -147,13 +154,10 @@ export default function RoomsPublicPage() {
   const hasActiveFilters =
     filters.roomTierId !== 'all' ||
     filters.capacity !== 'all' ||
-    filters.minBedrooms > 0 || filters.amenities.length > 0 ||
+    filters.minBedrooms > 0 || filters.amenities.length > 0 || filters.minRating > 0 ||
     filters.availability !== 'all' ||
     filters.minNightlyPrice !== MIN_NIGHTLY_PRICE ||
     filters.maxNightlyPrice !== MAX_NIGHTLY_PRICE
-  const additionalFilterCount = [
-    filters.availability !== 'all',
-  ].filter(Boolean).length
 
   useEffect(() => {
     let isMounted = true
@@ -371,6 +375,17 @@ export default function RoomsPublicPage() {
       search: stayCriteria?.keyword ?? '',
       minGuests: stayCriteria ? stayCriteria.adults + stayCriteria.children : 0,
     })
+    setSortBy('recommended')
+  }
+
+  const handleStaySearch = (criteria: StaySearchCriteria) => {
+    setStayCriteria(criteria)
+    setFilters((current) => ({
+      ...current,
+      search: criteria.keyword,
+      minGuests: criteria.adults + criteria.children,
+    }))
+    router.replace(`/rooms?${buildStaySearchParams(criteria).toString()}`, { scroll: false })
   }
 
   const showRoomsByAvailability = (availability: RoomAvailabilityStatus) => {
@@ -479,170 +494,155 @@ export default function RoomsPublicPage() {
         </div>
       </section>
 
-      <section id="room-catalog" className="mx-auto max-w-[1400px] scroll-mt-24 px-5 py-12 sm:px-8 sm:py-14">
-        <div className="rounded-[28px] border border-[#d9cebf] bg-white shadow-[0_24px_70px_rgba(29,49,41,0.10)]">
-          <div className="flex flex-col gap-4 rounded-t-[27px] border-b border-white/10 bg-[linear-gradient(120deg,#173a31_0%,#214c40_62%,#315c4f_100%)] px-5 py-4 text-white sm:flex-row sm:items-center sm:justify-between sm:px-6">
-            <div className="flex items-center gap-3.5">
-              <FilterControlIcon name="tune" prominent />
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#e3bc8e]">Bộ lọc tinh tuyển</p>
-                <p className="mt-0.5 font-display text-lg font-bold text-white">Chọn căn phù hợp nhất</p>
-                <p className="mt-0.5 text-xs text-white/58">Lọc theo không gian, sức chứa, tiện nghi và ngân sách.</p>
+      <section id="room-catalog" className="mx-auto max-w-[1480px] scroll-mt-24 px-4 py-10 sm:px-7 sm:py-14">
+        <div className="grid items-start gap-7 lg:grid-cols-[320px_minmax(0,1fr)] xl:gap-9">
+          <aside className="lg:sticky lg:top-24">
+            <div className="rounded-[24px] border border-[#d9cebf] bg-[#fffdfa] shadow-[0_20px_55px_rgba(29,49,41,.10)]">
+              <div className="rounded-t-[23px] bg-[linear-gradient(135deg,#173a31,#285648)] px-5 py-5 text-white">
+                <div className="flex items-center gap-3">
+                  <FilterControlIcon name="tune" prominent />
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#e3bc8e]">Tìm kiếm tinh tuyển</p>
+                    <h2 className="mt-1 font-display text-lg font-bold">Kỳ nghỉ của bạn</h2>
+                  </div>
+                </div>
+                <p className="mt-3 text-xs leading-5 text-white/60">Thay đổi ngày, số khách và nhu cầu; kết quả được đối chiếu ngay với lịch phòng thật.</p>
+              </div>
+
+              <div className="space-y-6 p-4">
+                <StaySearchBar
+                  variant="sidebar"
+                  initialValues={stayCriteria ?? undefined}
+                  onSearch={handleStaySearch}
+                />
+
+                <FilterDivider title="Chi tiết phòng" />
+                <div className="space-y-3">
+                  <CompactFilterSelect
+                    label="Loại phòng"
+                    icon="tier"
+                    value={filters.roomTierId}
+                    onChange={(value) => updateFilter('roomTierId', value)}
+                    options={[
+                      { value: 'all', label: 'Tất cả loại phòng' },
+                      ...roomTiers.map((tier) => ({
+                        value: String(tier.id),
+                        label: getPublicRoomTierLabel(tier.typeName, {
+                          category: inferRoomCategoryFromTypeName(`${tier.typeName} ${tier.description ?? ''}`),
+                          capacity: tier.capacity,
+                        }),
+                      })),
+                    ]}
+                  />
+                  <CompactFilterSelect
+                    label="Số phòng ngủ"
+                    icon="room"
+                    value={String(filters.minBedrooms)}
+                    onChange={(value) => updateFilter('minBedrooms', Number(value))}
+                    options={buildCountOptions('phòng ngủ', 6)}
+                  />
+                  <CompactFilterSelect
+                    label="Quy mô căn"
+                    icon="guests"
+                    value={filters.capacity}
+                    onChange={(value) => updateFilter('capacity', value as RoomCapacityFilter)}
+                    options={capacityOptions}
+                  />
+                </div>
+
+                <FilterDivider title="Điểm đánh giá" />
+                <RatingFilter value={filters.minRating} onChange={(value) => updateFilter('minRating', value)} />
+
+                <FilterDivider title="Ngân sách mỗi đêm" />
+                <SidebarPriceFilter
+                  min={filters.minNightlyPrice}
+                  max={filters.maxNightlyPrice}
+                  onMinChange={(value) => updateFilter('minNightlyPrice', value)}
+                  onMaxChange={(value) => updateFilter('maxNightlyPrice', value)}
+                />
+
+                <FilterDivider title="Tiện nghi cần có" />
+                <SidebarAmenitiesFilter
+                  options={availableAmenities}
+                  selected={filters.amenities}
+                  onChange={(values) => updateFilter('amenities', values)}
+                />
+
+                <FilterDivider title="Trạng thái phòng" />
+                <AvailabilityFilter value={filters.availability} onChange={(value) => updateFilter('availability', value)} />
+
+                <button
+                  type="button"
+                  onClick={resetDetailFilters}
+                  disabled={!hasActiveFilters && sortBy === 'recommended'}
+                  className="h-11 w-full rounded-xl border border-[#cfbfaa] bg-white font-display text-sm font-bold text-secondary transition hover:border-[#aa7949] hover:bg-[#faf4eb] disabled:cursor-default disabled:opacity-40"
+                >
+                  Đặt lại bộ lọc chi tiết
+                </button>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="rounded-full border border-white/12 bg-white/10 px-3.5 py-2 text-xs font-bold text-white">
-                {isStayAvailabilityLoading ? 'Đang kiểm tra lịch' : `${filteredRooms.length} phòng`}
-              </span>
-              <button
-                type="button"
-                onClick={resetDetailFilters}
-                disabled={!hasActiveFilters}
-                className="rounded-full border border-white/12 px-3.5 py-2 text-xs font-semibold text-[#f0d4b2] transition hover:bg-white/10 disabled:cursor-default disabled:opacity-35"
-              >
-                Đặt lại
-              </button>
-            </div>
-          </div>
+          </aside>
 
-          <div className="p-4 sm:p-5">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-            <CompactFilterSelect
-              label="Loại phòng"
-              icon="tier"
-              value={filters.roomTierId}
-              onChange={(value) => updateFilter('roomTierId', value)}
-              options={[
-                { value: 'all', label: 'Tất cả loại phòng' },
-                ...roomTiers.map((tier) => ({
-                  value: String(tier.id),
-                  label: getPublicRoomTierLabel(tier.typeName, {
-                    category: inferRoomCategoryFromTypeName(`${tier.typeName} ${tier.description ?? ''}`),
-                    capacity: tier.capacity,
-                  }),
-                })),
-              ]}
-            />
-            <CompactFilterSelect
-              label="Số phòng"
-              icon="room"
-              value={String(filters.minBedrooms)}
-              onChange={(value) => updateFilter('minBedrooms', Number(value))}
-              options={buildCountOptions('phòng', 6)}
-            />
-            <CompactFilterSelect
-              label="Sức chứa"
-              icon="guests"
-              value={filters.capacity}
-              onChange={(value) => updateFilter('capacity', value as RoomCapacityFilter)}
-              options={capacityOptions}
-            />
-            <AmenitiesFilter
-              options={availableAmenities}
-              selected={filters.amenities}
-              onChange={(amenities) => updateFilter('amenities', amenities)}
-            />
-            <NightlyPriceFilter
-              min={filters.minNightlyPrice}
-              max={filters.maxNightlyPrice}
-              onMinChange={(value) => updateFilter('minNightlyPrice', value)}
-              onMaxChange={(value) => updateFilter('maxNightlyPrice', value)}
-              onReset={() => {
-                updateFilter('minNightlyPrice', MIN_NIGHTLY_PRICE)
-                updateFilter('maxNightlyPrice', MAX_NIGHTLY_PRICE)
-              }}
-            />
-          </div>
+          <div className="min-w-0">
+            <div className="rounded-[22px] border border-[#ded4c6] bg-white/90 px-5 py-5 shadow-[0_14px_40px_rgba(29,49,41,.07)] sm:px-6">
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.17em] text-brand-orange">Danh sách lưu trú</p>
+                  <h2 className="mt-1 font-editorial text-3xl font-semibold text-secondary">
+                    {isLoading ? 'Đang tải phòng...' : isStayAvailabilityLoading ? 'Đang kiểm tra lịch...' : `${filteredRooms.length} phòng phù hợp`}
+                  </h2>
+                  <p className="mt-1 text-xs leading-5 text-on-surface-variant">
+                    {isStayAvailabilityLoading
+                      ? `Đang đối chiếu từ ${formatShortStayDate(stayCriteria?.checkIn)} đến ${formatShortStayDate(stayCriteria?.checkOut)}.`
+                      : stayAvailabilityErrorCount > 0
+                        ? `${stayAvailabilityErrorCount} phòng chưa thể đối chiếu lịch.`
+                        : catalogSource === 'backend'
+                          ? isRefreshing ? 'Đang cập nhật dữ liệu mới nhất...' : 'Dữ liệu phòng và đánh giá được đồng bộ từ hệ thống.'
+                          : catalogError || 'Không thể tải dữ liệu phòng từ hệ thống.'}
+                  </p>
+                </div>
+                <SortSelect value={sortBy} onChange={setSortBy} />
+              </div>
 
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-[#e9dfd2] bg-[linear-gradient(90deg,#faf6f0,#f7f3ed)] px-3.5 py-3">
-            <div className="flex flex-wrap gap-2">
-              {!stayCriteria && !hasActiveFilters && <span className="inline-flex items-center gap-2 text-xs font-medium text-[#777b75]"><span className="h-1.5 w-1.5 rounded-full bg-[#b28455]" />Kết quả cập nhật ngay khi bạn chọn bộ lọc</span>}
-              {stayCriteria && <FilterSummaryChip label={`${formatShortStayDate(stayCriteria.checkIn)} → ${formatShortStayDate(stayCriteria.checkOut)}`} />}
-              {stayCriteria && <FilterSummaryChip label={`${stayCriteria.adults + stayCriteria.children} khách`} />}
-              {filters.minBedrooms > 0 && <FilterSummaryChip label={`Từ ${filters.minBedrooms} phòng`} />}
-              {filters.capacity !== 'all' && <FilterSummaryChip label={capacityOptions.find((option) => option.value === filters.capacity)?.label ?? 'Đã chọn sức chứa'} />}
-              {filters.amenities.slice(0, 2).map((amenity) => <FilterSummaryChip key={amenity} label={amenity} />)}
-              {filters.amenities.length > 2 && <FilterSummaryChip label={`+${filters.amenities.length - 2} tiện nghi`} />}
+              <div className="mt-4 flex flex-wrap gap-2 border-t border-[#ece4da] pt-4">
+                {stayCriteria ? <FilterSummaryChip label={`${formatShortStayDate(stayCriteria.checkIn)} → ${formatShortStayDate(stayCriteria.checkOut)}`} /> : null}
+                {stayCriteria ? <FilterSummaryChip label={`${stayCriteria.adults} người lớn${stayCriteria.children ? ` · ${stayCriteria.children} trẻ em` : ''}`} /> : null}
+                {filters.minBedrooms > 0 ? <FilterSummaryChip label={`Từ ${filters.minBedrooms} phòng ngủ`} /> : null}
+                {filters.minRating > 0 ? <FilterSummaryChip label={`Từ ${filters.minRating.toFixed(1)} sao`} /> : null}
+                {filters.amenities.slice(0, 2).map((amenity) => <FilterSummaryChip key={amenity} label={amenity} />)}
+                {filters.amenities.length > 2 ? <FilterSummaryChip label={`+${filters.amenities.length - 2} tiện nghi`} /> : null}
+                {!stayCriteria && !hasActiveFilters ? <span className="inline-flex items-center gap-2 text-xs text-[#777b75]"><span className="h-1.5 w-1.5 rounded-full bg-[#b28455]" />Chọn bộ lọc để tinh chỉnh danh sách</span> : null}
+              </div>
             </div>
-            <button
-              type="button"
-              onClick={() => setIsMoreFiltersOpen((open) => !open)}
-              className="inline-flex items-center gap-2 rounded-full border border-[#d8c9b7] bg-white px-4 py-2 text-xs font-bold text-secondary shadow-[0_6px_16px_rgba(46,57,51,.05)] transition hover:border-[#b28455] hover:text-[#8e6139]"
-              aria-expanded={isMoreFiltersOpen}
-            >
-              Bộ lọc khác
-              {additionalFilterCount > 0 && <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-secondary px-1 text-[10px] text-white">{additionalFilterCount}</span>}
-              <ChevronDownIcon className={['h-4 w-4 transition-transform', isMoreFiltersOpen ? 'rotate-180' : ''].join(' ')} />
-            </button>
-          </div>
 
-          {isMoreFiltersOpen && (
-            <div className="mt-3 rounded-[18px] border border-[#e8dfd3] bg-[#fbf8f3] p-3">
-              <CompactFilterSelect
-                label="Trạng thái hôm nay"
-                icon="calendar"
-                value={filters.availability}
-                onChange={(value) => updateFilter('availability', value as 'all' | RoomAvailabilityStatus)}
-                options={availabilityOptions}
-              />
-            </div>
-          )}
-          <p className="mt-3 px-1 text-[11px] leading-5 text-[#85867f]">“Số phòng” là số không gian phòng ngủ riêng trong mỗi căn homestay. Mỗi lượt đặt hiện áp dụng cho một căn.</p>
+            {isLoading || isStayAvailabilityLoading ? (
+              <RoomCatalogSkeleton count={4} variant="list" />
+            ) : filteredRooms.length > 0 ? (
+              <div className="mt-5 space-y-5">
+                {filteredRooms.map((room) => (
+                  <RoomCard
+                    key={room.id}
+                    room={room}
+                    todaySlots={todaySlotsByRoomId[room.id]}
+                    onBook={(selectedRoom) => setQuickBooking({
+                      room: selectedRoom,
+                      initialDate: stayCriteria?.checkIn,
+                      initialEndDate: stayCriteria?.checkOut,
+                    })}
+                    onViewDetail={(selectedRoom) => router.push(`/rooms/${selectedRoom.id}${stayCriteria ? `?${buildStaySearchParams(stayCriteria).toString()}` : ''}`)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="mt-5 rounded-[22px] border border-dashed border-[#cfc2b1] bg-white px-6 py-16 text-center shadow-[var(--shadow-card)]">
+                <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#f2e7d8] text-[#8d6339]"><FilterControlIcon name="tune" /></span>
+                <p className="mt-5 font-editorial text-3xl font-semibold text-secondary">Chưa tìm thấy căn phù hợp</p>
+                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-on-surface-variant">Hãy thay đổi ngày lưu trú, giảm số tiện nghi bắt buộc hoặc nới rộng ngân sách để xem thêm lựa chọn.</p>
+                <button type="button" onClick={resetDetailFilters} className="mt-6 rounded-full bg-secondary px-6 py-3 font-display text-sm font-bold text-white transition hover:bg-[#245545]">Xem lại tất cả phòng</button>
+              </div>
+            )}
           </div>
         </div>
-
-        <div className="mt-8 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-          <div>
-            <p className="font-display text-xl font-bold text-on-surface">
-              {isLoading
-                ? 'Đang tải phòng...'
-                : isStayAvailabilityLoading
-                  ? 'Đang đối chiếu kỳ lưu trú...'
-                  : `${filteredRooms.length} phòng phù hợp`}
-            </p>
-            <p className="mt-1 text-sm text-on-surface-variant">
-              {isStayAvailabilityLoading
-                ? `Đang kiểm tra lịch thật từ ${formatShortStayDate(stayCriteria?.checkIn)} đến ${formatShortStayDate(stayCriteria?.checkOut)}.`
-                : stayAvailabilityErrorCount > 0
-                  ? `${stayAvailabilityErrorCount} phòng chưa thể đối chiếu lịch, vui lòng thử tìm lại.`
-                  : isLoading
-                ? 'Đang tải danh sách phòng...'
-                : catalogSource === 'backend'
-                  ? isRefreshing
-                    ? 'Đang cập nhật dữ liệu mới nhất...'
-                    : 'Danh sách phòng từ hệ thống The Serene Villa.'
-                  : catalogError || 'Không thể tải dữ liệu phòng từ hệ thống.'}
-            </p>
-          </div>
-          <p className="text-xs font-medium text-on-surface-variant">Giá đã bao gồm trọn một đêm lưu trú</p>
-        </div>
-
-        {isLoading || isStayAvailabilityLoading ? (
-          <RoomCatalogSkeleton />
-        ) : filteredRooms.length > 0 ? (
-          <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-            {filteredRooms.map((room) => (
-              <RoomCard
-                key={room.id}
-                room={room}
-                todaySlots={todaySlotsByRoomId[room.id]}
-                onBook={(room) => setQuickBooking({
-                  room,
-                  initialDate: stayCriteria?.checkIn,
-                  initialEndDate: stayCriteria?.checkOut,
-                })}
-                onViewDetail={(room) => router.push(`/rooms/${room.id}${stayCriteria ? `?${buildStaySearchParams(stayCriteria).toString()}` : ''}`)}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="mt-8 rounded-[18px] border border-dashed border-outline-variant bg-white px-6 py-16 text-center shadow-[var(--shadow-card)]">
-            <p className="font-display text-2xl font-bold text-on-surface">Không tìm thấy phòng</p>
-            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-on-surface-variant">
-              Chưa có phòng đáp ứng đồng thời kỳ lưu trú, số khách và các tiện nghi đã chọn. Hãy đổi ngày hoặc nới rộng bộ lọc chi tiết.
-            </p>
-          </div>
-        )}
       </section>
 
       {quickBooking && (
@@ -730,7 +730,7 @@ function RoomCard({
   return (
     <article
       className={[
-        'group flex h-full w-full flex-col overflow-hidden rounded-[18px] border bg-white shadow-[var(--shadow-card)] transition-all duration-300 hover:border-brand-orange/45 hover:shadow-[var(--shadow-elevated)]',
+        'group flex w-full flex-col overflow-hidden rounded-[22px] border bg-white shadow-[var(--shadow-card)] transition-all duration-300 hover:-translate-y-0.5 hover:border-brand-orange/45 hover:shadow-[var(--shadow-elevated)] md:min-h-[310px] md:flex-row',
         canStartBooking
           ? 'border-brand-orange/30'
           : isUnavailable
@@ -738,9 +738,9 @@ function RoomCard({
             : isCheckingAvailability
               ? 'border-outline-variant bg-surface-container-low opacity-90'
               : 'border-outline-variant bg-surface-container-low opacity-[0.86]',
-      ].join(' ')}
+        ].join(' ')}
     >
-      <div className="relative aspect-[16/10] w-full overflow-hidden bg-surface-container">
+      <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden bg-surface-container md:aspect-auto md:min-h-[310px] md:w-[36%] md:min-w-[285px] md:max-w-[390px]">
         <button
           type="button"
           onClick={() => onViewDetail(room)}
@@ -753,7 +753,7 @@ function RoomCard({
           fill
           quality={90}
           unoptimized={shouldBypassImageOptimization(imageSrc)}
-          sizes="(min-width: 1280px) 33vw, (min-width: 768px) 50vw, 100vw"
+          sizes="(min-width: 1280px) 390px, (min-width: 768px) 36vw, 100vw"
           className={[
             'object-cover transition duration-300 group-hover:scale-105',
             isFullToday ? 'brightness-[0.82] saturate-[0.78]' : '',
@@ -774,21 +774,13 @@ function RoomCard({
         </span>
         <span
           className={[
-            'absolute bottom-4 left-4 rounded-full border px-3 py-1 font-display text-xs font-bold',
+            'absolute bottom-4 left-4 rounded-full border px-3 py-1 font-display text-[11px] font-bold',
             canStartBooking
               ? 'border-brand-orange/40 bg-primary-container text-on-primary-container'
               : 'border-white/20 bg-white/90 text-on-surface-variant',
           ].join(' ')}
         >
           {bookingBadge}
-        </span>
-        {typeof room.rating === 'number' && (
-          <span className="absolute right-4 top-[4.25rem] rounded-full bg-white/95 px-3 py-1 font-display text-xs font-bold text-on-surface shadow-sm">
-            ★ {room.rating.toFixed(1)}
-          </span>
-        )}
-        <span className="absolute bottom-4 right-4 rounded-full border border-white/25 bg-secondary/85 px-3 py-1.5 font-display text-xs font-bold text-white opacity-0 shadow-lg backdrop-blur-sm transition group-hover:opacity-100 group-focus-within:opacity-100">
-          Xem chi tiết
         </span>
         </button>
         <button
@@ -809,60 +801,66 @@ function RoomCard({
         </button>
       </div>
 
-      <div className="flex flex-1 flex-col px-5 pb-4 pt-5 sm:px-6 sm:pb-4 sm:pt-6">
-        <p className="font-display text-xs font-bold uppercase text-brand-orange">{room.categoryLabel}</p>
-        <h2 className="font-editorial mt-2 text-2xl font-semibold text-secondary">{room.name}</h2>
-        <p className="mt-2 line-clamp-2 text-sm leading-6 text-on-surface-variant">{room.description}</p>
+      <div className="grid min-w-0 flex-1 md:grid-cols-[minmax(0,1fr)_210px]">
+        <div className="min-w-0 px-5 py-5 sm:px-6 sm:py-6">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <p className="font-display text-[11px] font-bold uppercase tracking-[0.08em] text-brand-orange">{room.categoryLabel}</p>
+            <span className="h-1 w-1 rounded-full bg-[#c8b8a5]" />
+            <span className="text-xs font-medium text-[#777b75]">{room.location || 'The Serene Villa'}</span>
+          </div>
+          <button type="button" onClick={() => onViewDetail(room)} className="mt-2 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange/35">
+            <h2 className="font-editorial text-2xl font-semibold leading-tight text-secondary transition group-hover:text-[#9b6636] sm:text-[28px]">{room.name}</h2>
+          </button>
 
-        <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
-          <InfoPill label="Sức chứa" value={room.capacity} />
-          <InfoPill label="Giá mỗi đêm" value={`${formatCurrency(getNightlyDisplayPrice(room.pricePerHour))} / đêm`} />
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            {typeof room.rating === 'number' && (room.reviews ?? 0) > 0 ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fff4df] px-2.5 py-1 text-xs font-bold text-[#9b641c]">
+                <span aria-hidden>★</span>{room.rating.toFixed(1)} <span className="font-medium text-[#8b8176]">({room.reviews} đánh giá)</span>
+              </span>
+            ) : (
+              <span className="rounded-full border border-[#dfd6ca] bg-[#faf8f4] px-2.5 py-1 text-xs font-medium text-[#777b75]">Chưa có đánh giá</span>
+            )}
+            <span className="text-xs font-semibold text-[#39775f]">✓ Xác nhận lịch theo thời gian thực</span>
+          </div>
+
+          <p className="mt-3 line-clamp-2 text-sm leading-6 text-on-surface-variant">{room.description}</p>
+
+          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-y border-[#eee6dc] py-3 text-xs font-semibold text-[#56625c]">
+            <span className="inline-flex items-center gap-1.5"><GuestsMiniIcon />{room.capacity}</span>
+            <span className="inline-flex items-center gap-1.5"><BedroomIcon />{room.bedroomCount} phòng ngủ</span>
+            <span className="inline-flex items-center gap-1.5"><BedIcon />{room.bedCount} giường</span>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {room.equipments.slice(0, 4).map((equipment) => (
+              <span key={equipment} className="rounded-full border border-outline-variant bg-surface-container-low px-3 py-1 text-[11px] font-medium text-on-surface-variant">{equipment}</span>
+            ))}
+            {room.equipments.length > 4 ? <span className="rounded-full border border-[#d7c5ad] bg-[#f7eee2] px-3 py-1 text-[11px] font-bold text-[#805a34]">+{room.equipments.length - 4} tiện nghi</span> : null}
+          </div>
         </div>
 
-        <div className="mt-3 flex items-center gap-4 text-xs font-semibold text-[#646b65]">
-          <span className="inline-flex items-center gap-1.5"><BedroomIcon />{room.bedroomCount} phòng ngủ</span>
-          <span className="h-1 w-1 rounded-full bg-[#c5b7a6]" />
-          <span className="inline-flex items-center gap-1.5"><BedIcon />{room.bedCount} giường</span>
-        </div>
+        <div className="flex flex-col border-t border-[#e9dfd2] bg-[linear-gradient(160deg,#fcfaf6,#f7f1e8)] p-5 md:border-l md:border-t-0">
+          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#888177]">Giá cho một đêm</p>
+          <p className="mt-2 font-editorial text-[26px] font-semibold leading-none text-[#a66f38]">{formatCurrency(getNightlyDisplayPrice(room.pricePerHour))}</p>
+          <p className="mt-1 text-xs text-[#817a70]">đã gồm trọn {FIRST_NIGHT_STAY_HOURS} giờ lưu trú</p>
 
-        <div className="mt-4 flex flex-wrap gap-2 pb-4">
-          {room.equipments.slice(0, 3).map((equipment) => (
-            <span
-              key={equipment}
-              className="rounded-full border border-outline-variant bg-surface-container-low px-3 py-1 text-xs font-medium text-on-surface-variant"
-            >
-              {equipment}
-            </span>
-          ))}
-        </div>
+          <div className="mt-5 rounded-xl border border-[#e1d5c5] bg-white/80 p-3">
+            <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#8a8176]">Tình trạng</p>
+            <p className="mt-1 text-xs font-bold leading-5 text-secondary">{bookingHint}</p>
+          </div>
 
-        <div className="mt-auto flex items-center justify-between gap-3 border-t border-outline-variant pt-4">
-          <p className="min-w-0 flex-1 text-sm text-on-surface-variant">{bookingHint}</p>
-          <div
-            className="flex flex-wrap justify-end gap-2"
-            onClick={(event) => event.stopPropagation()}
-          >
+          <div className="mt-auto space-y-2 pt-5" onClick={(event) => event.stopPropagation()}>
+            <button type="button" onClick={() => onViewDetail(room)} className="h-11 w-full rounded-full border border-[#cdbda8] bg-white font-display text-sm font-bold text-secondary transition hover:border-[#a77442] hover:bg-[#fbf5ec]">Xem chi tiết</button>
             <button
               type="button"
-              onClick={(event) => {
-                event.stopPropagation()
-                onBook(room)
-              }}
+              onClick={(event) => { event.stopPropagation(); onBook(room) }}
               disabled={isUnavailable || isCheckingAvailability}
               className={[
-                !isUnavailable && !isCheckingAvailability
-                  ? 'border border-[#173A31] bg-[#173A31] text-white shadow-[0_12px_28px_rgba(23,58,49,.22)] hover:-translate-y-0.5 hover:border-[#245545] hover:bg-[#245545] hover:shadow-[0_16px_34px_rgba(23,58,49,.28)]'
-                  : 'border border-outline-variant bg-surface-container text-on-surface-variant shadow-none',
-                'inline-flex min-h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-full px-5 font-display text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-55',
+                !isUnavailable && !isCheckingAvailability ? 'bg-secondary text-white shadow-[0_12px_28px_rgba(23,58,49,.2)] hover:-translate-y-0.5 hover:bg-[#245545]' : 'border border-outline-variant bg-surface-container text-on-surface-variant',
+                'h-11 w-full rounded-full font-display text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-55',
               ].join(' ')}
             >
-              {isCheckingAvailability
-                ? 'Đang kiểm tra'
-                : canStartBooking
-                  ? 'Đặt phòng'
-                  : isUnavailable
-                    ? 'Tạm ngưng'
-                    : 'Chọn ngày khác'}
+              {isCheckingAvailability ? 'Đang kiểm tra' : canStartBooking ? 'Đặt phòng' : isUnavailable ? 'Tạm ngưng' : 'Chọn ngày khác'}
             </button>
           </div>
         </div>
@@ -893,6 +891,128 @@ function FilterControlIcon({ name, prominent = false }: { name: FilterControlIco
     ].join(' ')}>
       <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>
     </span>
+  )
+}
+
+function FilterDivider({ title }: { title: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <h3 className="shrink-0 font-display text-[10px] font-bold uppercase tracking-[0.15em] text-[#765b3e]">{title}</h3>
+      <span className="h-px flex-1 bg-[#e7ddd0]" aria-hidden />
+    </div>
+  )
+}
+
+function RatingFilter({ value, onChange }: { value: number; onChange: (value: number) => void }) {
+  const options = [
+    { value: 0, label: 'Tất cả', stars: 'Mọi đánh giá' },
+    { value: 4.5, label: 'Xuất sắc', stars: '4.5 sao trở lên' },
+    { value: 4, label: 'Rất tốt', stars: '4.0 sao trở lên' },
+    { value: 3, label: 'Tốt', stars: '3.0 sao trở lên' },
+  ]
+
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      {options.map((option) => {
+        const selected = value === option.value
+        return (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => onChange(option.value)}
+            aria-pressed={selected}
+            className={[
+              'rounded-xl border px-3 py-2.5 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b28455]/30',
+              selected ? 'border-secondary bg-[#edf4f0] text-secondary' : 'border-[#e3d9cc] bg-white text-[#5f655f] hover:border-[#c9ad89] hover:bg-[#fdf9f3]',
+            ].join(' ')}
+          >
+            <span className="block font-display text-xs font-bold">{option.value > 0 ? `★ ${option.label}` : option.label}</span>
+            <span className="mt-0.5 block text-[9px] text-[#89837a]">{option.stars}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function SidebarPriceFilter({ min, max, onMinChange, onMaxChange }: { min: number; max: number; onMinChange: (value: number) => void; onMaxChange: (value: number) => void }) {
+  const range = MAX_NIGHTLY_PRICE - MIN_NIGHTLY_PRICE
+  const minPosition = ((min - MIN_NIGHTLY_PRICE) / range) * 100
+  const maxPosition = ((max - MIN_NIGHTLY_PRICE) / range) * 100
+  const sliderClassName = 'pointer-events-none absolute inset-x-0 top-0 h-2 w-full appearance-none bg-transparent outline-none [&::-webkit-slider-runnable-track]:h-2 [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:mt-[-5px] [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-[#b28455] [&::-webkit-slider-thumb]:shadow-[0_3px_10px_rgba(79,53,28,.3)] [&::-moz-range-track]:h-2 [&::-moz-range-track]:bg-transparent [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-[3px] [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-[#b28455]'
+
+  return (
+    <div className="rounded-[16px] border border-[#e5dbcf] bg-[#fbf8f3] p-4">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+        <PriceBadge label="Từ" value={min} />
+        <span className="text-[#b4a99b]">–</span>
+        <PriceBadge label="Đến" value={max} />
+      </div>
+      <div className="mt-7 px-1">
+        <div className="relative h-2 rounded-full bg-[#e3dbd0]">
+          <div className="absolute h-2 rounded-full bg-[linear-gradient(90deg,#b28455,#173a31)]" style={{ left: `${minPosition}%`, right: `${100 - maxPosition}%` }} />
+          <input type="range" min={MIN_NIGHTLY_PRICE} max={MAX_NIGHTLY_PRICE} step={NIGHTLY_PRICE_STEP} value={min} onChange={(event) => onMinChange(Math.min(Number(event.target.value), max - NIGHTLY_PRICE_STEP))} aria-label="Giá thấp nhất mỗi đêm" className={`${sliderClassName} z-20`} />
+          <input type="range" min={MIN_NIGHTLY_PRICE} max={MAX_NIGHTLY_PRICE} step={NIGHTLY_PRICE_STEP} value={max} onChange={(event) => onMaxChange(Math.max(Number(event.target.value), min + NIGHTLY_PRICE_STEP))} aria-label="Giá cao nhất mỗi đêm" className={`${sliderClassName} z-30`} />
+        </div>
+        <div className="mt-3 flex justify-between text-[9px] font-semibold text-[#8a847b]"><span>1 triệu</span><span>3 triệu</span><span>5 triệu</span></div>
+      </div>
+    </div>
+  )
+}
+
+function SidebarAmenitiesFilter({ options, selected, onChange }: { options: string[]; selected: string[]; onChange: (values: string[]) => void }) {
+  const [expanded, setExpanded] = useState(false)
+  const visibleOptions = expanded ? options : options.slice(0, 6)
+  const toggle = (amenity: string) => onChange(selected.includes(amenity) ? selected.filter((value) => value !== amenity) : [...selected, amenity])
+
+  return (
+    <div>
+      <div className="space-y-1.5">
+        {visibleOptions.map((amenity) => {
+          const checked = selected.includes(amenity)
+          return (
+            <button key={amenity} type="button" onClick={() => toggle(amenity)} className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition hover:bg-[#faf4eb]">
+              <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${checked ? 'border-secondary bg-secondary text-white' : 'border-[#d7cbbb] bg-white'}`}>{checked ? <SelectedIcon /> : null}</span>
+              <span className="line-clamp-2 text-xs font-medium text-[#5c635e]">{amenity}</span>
+            </button>
+          )
+        })}
+        {options.length === 0 ? <p className="py-3 text-center text-xs text-on-surface-variant">Chưa có dữ liệu tiện nghi.</p> : null}
+      </div>
+      {options.length > 6 ? <button type="button" onClick={() => setExpanded((current) => !current)} className="mt-2 text-xs font-bold text-[#966438] hover:underline">{expanded ? 'Thu gọn' : `Xem thêm ${options.length - 6} tiện nghi`}</button> : null}
+    </div>
+  )
+}
+
+function AvailabilityFilter({ value, onChange }: { value: 'all' | RoomAvailabilityStatus; onChange: (value: 'all' | RoomAvailabilityStatus) => void }) {
+  return (
+    <div className="space-y-1.5">
+      {availabilityOptions.map((option) => (
+        <button key={option.value} type="button" onClick={() => onChange(option.value)} className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-left text-xs font-semibold transition ${value === option.value ? 'border-secondary bg-[#edf4f0] text-secondary' : 'border-transparent bg-[#faf7f2] text-[#626862] hover:border-[#d9c8b2]'}`}>
+          {option.label}
+          <span className={`h-2.5 w-2.5 rounded-full border ${value === option.value ? 'border-secondary bg-secondary shadow-[0_0_0_3px_rgba(23,58,49,.12)]' : 'border-[#bdb2a4] bg-white'}`} aria-hidden />
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function SortSelect({ value, onChange }: { value: RoomSortOption; onChange: (value: RoomSortOption) => void }) {
+  return (
+    <div className="w-full sm:w-[260px]">
+      <CompactFilterSelect
+        label="Sắp xếp kết quả"
+        value={value}
+        onChange={(nextValue) => onChange(nextValue as RoomSortOption)}
+        options={[
+          { value: 'recommended', label: 'Phù hợp nhất' },
+          { value: 'rating_desc', label: 'Đánh giá cao nhất' },
+          { value: 'price_asc', label: 'Giá thấp đến cao' },
+          { value: 'price_desc', label: 'Giá cao đến thấp' },
+          { value: 'capacity_desc', label: 'Sức chứa lớn nhất' },
+        ]}
+      />
+    </div>
   )
 }
 
@@ -1285,6 +1405,24 @@ function InfoPill({ label, value }: { label: string; value: string }) {
 
 function BedroomIcon() { return <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4 text-[#9b6b3c]" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M4 20V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v15M8 20v-5h8v5M9 8h6" strokeLinecap="round" strokeLinejoin="round"/></svg> }
 function BedIcon() { return <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4 text-[#9b6b3c]" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M3 19v-8M21 19v-5a3 3 0 0 0-3-3H9v8M3 15h18M7 11V8h5a3 3 0 0 1 3 3" strokeLinecap="round" strokeLinejoin="round"/></svg> }
+function GuestsMiniIcon() { return <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4 text-[#9b6b3c]" fill="none" stroke="currentColor" strokeWidth="1.7"><circle cx="9" cy="8" r="3"/><path d="M3.5 20v-1.5A4.5 4.5 0 0 1 8 14h2a4.5 4.5 0 0 1 4.5 4.5V20M16 7a2.5 2.5 0 0 1 0 5M17 14.5a4 4 0 0 1 3 3.8V20" strokeLinecap="round"/></svg> }
+
+function sortPublicRooms(rooms: Room[], sortBy: RoomSortOption) {
+  const sortedRooms = [...rooms]
+  const rating = (room: Room) => room.rating ?? -1
+  const price = (room: Room) => getNightlyDisplayPrice(room.pricePerHour)
+  const capacity = (room: Room) => Number(room.capacity.match(/\d+/)?.[0] ?? 0)
+
+  if (sortBy === 'rating_desc') return sortedRooms.sort((left, right) => rating(right) - rating(left) || (right.reviews ?? 0) - (left.reviews ?? 0))
+  if (sortBy === 'price_asc') return sortedRooms.sort((left, right) => price(left) - price(right))
+  if (sortBy === 'price_desc') return sortedRooms.sort((left, right) => price(right) - price(left))
+  if (sortBy === 'capacity_desc') return sortedRooms.sort((left, right) => capacity(right) - capacity(left))
+
+  return sortedRooms.sort((left, right) => {
+    const availabilityScore = (room: Room) => room.availabilityStatus === 'AVAILABLE' ? 2 : room.availabilityStatus === 'ALMOST_FULL' ? 1 : 0
+    return availabilityScore(right) - availabilityScore(left) || rating(right) - rating(left) || price(left) - price(right)
+  })
+}
 
 function buildCountOptions(unit: string, max: number) {
   return [

@@ -12,6 +12,7 @@ export type RoomFilters = {
   minGuests: number
   minBedrooms: number
   amenities: string[]
+  minRating: number
   availability: 'all' | RoomAvailabilityStatus
   minNightlyPrice: number
   maxNightlyPrice: number
@@ -30,10 +31,11 @@ export function filterRooms(rooms: Room[], filters: RoomFilters) {
     const matchesBedrooms = filters.minBedrooms === 0 || room.bedroomCount >= filters.minBedrooms
     const roomAmenities = room.equipments.map(normalizeFilterValue)
     const matchesAmenities = filters.amenities.every((amenity) => roomAmenities.includes(normalizeFilterValue(amenity)))
+    const matchesRating = filters.minRating === 0 || (typeof room.rating === 'number' && room.rating >= filters.minRating)
     const nightlyPrice = getNightlyDisplayPrice(room.pricePerHour)
     const matchesPrice = nightlyPrice >= filters.minNightlyPrice && nightlyPrice <= filters.maxNightlyPrice
 
-    return matchesSearch && matchesRoomTier && matchesAvailability && matchesCapacity && matchesGuestCount && matchesBedrooms && matchesAmenities && matchesPrice
+    return matchesSearch && matchesRoomTier && matchesAvailability && matchesCapacity && matchesGuestCount && matchesBedrooms && matchesAmenities && matchesRating && matchesPrice
   })
 }
 
