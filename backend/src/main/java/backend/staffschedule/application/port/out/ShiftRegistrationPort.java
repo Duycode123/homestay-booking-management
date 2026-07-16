@@ -16,6 +16,8 @@ public interface ShiftRegistrationPort {
 
     Optional<ShiftRegistration> loadRegistration(Integer registrationId);
 
+    Optional<ShiftRegistration> loadRegistrationForUpdate(Integer registrationId);
+
     List<ShiftRegistration> loadStaffRegistrations(Integer staffId, LocalDate fromDate, LocalDate toDate);
 
     List<ShiftRegistration> searchRegistrations(

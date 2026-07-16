@@ -17,6 +17,7 @@ import backend.staffschedule.application.port.out.ShiftRegistrationPort;
 import backend.staffschedule.domain.model.ShiftRegistration;
 import backend.staffschedule.domain.model.ShiftRegistrationStatus;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,24 +59,38 @@ public class ShiftRegistrationUseCaseService implements
             ShiftRegistrationSlotCommand normalizedSlot = normalizeSlot(slot);
             requireNextWeek(normalizedSlot.workDate());
             ensureSlotDoesNotOverlapRequest(normalizedSlot, normalizedSlots);
-            ensureSlotDoesNotOverlapExistingSchedule(staffId, normalizedSlot);
-
             normalizedSlots.add(normalizedSlot);
-            registrations.add(registrationPort.save(new ShiftRegistration(
-                    null,
-                    staffId,
-                    null,
-                    null,
-                    normalizedSlot.workDate(),
-                    normalizedSlot.startTime(),
-                    normalizedSlot.endTime(),
-                    ShiftRegistrationStatus.PENDING,
-                    null,
-                    null,
-                    null,
-                    now,
-                    now
-            )));
+        }
+
+        // Always acquire day locks in chronological order. This serializes two
+        // simultaneous submissions without introducing cross-day deadlocks.
+        normalizedSlots.stream()
+                .map(ShiftRegistrationSlotCommand::workDate)
+                .distinct()
+                .sorted()
+                .forEach(workDate -> assignmentPort.lockStaffSchedule(staffId, workDate));
+
+        for (ShiftRegistrationSlotCommand normalizedSlot : normalizedSlots) {
+            ensureSlotDoesNotOverlapExistingSchedule(staffId, normalizedSlot);
+            try {
+                registrations.add(registrationPort.save(new ShiftRegistration(
+                        null,
+                        staffId,
+                        null,
+                        null,
+                        normalizedSlot.workDate(),
+                        normalizedSlot.startTime(),
+                        normalizedSlot.endTime(),
+                        ShiftRegistrationStatus.PENDING,
+                        null,
+                        null,
+                        null,
+                        now,
+                        now
+                )));
+            } catch (DataIntegrityViolationException exception) {
+                throw new IllegalStateException("Ban da co dang ky ca trung gio", exception);
+            }
         }
 
         return registrations;
@@ -107,7 +122,11 @@ public class ShiftRegistrationUseCaseService implements
         boolean approved = requireApprovedDecision(command.approved());
         LocalDateTime now = LocalDateTime.now(clock);
 
-        ShiftRegistration registration = registrationPort.loadRegistration(registrationId)
+        ShiftRegistration registrationSnapshot = registrationPort.loadRegistration(registrationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay dang ky ca lam"));
+
+        assignmentPort.lockStaffSchedule(registrationSnapshot.staffId(), registrationSnapshot.workDate());
+        ShiftRegistration registration = registrationPort.loadRegistrationForUpdate(registrationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay dang ky ca lam"));
 
         if (registration.status() != ShiftRegistrationStatus.PENDING) {
@@ -123,12 +142,16 @@ public class ShiftRegistrationUseCaseService implements
             );
             ShiftRegistration decidedRegistration = registration.approve(reviewerAccountId, now);
             ShiftRegistration savedRegistration = registrationPort.updateDecision(decidedRegistration);
-            assignmentPort.createAssignedShift(
-                    registration.staffId(),
-                    registration.workDate(),
-                    registration.startTime(),
-                    registration.endTime()
-            );
+            try {
+                assignmentPort.createAssignedShift(
+                        registration.staffId(),
+                        registration.workDate(),
+                        registration.startTime(),
+                        registration.endTime()
+                );
+            } catch (DataIntegrityViolationException exception) {
+                throw new IllegalStateException("Nhan vien da co ca lam trung gio", exception);
+            }
             return savedRegistration;
         }
 

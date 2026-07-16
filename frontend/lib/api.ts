@@ -4,6 +4,7 @@ const REFRESH_PATH = '/api/auth/refresh'
 const CSRF_PATH = '/api/auth/csrf'
 const AUTH_PATH_PREFIX = '/api/auth/'
 const AUTH_SESSION_MARKER_KEY = 'homestay_has_auth_session'
+const CSRF_COOKIE_NAME = 'HOMESTAY-XSRF-TOKEN'
 const UNSAFE_METHODS = new Set(['post', 'put', 'patch', 'delete'])
 
 const api = axios.create({
@@ -22,6 +23,7 @@ const csrfClient = axios.create({
 let refreshPromise: Promise<void> | null = null
 let csrfPromise: Promise<{ headerName: string; token: string }> | null = null
 let csrfToken: { headerName: string; token: string } | null = null
+let csrfCookieSnapshot = ''
 let sessionExpiryRedirectStarted = false
 
 export function hasStoredAuthSession() {
@@ -93,15 +95,41 @@ function requiresCsrf(config: InternalAxiosRequestConfig) {
   return Boolean(method && UNSAFE_METHODS.has(method) && !config.url?.includes(CSRF_PATH))
 }
 
+function readCookie(name: string) {
+  if (typeof document === 'undefined') return ''
+
+  const prefix = `${encodeURIComponent(name)}=`
+  const cookie = document.cookie
+    .split(';')
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(prefix))
+
+  return cookie ? cookie.slice(prefix.length) : ''
+}
+
+function invalidateCsrfCache() {
+  csrfToken = null
+  csrfCookieSnapshot = ''
+}
+
 async function getCsrfToken(forceRefresh = false) {
-  if (forceRefresh) csrfToken = null
-  if (csrfToken) return csrfToken
+  if (forceRefresh) {
+    if (csrfPromise) await csrfPromise.catch(() => undefined)
+    invalidateCsrfCache()
+  }
+
+  const currentCookie = readCookie(CSRF_COOKIE_NAME)
+  if (csrfToken && csrfCookieSnapshot === currentCookie) return csrfToken
+  if (csrfToken && csrfCookieSnapshot !== currentCookie) invalidateCsrfCache()
 
   if (!csrfPromise) {
     csrfPromise = csrfClient
-      .get<{ headerName: string; token: string }>(CSRF_PATH)
+      .get<{ headerName: string; token: string }>(CSRF_PATH, {
+        params: { requestTime: Date.now() },
+      })
       .then(({ data }) => {
         csrfToken = data
+        csrfCookieSnapshot = readCookie(CSRF_COOKIE_NAME)
         return data
       })
       .finally(() => {
@@ -131,7 +159,16 @@ export async function refreshSession() {
 }
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (
+      response.config.url?.includes('/api/auth/login')
+      || response.config.url?.includes('/api/auth/logout')
+      || response.config.url?.includes('/api/auth/refresh')
+    ) {
+      invalidateCsrfCache()
+    }
+    return response
+  },
   async (error) => {
     const response = error.response
     const originalRequest = error.config as

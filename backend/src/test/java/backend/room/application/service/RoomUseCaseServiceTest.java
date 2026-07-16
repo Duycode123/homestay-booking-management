@@ -54,6 +54,30 @@ class RoomUseCaseServiceTest {
     private RoomActorPort roomActorPort;
 
     @Test
+    void updateRoomRejectsRoomTypeArchivedWhileRequestIsInProgress() {
+        RoomUseCaseService service = new RoomUseCaseService(roomCatalogPort, roomMutationPort, roomActorPort);
+        RoomType archivedType = roomType(3, "Premium");
+        archivedType.setActive(false);
+
+        when(roomActorPort.loadUserByEmail("admin@example.com")).thenReturn(Optional.of(adminUser()));
+        when(roomCatalogPort.loadRoomForUpdate(10)).thenReturn(Optional.of(existingRoom()));
+        when(roomCatalogPort.existsRoomName("Deluxe Garden 201")).thenReturn(false);
+        when(roomCatalogPort.loadRoomTypeForUpdate(3)).thenReturn(Optional.of(archivedType));
+
+        assertThrows(IllegalStateException.class, () -> service.updateRoom(new UpdateRoomCommand(
+                10,
+                "Deluxe Garden 201",
+                3,
+                10,
+                null,
+                RoomStatus.AVAILABLE,
+                "admin@example.com"
+        )));
+
+        verify(roomMutationPort, never()).saveRoom(any(Room.class));
+    }
+
+    @Test
     void updateRoomUpdatesNameTypeAndStatusForAdmin() {
         RoomUseCaseService service = new RoomUseCaseService(roomCatalogPort, roomMutationPort, roomActorPort);
         Room room = existingRoom();
@@ -62,7 +86,7 @@ class RoomUseCaseServiceTest {
         when(roomActorPort.loadUserByEmail("admin@example.com")).thenReturn(Optional.of(adminUser()));
         when(roomCatalogPort.loadRoomForUpdate(10)).thenReturn(Optional.of(room));
         when(roomCatalogPort.existsRoomName("Deluxe Garden 201")).thenReturn(false);
-        when(roomCatalogPort.loadRoomType(3)).thenReturn(Optional.of(updatedType));
+        when(roomCatalogPort.loadRoomTypeForUpdate(3)).thenReturn(Optional.of(updatedType));
         when(roomMutationPort.saveRoom(any(Room.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         service.updateRoom(new UpdateRoomCommand(
@@ -101,7 +125,7 @@ class RoomUseCaseServiceTest {
         when(roomActorPort.loadUserByEmail("admin@example.com")).thenReturn(Optional.of(adminUser()));
         when(roomCatalogPort.loadRoomForUpdate(10)).thenReturn(Optional.of(room));
         when(roomCatalogPort.existsRoomName("Deluxe Garden 201")).thenReturn(false);
-        when(roomCatalogPort.loadRoomType(3)).thenReturn(Optional.of(updatedType));
+        when(roomCatalogPort.loadRoomTypeForUpdate(3)).thenReturn(Optional.of(updatedType));
         when(roomMutationPort.saveRoom(any(Room.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         service.updateRoom(new UpdateRoomCommand(
@@ -133,7 +157,7 @@ class RoomUseCaseServiceTest {
         when(roomActorPort.loadUserByEmail("admin@example.com")).thenReturn(Optional.of(adminUser()));
         when(roomCatalogPort.loadRoomForUpdate(10)).thenReturn(Optional.of(room));
         when(roomCatalogPort.existsRoomName("Deluxe Garden 201")).thenReturn(false);
-        when(roomCatalogPort.loadRoomType(3)).thenReturn(Optional.of(roomType(3, "Premium")));
+        when(roomCatalogPort.loadRoomTypeForUpdate(3)).thenReturn(Optional.of(roomType(3, "Premium")));
 
         assertThrows(IllegalArgumentException.class, () -> service.updateRoom(new UpdateRoomCommand(
                 10,
@@ -297,7 +321,7 @@ class RoomUseCaseServiceTest {
         RoomUseCaseService service = new RoomUseCaseService(roomCatalogPort, roomMutationPort, roomActorPort);
 
         when(roomActorPort.loadUserByEmail("admin@example.com")).thenReturn(Optional.of(adminUser()));
-        when(roomCatalogPort.loadRoomType(2)).thenReturn(Optional.of(roomType(2, "Deluxe")));
+        when(roomCatalogPort.loadRoomTypeForUpdate(2)).thenReturn(Optional.of(roomType(2, "Deluxe")));
         when(roomCatalogPort.existsRoomTypeName("Premium")).thenReturn(true);
 
         assertThrows(IllegalArgumentException.class, () -> service.updateRoomType(new UpdateRoomTypeCommand(
@@ -315,7 +339,7 @@ class RoomUseCaseServiceTest {
         RoomUseCaseService service = new RoomUseCaseService(roomCatalogPort, roomMutationPort, roomActorPort);
 
         when(roomActorPort.loadUserByEmail("admin@example.com")).thenReturn(Optional.of(adminUser()));
-        when(roomCatalogPort.loadRoomType(2)).thenReturn(Optional.of(roomType(2, "Deluxe")));
+        when(roomCatalogPort.loadRoomTypeForUpdate(2)).thenReturn(Optional.of(roomType(2, "Deluxe")));
         when(roomCatalogPort.existsActiveRoomForRoomType(2)).thenReturn(true);
 
         assertThrows(IllegalStateException.class, () -> service.deleteRoomType(
@@ -330,7 +354,7 @@ class RoomUseCaseServiceTest {
         RoomType roomType = roomType(2, "Deluxe");
 
         when(roomActorPort.loadUserByEmail("admin@example.com")).thenReturn(Optional.of(adminUser()));
-        when(roomCatalogPort.loadRoomType(2)).thenReturn(Optional.of(roomType));
+        when(roomCatalogPort.loadRoomTypeForUpdate(2)).thenReturn(Optional.of(roomType));
         when(roomCatalogPort.existsActiveRoomForRoomType(2)).thenReturn(false);
         when(roomMutationPort.saveRoomType(roomType)).thenReturn(roomType);
 

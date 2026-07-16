@@ -119,6 +119,15 @@ public class JdbcShiftRegistrationAdapter implements
 
     @Override
     public Optional<ShiftRegistration> loadRegistration(Integer registrationId) {
+        return loadRegistration(registrationId, false);
+    }
+
+    @Override
+    public Optional<ShiftRegistration> loadRegistrationForUpdate(Integer registrationId) {
+        return loadRegistration(registrationId, true);
+    }
+
+    private Optional<ShiftRegistration> loadRegistration(Integer registrationId, boolean forUpdate) {
         String sql = """
                 SELECT registration.id,
                        registration.staff_id,
@@ -138,7 +147,24 @@ public class JdbcShiftRegistrationAdapter implements
                 WHERE registration.id = ?
                 """;
 
+        if (forUpdate) {
+            sql += " FOR UPDATE";
+        }
+
         return jdbcTemplate.query(sql, this::mapRegistration, registrationId).stream().findFirst();
+    }
+
+    @Override
+    public void lockStaffSchedule(Integer staffId, LocalDate workDate) {
+        // A transaction-scoped PostgreSQL advisory lock closes the gap between
+        // the overlap check and the following INSERT/approval. The namespace
+        // keeps these locks separate from other business locks.
+        String lockKey = staffId + ":" + workDate;
+        jdbcTemplate.query(
+                "SELECT pg_advisory_xact_lock(1397248840, hashtext(?))",
+                resultSet -> null,
+                lockKey
+        );
     }
 
     @Override

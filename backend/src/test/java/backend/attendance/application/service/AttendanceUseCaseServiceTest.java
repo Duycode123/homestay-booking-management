@@ -79,6 +79,7 @@ class AttendanceUseCaseServiceTest {
 
         ArgumentCaptor<AttendanceRecord> attendanceCaptor = ArgumentCaptor.forClass(AttendanceRecord.class);
         verify(attendanceRecordPort).save(attendanceCaptor.capture());
+        verify(attendanceRecordPort).lockStaffAttendance(3);
 
         assertEquals(3, attendanceRecord.staffId());
         assertEquals(12, attendanceRecord.shiftId());
@@ -140,6 +141,7 @@ class AttendanceUseCaseServiceTest {
         assertEquals(NOW, attendanceRecord.checkOutTime());
         assertEquals(new BigDecimal("1.50"), attendanceRecord.workDurationHours());
         assertEquals(AttendanceStatus.DONE, attendanceRecord.status());
+        verify(attendanceRecordPort).lockStaffAttendance(3);
     }
 
     @Test

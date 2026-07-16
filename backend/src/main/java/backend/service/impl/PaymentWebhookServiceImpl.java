@@ -9,6 +9,7 @@ import backend.entity.PaymentProvider;
 import backend.entity.PaymentTransaction;
 import backend.entity.PaymentTransactionStatus;
 import backend.repository.PaymentTransactionRepository;
+import backend.payment.application.port.out.LockPaymentAggregatePort;
 import backend.payment.application.support.PaymentTimeNormalizer;
 import backend.service.CouponUsageTrackingService;
 import backend.service.PaymentWebhookService;
@@ -55,6 +56,7 @@ public class PaymentWebhookServiceImpl implements PaymentWebhookService {
     };
 
     private final PaymentTransactionRepository paymentTransactionRepository;
+    private final LockPaymentAggregatePort lockPaymentAggregatePort;
     private final VNPayProperties vnPayProperties;
     private final SePayProperties sePayProperties;
     private final CouponUsageTrackingService couponUsageTrackingService;
@@ -77,18 +79,31 @@ public class PaymentWebhookServiceImpl implements PaymentWebhookService {
                 return response(ORDER_NOT_FOUND_CODE, "Order not found");
             }
 
+            lockPaymentAggregatePort.lockAndRefresh(transaction);
+
             if (!isValidAmount(params.get("vnp_Amount"), transaction.getAmount())) {
                 return response(INVALID_AMOUNT_CODE, "Invalid amount");
             }
 
             if (transaction.getStatus() == PaymentTransactionStatus.SUCCEEDED
                     || transaction.getStatus() == PaymentTransactionStatus.FAILED
-                    || transaction.getStatus() == PaymentTransactionStatus.CANCELLED) {
+                    || (transaction.getStatus() == PaymentTransactionStatus.CANCELLED
+                        && !isReleasedAfterPaymentTimeout(transaction))) {
                 return response(ORDER_ALREADY_CONFIRMED_CODE, "Order already confirmed");
             }
 
             boolean paymentSuccess = SUCCESS_CODE.equals(params.get("vnp_ResponseCode"))
                     && SUCCESS_CODE.equals(params.get("vnp_TransactionStatus"));
+
+            if (paymentSuccess && isReleasedAfterPaymentTimeout(transaction)) {
+                recordPaymentAfterRoomRelease(
+                        transaction,
+                        blankToNull(params.get("vnp_TransactionNo")),
+                        parsePayDate(params.get("vnp_PayDate"))
+                );
+                paymentTransactionRepository.save(transaction);
+                return response(SUCCESS_CODE, "Confirm success; refund reconciliation required");
+            }
 
             transaction.setProviderTransactionId(blankToNull(params.get("vnp_TransactionNo")));
             transaction.setResponseCode(params.get("vnp_ResponseCode"));
@@ -156,6 +171,8 @@ public class PaymentWebhookServiceImpl implements PaymentWebhookService {
             return Map.of("success", true, "message", "Transaction not found");
         }
 
+        lockPaymentAggregatePort.lockAndRefresh(transaction);
+
         if (transaction.getProvider() != PaymentProvider.SEPAY) {
             return Map.of("success", true, "message", "Transaction provider is not SePay");
         }
@@ -172,9 +189,24 @@ public class PaymentWebhookServiceImpl implements PaymentWebhookService {
             return Map.of("success", true, "message", "Transaction already confirmed");
         }
 
+        boolean releasedAfterTimeout = isReleasedAfterPaymentTimeout(transaction);
         if (transaction.getStatus() == PaymentTransactionStatus.FAILED
-                || transaction.getStatus() == PaymentTransactionStatus.CANCELLED) {
+                || (transaction.getStatus() == PaymentTransactionStatus.CANCELLED && !releasedAfterTimeout)) {
             return Map.of("success", true, "message", "Transaction is already closed");
+        }
+
+        if (releasedAfterTimeout) {
+            recordPaymentAfterRoomRelease(
+                    transaction,
+                    blankToNull(providerTransactionId),
+                    parseSepayTransactionDate(firstText(payload, "transactionDate"))
+            );
+            try {
+                paymentTransactionRepository.save(transaction);
+            } catch (DataIntegrityViolationException exception) {
+                return Map.of("success", true, "message", "Duplicate provider transaction");
+            }
+            return Map.of("success", true, "message", "Payment received after room release; refund required");
         }
 
         transaction.setProviderTransactionId(blankToNull(providerTransactionId));
@@ -224,6 +256,8 @@ public class PaymentWebhookServiceImpl implements PaymentWebhookService {
             return Map.of("success", true, "message", "Transaction not found");
         }
 
+        lockPaymentAggregatePort.lockAndRefresh(transaction);
+
         if (transaction.getProvider() != PaymentProvider.SEPAY) {
             return Map.of("success", true, "message", "Transaction provider is not SePay");
         }
@@ -258,8 +292,9 @@ public class PaymentWebhookServiceImpl implements PaymentWebhookService {
             return Map.of("success", true, "message", "Transaction already confirmed");
         }
 
+        boolean releasedAfterTimeout = isReleasedAfterPaymentTimeout(transaction);
         if (transaction.getStatus() == PaymentTransactionStatus.FAILED
-                || transaction.getStatus() == PaymentTransactionStatus.CANCELLED) {
+                || (transaction.getStatus() == PaymentTransactionStatus.CANCELLED && !releasedAfterTimeout)) {
             return Map.of("success", true, "message", "Transaction is already closed");
         }
 
@@ -272,6 +307,20 @@ public class PaymentWebhookServiceImpl implements PaymentWebhookService {
         String providerTransactionId = firstText(gatewayTransaction, "transaction_id", "id");
         if (providerTransactionId == null) {
             providerTransactionId = firstText(order, "order_id", "id");
+        }
+
+        if (releasedAfterTimeout) {
+            recordPaymentAfterRoomRelease(
+                    transaction,
+                    blankToNull(providerTransactionId),
+                    parseSepayTransactionDate(firstText(gatewayTransaction, "transaction_date"))
+            );
+            try {
+                paymentTransactionRepository.save(transaction);
+            } catch (DataIntegrityViolationException exception) {
+                return Map.of("success", true, "message", "Duplicate provider transaction");
+            }
+            return Map.of("success", true, "message", "Payment received after room release; refund required");
         }
 
         transaction.setProviderTransactionId(blankToNull(providerTransactionId));
@@ -345,6 +394,24 @@ public class PaymentWebhookServiceImpl implements PaymentWebhookService {
         if (booking != null && booking.getStatus() == BookingStatus.PENDING_PAYMENT) {
             booking.setStatus(BookingStatus.CANCELLED);
         }
+    }
+
+    private boolean isReleasedAfterPaymentTimeout(PaymentTransaction transaction) {
+        return transaction.getStatus() == PaymentTransactionStatus.CANCELLED
+                && "PAYMENT_TIMEOUT".equals(transaction.getResponseCode());
+    }
+
+    private void recordPaymentAfterRoomRelease(
+            PaymentTransaction transaction,
+            String providerTransactionId,
+            LocalDateTime paidAt
+    ) {
+        transaction.setProviderTransactionId(providerTransactionId);
+        transaction.setStatus(PaymentTransactionStatus.SUCCEEDED);
+        transaction.setResponseCode("PAYMENT_AFTER_RELEASE_REQUIRES_REFUND");
+        transaction.setPaidAt(paidAt == null ? LocalDateTime.now() : paidAt);
+        // The booking deliberately remains CANCELLED: its room slot was already
+        // released and may have been sold to another customer.
     }
 
     @SuppressWarnings("unchecked")

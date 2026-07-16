@@ -76,6 +76,7 @@ The staff room-operation and booking-management views apply the same scope. A bo
 - Staff can only register shifts for next week.
 - Staff can submit at most 21 registration slots per request.
 - New staff registrations start as `PENDING`; rejected slots can be submitted again.
+- Submission and approval acquire a PostgreSQL transaction advisory lock for the staff member and work date before overlap checks. Concurrent submissions or two admins deciding the same registration are re-checked after the lock instead of overwriting one another.
 - Request/response DTOs stay in the web adapter; ownership and range rules live in the application service.
 
 ## Related Endpoints

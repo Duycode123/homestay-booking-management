@@ -8,6 +8,7 @@ import backend.entity.PaymentProvider;
 import backend.entity.PaymentTransaction;
 import backend.entity.PaymentTransactionStatus;
 import backend.repository.PaymentTransactionRepository;
+import backend.payment.application.port.out.LockPaymentAggregatePort;
 import backend.service.CouponUsageTrackingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +37,9 @@ class PaymentWebhookServiceImplTest {
     private PaymentTransactionRepository paymentTransactionRepository;
 
     @Mock
+    private LockPaymentAggregatePort lockPaymentAggregatePort;
+
+    @Mock
     private CouponUsageTrackingService couponUsageTrackingService;
 
     private final VNPayProperties vnPayProperties = new VNPayProperties();
@@ -48,6 +52,7 @@ class PaymentWebhookServiceImplTest {
     void setUp() {
         service = new PaymentWebhookServiceImpl(
                 paymentTransactionRepository,
+                lockPaymentAggregatePort,
                 vnPayProperties,
                 sePayProperties,
                 couponUsageTrackingService,
@@ -111,7 +116,39 @@ class PaymentWebhookServiceImplTest {
         assertEquals(PaymentTransactionStatus.SUCCEEDED, transaction.getStatus());
         assertEquals(BookingStatus.PAID, transaction.getBooking().getStatus());
         assertEquals("92704", transaction.getProviderTransactionId());
+        verify(lockPaymentAggregatePort).lockAndRefresh(transaction);
         verify(couponUsageTrackingService).recordPaidBookingUsage(transaction.getBooking());
+        verify(paymentTransactionRepository).save(transaction);
+    }
+
+    @Test
+    void sepayWebhookRecordsMoneyForRefundWhenExpiryAlreadyReleasedRoom() {
+        PaymentTransaction transaction = pendingTransaction("PAY1", new BigDecimal("100000.00"));
+        transaction.setStatus(PaymentTransactionStatus.CANCELLED);
+        transaction.setResponseCode("PAYMENT_TIMEOUT");
+        transaction.getBooking().setStatus(BookingStatus.CANCELLED);
+        when(paymentTransactionRepository.findByProviderTransactionId("92704"))
+                .thenReturn(Optional.empty());
+        when(paymentTransactionRepository.findByTransactionReference("PAY1"))
+                .thenReturn(Optional.of(transaction));
+
+        Map<String, Object> result = service.handleSepayWebhook(
+                """
+                        {"id":92704,"code":"PAY1","transferType":"in","transferAmount":100000,
+                         "transactionDate":"2026-07-16 10:00:00"}
+                        """,
+                null,
+                null,
+                null,
+                null
+        );
+
+        assertEquals(true, result.get("success"));
+        assertEquals(PaymentTransactionStatus.SUCCEEDED, transaction.getStatus());
+        assertEquals("PAYMENT_AFTER_RELEASE_REQUIRES_REFUND", transaction.getResponseCode());
+        assertEquals(BookingStatus.CANCELLED, transaction.getBooking().getStatus());
+        verify(lockPaymentAggregatePort).lockAndRefresh(transaction);
+        verify(couponUsageTrackingService, never()).recordPaidBookingUsage(any());
         verify(paymentTransactionRepository).save(transaction);
     }
 

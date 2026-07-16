@@ -25,6 +25,15 @@ public class JdbcAttendanceAdapter implements AttendanceActorPort, StaffShiftPor
     private final JdbcTemplate jdbcTemplate;
 
     @Override
+    public void lockStaffAttendance(Integer staffId) {
+        jdbcTemplate.query(
+                "SELECT pg_advisory_xact_lock(1096045636, ?)",
+                resultSet -> null,
+                staffId
+        );
+    }
+
+    @Override
     public Optional<AttendanceActor> loadActorByEmail(String email) {
         String sql = """
                 SELECT account.id AS account_id, account.role, staff.id AS staff_id
@@ -101,6 +110,7 @@ public class JdbcAttendanceAdapter implements AttendanceActorPort, StaffShiftPor
                   AND status = 'WORKING'
                 ORDER BY check_in_time DESC
                 LIMIT 1
+                FOR UPDATE
                 """;
 
         return jdbcTemplate.query(sql, this::mapAttendanceRecord, staffId).stream().findFirst();

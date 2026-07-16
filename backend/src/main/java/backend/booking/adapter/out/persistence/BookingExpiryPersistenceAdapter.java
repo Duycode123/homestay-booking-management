@@ -9,11 +9,14 @@ import backend.entity.PaymentTransaction;
 import backend.entity.PaymentTransactionStatus;
 import backend.repository.BookingRepository;
 import backend.repository.PaymentTransactionRepository;
+import backend.payment.application.port.out.LockPaymentAggregatePort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -21,6 +24,7 @@ public class BookingExpiryPersistenceAdapter implements ExpireStalePendingBookin
 
     private final BookingRepository bookingRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
+    private final LockPaymentAggregatePort lockPaymentAggregatePort;
 
     @Override
     public BookingExpiryResult expireBefore(LocalDateTime cutoff) {
@@ -28,20 +32,28 @@ public class BookingExpiryPersistenceAdapter implements ExpireStalePendingBookin
                 List.of(PaymentTransactionStatus.INITIALIZED, PaymentTransactionStatus.PENDING),
                 cutoff
         );
-        List<Booking> bookingsFromTransactions = staleTransactions.stream()
-                .map(PaymentTransaction::getBooking)
-                .filter(booking -> booking.getStatus() == BookingStatus.PENDING_PAYMENT)
-                .distinct()
-                .toList();
+        List<PaymentTransaction> expiredTransactions = new java.util.ArrayList<>();
+        Map<Integer, Booking> bookingsFromTransactions = new LinkedHashMap<>();
 
-        staleTransactions.forEach(transaction -> {
+        for (PaymentTransaction transaction : staleTransactions) {
+            lockPaymentAggregatePort.lockAndRefresh(transaction);
+            if (!isStillExpiredAndOpen(transaction, cutoff)) {
+                continue;
+            }
+
             transaction.setStatus(PaymentTransactionStatus.CANCELLED);
             transaction.setResponseCode("PAYMENT_TIMEOUT");
-        });
-        bookingsFromTransactions.forEach(booking -> booking.setStatus(BookingStatus.CANCELLED));
-        if (!staleTransactions.isEmpty()) {
-            paymentTransactionRepository.saveAll(staleTransactions);
-            bookingRepository.saveAll(bookingsFromTransactions);
+            expiredTransactions.add(transaction);
+
+            Booking booking = transaction.getBooking();
+            if (booking != null && booking.getStatus() == BookingStatus.PENDING_PAYMENT) {
+                booking.setStatus(BookingStatus.CANCELLED);
+                bookingsFromTransactions.put(booking.getId(), booking);
+            }
+        }
+        if (!expiredTransactions.isEmpty()) {
+            paymentTransactionRepository.saveAll(expiredTransactions);
+            bookingRepository.saveAll(bookingsFromTransactions.values());
         }
 
         List<Booking> staleBookings = bookingRepository.findStalePendingBookings(
@@ -49,14 +61,33 @@ public class BookingExpiryPersistenceAdapter implements ExpireStalePendingBookin
                 PaymentMethod.CASH,
                 cutoff
         );
-        staleBookings.forEach(booking -> booking.setStatus(BookingStatus.CANCELLED));
-        if (!staleBookings.isEmpty()) {
-            bookingRepository.saveAll(staleBookings);
+        List<Booking> expiredBookingsWithoutTransaction = new java.util.ArrayList<>();
+        for (Booking staleBooking : staleBookings) {
+            Booking lockedBooking = bookingRepository.findByIdForUpdate(staleBooking.getId()).orElse(null);
+            if (lockedBooking == null
+                    || lockedBooking.getStatus() != BookingStatus.PENDING_PAYMENT
+                    || lockedBooking.getPaymentMethod() == PaymentMethod.CASH
+                    || lockedBooking.getCreatedAt() == null
+                    || !lockedBooking.getCreatedAt().isBefore(cutoff)) {
+                continue;
+            }
+            lockedBooking.setStatus(BookingStatus.CANCELLED);
+            expiredBookingsWithoutTransaction.add(lockedBooking);
+        }
+        if (!expiredBookingsWithoutTransaction.isEmpty()) {
+            bookingRepository.saveAll(expiredBookingsWithoutTransaction);
         }
 
         return new BookingExpiryResult(
-                staleBookings.size() + bookingsFromTransactions.size(),
-                staleTransactions.size()
+                expiredBookingsWithoutTransaction.size() + bookingsFromTransactions.size(),
+                expiredTransactions.size()
         );
+    }
+
+    private boolean isStillExpiredAndOpen(PaymentTransaction transaction, LocalDateTime cutoff) {
+        return (transaction.getStatus() == PaymentTransactionStatus.INITIALIZED
+                || transaction.getStatus() == PaymentTransactionStatus.PENDING)
+                && transaction.getCreatedAt() != null
+                && transaction.getCreatedAt().isBefore(cutoff);
     }
 }

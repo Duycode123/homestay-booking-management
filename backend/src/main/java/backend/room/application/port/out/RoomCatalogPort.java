@@ -28,4 +28,6 @@ public interface RoomCatalogPort {
     List<RoomType> loadRoomTypes();
 
     Optional<RoomType> loadRoomType(Integer roomTypeId);
+
+    Optional<RoomType> loadRoomTypeForUpdate(Integer roomTypeId);
 }

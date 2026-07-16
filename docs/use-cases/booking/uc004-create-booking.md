@@ -77,6 +77,7 @@ Allow an authenticated customer to select a valid room/time range, see the expec
 - Cash bookings are not cancelled by the short online-payment expiry sweep. The selected room/time remains reserved for the customer.
 - An online checkout session must create a pending `payment_transaction` before showing the QR or redirecting the user to a payment portal.
 - Creating a new checkout session for the same booking cancels any older open payment sessions with `PAYMENT_SESSION_REPLACED`.
+- Payment-session creation locks the booking before replacing or inserting a transaction. The database partial unique index `ux_payment_transaction_one_open_per_booking` is the final safeguard that permits at most one `INITIALIZED`/`PENDING` transaction per booking.
 - A pending checkout holds the selected room/time slot until payment success, portal cancel/failure, or timeout.
 - Public room availability exposes only a non-sensitive blocking classification: `PAYMENT_HOLD` for an unpaid five-minute hold and `BOOKED` for a confirmed stay. It never exposes the customer or booking identity.
 - The room catalog displays `PAYMENT_HOLD` separately as `Đang giữ chỗ`, excludes it from the available-room count, and refreshes when the reported hold countdown expires. After the expiry sweep cancels an unpaid booking, the room returns to the available count automatically.
@@ -97,6 +98,8 @@ Allow an authenticated customer to select a valid room/time range, see the expec
 
 - Payment HTTP endpoints depend on focused inbound use-case ports. SePay QR/portal construction, callback URL composition, and HMAC signing are isolated in the outbound `SePayCheckoutAdapter`.
 - The scheduled expiry service delegates database state changes through `ExpireStalePendingBookingsPort`, keeping scheduling policy separate from JPA persistence.
+- Polling, provider webhooks, and the expiry sweep use the same booking-then-payment lock order and re-read state after locking. An expiry sweep therefore cannot overwrite a payment that was confirmed while it waited.
+- Money received after a timeout has already released the room is retained as a successful payment transaction with `PAYMENT_AFTER_RELEASE_REQUIRES_REFUND`; the cancelled booking is not resurrected because its room may already have been sold again.
 
 - Availability is calculated through `GET /api/rooms/{id}/available-slots`.
 - The public room flow uses a night-stay date range: check-in at `14:00`, checkout at `12:00` on the selected departure date, with a minimum of one night and a maximum selection of 30 nights.

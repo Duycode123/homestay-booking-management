@@ -146,6 +146,11 @@ public class RoomPersistenceAdapter implements
     }
 
     @Override
+    public Optional<RoomType> loadRoomTypeForUpdate(Integer roomTypeId) {
+        return roomTypeRepository.findByIdForUpdate(roomTypeId);
+    }
+
+    @Override
     public Room saveRoom(Room room) {
         return roomRepository.save(room);
     }

@@ -204,7 +204,7 @@ class BookingUseCaseServiceTest {
         booking.setId(12);
 
         when(loadUserPort.loadUserByEmail(staffUser.getEmail())).thenReturn(Optional.of(staffUser));
-        when(loadBookingPort.loadBooking(12)).thenReturn(Optional.of(booking));
+        when(loadBookingPort.loadBookingForUpdate(12)).thenReturn(Optional.of(booking));
 
         assertThrows(IllegalStateException.class, () -> bookingUseCaseService.updateBookingStatus(
                 new UpdateBookingStatusCommand(12, BookingStatus.COMPLETED, staffUser.getEmail())
@@ -224,7 +224,7 @@ class BookingUseCaseServiceTest {
         booking.setPaymentMethod(PaymentMethod.ONLINE);
 
         when(loadUserPort.loadUserByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
-        when(loadBookingPort.loadBooking(13)).thenReturn(Optional.of(booking));
+        when(loadBookingPort.loadBookingForUpdate(13)).thenReturn(Optional.of(booking));
 
         assertThrows(IllegalStateException.class, () -> bookingUseCaseService.updateBookingStatus(
                 new UpdateBookingStatusCommand(13, BookingStatus.PAID, admin.getEmail())
@@ -244,7 +244,7 @@ class BookingUseCaseServiceTest {
         booking.setPaymentMethod(PaymentMethod.CASH);
 
         when(loadUserPort.loadUserByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
-        when(loadBookingPort.loadBooking(14)).thenReturn(Optional.of(booking));
+        when(loadBookingPort.loadBookingForUpdate(14)).thenReturn(Optional.of(booking));
         when(saveBookingPort.save(booking)).thenReturn(booking);
 
         BookingResponse response = bookingUseCaseService.updateBookingStatus(
@@ -265,7 +265,7 @@ class BookingUseCaseServiceTest {
         booking.setId(15);
 
         when(loadUserPort.loadUserByEmail(staffUser.getEmail())).thenReturn(Optional.of(staffUser));
-        when(loadBookingPort.loadBooking(15)).thenReturn(Optional.of(booking));
+        when(loadBookingPort.loadBookingForUpdate(15)).thenReturn(Optional.of(booking));
         when(loadStaffForBookingPort.loadStaffByAccountEmail(staffUser.getEmail())).thenReturn(Optional.of(staff));
         when(saveBookingPort.save(booking)).thenReturn(booking);
 
@@ -291,7 +291,7 @@ class BookingUseCaseServiceTest {
         booking.setTotalAmount(new BigDecimal("500000.00"));
 
         when(loadUserPort.loadUserByEmail(staffUser.getEmail())).thenReturn(Optional.of(staffUser));
-        when(loadBookingPort.loadBooking(16)).thenReturn(Optional.of(booking));
+        when(loadBookingPort.loadBookingForUpdate(16)).thenReturn(Optional.of(booking));
         when(loadStaffForBookingPort.loadStaffByAccountEmail(staffUser.getEmail())).thenReturn(Optional.of(staff));
         when(loadSuccessfulPaymentAmountPort.loadSuccessfulPaymentAmount(16))
                 .thenReturn(new BigDecimal("250000.00"));
@@ -317,7 +317,7 @@ class BookingUseCaseServiceTest {
         booking.setId(17);
 
         when(loadUserPort.loadUserByEmail(staffUser.getEmail())).thenReturn(Optional.of(staffUser));
-        when(loadBookingPort.loadBooking(17)).thenReturn(Optional.of(booking));
+        when(loadBookingPort.loadBookingForUpdate(17)).thenReturn(Optional.of(booking));
         when(loadStaffForBookingPort.loadStaffByAccountEmail(staffUser.getEmail())).thenReturn(Optional.of(staff));
         when(saveBookingPort.save(booking)).thenReturn(booking);
 
@@ -340,7 +340,7 @@ class BookingUseCaseServiceTest {
         booking.setStatus(BookingStatus.PAID);
 
         when(loadUserPort.loadUserByEmail(staffUser.getEmail())).thenReturn(Optional.of(staffUser));
-        when(loadBookingPort.loadBooking(116)).thenReturn(Optional.of(booking));
+        when(loadBookingPort.loadBookingForUpdate(116)).thenReturn(Optional.of(booking));
 
         IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
                 bookingUseCaseService.updateBookingStatus(
@@ -364,7 +364,7 @@ class BookingUseCaseServiceTest {
         booking.setCancellationRequestStatus(CancellationRequestStatus.PENDING);
 
         when(loadUserPort.loadUserByEmail(staffUser.getEmail())).thenReturn(Optional.of(staffUser));
-        when(loadBookingPort.loadBooking(117)).thenReturn(Optional.of(booking));
+        when(loadBookingPort.loadBookingForUpdate(117)).thenReturn(Optional.of(booking));
 
         IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
                 bookingUseCaseService.updateBookingStatus(
@@ -421,7 +421,7 @@ class BookingUseCaseServiceTest {
         booking.setTotalAmount(new BigDecimal("500000.00"));
 
         when(loadUserPort.loadUserByEmail(staffUser.getEmail())).thenReturn(Optional.of(staffUser));
-        when(loadBookingPort.loadBooking(18)).thenReturn(Optional.of(booking));
+        when(loadBookingPort.loadBookingForUpdate(18)).thenReturn(Optional.of(booking));
         when(loadSuccessfulPaymentAmountPort.loadSuccessfulPaymentAmount(18))
                 .thenReturn(new BigDecimal("250000.00"));
 

@@ -5,6 +5,8 @@ import java.time.LocalTime;
 
 public interface ShiftAssignmentPort {
 
+    void lockStaffSchedule(Integer staffId, LocalDate workDate);
+
     boolean existsOverlappingAssignedShift(
             Integer staffId,
             LocalDate workDate,

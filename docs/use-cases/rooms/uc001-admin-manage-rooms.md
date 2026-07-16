@@ -77,6 +77,7 @@ Allow an administrator to create, update, change status, and archive homestay ro
 - Room tier hourly rates must be greater than zero.
 - Removing a room tier is a soft-delete operation through `room_tier.active = false`.
 - A room tier cannot be archived while a room whose status is not `INACTIVE` still references it.
+- Room creation/reassignment and room-tier update/archive serialize on the same `room_tier` row. After acquiring the lock, the backend rechecks that the tier is still active, so a concurrent archive cannot leave a new room attached to an inactive tier.
 
 ## Data Touched
 
@@ -93,6 +94,7 @@ Allow an administrator to create, update, change status, and archive homestay ro
 - Archived rooms use `room.status = INACTIVE`; archived tiers use `room_tier.active = false` and are excluded from default catalog queries.
 - Frontend fields such as generated room code, derived price, description, and equipment summary are still display-oriented.
 - Application logic lives in `RoomUseCaseService` and is exposed through `RoomController` and `RoomTypeController`.
+- Room mutations use pessimistic row locks for the affected room and room tier; this prevents lost updates and closes the create-room-versus-archive-tier check-then-write race.
 - Cloudinary upload orchestration lives in `RoomImageUploadUseCaseService` and is exposed through `AdminRoomImageController`.
 
 ## Known Gaps / Follow-up

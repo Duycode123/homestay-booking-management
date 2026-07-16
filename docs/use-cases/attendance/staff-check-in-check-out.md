@@ -45,6 +45,7 @@ Record the real working time of staff members against their assigned shifts so p
 - Only role `STAFF` can check in or check out.
 - Check-in must be attached to the staff member of the authenticated account.
 - One staff member can have only one `WORKING` attendance row per shift.
+- Check-in and check-out acquire a transaction-scoped staff attendance lock. Concurrent clicks are serialized, and checkout locks the active attendance row before changing it.
 - `work_duration_hours` is calculated from `check_out_time - check_in_time` and rounded to two decimal places.
 - `check_out_time` must be after `check_in_time`.
 
@@ -68,6 +69,7 @@ Record the real working time of staff members against their assigned shifts so p
   - outbound ports: actor, shift, and attendance persistence ports
   - outbound adapter: JDBC adapter for existing schema tables
 - The scheduled missing-checkout sweep runs with property `app.attendance.missing-checkout-cron`, defaulting to `0 55 23 * * *`.
+- The database partial unique index remains the final duplicate-check-in safeguard if another code path bypasses the application use case.
 
 ## Known Gaps
 

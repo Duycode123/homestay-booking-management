@@ -51,6 +51,7 @@ public class AttendanceUseCaseService implements CheckInShiftUseCase, CheckOutSh
     @Transactional
     public AttendanceRecord checkIn(CheckInShiftCommand command) {
         AttendanceActor actor = loadStaffActor(command.currentUserEmail());
+        attendanceRecordPort.lockStaffAttendance(actor.staffId());
         LocalDateTime now = LocalDateTime.now(clock);
         StaffShift currentShift = staffShiftPort.loadCurrentShift(actor.staffId(), now)
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay ca hien tai"));
@@ -78,6 +79,7 @@ public class AttendanceUseCaseService implements CheckInShiftUseCase, CheckOutSh
     @Transactional
     public AttendanceRecord checkOut(CheckOutShiftCommand command) {
         AttendanceActor actor = loadStaffActor(command.currentUserEmail());
+        attendanceRecordPort.lockStaffAttendance(actor.staffId());
         LocalDateTime now = LocalDateTime.now(clock);
         AttendanceRecord workingAttendance = attendanceRecordPort.loadWorkingAttendance(actor.staffId())
                 .orElseThrow(() -> new IllegalStateException("Chua co check-in cho ca hien tai"));

@@ -9,6 +9,7 @@ import backend.entity.PaymentTransactionStatus;
 import backend.entity.Role;
 import backend.entity.User;
 import backend.exception.ResourceNotFoundException;
+import backend.exception.BookingConflictException;
 import backend.booking.application.port.out.LoadDiscountCodeForBookingPort;
 import backend.coupon.domain.model.CouponValidationResult;
 import backend.coupon.domain.port.in.ValidateCouponCommand;
@@ -23,6 +24,7 @@ import backend.payment.application.port.in.GetPaymentTransactionUseCase;
 import backend.payment.application.port.in.GetSePayCheckoutFormUseCase;
 import backend.payment.application.port.out.BuildSePayCheckoutPort;
 import backend.payment.application.port.out.FindSePayIncomingPaymentPort;
+import backend.payment.application.port.out.LockPaymentAggregatePort;
 import backend.payment.application.port.out.model.SePayIncomingPayment;
 import backend.payment.application.port.out.model.SePayIncomingPaymentQuery;
 import backend.payment.application.port.out.model.SePayPortalCheckoutRequest;
@@ -34,6 +36,7 @@ import backend.service.CouponUsageTrackingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -59,6 +62,7 @@ public class PaymentCheckoutUseCaseService implements
     private final UserRepository userRepository;
     private final BuildSePayCheckoutPort buildSePayCheckoutPort;
     private final FindSePayIncomingPaymentPort findSePayIncomingPaymentPort;
+    private final LockPaymentAggregatePort lockPaymentAggregatePort;
     private final CouponUsageTrackingService couponUsageTrackingService;
     private final ValidateCouponUseCase validateCouponUseCase;
     private final LoadDiscountCodeForBookingPort loadDiscountCodeForBookingPort;
@@ -77,7 +81,7 @@ public class PaymentCheckoutUseCaseService implements
         }
         User currentUser = requireManagementUser(currentUserEmail);
 
-        Booking booking = bookingRepository.findById(bookingId)
+        Booking booking = bookingRepository.findByIdForUpdate(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay don dat phong"));
         if (booking.getStatus() != BookingStatus.CHECKED_IN) {
             throw new IllegalStateException("Chi co the thu phan con lai khi booking dang check-in");
@@ -109,7 +113,7 @@ public class PaymentCheckoutUseCaseService implements
                 .status(PaymentTransactionStatus.PENDING)
                 .responseCode(CHECKOUT_BALANCE_PENDING)
                 .build();
-        paymentTransactionRepository.save(transaction);
+        saveNewOpenTransaction(transaction);
 
         return new PaymentSessionResult(
                 paymentId,
@@ -150,8 +154,11 @@ public class PaymentCheckoutUseCaseService implements
 
         CheckoutMethod checkoutMethod = normalizeMethod(rawMethod);
         PaymentOption paymentOption = normalizePaymentOption(rawPaymentOption);
-        Booking booking = bookingRepository.findByIdAndCustomer_Account_Email(bookingId, customerEmail)
+        Booking booking = bookingRepository.findByIdForUpdate(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay don dat phong"));
+        if (!belongsToCustomer(booking, customerEmail)) {
+            throw new ResourceNotFoundException("Khong tim thay don dat phong");
+        }
 
         if (booking.getStatus() == BookingStatus.CANCELLED) {
             throw new IllegalStateException("Khong the thanh toan don dat phong da bi huy");
@@ -194,7 +201,7 @@ public class PaymentCheckoutUseCaseService implements
                 .paidAt(null)
                 .build();
 
-        paymentTransactionRepository.save(paymentTransaction);
+        saveNewOpenTransaction(paymentTransaction);
 
         boolean bookingChanged = pricingChanged
                 || booking.getPaymentMethod() != selectedPaymentMethod
@@ -356,15 +363,40 @@ public class PaymentCheckoutUseCaseService implements
             return;
         }
 
-        openTransactions.forEach(transaction -> {
+        List<PaymentTransaction> transactionsToClose = openTransactions.stream()
+                .filter(transaction -> {
+                    lockPaymentAggregatePort.lockAndRefresh(transaction);
+                    return transaction.getStatus() == PaymentTransactionStatus.INITIALIZED
+                            || transaction.getStatus() == PaymentTransactionStatus.PENDING;
+                })
+                .toList();
+
+        transactionsToClose.forEach(transaction -> {
             transaction.setStatus(PaymentTransactionStatus.CANCELLED);
             transaction.setResponseCode("PAYMENT_SESSION_REPLACED");
         });
-        paymentTransactionRepository.saveAll(openTransactions);
+        if (!transactionsToClose.isEmpty()) {
+            paymentTransactionRepository.saveAll(transactionsToClose);
+            // Hibernate executes inserts before updates. Flush the cancellation first so
+            // the partial unique index can safely accept the replacement session.
+            paymentTransactionRepository.flush();
+        }
     }
 
     private String generatePaymentId() {
         return "PAY" + UUID.randomUUID().toString().replace("-", "").substring(0, 16).toUpperCase();
+    }
+
+    private void saveNewOpenTransaction(PaymentTransaction transaction) {
+        try {
+            paymentTransactionRepository.save(transaction);
+            paymentTransactionRepository.flush();
+        } catch (DataIntegrityViolationException exception) {
+            throw new BookingConflictException(
+                    "Mot phien thanh toan khac vua duoc tao cho booking nay. Vui long tai lai trang",
+                    exception
+            );
+        }
     }
 
     private void syncSePayTransaction(PaymentTransaction transaction) {
@@ -399,6 +431,19 @@ public class PaymentCheckoutUseCaseService implements
             SePayIncomingPayment payment,
             LocalDateTime expiresAt
     ) {
+        lockPaymentAggregatePort.lockAndRefresh(transaction);
+
+        if (transaction.getStatus() == PaymentTransactionStatus.SUCCEEDED) {
+            return;
+        }
+        boolean timedOutBeforeConfirmation = transaction.getStatus() == PaymentTransactionStatus.CANCELLED
+                && "PAYMENT_TIMEOUT".equals(transaction.getResponseCode());
+        if ((transaction.getStatus() == PaymentTransactionStatus.FAILED
+                || transaction.getStatus() == PaymentTransactionStatus.CANCELLED)
+                && !timedOutBeforeConfirmation) {
+            return;
+        }
+
         boolean latePayment = expiresAt != null
                 && payment.transactionDate() != null
                 && payment.transactionDate().isAfter(expiresAt);
@@ -419,8 +464,12 @@ public class PaymentCheckoutUseCaseService implements
 
         Booking booking = transaction.getBooking();
         boolean checkoutBalance = isCheckoutBalanceTransaction(transaction);
-        if (latePayment && !checkoutBalance) {
-            transaction.setResponseCode("LATE_PAYMENT_REQUIRES_REFUND");
+        boolean roomWasReleased = timedOutBeforeConfirmation
+                || (booking != null && booking.getStatus() == BookingStatus.CANCELLED);
+        if ((latePayment || roomWasReleased) && !checkoutBalance) {
+            transaction.setResponseCode(roomWasReleased
+                    ? "PAYMENT_AFTER_RELEASE_REQUIRES_REFUND"
+                    : "LATE_PAYMENT_REQUIRES_REFUND");
             if (booking != null && booking.getStatus() == BookingStatus.PENDING_PAYMENT) {
                 booking.setStatus(BookingStatus.CANCELLED);
                 bookingRepository.save(booking);
@@ -448,6 +497,14 @@ public class PaymentCheckoutUseCaseService implements
             return;
         }
 
+        lockPaymentAggregatePort.lockAndRefresh(transaction);
+        LocalDateTime refreshedExpiresAt = resolveTransactionExpiresAt(transaction);
+        if (refreshedExpiresAt == null || LocalDateTime.now().isBefore(refreshedExpiresAt)
+                || (transaction.getStatus() != PaymentTransactionStatus.INITIALIZED
+                    && transaction.getStatus() != PaymentTransactionStatus.PENDING)) {
+            return;
+        }
+
         transaction.setStatus(PaymentTransactionStatus.CANCELLED);
         transaction.setResponseCode("PAYMENT_TIMEOUT");
 
@@ -458,6 +515,14 @@ public class PaymentCheckoutUseCaseService implements
         }
 
         paymentTransactionRepository.save(transaction);
+    }
+
+    private boolean belongsToCustomer(Booking booking, String customerEmail) {
+        if (booking.getCustomer() == null || booking.getCustomer().getAccount() == null
+                || booking.getCustomer().getAccount().getEmail() == null || customerEmail == null) {
+            return false;
+        }
+        return booking.getCustomer().getAccount().getEmail().equalsIgnoreCase(customerEmail.trim());
     }
 
     private PaymentTransaction findAccessibleTransaction(String paymentId, String currentUserEmail) {

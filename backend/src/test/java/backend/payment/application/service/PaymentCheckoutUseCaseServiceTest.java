@@ -18,6 +18,7 @@ import backend.entity.User;
 import backend.payment.application.model.PaymentSessionResult;
 import backend.payment.application.model.SePayCheckoutForm;
 import backend.payment.application.port.out.FindSePayIncomingPaymentPort;
+import backend.payment.application.port.out.LockPaymentAggregatePort;
 import backend.payment.application.port.out.model.SePayIncomingPayment;
 import backend.payment.adapter.out.sepay.SePayCheckoutAdapter;
 import backend.repository.BookingRepository;
@@ -66,6 +67,9 @@ class PaymentCheckoutUseCaseServiceTest {
     private FindSePayIncomingPaymentPort findSePayIncomingPaymentPort;
 
     @Mock
+    private LockPaymentAggregatePort lockPaymentAggregatePort;
+
+    @Mock
     private CouponUsageTrackingService couponUsageTrackingService;
 
     @Mock
@@ -90,6 +94,7 @@ class PaymentCheckoutUseCaseServiceTest {
                 userRepository,
                 new SePayCheckoutAdapter(sePayProperties),
                 findSePayIncomingPaymentPort,
+                lockPaymentAggregatePort,
                 couponUsageTrackingService,
                 validateCouponUseCase,
                 loadDiscountCodeForBookingPort
@@ -102,7 +107,7 @@ class PaymentCheckoutUseCaseServiceTest {
         Booking booking = booking(12, PaymentMethod.CASH);
         LocalDateTime bookingCreatedAt = LocalDateTime.now().minusSeconds(45);
         booking.setCreatedAt(bookingCreatedAt);
-        when(bookingRepository.findByIdAndCustomer_Account_Email(12, "customer@example.com"))
+        when(bookingRepository.findByIdForUpdate(12))
                 .thenReturn(Optional.of(booking));
         when(paymentTransactionRepository.save(any(PaymentTransaction.class))).thenAnswer(invocation -> {
             PaymentTransaction saved = invocation.getArgument(0);
@@ -119,6 +124,7 @@ class PaymentCheckoutUseCaseServiceTest {
 
         ArgumentCaptor<PaymentTransaction> transactionCaptor = ArgumentCaptor.forClass(PaymentTransaction.class);
         verify(paymentTransactionRepository).save(transactionCaptor.capture());
+        verify(bookingRepository).findByIdForUpdate(12);
         verify(bookingRepository).save(booking);
 
         PaymentTransaction savedTransaction = transactionCaptor.getValue();
@@ -141,7 +147,7 @@ class PaymentCheckoutUseCaseServiceTest {
     @Test
     void createsFullOnlinePaymentSessionThroughSePay() {
         Booking booking = booking(25, PaymentMethod.CASH);
-        when(bookingRepository.findByIdAndCustomer_Account_Email(25, "customer@example.com"))
+        when(bookingRepository.findByIdForUpdate(25))
                 .thenReturn(Optional.of(booking));
         when(paymentTransactionRepository.save(any(PaymentTransaction.class))).thenAnswer(invocation -> {
             PaymentTransaction saved = invocation.getArgument(0);
@@ -183,7 +189,7 @@ class PaymentCheckoutUseCaseServiceTest {
                 .amount(new BigDecimal("50000"))
                 .status(PaymentTransactionStatus.PENDING)
                 .build();
-        when(bookingRepository.findByIdAndCustomer_Account_Email(25, "customer@example.com"))
+        when(bookingRepository.findByIdForUpdate(25))
                 .thenReturn(Optional.of(booking));
         when(paymentTransactionRepository.findByBooking_IdAndStatusIn(eq(25), any()))
                 .thenReturn(List.of(existing));
@@ -223,9 +229,9 @@ class PaymentCheckoutUseCaseServiceTest {
         firstBooking.setCreatedAt(firstCreatedAt);
         secondBooking.setCreatedAt(secondCreatedAt);
 
-        when(bookingRepository.findByIdAndCustomer_Account_Email(28, "customer@example.com"))
+        when(bookingRepository.findByIdForUpdate(28))
                 .thenReturn(Optional.of(firstBooking));
-        when(bookingRepository.findByIdAndCustomer_Account_Email(29, "customer@example.com"))
+        when(bookingRepository.findByIdForUpdate(29))
                 .thenReturn(Optional.of(secondBooking));
         when(paymentTransactionRepository.save(any(PaymentTransaction.class))).thenAnswer(invocation -> {
             PaymentTransaction saved = invocation.getArgument(0);
@@ -255,7 +261,7 @@ class PaymentCheckoutUseCaseServiceTest {
     void rejectsNewQrAndReleasesRoomWhenBookingHoldHasExpired() {
         Booking booking = booking(27, PaymentMethod.ONLINE);
         booking.setCreatedAt(LocalDateTime.now().minusSeconds(301));
-        when(bookingRepository.findByIdAndCustomer_Account_Email(27, "customer@example.com"))
+        when(bookingRepository.findByIdForUpdate(27))
                 .thenReturn(Optional.of(booking));
 
         IllegalStateException exception = assertThrows(
@@ -294,7 +300,7 @@ class PaymentCheckoutUseCaseServiceTest {
         sePayProperties.setQrBankCode("970422");
         sePayProperties.setQrTemplate("compact");
         Booking booking = booking(12, PaymentMethod.CASH);
-        when(bookingRepository.findByIdAndCustomer_Account_Email(12, "customer@example.com"))
+        when(bookingRepository.findByIdForUpdate(12))
                 .thenReturn(Optional.of(booking));
         when(paymentTransactionRepository.save(any(PaymentTransaction.class))).thenAnswer(invocation -> {
             PaymentTransaction saved = invocation.getArgument(0);
@@ -352,6 +358,7 @@ class PaymentCheckoutUseCaseServiceTest {
         assertEquals("SEPAY_API_SUCCESS", transaction.getResponseCode());
         assertEquals("49682", transaction.getProviderTransactionId());
         assertEquals(BookingStatus.DEPOSIT_PAID, booking.getStatus());
+        verify(lockPaymentAggregatePort).lockAndRefresh(transaction);
         verify(bookingRepository).save(booking);
         verify(paymentTransactionRepository).save(transaction);
         verify(couponUsageTrackingService).recordPaidBookingUsage(booking);
@@ -398,7 +405,7 @@ class PaymentCheckoutUseCaseServiceTest {
         booking.setTotalAmount(new BigDecimal("500000.00"));
 
         when(userRepository.findByEmail(staff.getEmail())).thenReturn(Optional.of(staff));
-        when(bookingRepository.findById(31)).thenReturn(Optional.of(booking));
+        when(bookingRepository.findByIdForUpdate(31)).thenReturn(Optional.of(booking));
         when(paymentTransactionRepository.sumAmountByBookingIdAndStatus(31, PaymentTransactionStatus.SUCCEEDED))
                 .thenReturn(new BigDecimal("250000.00"));
         when(paymentTransactionRepository.save(any(PaymentTransaction.class))).thenAnswer(invocation -> {
@@ -475,7 +482,7 @@ class PaymentCheckoutUseCaseServiceTest {
                 new BigDecimal("400000.00")
         );
 
-        when(bookingRepository.findByIdAndCustomer_Account_Email(26, "customer@example.com"))
+        when(bookingRepository.findByIdForUpdate(26))
                 .thenReturn(Optional.of(booking));
         when(validateCouponUseCase.validate(any())).thenReturn(validation);
         when(loadDiscountCodeForBookingPort.loadDiscountCodeForBooking("SAVE50"))
@@ -535,7 +542,7 @@ class PaymentCheckoutUseCaseServiceTest {
 
         assertEquals("cancelled", detail.status());
         assertEquals(PaymentTransactionStatus.SUCCEEDED, transaction.getStatus());
-        assertEquals("LATE_PAYMENT_REQUIRES_REFUND", transaction.getResponseCode());
+        assertEquals("PAYMENT_AFTER_RELEASE_REQUIRES_REFUND", transaction.getResponseCode());
         assertEquals(BookingStatus.CANCELLED, booking.getStatus());
         verify(bookingRepository, never()).save(booking);
         verify(paymentTransactionRepository).save(transaction);

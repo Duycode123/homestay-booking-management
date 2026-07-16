@@ -5,6 +5,8 @@ import backend.attendance.domain.model.AttendanceRecord;
 import java.util.Optional;
 
 public interface AttendanceRecordPort {
+    void lockStaffAttendance(Integer staffId);
+
     boolean existsAttendanceForShift(Integer staffId, Integer shiftId);
 
     boolean existsWorkingAttendance(Integer staffId, Integer shiftId);

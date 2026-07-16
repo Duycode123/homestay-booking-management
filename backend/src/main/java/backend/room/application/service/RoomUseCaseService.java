@@ -152,7 +152,7 @@ public class RoomUseCaseService implements
             throw new IllegalArgumentException("Tên phòng đã tồn tại");
         }
 
-        RoomType roomType = loadRoomTypeRequired(command.roomTypeId());
+        RoomType roomType = loadActiveRoomTypeForUpdateRequired(command.roomTypeId());
 
         Room room = Room.builder()
                 .roomName(roomName)
@@ -195,7 +195,7 @@ public class RoomUseCaseService implements
             throw new IllegalArgumentException("Tên phòng đã tồn tại");
         }
 
-        RoomType roomType = loadRoomTypeRequired(command.roomTypeId());
+        RoomType roomType = loadActiveRoomTypeForUpdateRequired(command.roomTypeId());
 
         room.setRoomName(roomName);
         room.setRoomType(roomType);
@@ -300,7 +300,7 @@ public class RoomUseCaseService implements
             throw new IllegalArgumentException("roomTypeId không được để trống");
         }
 
-        RoomType roomType = loadRoomTypeRequired(command.roomTypeId());
+        RoomType roomType = loadRoomTypeForUpdateRequired(command.roomTypeId());
         String typeName = normalizeRequired(command.typeName(), "Tên loại phòng không được để trống");
         BigDecimal pricePerHour = validatePricePerHour(command.pricePerHour());
 
@@ -325,7 +325,7 @@ public class RoomUseCaseService implements
             throw new IllegalArgumentException("roomTypeId không được để trống");
         }
 
-        RoomType roomType = loadRoomTypeRequired(command.roomTypeId());
+        RoomType roomType = loadRoomTypeForUpdateRequired(command.roomTypeId());
 
         if (roomCatalogPort.existsActiveRoomForRoomType(command.roomTypeId())) {
             throw new IllegalStateException("Không thể xóa hạng phòng vì vẫn còn phòng đang hoạt động thuộc hạng này");
@@ -351,6 +351,19 @@ public class RoomUseCaseService implements
     private RoomType loadRoomTypeRequired(Integer roomTypeId) {
         return roomCatalogPort.loadRoomType(roomTypeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy loại phòng"));
+    }
+
+    private RoomType loadRoomTypeForUpdateRequired(Integer roomTypeId) {
+        return roomCatalogPort.loadRoomTypeForUpdate(roomTypeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy loại phòng"));
+    }
+
+    private RoomType loadActiveRoomTypeForUpdateRequired(Integer roomTypeId) {
+        RoomType roomType = loadRoomTypeForUpdateRequired(roomTypeId);
+        if (!roomType.isActive()) {
+            throw new IllegalStateException("Không thể gán phòng vào hạng phòng đã ngừng hoạt động");
+        }
+        return roomType;
     }
 
     private String normalizeRequired(String value, String message) {

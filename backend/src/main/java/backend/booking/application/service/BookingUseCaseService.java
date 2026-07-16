@@ -416,7 +416,7 @@ public class BookingUseCaseService implements
             throw new IllegalArgumentException("Trang thai don khong duoc de trong");
         }
 
-        Booking booking = loadBookingPort.loadBooking(command.bookingId())
+        Booking booking = loadBookingPort.loadBookingForUpdate(command.bookingId())
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay don dat phong"));
 
         LocalDateTime now = LocalDateTime.now(clock);
@@ -501,7 +501,7 @@ public class BookingUseCaseService implements
         checkAdminOrStaff(currentUser);
         requireStaffBookingAccess(currentUser, command.currentUserEmail(), command.bookingId());
 
-        Booking booking = loadBookingPort.loadBooking(command.bookingId())
+        Booking booking = loadBookingPort.loadBookingForUpdate(command.bookingId())
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay don dat phong"));
 
         bookingStatusTransitionPolicy.validateManagementCancellation(booking, command.reason());

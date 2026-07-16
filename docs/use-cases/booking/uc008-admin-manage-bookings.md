@@ -84,6 +84,7 @@ Allow operational staff to inspect bookings, review details, update booking stat
 - Creating a replacement balance QR cancels older open payment transactions for the same booking, preventing two active references.
 - Staff/admin may poll balance transactions; customers may only poll transactions belonging to their own booking.
 - The settlement use case locks the booking row while calculating and recording the remainder, preventing duplicate collection from concurrent staff actions.
+- Every management status update and cancellation locks the booking row before validating the transition. Two staff/admin requests therefore cannot both validate an old status and overwrite each other.
 - Online `PENDING_PAYMENT` bookings are confirmed only by the payment integration, not manually through booking management.
 - Check-in is accepted from 5 minutes before the planned start until before the planned end.
 - A late arrival remains eligible for check-in while the booking has not reached its planned end; the five-minute rule limits early arrival only, not late arrival.

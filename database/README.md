@@ -97,10 +97,18 @@ Core model/entity classes currently present in backend source:
 - `database/migrations/20260714_add_room_archiving.sql`
 - `database/migrations/20260715_add_checkout_payment_operator.sql`
 - `database/migrations/20260716_add_room_sleeping_layout.sql`
+- `database/migrations/20260716_serialize_open_payment_sessions.sql`
 - `database/sample-data/seed_accounts_and_customers.sql`
 - `database/sample-data/seed_rooms_and_equipment.sql`
 - `database/sample-data/seed_bookings_and_reviews.sql`
 - `database/schema-target-en.dbml`
+
+## Concurrency Constraints
+
+- `excl_booking_no_overlap` prevents two blocking bookings from occupying the same room time range, even when requests reach different backend instances.
+- `ux_payment_transaction_one_open_per_booking` permits at most one open (`INITIALIZED` or `PENDING`) payment session per booking. The migration closes older duplicate sessions before creating the index.
+- Payment state changes lock booking first and payment transaction second; provider webhooks, polling, replacement QR creation, and expiry cleanup use the same order.
+- Shift registration and attendance use transaction-scoped PostgreSQL advisory locks around check-then-write rules; existing database exclusion/unique constraints remain final safeguards.
 
 ## Sample Data
 
