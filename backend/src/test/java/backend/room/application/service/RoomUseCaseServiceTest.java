@@ -70,7 +70,10 @@ class RoomUseCaseServiceTest {
                 "Deluxe Garden 201",
                 3,
                 10,
+                3,
+                4,
                 "https://res.cloudinary.com/lkkmflxm/image/upload/v1/rooms/deluxe-garden-201.jpg",
+                List.of(),
                 RoomStatus.MAINTENANCE,
                 "admin@example.com"
         ));
@@ -80,6 +83,8 @@ class RoomUseCaseServiceTest {
         assertEquals("Deluxe Garden 201", roomCaptor.getValue().getRoomName());
         assertEquals(updatedType, roomCaptor.getValue().getRoomType());
         assertEquals(10, roomCaptor.getValue().getMaxPeople());
+        assertEquals(3, roomCaptor.getValue().getBedroomCount());
+        assertEquals(4, roomCaptor.getValue().getBedCount());
         assertEquals(
                 "https://res.cloudinary.com/lkkmflxm/image/upload/v1/rooms/deluxe-garden-201.jpg",
                 roomCaptor.getValue().getImageUrl()
@@ -186,6 +191,27 @@ class RoomUseCaseServiceTest {
         when(roomCatalogPort.existsActiveBookingForRoom(10)).thenReturn(true);
 
         assertThrows(IllegalStateException.class, () -> service.deleteRoom(new DeleteRoomCommand(10, "admin@example.com")));
+        verify(roomMutationPort, never()).saveRoom(any(Room.class));
+    }
+
+    @Test
+    void updateRoomRejectsBedCountLowerThanBedroomCount() {
+        RoomUseCaseService service = new RoomUseCaseService(roomCatalogPort, roomMutationPort, roomActorPort);
+
+        when(roomActorPort.loadUserByEmail("admin@example.com")).thenReturn(Optional.of(adminUser()));
+
+        assertThrows(IllegalArgumentException.class, () -> service.updateRoom(new UpdateRoomCommand(
+                10,
+                "Family Garden 301",
+                3,
+                8,
+                3,
+                2,
+                null,
+                List.of(),
+                RoomStatus.AVAILABLE,
+                "admin@example.com"
+        )));
         verify(roomMutationPort, never()).saveRoom(any(Room.class));
     }
 
@@ -415,6 +441,8 @@ class RoomUseCaseServiceTest {
                 .roomName("Deluxe Balcony 201")
                 .roomType(roomType(2, "Deluxe"))
                 .maxPeople(6)
+                .bedroomCount(1)
+                .bedCount(1)
                 .status(RoomStatus.AVAILABLE)
                 .build();
     }

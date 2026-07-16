@@ -4,6 +4,8 @@ export type HomestayRoom = {
   id: string
   name: string
   capacity: number
+  bedroomCount?: number
+  bedCount?: number
   pricePerHour: number
   equipment: string[]
   isVip?: boolean

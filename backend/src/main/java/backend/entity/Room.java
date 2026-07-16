@@ -33,6 +33,12 @@ public class Room {
     @Column(name = "max_people", nullable = false)
     private Integer maxPeople;
 
+    @Column(name = "bedroom_count", nullable = false)
+    private Integer bedroomCount;
+
+    @Column(name = "bed_count", nullable = false)
+    private Integer bedCount;
+
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "status", nullable = false, columnDefinition = "room_status")
@@ -66,6 +72,12 @@ public class Room {
 
         if (status == null) {
             status = RoomStatus.AVAILABLE;
+        }
+        if (bedroomCount == null) {
+            bedroomCount = 1;
+        }
+        if (bedCount == null) {
+            bedCount = 1;
         }
     }
 

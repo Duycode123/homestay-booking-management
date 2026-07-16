@@ -97,7 +97,17 @@ export default function RoomDetailPageClient({ roomId }: { roomId: string }) {
 
         <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
           <div className="space-y-8">
-            <section className="rounded-[26px] border border-outline-variant bg-white p-6 shadow-[var(--shadow-card)] sm:p-8"><h2 className="font-editorial text-3xl font-semibold text-secondary">Không gian lưu trú</h2><p className="mt-4 text-base leading-8 text-on-surface-variant">{room.description}</p><div className="mt-6 grid gap-3 sm:grid-cols-3"><Info label="Hạng phòng" value={room.type} /><Info label="Sức chứa" value={room.capacity} /><Info label="Lưu trú tối thiểu" value="1 đêm" /></div></section>
+            <section className="rounded-[26px] border border-outline-variant bg-white p-6 shadow-[var(--shadow-card)] sm:p-8">
+              <h2 className="font-editorial text-3xl font-semibold text-secondary">Không gian lưu trú</h2>
+              <p className="mt-4 text-base leading-8 text-on-surface-variant">{room.description}</p>
+              <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                <Info label="Hạng phòng" value={room.type} />
+                <Info label="Sức chứa" value={room.capacity} />
+                <Info label="Phòng ngủ" value={`${room.bedroomCount} phòng`} />
+                <Info label="Giường ngủ" value={`${room.bedCount} giường`} />
+                <Info label="Lưu trú tối thiểu" value="1 đêm" />
+              </div>
+            </section>
 
             <AmenitySection title="Tiện ích riêng của phòng" subtitle="Các thiết bị và tiện nghi được bố trí riêng trong phòng này." items={room.includedEquipments.map((name) => ({ name, description: 'Sẵn sàng phục vụ trong phòng.', iconName: 'private' }))} />
             <AmenitySection title="Tiện ích chung của homestay" subtitle="Khách lưu trú tại phòng được sử dụng các khu vực chung dưới đây." items={commonAmenities} />

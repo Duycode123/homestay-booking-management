@@ -27,6 +27,8 @@ type RoomResponse = {
   roomType?: RoomTypeResponse | null
   floor?: number | null
   maxPeople?: number | null
+  bedroomCount?: number | null
+  bedCount?: number | null
   status?: RoomStatus | null
   description?: string | null
   imageUrl?: string | null
@@ -143,6 +145,8 @@ function mapRoomToHomestayRoom(room: RoomResponse): HomestayRoom {
     id: String(room.id),
     name: room.roomName,
     capacity: parseCapacity(room),
+    bedroomCount: room.bedroomCount ?? 1,
+    bedCount: room.bedCount ?? 1,
     pricePerHour,
     equipment: buildRoomTags(room),
     isVip: /vip|premium/i.test(roomTypeName),

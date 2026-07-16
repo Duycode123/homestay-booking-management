@@ -8,12 +8,18 @@ public record CreateRoomCommand(
         String roomName,
         Integer roomTypeId,
         Integer maxPeople,
+        Integer bedroomCount,
+        Integer bedCount,
         String imageUrl,
         List<String> additionalImageUrls,
         RoomStatus status,
         String currentUserEmail
 ) {
+    public CreateRoomCommand(String roomName, Integer roomTypeId, Integer maxPeople, String imageUrl, List<String> additionalImageUrls, RoomStatus status, String currentUserEmail) {
+        this(roomName, roomTypeId, maxPeople, 1, 1, imageUrl, additionalImageUrls, status, currentUserEmail);
+    }
+
     public CreateRoomCommand(String roomName, Integer roomTypeId, Integer maxPeople, String imageUrl, RoomStatus status, String currentUserEmail) {
-        this(roomName, roomTypeId, maxPeople, imageUrl, List.of(), status, currentUserEmail);
+        this(roomName, roomTypeId, maxPeople, 1, 1, imageUrl, List.of(), status, currentUserEmail);
     }
 }

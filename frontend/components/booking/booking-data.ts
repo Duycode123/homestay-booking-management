@@ -25,6 +25,8 @@ export type BookingRoom = {
   rating?: number
   reviews?: number
   capacity: string
+  bedroomCount: number
+  bedCount: number
   location: string
   image?: string
   images?: string[]
@@ -156,6 +158,8 @@ export function mapPracticeRoomToBookingRoom(
     rating: reviewSummary?.averageRating,
     reviews: reviewSummary?.reviewCount,
     capacity: `Tối đa ${room.capacity} người`,
+    bedroomCount: room.bedroomCount ?? 1,
+    bedCount: room.bedCount ?? 1,
     location: room.location || 'The Serene Villa',
     image: safeImage,
     imageClassName: 'object-[62%_center]',
@@ -183,6 +187,8 @@ export const EMPTY_BOOKING_ROOM: BookingRoom = {
   categoryLabel: '',
   type: '',
   capacity: '',
+  bedroomCount: 1,
+  bedCount: 1,
   location: '',
   imageClassName: 'object-center',
   pricePerHour: 0,

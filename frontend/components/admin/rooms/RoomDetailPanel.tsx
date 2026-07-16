@@ -47,6 +47,8 @@ export default function RoomDetailPanel({ room, onClose, onEdit }: RoomDetailPan
         <div className="flex-1 overflow-y-auto px-5 py-5">
           <div className="grid gap-3 sm:grid-cols-2">
             <MetricCard label="Sức chứa" value={`${room.capacity} người`} />
+            <MetricCard label="Phòng ngủ" value={`${room.bedroomCount} phòng`} />
+            <MetricCard label="Giường ngủ" value={`${room.bedCount} giường`} />
             <MetricCard label="Giá/giờ" value={formatRoomPrice(room.pricePerHour)} accent="price" />
             <MetricCard label="Tiện nghi" value={`${room.equipmentCount} món`} />
             <MetricCard label="Đánh giá TB" value={room.averageRating ? `${room.averageRating}/5` : 'Chưa có'} />

@@ -146,6 +146,7 @@ public class RoomUseCaseService implements
             throw new IllegalArgumentException("roomTypeId không được để trống");
         }
         validateMaxPeople(command.maxPeople());
+        validateSleepingLayout(command.bedroomCount(), command.bedCount());
 
         if (roomCatalogPort.existsRoomName(roomName)) {
             throw new IllegalArgumentException("Tên phòng đã tồn tại");
@@ -157,6 +158,8 @@ public class RoomUseCaseService implements
                 .roomName(roomName)
                 .roomType(roomType)
                 .maxPeople(command.maxPeople())
+                .bedroomCount(command.bedroomCount())
+                .bedCount(command.bedCount())
                 .imageUrl(normalizeOptionalImageUrl(command.imageUrl()))
                 .status(command.status() == null ? RoomStatus.AVAILABLE : command.status())
                 .build();
@@ -182,6 +185,7 @@ public class RoomUseCaseService implements
             throw new IllegalArgumentException("Trạng thái phòng không được để trống");
         }
         validateMaxPeople(command.maxPeople());
+        validateSleepingLayout(command.bedroomCount(), command.bedCount());
 
         Room room = roomCatalogPort.loadRoomForUpdate(command.roomId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phòng homestay"));
@@ -196,6 +200,8 @@ public class RoomUseCaseService implements
         room.setRoomName(roomName);
         room.setRoomType(roomType);
         room.setMaxPeople(command.maxPeople());
+        room.setBedroomCount(command.bedroomCount());
+        room.setBedCount(command.bedCount());
         room.setImageUrl(normalizeOptionalImageUrl(command.imageUrl()));
         applyAdditionalImages(room, command.additionalImageUrls());
         room.setStatus(command.status());
@@ -406,6 +412,18 @@ public class RoomUseCaseService implements
         }
 
         return normalized;
+    }
+
+    private void validateSleepingLayout(Integer bedroomCount, Integer bedCount) {
+        if (bedroomCount == null || bedroomCount < 1 || bedroomCount > 20) {
+            throw new IllegalArgumentException("So phong ngu phai nam trong khoang 1-20");
+        }
+        if (bedCount == null || bedCount < 1 || bedCount > 50) {
+            throw new IllegalArgumentException("So giuong phai nam trong khoang 1-50");
+        }
+        if (bedCount < bedroomCount) {
+            throw new IllegalArgumentException("So giuong khong duoc nho hon so phong ngu");
+        }
     }
 
     private void applyAdditionalImages(Room room, List<String> imageUrls) {

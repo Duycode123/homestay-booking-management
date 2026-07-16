@@ -9,12 +9,18 @@ public record UpdateRoomCommand(
         String roomName,
         Integer roomTypeId,
         Integer maxPeople,
+        Integer bedroomCount,
+        Integer bedCount,
         String imageUrl,
         List<String> additionalImageUrls,
         RoomStatus status,
         String currentUserEmail
 ) {
+    public UpdateRoomCommand(Integer roomId, String roomName, Integer roomTypeId, Integer maxPeople, String imageUrl, List<String> additionalImageUrls, RoomStatus status, String currentUserEmail) {
+        this(roomId, roomName, roomTypeId, maxPeople, 1, 1, imageUrl, additionalImageUrls, status, currentUserEmail);
+    }
+
     public UpdateRoomCommand(Integer roomId, String roomName, Integer roomTypeId, Integer maxPeople, String imageUrl, RoomStatus status, String currentUserEmail) {
-        this(roomId, roomName, roomTypeId, maxPeople, imageUrl, List.of(), status, currentUserEmail);
+        this(roomId, roomName, roomTypeId, maxPeople, 1, 1, imageUrl, List.of(), status, currentUserEmail);
     }
 }

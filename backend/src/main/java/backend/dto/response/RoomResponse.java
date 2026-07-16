@@ -18,6 +18,8 @@ public class RoomResponse {
     private RoomTypeResponse roomType;
     private Integer floor;
     private Integer maxPeople;
+    private Integer bedroomCount;
+    private Integer bedCount;
     private RoomStatus status;
     private String description;
     private String imageUrl;
@@ -30,6 +32,8 @@ public class RoomResponse {
                 .roomType(RoomTypeResponse.from(room.getRoomType()))
                 .floor(room.getFloor())
                 .maxPeople(room.getMaxPeople())
+                .bedroomCount(room.getBedroomCount())
+                .bedCount(room.getBedCount())
                 .status(room.getStatus())
                 .description(room.getDescription())
                 .imageUrl(room.getImageUrl())

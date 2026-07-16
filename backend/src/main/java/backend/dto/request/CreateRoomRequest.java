@@ -28,6 +28,16 @@ public class CreateRoomRequest {
     @Max(value = 100, message = "Suc chua toi da khong duoc vuot qua 100")
     private Integer maxPeople;
 
+    @NotNull(message = "So phong ngu khong duoc de trong")
+    @Min(value = 1, message = "So phong ngu phai lon hon 0")
+    @Max(value = 20, message = "So phong ngu khong duoc vuot qua 20")
+    private Integer bedroomCount;
+
+    @NotNull(message = "So giuong khong duoc de trong")
+    @Min(value = 1, message = "So giuong phai lon hon 0")
+    @Max(value = 50, message = "So giuong khong duoc vuot qua 50")
+    private Integer bedCount;
+
     @Size(max = 500, message = "URL anh phong toi da 500 ky tu")
     private String imageUrl;
 

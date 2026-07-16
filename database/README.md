@@ -96,6 +96,7 @@ Core model/entity classes currently present in backend source:
 - `database/migrations/20260714_expand_homestay_amenities_and_room_gallery.sql`
 - `database/migrations/20260714_add_room_archiving.sql`
 - `database/migrations/20260715_add_checkout_payment_operator.sql`
+- `database/migrations/20260716_add_room_sleeping_layout.sql`
 - `database/sample-data/seed_accounts_and_customers.sql`
 - `database/sample-data/seed_rooms_and_equipment.sql`
 - `database/sample-data/seed_bookings_and_reviews.sql`

@@ -408,6 +408,8 @@ function getApiBookingRoom(searchParams: { get(name: string): string | null }): 
     rating: undefined,
     reviews: undefined,
     capacity: formatCapacityLabel(searchParams.get('roomCapacity'), 'Chưa rõ sức chứa'),
+    bedroomCount: 1,
+    bedCount: 1,
     location: searchParams.get('roomLocation')?.trim() || 'The Serene Villa',
     image: safeImage,
     imageClassName: 'object-center',

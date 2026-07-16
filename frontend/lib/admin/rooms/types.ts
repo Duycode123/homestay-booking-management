@@ -11,6 +11,8 @@ export type AdminRoom = {
   category: RoomCategory
   categoryLabel: string
   capacity: number
+  bedroomCount: number
+  bedCount: number
   pricePerHour: number
   status: RoomStatus
   image: string
@@ -41,6 +43,8 @@ export type RoomFormData = {
   roomTypeId: number | null
   category: RoomCategory | ''
   capacity: number
+  bedroomCount: number
+  bedCount: number
   pricePerHour: number
   status: RoomStatus | ''
   description: string

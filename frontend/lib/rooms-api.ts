@@ -16,6 +16,8 @@ export type BackendRoom = {
   roomType?: BackendRoomType | null
   floor?: number | null
   maxPeople?: number | null
+  bedroomCount?: number | null
+  bedCount?: number | null
   status?: BackendRoomStatus | null
   description?: string | null
   imageUrl?: string | null
@@ -32,6 +34,8 @@ export type CreateBackendRoomPayload = {
   roomName: string
   roomTypeId: number
   maxPeople: number
+  bedroomCount: number
+  bedCount: number
   imageUrl?: string | null
   additionalImageUrls?: string[]
   status?: BackendRoomStatus
@@ -41,6 +45,8 @@ export type UpdateBackendRoomPayload = {
   roomName: string
   roomTypeId: number
   maxPeople: number
+  bedroomCount: number
+  bedCount: number
   imageUrl?: string | null
   additionalImageUrls?: string[]
   status: BackendRoomStatus

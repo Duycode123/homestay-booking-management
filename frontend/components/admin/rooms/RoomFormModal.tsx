@@ -306,6 +306,40 @@ export default function RoomFormModal({
                 </label>
               </div>
 
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block">
+                  <span className={labelClass}>
+                    Số phòng ngủ <span className="text-error">*</span>
+                  </span>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={20}
+                    value={form.bedroomCount}
+                    onChange={(event) => set({ bedroomCount: Number(event.target.value) })}
+                    className={inputClass}
+                  />
+                  {errors.bedroomCount && <p className="mt-1 text-xs text-error">{errors.bedroomCount}</p>}
+                </label>
+
+                <label className="block">
+                  <span className={labelClass}>
+                    Số giường <span className="text-error">*</span>
+                  </span>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={50}
+                    value={form.bedCount}
+                    onChange={(event) => set({ bedCount: Number(event.target.value) })}
+                    className={inputClass}
+                  />
+                  {errors.bedCount && <p className="mt-1 text-xs text-error">{errors.bedCount}</p>}
+                </label>
+              </div>
+
               <section>
                 <div className="flex items-end justify-between gap-3">
                   <div>

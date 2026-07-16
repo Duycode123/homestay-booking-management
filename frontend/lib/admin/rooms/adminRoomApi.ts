@@ -85,6 +85,16 @@ export function validateRoomForm(data: RoomFormData): RoomFormErrors {
     errors.capacity = 'Sức chứa phải nằm trong khoảng 1-100 người.'
   }
 
+  if (!Number.isFinite(data.bedroomCount) || data.bedroomCount < 1 || data.bedroomCount > 20) {
+    errors.bedroomCount = 'Số phòng ngủ phải nằm trong khoảng 1-20.'
+  }
+
+  if (!Number.isFinite(data.bedCount) || data.bedCount < 1 || data.bedCount > 50) {
+    errors.bedCount = 'Số giường phải nằm trong khoảng 1-50.'
+  } else if (data.bedCount < data.bedroomCount) {
+    errors.bedCount = 'Số giường không được nhỏ hơn số phòng ngủ.'
+  }
+
   if (data.description.length > 500) {
     errors.description = 'Mô tả tối đa 500 ký tự.'
   }
@@ -234,6 +244,8 @@ export async function createAdminRoom(data: RoomFormData): Promise<AdminRoom> {
       roomName: data.name.trim(),
       roomTypeId: roomType.id,
       maxPeople: data.capacity,
+      bedroomCount: data.bedroomCount,
+      bedCount: data.bedCount,
       imageUrl: normalizeOptionalImageUrl(data.image),
       additionalImageUrls: data.additionalImages.map(normalizeOptionalImageUrl).filter((value): value is string => Boolean(value)),
       status: mapAdminStatusToBackendStatus(data.status || 'active'),
@@ -264,6 +276,8 @@ export async function updateAdminRoom(id: string, data: RoomFormData): Promise<A
       roomName: data.name.trim(),
       roomTypeId: roomType.id,
       maxPeople: data.capacity,
+      bedroomCount: data.bedroomCount,
+      bedCount: data.bedCount,
       imageUrl: normalizeOptionalImageUrl(data.image),
       additionalImageUrls: data.additionalImages.map(normalizeOptionalImageUrl).filter((value): value is string => Boolean(value)),
       status: mapAdminStatusToBackendStatus(data.status || 'active'),
@@ -302,6 +316,8 @@ export function toRoomFormData(room: AdminRoom): RoomFormData {
     roomTypeId: room.roomTypeId ?? null,
     category: room.category,
     capacity: room.capacity,
+    bedroomCount: room.bedroomCount,
+    bedCount: room.bedCount,
     pricePerHour: room.pricePerHour,
     status: room.status,
     description: room.description,
@@ -369,6 +385,8 @@ export const EMPTY_ROOM_FORM: RoomFormData = {
   roomTypeId: null,
   category: 'standard',
   capacity: 1,
+  bedroomCount: 1,
+  bedCount: 1,
   pricePerHour: 0,
   status: 'active',
   description: '',
