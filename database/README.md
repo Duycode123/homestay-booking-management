@@ -5,13 +5,15 @@ This folder contains the repository-owned database documentation and migrations.
 ## Fresh Deployment Bootstrap
 
 `Homestay_Database.sql` is the canonical PostgreSQL schema for a new database.
-The backend Docker build packages it as Flyway migration `V1`, followed by the
-incremental runtime additions as `V2`. Flyway understands PostgreSQL dollar-
-quoted blocks, records applied versions in `flyway_schema_history`, and runs
-the migrations before Hibernate validates the mapped schema.
+The production Flyway bootstrap files `V1__canonical_schema.sql` and
+`V2__runtime_additions.sql` are frozen snapshots because Neon has already
+recorded their checksums in `flyway_schema_history`. Never regenerate or edit
+an applied migration; add the next numbered migration instead. Docker now
+packages these immutable files directly from `backend/src/main/resources`.
 
-The Docker build context must be the repository root so the build can read both
-`backend/` and `database/Homestay_Database.sql`.
+Flyway runs the migrations before Hibernate validates the mapped schema. The
+Docker build context remains the repository root because Render builds the
+backend image from `backend/Dockerfile`.
 
 ## Current Source of Truth
 
