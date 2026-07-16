@@ -291,8 +291,17 @@ public class PaymentCheckoutUseCaseService implements
         BigDecimal originalAmount = booking.getPricePerHour()
                 .multiply(booking.getTotalHours())
                 .setScale(2, RoundingMode.HALF_UP);
+        String customerEmail = booking.getCustomer() == null
+                || booking.getCustomer().getAccount() == null
+                ? null
+                : booking.getCustomer().getAccount().getEmail();
         CouponValidationResult validation = validateCouponUseCase.validate(
-                new ValidateCouponCommand(rawCouponCode.trim(), originalAmount)
+                new ValidateCouponCommand(
+                        rawCouponCode.trim(),
+                        originalAmount,
+                        customerEmail,
+                        booking.getId()
+                )
         );
 
         if (!validation.valid()) {

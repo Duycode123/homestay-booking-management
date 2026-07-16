@@ -4,6 +4,11 @@ import java.math.BigDecimal;
 
 public record ValidateCouponCommand(
         String code,
-        BigDecimal orderAmount
+        BigDecimal orderAmount,
+        String customerEmail,
+        Integer currentBookingId
 ) {
+    public ValidateCouponCommand(String code, BigDecimal orderAmount) {
+        this(code, orderAmount, null, null);
+    }
 }

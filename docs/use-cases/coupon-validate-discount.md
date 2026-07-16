@@ -19,7 +19,7 @@ Allow the system to validate a coupon code and calculate the discount before a c
 1. Client calls `POST /api/coupons/validate`.
 2. Backend normalizes the coupon code.
 3. Backend loads the coupon from `discount_code`.
-4. Backend checks expiry date and minimum order value.
+4. Backend checks expiry date, minimum order value, and any customer-specific eligibility rule.
 5. Backend calculates discount amount.
 6. Backend returns whether the coupon is valid, discount amount, and payable amount.
 
@@ -28,6 +28,7 @@ Allow the system to validate a coupon code and calculate the discount before a c
 - Coupon does not exist: return `valid=false` with reason `Coupon khong ton tai`.
 - Coupon expired: return `valid=false` with reason `Coupon da het han`.
 - Order amount below minimum: return `valid=false` with reason `Don hang chua dat gia tri toi thieu`.
+- Existing customer uses `SERENE10`: return `valid=false` because this campaign is reserved for a customer's first booking.
 - Blank code or non-positive order amount: return HTTP 400 from request validation.
 
 ## Business rules
@@ -39,14 +40,19 @@ Allow the system to validate a coupon code and calculate the discount before a c
 - Validation endpoint only checks the coupon.
 - Booking creation can apply a valid coupon and store the final payable amount.
 - Coupon usage is recorded only after payment is confirmed as paid.
+- `SERENE10` discounts the first booking by 10%. A customer is eligible only when the account has no other booking record, including cancelled or expired booking attempts.
+- Booking creation locks the customer row before checking `SERENE10`, preventing two concurrent requests from both consuming the first-booking privilege.
+- Checkout revalidates `SERENE10` while excluding the current pending booking from the prior-booking check.
 
 ## Related endpoints
 
 - `POST /api/coupons/validate`
+- `GET /api/coupons/new-customer-offer`
 
 ## Data touched
 
 - Reads `discount_code`.
+- Reads `booking`, `customer`, and `account` to evaluate the first-booking campaign.
 - `POST /api/coupons/validate` does not write data.
 - `POST /api/bookings` can store `booking.discount_code_id`.
 - Payment confirmation writes `coupon_usage`.
@@ -60,4 +66,4 @@ Allow the system to validate a coupon code and calculate the discount before a c
 
 ## Known gaps
 
-- Usage limit, per-user limit, and active/inactive status are not implemented yet.
+- General per-user coupon limits and active/inactive campaign status are not implemented yet. `SERENE10` is the focused exception with a first-booking rule.

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import BookingQuickModal from '@/components/booking/BookingQuickModal'
 import StaySearchBar from '@/components/public/StaySearchBar'
+import NewCustomerOfferModal from '@/components/public/NewCustomerOfferModal'
 import { formatCurrency, getNightlyDisplayPrice, type BookingRoom } from '@/components/booking/booking-data'
 import {
   readQuickBookingDraft,
@@ -410,6 +411,18 @@ function TopRatedRoomCard({
           </div>
         </div>
 
+        <div className="mt-3 flex items-center gap-4 text-xs font-semibold text-[#646b65]">
+          <span className="inline-flex items-center gap-1.5">
+            <BedroomIcon />
+            {room.bedroomCount} phòng ngủ
+          </span>
+          <span className="h-1 w-1 rounded-full bg-[#c5b7a6]" />
+          <span className="inline-flex items-center gap-1.5">
+            <BedIcon />
+            {room.bedCount} giường
+          </span>
+        </div>
+
         <p className="mt-4 text-sm font-medium text-on-surface-variant">
           {room.reviews ? `${room.reviews} đánh giá` : 'Chưa có lượt đánh giá'}
         </p>
@@ -451,6 +464,24 @@ function ChevronIcon({ className = 'h-5 w-5' }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
       <path d="m9 18 6-6-6-6" />
+    </svg>
+  )
+}
+
+function BedroomIcon() {
+  return (
+    <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 20V9.5A2.5 2.5 0 0 1 6.5 7H9a3 3 0 0 1 3 3v10" />
+      <path d="M12 12h5.5A2.5 2.5 0 0 1 20 14.5V20M4 16h16M7 11h2" />
+    </svg>
+  )
+}
+
+function BedIcon() {
+  return (
+    <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 18v-7a2 2 0 0 1 2-2h3a3 3 0 0 1 3 3v1h8a2 2 0 0 1 2 2v3" />
+      <path d="M3 16h18M5 18v2M19 18v2" />
     </svg>
   )
 }
@@ -522,6 +553,7 @@ export default function HomePage() {
 
   return (
     <main id="main-content" className="min-h-screen overflow-x-hidden bg-brand-bgGray text-on-surface">
+      <NewCustomerOfferModal />
 
       <section className="relative flex min-h-[540px] items-center overflow-hidden bg-secondary text-white sm:min-h-[570px] lg:min-h-[610px]">
         <Image

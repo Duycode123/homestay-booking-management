@@ -149,7 +149,9 @@ public class BookingUseCaseService implements
         BigDecimal totalHours = calculateTotalHours(command.startTime(), command.endTime());
         BigDecimal pricePerHour = room.getRoomType().getPricePerHour();
         BigDecimal originalAmount = totalHours.multiply(pricePerHour);
-        CostBreakdown costBreakdown = calculateCostBreakdown(command.couponCode(), originalAmount);
+        CostBreakdown costBreakdown = calculateCostBreakdown(
+                command.couponCode(), originalAmount, command.customerEmail(), null
+        );
 
         return new BookingCostResponse(
                 room.getId(),
@@ -171,7 +173,7 @@ public class BookingUseCaseService implements
     public BookingResponse createBooking(CreateBookingCommand command) {
         validateCreateBookingRequest(command);
 
-        Customer customer = loadCustomerPort.loadCustomerByAccountEmail(command.customerEmail())
+        Customer customer = loadCustomerPort.loadCustomerForBookingByAccountEmail(command.customerEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay ho so khach hang"));
 
         Room room = loadRoomPort.loadRoomForUpdate(command.roomId())
@@ -188,7 +190,9 @@ public class BookingUseCaseService implements
         BigDecimal totalHours = calculateTotalHours(command.startTime(), command.endTime());
         BigDecimal pricePerHour = room.getRoomType().getPricePerHour();
         BigDecimal originalAmount = totalHours.multiply(pricePerHour);
-        CostBreakdown costBreakdown = calculateCostBreakdown(command.couponCode(), originalAmount);
+        CostBreakdown costBreakdown = calculateCostBreakdown(
+                command.couponCode(), originalAmount, command.customerEmail(), null
+        );
         DiscountCode appliedDiscountCode = loadAppliedDiscountCode(costBreakdown.couponCode());
 
         Booking booking = Booking.builder()
@@ -798,7 +802,12 @@ public class BookingUseCaseService implements
                 .divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
     }
 
-    private CostBreakdown calculateCostBreakdown(String rawCouponCode, BigDecimal originalAmount) {
+    private CostBreakdown calculateCostBreakdown(
+            String rawCouponCode,
+            BigDecimal originalAmount,
+            String customerEmail,
+            Integer currentBookingId
+    ) {
         BigDecimal normalizedOriginalAmount = normalizeMoney(originalAmount);
 
         if (rawCouponCode == null || rawCouponCode.isBlank()) {
@@ -806,7 +815,12 @@ public class BookingUseCaseService implements
         }
 
         CouponValidationResult validationResult = validateCouponUseCase.validate(
-                new ValidateCouponCommand(rawCouponCode, normalizedOriginalAmount)
+                new ValidateCouponCommand(
+                        rawCouponCode,
+                        normalizedOriginalAmount,
+                        customerEmail,
+                        currentBookingId
+                )
         );
 
         if (!validationResult.valid()) {

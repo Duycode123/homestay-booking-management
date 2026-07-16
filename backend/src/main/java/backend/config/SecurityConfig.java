@@ -134,6 +134,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/rooms/**", "/api/room-types/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/bookings/calculate-cost").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/coupons/validate").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/coupons/new-customer-offer").permitAll()
                         .requestMatchers("/api/auth/session").authenticated()
                         .requestMatchers("/api/staff/attendance/**").hasRole("STAFF")
                         .requestMatchers("/api/staff/customers/**").hasRole("STAFF")

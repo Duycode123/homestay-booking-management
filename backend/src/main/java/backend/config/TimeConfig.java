@@ -1,15 +1,17 @@
 package backend.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.time.Clock;
+import java.time.ZoneId;
 
 @Configuration
 public class TimeConfig {
 
     @Bean
-    public Clock systemClock() {
-        return Clock.systemDefaultZone();
+    public Clock systemClock(@Value("${app.time-zone:Asia/Ho_Chi_Minh}") String timeZone) {
+        return Clock.system(ZoneId.of(timeZone));
     }
 }

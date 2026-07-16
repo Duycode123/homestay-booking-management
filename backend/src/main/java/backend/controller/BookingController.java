@@ -53,13 +53,17 @@ public class BookingController {
     }
 
     @PostMapping("/calculate-cost")
-    public ResponseEntity<?> calculateCost(@RequestBody @Valid CalculateBookingCostRequest request) {
+    public ResponseEntity<?> calculateCost(
+            @RequestBody @Valid CalculateBookingCostRequest request,
+            Authentication authentication
+    ) {
         BookingCostResponse data = calculateBookingCostUseCase.calculateCost(
                 new CalculateBookingCostCommand(
                         request.getRoomId(),
                         request.getStartTime(),
                         request.getEndTime(),
-                        request.getCouponCode()
+                        request.getCouponCode(),
+                        authentication == null ? null : authentication.getName()
                 )
         );
 

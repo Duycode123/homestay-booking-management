@@ -86,6 +86,11 @@ public class BookingPersistenceAdapter implements
     }
 
     @Override
+    public Optional<Customer> loadCustomerForBookingByAccountEmail(String email) {
+        return customerRepository.findByAccountEmailForUpdate(email);
+    }
+
+    @Override
     public Optional<backend.entity.Staff> loadStaffByAccountEmail(String email) {
         return staffRepository.findByAccount_Email(email);
     }

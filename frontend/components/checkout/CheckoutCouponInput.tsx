@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { formatCurrency } from '@/lib/checkout-data'
 import type { AppliedDiscount } from '@/lib/discount-service'
 import { validateDiscountCode } from '@/lib/discount-service'
+import { clearSelectedCoupon, readSelectedCoupon } from '@/lib/new-customer-offer'
 
 type CheckoutCouponInputProps = {
   subtotal: number
@@ -22,7 +23,7 @@ export default function CheckoutCouponInput({
   disabled = false,
   bookingId,
 }: CheckoutCouponInputProps) {
-  const [code, setCode] = useState(appliedDiscount?.code ?? '')
+  const [code, setCode] = useState(() => appliedDiscount?.code ?? readSelectedCoupon())
   const [isApplying, setIsApplying] = useState(false)
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [feedback, setFeedback] = useState('')
@@ -63,6 +64,7 @@ export default function CheckoutCouponInput({
         code: result.code,
         discountAmount: result.discountAmount,
       })
+      clearSelectedCoupon()
       setStatus('success')
       setFeedback(result.message)
     } finally {
@@ -74,6 +76,7 @@ export default function CheckoutCouponInput({
     if (disabled || isApplying) return
 
     setCode('')
+    clearSelectedCoupon()
     setStatus('idle')
     setFeedback('')
     onRemoved()

@@ -6,6 +6,15 @@ public record CalculateBookingCostCommand(
         Integer roomId,
         LocalDateTime startTime,
         LocalDateTime endTime,
-        String couponCode
+        String couponCode,
+        String customerEmail
 ) {
+    public CalculateBookingCostCommand(
+            Integer roomId,
+            LocalDateTime startTime,
+            LocalDateTime endTime,
+            String couponCode
+    ) {
+        this(roomId, startTime, endTime, couponCode, null);
+    }
 }

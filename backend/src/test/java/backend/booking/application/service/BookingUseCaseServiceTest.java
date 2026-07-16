@@ -265,6 +265,29 @@ class BookingUseCaseServiceTest {
     }
 
     @Test
+    void allowsGuestToCheckInThirtyMinutesAfterPlannedStart() {
+        User staffUser = User.builder().id(3).email("staff@example.com").role(Role.STAFF).build();
+        Staff staff = Staff.builder().id(8).account(staffUser).fullName("Nhan vien A").build();
+        Booking booking = bookingAt(
+                LocalDateTime.of(2026, 1, 1, 9, 30),
+                LocalDateTime.of(2026, 1, 1, 12, 0)
+        );
+        booking.setId(17);
+
+        when(loadUserPort.loadUserByEmail(staffUser.getEmail())).thenReturn(Optional.of(staffUser));
+        when(loadBookingPort.loadBooking(17)).thenReturn(Optional.of(booking));
+        when(loadStaffForBookingPort.loadStaffByAccountEmail(staffUser.getEmail())).thenReturn(Optional.of(staff));
+        when(saveBookingPort.save(booking)).thenReturn(booking);
+
+        BookingResponse response = bookingUseCaseService.updateBookingStatus(
+                new UpdateBookingStatusCommand(17, BookingStatus.CHECKED_IN, staffUser.getEmail())
+        );
+
+        assertEquals(BookingStatus.CHECKED_IN, response.getStatus());
+        assertEquals(LocalDateTime.of(2026, 1, 1, 10, 0), response.getCheckinTime());
+    }
+
+    @Test
     void rejectsGuestCheckInMoreThanFiveMinutesEarly() {
         User staffUser = User.builder().id(3).email("staff@example.com").role(Role.STAFF).build();
         Booking booking = bookingAt(
@@ -554,7 +577,7 @@ class BookingUseCaseServiceTest {
         User account = User.builder().id(7).email("customer@example.com").build();
         Customer customer = Customer.builder().id(7).account(account).build();
 
-        when(loadCustomerPort.loadCustomerByAccountEmail(account.getEmail())).thenReturn(Optional.of(customer));
+        when(loadCustomerPort.loadCustomerForBookingByAccountEmail(account.getEmail())).thenReturn(Optional.of(customer));
         when(loadRoomPort.loadRoomForUpdate(1)).thenReturn(Optional.of(room));
         when(loadBookingPort.loadBlockingBookings(
                 eq(1),
@@ -645,7 +668,7 @@ class BookingUseCaseServiceTest {
         User account = User.builder().id(7).email("customer@example.com").build();
         Customer customer = Customer.builder().id(7).account(account).build();
 
-        when(loadCustomerPort.loadCustomerByAccountEmail(account.getEmail())).thenReturn(Optional.of(customer));
+        when(loadCustomerPort.loadCustomerForBookingByAccountEmail(account.getEmail())).thenReturn(Optional.of(customer));
         when(loadRoomPort.loadRoomForUpdate(1)).thenReturn(Optional.of(room));
         when(loadBookingPort.loadBlockingBookings(
                 eq(1),

@@ -9,8 +9,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class CouponWebMapper {
 
-    public ValidateCouponCommand toCommand(ValidateCouponRequest request) {
-        return new ValidateCouponCommand(request.code(), request.orderAmount());
+    public ValidateCouponCommand toCommand(ValidateCouponRequest request, String customerEmail) {
+        return new ValidateCouponCommand(request.code(), request.orderAmount(), customerEmail, null);
     }
 
     public ValidateCouponResponse toResponse(CouponValidationResult result) {

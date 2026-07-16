@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import BookingQuickModal from '@/components/booking/BookingQuickModal'
 import {
   buildStaySearchParams,
@@ -74,7 +74,6 @@ const defaultFilters: RoomFilters = {
   capacity: 'all',
   minGuests: 0,
   minBedrooms: 0,
-  minBeds: 0,
   amenities: [],
   availability: 'all',
   minNightlyPrice: MIN_NIGHTLY_PRICE,
@@ -148,18 +147,12 @@ export default function RoomsPublicPage() {
   const hasActiveFilters =
     filters.roomTierId !== 'all' ||
     filters.capacity !== 'all' ||
-    filters.minBedrooms > 0 || filters.minBeds > 0 || filters.amenities.length > 0 ||
+    filters.minBedrooms > 0 || filters.amenities.length > 0 ||
     filters.availability !== 'all' ||
     filters.minNightlyPrice !== MIN_NIGHTLY_PRICE ||
     filters.maxNightlyPrice !== MAX_NIGHTLY_PRICE
   const additionalFilterCount = [
-    filters.roomTierId !== 'all',
-    filters.minBedrooms > 0,
-    filters.minBeds > 0,
-    filters.amenities.length > 0,
     filters.availability !== 'all',
-    filters.capacity !== 'all',
-    filters.minNightlyPrice !== MIN_NIGHTLY_PRICE || filters.maxNightlyPrice !== MAX_NIGHTLY_PRICE,
   ].filter(Boolean).length
 
   useEffect(() => {
@@ -487,30 +480,36 @@ export default function RoomsPublicPage() {
       </section>
 
       <section id="room-catalog" className="mx-auto max-w-[1400px] scroll-mt-24 px-5 py-12 sm:px-8 sm:py-14">
-        <div className="rounded-[22px] border border-[#ded5c9] bg-white p-3 shadow-[0_18px_50px_rgba(29,49,41,0.08)] sm:p-4">
-          <div className="flex flex-col gap-3 border-b border-[#eee7de] px-2 pb-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="font-display text-base font-bold text-secondary">Tinh chỉnh lựa chọn</p>
-              <p className="mt-0.5 text-xs text-on-surface-variant">Các phòng bên dưới đã phù hợp kỳ lưu trú và số khách; tiếp tục lọc theo nhu cầu chi tiết.</p>
+        <div className="rounded-[28px] border border-[#d9cebf] bg-white shadow-[0_24px_70px_rgba(29,49,41,0.10)]">
+          <div className="flex flex-col gap-4 rounded-t-[27px] border-b border-white/10 bg-[linear-gradient(120deg,#173a31_0%,#214c40_62%,#315c4f_100%)] px-5 py-4 text-white sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <div className="flex items-center gap-3.5">
+              <FilterControlIcon name="tune" prominent />
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#e3bc8e]">Bộ lọc tinh tuyển</p>
+                <p className="mt-0.5 font-display text-lg font-bold text-white">Chọn căn phù hợp nhất</p>
+                <p className="mt-0.5 text-xs text-white/58">Lọc theo không gian, sức chứa, tiện nghi và ngân sách.</p>
+              </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="rounded-full bg-[#eef5f1] px-3 py-1.5 text-xs font-bold text-secondary">
+              <span className="rounded-full border border-white/12 bg-white/10 px-3.5 py-2 text-xs font-bold text-white">
                 {isStayAvailabilityLoading ? 'Đang kiểm tra lịch' : `${filteredRooms.length} phòng`}
               </span>
               <button
                 type="button"
                 onClick={resetDetailFilters}
                 disabled={!hasActiveFilters}
-                className="rounded-full px-3 py-1.5 text-xs font-semibold text-[#9a6739] transition hover:bg-[#f8efe5] disabled:cursor-default disabled:opacity-35"
+                className="rounded-full border border-white/12 px-3.5 py-2 text-xs font-semibold text-[#f0d4b2] transition hover:bg-white/10 disabled:cursor-default disabled:opacity-35"
               >
-                Đặt lại bộ lọc
+                Đặt lại
               </button>
             </div>
           </div>
 
-          <div className="grid gap-2 pt-3 md:grid-cols-2 xl:grid-cols-5">
+          <div className="p-4 sm:p-5">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
             <CompactFilterSelect
               label="Loại phòng"
+              icon="tier"
               value={filters.roomTierId}
               onChange={(value) => updateFilter('roomTierId', value)}
               options={[
@@ -525,16 +524,18 @@ export default function RoomsPublicPage() {
               ]}
             />
             <CompactFilterSelect
-              label="Phòng ngủ"
+              label="Số phòng"
+              icon="room"
               value={String(filters.minBedrooms)}
               onChange={(value) => updateFilter('minBedrooms', Number(value))}
-              options={buildCountOptions('phòng ngủ', 6)}
+              options={buildCountOptions('phòng', 6)}
             />
             <CompactFilterSelect
-              label="Số giường"
-              value={String(filters.minBeds)}
-              onChange={(value) => updateFilter('minBeds', Number(value))}
-              options={buildCountOptions('giường', 10)}
+              label="Sức chứa"
+              icon="guests"
+              value={filters.capacity}
+              onChange={(value) => updateFilter('capacity', value as RoomCapacityFilter)}
+              options={capacityOptions}
             />
             <AmenitiesFilter
               options={availableAmenities}
@@ -553,19 +554,20 @@ export default function RoomsPublicPage() {
             />
           </div>
 
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-[#f0e9e0] px-1 pt-3">
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-[#e9dfd2] bg-[linear-gradient(90deg,#faf6f0,#f7f3ed)] px-3.5 py-3">
             <div className="flex flex-wrap gap-2">
+              {!stayCriteria && !hasActiveFilters && <span className="inline-flex items-center gap-2 text-xs font-medium text-[#777b75]"><span className="h-1.5 w-1.5 rounded-full bg-[#b28455]" />Kết quả cập nhật ngay khi bạn chọn bộ lọc</span>}
               {stayCriteria && <FilterSummaryChip label={`${formatShortStayDate(stayCriteria.checkIn)} → ${formatShortStayDate(stayCriteria.checkOut)}`} />}
               {stayCriteria && <FilterSummaryChip label={`${stayCriteria.adults + stayCriteria.children} khách`} />}
-              {filters.minBedrooms > 0 && <FilterSummaryChip label={`Từ ${filters.minBedrooms} phòng ngủ`} />}
-              {filters.minBeds > 0 && <FilterSummaryChip label={`Từ ${filters.minBeds} giường`} />}
+              {filters.minBedrooms > 0 && <FilterSummaryChip label={`Từ ${filters.minBedrooms} phòng`} />}
+              {filters.capacity !== 'all' && <FilterSummaryChip label={capacityOptions.find((option) => option.value === filters.capacity)?.label ?? 'Đã chọn sức chứa'} />}
               {filters.amenities.slice(0, 2).map((amenity) => <FilterSummaryChip key={amenity} label={amenity} />)}
               {filters.amenities.length > 2 && <FilterSummaryChip label={`+${filters.amenities.length - 2} tiện nghi`} />}
             </div>
             <button
               type="button"
               onClick={() => setIsMoreFiltersOpen((open) => !open)}
-              className="inline-flex items-center gap-2 rounded-full border border-[#dfd3c3] bg-[#fbf8f3] px-4 py-2 text-xs font-bold text-secondary transition hover:border-[#b28455]"
+              className="inline-flex items-center gap-2 rounded-full border border-[#d8c9b7] bg-white px-4 py-2 text-xs font-bold text-secondary shadow-[0_6px_16px_rgba(46,57,51,.05)] transition hover:border-[#b28455] hover:text-[#8e6139]"
               aria-expanded={isMoreFiltersOpen}
             >
               Bộ lọc khác
@@ -575,21 +577,18 @@ export default function RoomsPublicPage() {
           </div>
 
           {isMoreFiltersOpen && (
-            <div className="mt-3 grid gap-2 rounded-[18px] border border-[#e8dfd3] bg-[#fbf8f3] p-3 md:grid-cols-2">
-              <CompactFilterSelect
-                label="Sức chứa tổng quát"
-                value={filters.capacity}
-                onChange={(value) => updateFilter('capacity', value as RoomCapacityFilter)}
-                options={capacityOptions}
-              />
+            <div className="mt-3 rounded-[18px] border border-[#e8dfd3] bg-[#fbf8f3] p-3">
               <CompactFilterSelect
                 label="Trạng thái hôm nay"
+                icon="calendar"
                 value={filters.availability}
                 onChange={(value) => updateFilter('availability', value as 'all' | RoomAvailabilityStatus)}
                 options={availabilityOptions}
               />
             </div>
           )}
+          <p className="mt-3 px-1 text-[11px] leading-5 text-[#85867f]">“Số phòng” là số không gian phòng ngủ riêng trong mỗi căn homestay. Mỗi lượt đặt hiện áp dụng cho một căn.</p>
+          </div>
         </div>
 
         <div className="mt-8 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
@@ -872,6 +871,31 @@ function RoomCard({
   )
 }
 
+type FilterControlIconName = 'tier' | 'room' | 'guests' | 'amenities' | 'price' | 'calendar' | 'tune'
+
+function FilterControlIcon({ name, prominent = false }: { name: FilterControlIconName; prominent?: boolean }) {
+  const paths: Record<FilterControlIconName, ReactNode> = {
+    tier: <><path d="M5 8.5h14M7 5h10M7 12h10M9 15.5h6M10 19h4" /><path d="M4 3h16v18H4z" opacity=".18" /></>,
+    room: <><path d="M4 20V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v15M8 20v-5h8v5M9 8h6" /><circle cx="16.5" cy="11.5" r=".8" fill="currentColor" stroke="none" /></>,
+    guests: <><circle cx="9" cy="8" r="3" /><path d="M3.5 20v-1.5A4.5 4.5 0 0 1 8 14h2a4.5 4.5 0 0 1 4.5 4.5V20M16 6.5a2.5 2.5 0 0 1 0 5M17 14a4 4 0 0 1 3.5 4v2" /></>,
+    amenities: <><path d="M12 3 9.8 8.1 4.5 9l4 3.7-.9 5.3 4.4-2.6 4.4 2.6-.9-5.3 4-3.7-5.3-.9L12 3Z" /><circle cx="12" cy="11" r="1.7" /></>,
+    price: <><path d="M4 7.5h16v10H4z" /><path d="M7 7.5V5h10v2.5M7 17.5V20h10v-2.5" /><circle cx="12" cy="12.5" r="2.2" /></>,
+    calendar: <><rect x="3.5" y="5" width="17" height="15" rx="2.5" /><path d="M8 3v4M16 3v4M3.5 10h17" /></>,
+    tune: <><path d="M4 6h16M4 12h16M4 18h16" /><circle cx="9" cy="6" r="2" fill="currentColor" /><circle cx="15" cy="12" r="2" fill="currentColor" /><circle cx="7" cy="18" r="2" fill="currentColor" /></>,
+  }
+
+  return (
+    <span className={[
+      'flex shrink-0 items-center justify-center',
+      prominent
+        ? 'h-11 w-11 rounded-2xl border border-white/14 bg-white/10 text-[#f0d4b2] shadow-inner'
+        : 'h-10 w-10 rounded-[14px] border border-[#eadfd1] bg-[#f5ecdf] text-[#98683c]',
+    ].join(' ')}>
+      <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>
+    </span>
+  )
+}
+
 function AmenitiesFilter({ options, selected, onChange }: { options: string[]; selected: string[]; onChange: (values: string[]) => void }) {
   const [isOpen, setIsOpen] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -897,12 +921,13 @@ function AmenitiesFilter({ options, selected, onChange }: { options: string[]; s
         type="button"
         onClick={() => setIsOpen((open) => !open)}
         className={[
-          'flex min-h-[62px] w-full items-center justify-between rounded-2xl border px-4 text-left transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b88857]',
+          'flex min-h-[70px] w-full items-center gap-3 rounded-[18px] border px-3.5 text-left transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b88857]',
           isOpen ? 'border-[#b88857] bg-white shadow-[0_0_0_3px_rgba(184,136,87,0.10)]' : 'border-[#e6ddd2] bg-[#fcfaf7] hover:border-[#d4c2ad] hover:bg-white',
         ].join(' ')}
         aria-expanded={isOpen}
       >
-        <span className="min-w-0">
+        <FilterControlIcon name="amenities" />
+        <span className="min-w-0 flex-1">
           <span className="block font-display text-[10px] font-bold uppercase tracking-[0.12em] text-[#817970]">Tiện nghi</span>
           <span className="mt-1 block truncate text-sm font-semibold text-on-surface">{selected.length > 0 ? `${selected.length} tiện nghi đã chọn` : 'Chọn tiện nghi'}</span>
         </span>
@@ -937,11 +962,13 @@ function FilterSummaryChip({ label }: { label: string }) {
 
 function CompactFilterSelect({
   label,
+  icon,
   value,
   onChange,
   options,
 }: {
   label: string
+  icon?: FilterControlIconName
   value: string
   onChange: (value: string) => void
   options: Array<{ value: string; label: string }>
@@ -976,13 +1003,14 @@ function CompactFilterSelect({
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         className={[
-          'flex min-h-[62px] w-full items-center justify-between rounded-2xl border px-4 text-left transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b88857]',
+          'flex min-h-[70px] w-full items-center gap-3 rounded-[18px] border px-3.5 text-left transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b88857]',
           isOpen
             ? 'border-[#b88857] bg-white shadow-[0_0_0_3px_rgba(184,136,87,0.10)]'
             : 'border-[#e6ddd2] bg-[#fcfaf7] hover:border-[#d4c2ad] hover:bg-white',
         ].join(' ')}
       >
-        <span className="min-w-0">
+        {icon && <FilterControlIcon name={icon} />}
+        <span className="min-w-0 flex-1">
           <span className="block font-display text-[10px] font-bold uppercase tracking-[0.12em] text-[#817970]">{label}</span>
           <span className="mt-1 block truncate text-sm font-semibold text-on-surface">{selectedOption?.label}</span>
         </span>
@@ -1064,13 +1092,14 @@ function NightlyPriceFilter({
         onClick={() => setIsOpen((current) => !current)}
         aria-expanded={isOpen}
         className={[
-          'flex min-h-[62px] w-full items-center justify-between rounded-2xl border bg-[#fcfaf7] px-4 text-left transition',
+          'flex min-h-[70px] w-full items-center gap-3 rounded-[18px] border bg-[#fcfaf7] px-3.5 text-left transition',
           isOpen
             ? 'border-[#b88857] bg-white shadow-[0_0_0_3px_rgba(184,136,87,0.10)]'
             : 'border-[#e6ddd2] hover:border-[#cfb99f] hover:bg-white',
         ].join(' ')}
       >
-        <span>
+        <FilterControlIcon name="price" />
+        <span className="min-w-0 flex-1">
           <span className="block font-display text-[10px] font-bold uppercase tracking-[0.12em] text-[#817970]">Giá mỗi đêm</span>
           <span className="mt-1 block text-sm font-semibold text-on-surface">
             {formatCompactPrice(min)} – {formatCompactPrice(max)}

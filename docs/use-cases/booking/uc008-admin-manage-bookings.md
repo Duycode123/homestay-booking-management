@@ -86,6 +86,8 @@ Allow operational staff to inspect bookings, review details, update booking stat
 - The settlement use case locks the booking row while calculating and recording the remainder, preventing duplicate collection from concurrent staff actions.
 - Online `PENDING_PAYMENT` bookings are confirmed only by the payment integration, not manually through booking management.
 - Check-in is accepted from 5 minutes before the planned start until before the planned end.
+- A late arrival remains eligible for check-in while the booking has not reached its planned end; the five-minute rule limits early arrival only, not late arrival.
+- Booking lifecycle checks use the configured business time zone (`APP_TIME_ZONE`, default `Asia/Ho_Chi_Minh`) so local and deployed environments enforce the same window.
 - A booking with a `PENDING` customer cancellation request cannot be checked in until admin reviews that request.
 - Cancelled, checked-in, and completed bookings cannot be cancelled through the management flow.
 - Cancellation reason, if provided, is appended into booking note history.

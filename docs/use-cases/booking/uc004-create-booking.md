@@ -82,6 +82,7 @@ Allow an authenticated customer to select a valid room/time range, see the expec
 - The room catalog displays `PAYMENT_HOLD` separately as `Đang giữ chỗ`, excludes it from the available-room count, and refreshes when the reported hold countdown expires. After the expiry sweep cancels an unpaid booking, the room returns to the available count automatically.
 - Deposit success moves the booking to `DEPOSIT_PAID`; full-payment success moves it to `PAID`.
 - A valid coupon entered at checkout changes the pending booking total before the payment transaction is created, but does not create `coupon_usage` until payment is confirmed.
+- `SERENE10` is valid only for the customer's first booking. The customer is locked during creation and the payment-session recheck excludes only that current booking, so parallel requests cannot claim the promotion twice.
 
 ## Data Touched
 

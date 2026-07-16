@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.Clock;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -91,7 +92,7 @@ class CouponValidationServiceTest {
 
     @Test
     void validateRejectsMissingCoupon() {
-        CouponValidationService service = new CouponValidationService(code -> Optional.empty());
+        CouponValidationService service = emptyService();
 
         var result = service.validate(new ValidateCouponCommand("NONE", BigDecimal.valueOf(200000)));
 
@@ -101,7 +102,7 @@ class CouponValidationServiceTest {
 
     @Test
     void validateRejectsBlankCode() {
-        CouponValidationService service = new CouponValidationService(code -> Optional.empty());
+        CouponValidationService service = emptyService();
 
         assertThrows(IllegalArgumentException.class,
                 () -> service.validate(new ValidateCouponCommand(" ", BigDecimal.valueOf(200000))));
@@ -109,6 +110,63 @@ class CouponValidationServiceTest {
 
     private CouponValidationService serviceWith(DiscountCode discountCode) {
         LoadDiscountCodePort port = code -> Optional.of(discountCode);
-        return new CouponValidationService(port);
+        return new CouponValidationService(port, (email, excludedBookingId) -> false, Clock.systemDefaultZone());
+    }
+
+    @Test
+    void validateRejectsSerene10WhenCustomerAlreadyHasBooking() {
+        LoadDiscountCodePort port = code -> Optional.of(new DiscountCode(
+                10,
+                "SERENE10",
+                DiscountType.PERCENTAGE,
+                BigDecimal.TEN,
+                BigDecimal.ZERO,
+                null
+        ));
+        CouponValidationService service = new CouponValidationService(
+                port,
+                (email, excludedBookingId) -> true,
+                Clock.systemDefaultZone()
+        );
+
+        var result = service.validate(new ValidateCouponCommand(
+                "SERENE10",
+                BigDecimal.valueOf(2_000_000),
+                "returning@example.com",
+                null
+        ));
+
+        assertFalse(result.valid());
+        assertEquals("Ma SERENE10 chi ap dung cho booking dau tien cua khach hang", result.reason());
+    }
+
+    @Test
+    void newCustomerOfferIsHiddenFromReturningCustomer() {
+        LoadDiscountCodePort port = code -> Optional.of(new DiscountCode(
+                10,
+                "SERENE10",
+                DiscountType.PERCENTAGE,
+                BigDecimal.TEN,
+                BigDecimal.ZERO,
+                null
+        ));
+        CouponValidationService service = new CouponValidationService(
+                port,
+                (email, excludedBookingId) -> true,
+                Clock.systemDefaultZone()
+        );
+
+        var offer = service.getOffer("returning@example.com");
+
+        assertFalse(offer.eligible());
+        assertEquals("SERENE10", offer.code());
+    }
+
+    private CouponValidationService emptyService() {
+        return new CouponValidationService(
+                code -> Optional.empty(),
+                (email, excludedBookingId) -> false,
+                Clock.systemDefaultZone()
+        );
     }
 }
