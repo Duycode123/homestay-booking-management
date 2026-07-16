@@ -401,7 +401,7 @@ The current admin revenue report still queries raw `booking` rows because the HT
 
 `SERENE10` is the seeded new-customer campaign. It is a 10% percentage discount with no minimum order value or fixed expiry. Eligibility is not inferred from `coupon_usage`: the application checks that the customer has no other `booking` row, locks the customer during booking creation, and excludes only the current pending booking during checkout revalidation. This strict first-booking rule also treats cancelled and expired booking attempts as prior bookings.
 
-The campaign is seeded by `backend/src/main/resources/db/migration/V4__seed_new_customer_coupon.sql` and by the canonical `database/Homestay_Database.sql` bootstrap script.
+The campaign is seeded only by `backend/src/main/resources/db/migration/V4__seed_new_customer_coupon.sql`. The canonical schema file remains immutable because Render derives Flyway `V1` from it and changing an already-applied migration would cause a checksum mismatch.
 
 `coupon_usage` is the persistence record of a coupon that was actually consumed after payment is confirmed.
 
