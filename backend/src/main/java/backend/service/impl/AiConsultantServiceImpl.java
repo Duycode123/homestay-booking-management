@@ -1,7 +1,11 @@
 package backend.service.impl;
 
 import backend.dto.request.AiChatRequest;
+import backend.dto.request.AiChatTurnRequest;
+import backend.dto.request.AiConversationContextRequest;
+import backend.dto.response.AiAgentActionResponse;
 import backend.dto.response.AiChatResponse;
+import backend.dto.response.AiConversationContextResponse;
 import backend.dto.response.AiSuggestedRoomResponse;
 import backend.equipment.adapter.out.persistence.EquipmentJpaEntity;
 import backend.equipment.adapter.out.persistence.EquipmentRepository;
@@ -28,9 +32,12 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -38,6 +45,10 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class AiConsultantServiceImpl implements AiConsultantService {
+
+    private static final BigDecimal NIGHT_STAY_HOURS = BigDecimal.valueOf(22);
+    private static final LocalTime CHECK_IN_TIME = LocalTime.of(14, 0);
+    private static final LocalTime CHECK_OUT_TIME = LocalTime.of(12, 0);
 
     private static final List<BookingStatus> ROOM_BLOCKING_STATUSES = List.of(
             BookingStatus.PENDING_PAYMENT,
@@ -47,14 +58,14 @@ public class AiConsultantServiceImpl implements AiConsultantService {
     );
 
     private static final List<String> SUGGESTED_QUESTIONS = List.of(
-            "Tối nay 18h đến 20h còn phòng nào trống?",
-            "Tôi đi 4 người, phòng nào phù hợp?",
-            "Có phòng nào dưới 200k một giờ không?",
+            "Tôi muốn đặt phòng cho 2 người lớn",
+            "Tìm phòng từ ngày mai trong 1 đêm",
+            "Có phòng nào dưới 3 triệu một đêm không?",
             "Phòng rẻ nhất hiện tại là phòng nào?",
-            "Tôi muốn phòng rộng cho nhóm đông người thì nên chọn phòng nào?",
+            "Phòng nào có 2 giường và Wi-Fi?",
             "Cho tôi xem tất cả phòng đang có",
             "Phòng nào phù hợp cho gia đình 4 người?",
-            "Tư vấn giúp tôi phòng phù hợp với ngân sách 300k"
+            "Tôi muốn hỏi về thanh toán và đặt cọc"
     );
 
     private static final Pattern PEOPLE_PATTERN =
@@ -69,6 +80,11 @@ public class AiConsultantServiceImpl implements AiConsultantService {
             Pattern.compile("(?:luc|tu|bat dau luc)\\s*(\\d{1,2})(?:[:h](\\d{1,2}))?\\s*(?:h|gio)?");
     private static final Pattern DATE_PATTERN =
             Pattern.compile("(\\d{1,2})[/-](\\d{1,2})(?:[/-](\\d{2,4}))?");
+    private static final Pattern NIGHT_PATTERN = Pattern.compile("(\\d{1,2})\\s*(?:dem|night)");
+    private static final Pattern ADULT_PATTERN = Pattern.compile("(\\d{1,2})\\s*(?:nguoi lon|adult)");
+    private static final Pattern CHILD_PATTERN = Pattern.compile("(\\d{1,2})\\s*(?:tre em|tre nho|child|children)");
+    private static final Pattern BEDROOM_PATTERN = Pattern.compile("(\\d{1,2})\\s*(?:phong ngu|bedroom)");
+    private static final Pattern BED_PATTERN = Pattern.compile("(\\d{1,2})\\s*(?:giuong|bed)");
     private static final DateTimeFormatter PROMPT_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
@@ -84,26 +100,49 @@ public class AiConsultantServiceImpl implements AiConsultantService {
     public AiChatResponse chat(AiChatRequest request) {
         String message = request.getMessage().trim();
         String normalizedMessage = normalize(message);
-        Integer people = request.getPeople() != null
-                ? request.getPeople()
-                : extractPeople(normalizedMessage).orElse(null);
-        BigDecimal maxPrice = request.getMaxPricePerHour() != null
-                ? request.getMaxPricePerHour()
-                : extractMaxPrice(normalizedMessage).orElse(null);
-        TimeRange timeRange = resolveTimeRange(request, normalizedMessage);
+        AgentContext agentContext = resolveAgentContext(request, normalizedMessage);
+        Integer people = agentContext.totalGuests() != null
+                ? agentContext.totalGuests()
+                : request.getPeople() != null ? request.getPeople() : extractPeople(normalizedMessage).orElse(null);
+        BigDecimal maxPrice = agentContext.maxNightlyPrice() != null
+                ? agentContext.maxNightlyPrice().divide(NIGHT_STAY_HOURS, 2, java.math.RoundingMode.HALF_UP)
+                : request.getMaxPricePerHour() != null ? request.getMaxPricePerHour() : extractMaxPrice(normalizedMessage).orElse(null);
+        TimeRange timeRange = agentContext.hasCompleteStay()
+                ? new TimeRange(
+                        agentContext.checkInDate().atTime(CHECK_IN_TIME),
+                        agentContext.checkOutDate().atTime(CHECK_OUT_TIME)
+                )
+                : resolveTimeRange(request, normalizedMessage);
 
         List<AiSuggestedRoomResponse> allAvailableRooms = safeGetRoomContext(timeRange);
-        List<AiSuggestedRoomResponse> matchedRooms = filterRooms(allAvailableRooms, people, maxPrice, timeRange);
-        String localAnswer = buildAnswer(normalizedMessage, matchedRooms, allAvailableRooms, people, maxPrice, timeRange);
+        List<AiSuggestedRoomResponse> matchedRooms = filterAgentRooms(
+                filterRooms(allAvailableRooms, people, maxPrice, timeRange),
+                agentContext
+        );
+        Integer selectedRoomId = resolveSelectedRoomId(agentContext, normalizedMessage, matchedRooms, allAvailableRooms);
+        agentContext = agentContext.withSelectedRoomId(selectedRoomId);
+        AgentTurn agentTurn = buildAgentTurn(agentContext, matchedRooms, allAvailableRooms);
+
+        String localAnswer = "BOOKING".equals(agentContext.intent())
+                ? agentTurn.answer()
+                : buildAnswer(normalizedMessage, matchedRooms, allAvailableRooms, people, maxPrice, timeRange);
         String answer = localAnswer;
         String mode = "LOCAL_DB_RULES";
         boolean usedAi = false;
 
-        if (geminiAiClient.isConfigured()) {
+        if (geminiAiClient.isConfigured() && !"BOOKING".equals(agentContext.intent())) {
             try {
                 String aiAnswer = geminiAiClient.chat(
                         buildSystemPrompt(),
-                        buildGeminiPrompt(message, matchedRooms, allAvailableRooms, people, maxPrice, timeRange, localAnswer)
+                        buildGeminiPrompt(
+                                buildConversationMessage(request.getHistory(), message),
+                                matchedRooms,
+                                allAvailableRooms,
+                                people,
+                                maxPrice,
+                                timeRange,
+                                localAnswer
+                        )
                 );
                 if (isLikelyIncompleteAnswer(aiAnswer)) {
                     mode = "LOCAL_DB_RULES:GEMINI_INCOMPLETE";
@@ -117,16 +156,404 @@ public class AiConsultantServiceImpl implements AiConsultantService {
             }
         }
 
+        boolean showRoomCards = "BOOKING".equals(agentContext.intent())
+                ? List.of("RECOMMENDING", "AWAITING_CONFIRMATION", "NO_MATCH").contains(agentTurn.state())
+                : containsAny(normalizedMessage, "phong", "homestay", "gia", "suc chua", "tien nghi");
+
         return AiChatResponse.builder()
                 .answer(answer)
-                .suggestedRooms(matchedRooms)
+                .suggestedRooms(showRoomCards ? matchedRooms.stream().limit(4).toList() : List.of())
                 .interpretedStartTime(timeRange == null ? null : timeRange.startTime())
                 .interpretedEndTime(timeRange == null ? null : timeRange.endTime())
                 .interpretedPeople(people)
-                .suggestedQuestions(getSuggestedQuestions())
+                .suggestedQuestions(buildTurnSuggestions(agentContext, agentTurn, matchedRooms))
                 .usedAi(usedAi)
                 .mode(mode)
+                .state(agentTurn.state())
+                .intent(agentContext.intent())
+                .missingFields(agentTurn.missingFields())
+                .context(toContextResponse(agentContext))
+                .action(agentTurn.action())
                 .build();
+    }
+
+    private List<String> buildTurnSuggestions(
+            AgentContext context,
+            AgentTurn turn,
+            List<AiSuggestedRoomResponse> matchedRooms
+    ) {
+        if (!"BOOKING".equals(context.intent())) return getSuggestedQuestions();
+        if (turn.missingFields().contains("checkInDate")) {
+            return List.of("Nhận phòng ngày mai", "Tìm phòng cuối tuần này", "Xem tất cả phòng");
+        }
+        if (turn.missingFields().contains("checkOutDate")) {
+            return List.of("Ở 1 đêm", "Ở 2 đêm", "Tôi muốn chọn ngày khác");
+        }
+        if (turn.missingFields().contains("guests")) {
+            return List.of("2 người lớn", "2 người lớn và 1 trẻ em", "4 người lớn");
+        }
+        if ("RECOMMENDING".equals(turn.state())) {
+            return matchedRooms.stream().limit(3).map(room -> "Chọn " + room.getRoomName()).toList();
+        }
+        return List.of("Tìm kỳ lưu trú khác", "Hỏi về thanh toán", "Xem chính sách hủy");
+    }
+
+    private AgentContext resolveAgentContext(AiChatRequest request, String normalizedMessage) {
+        AiConversationContextRequest previous = request.getContext();
+        boolean reset = containsAny(normalizedMessage, "bat dau lai", "xoa bo loc", "dat lai nhu cau", "reset");
+
+        String conversationId = !reset && previous != null && previous.getConversationId() != null
+                ? previous.getConversationId()
+                : UUID.randomUUID().toString();
+        String previousIntent = !reset && previous != null ? previous.getIntent() : null;
+        String intent = resolveIntent(normalizedMessage, previousIntent);
+
+        LocalDate checkIn = !reset && previous != null ? previous.getCheckInDate() : null;
+        LocalDate checkOut = !reset && previous != null ? previous.getCheckOutDate() : null;
+        List<LocalDate> dates = extractStayDates(normalizedMessage);
+        if (dates.size() >= 2) {
+            checkIn = dates.get(0);
+            checkOut = dates.get(1);
+        } else if (dates.size() == 1) {
+            if (containsAny(normalizedMessage, "tra phong", "check out", "checkout")) {
+                checkOut = dates.get(0);
+            } else {
+                checkIn = dates.get(0);
+                if (checkOut != null && !checkOut.isAfter(checkIn)) {
+                    checkOut = null;
+                }
+            }
+        }
+
+        Integer nights = extractInteger(NIGHT_PATTERN, normalizedMessage);
+        if (checkIn != null && nights != null && nights > 0) {
+            checkOut = checkIn.plusDays(nights);
+        }
+
+        Integer adults = !reset && previous != null ? previous.getAdults() : null;
+        Integer children = !reset && previous != null ? previous.getChildren() : null;
+        Integer explicitAdults = extractInteger(ADULT_PATTERN, normalizedMessage);
+        Integer explicitChildren = extractInteger(CHILD_PATTERN, normalizedMessage);
+        if (explicitAdults != null) adults = explicitAdults;
+        if (explicitChildren != null) children = explicitChildren;
+        if (explicitAdults == null && explicitChildren == null) {
+            Integer genericPeople = request.getPeople() != null
+                    ? request.getPeople()
+                    : extractPeople(normalizedMessage).orElse(null);
+            if (genericPeople != null) adults = genericPeople;
+        }
+
+        Integer bedrooms = !reset && previous != null ? previous.getBedrooms() : null;
+        Integer beds = !reset && previous != null ? previous.getBeds() : null;
+        Integer explicitBedrooms = extractInteger(BEDROOM_PATTERN, normalizedMessage);
+        Integer explicitBeds = extractInteger(BED_PATTERN, normalizedMessage);
+        if (explicitBedrooms != null) bedrooms = explicitBedrooms;
+        if (explicitBeds != null) beds = explicitBeds;
+
+        BigDecimal maxNightlyPrice = !reset && previous != null ? previous.getMaxNightlyPrice() : null;
+        if (containsAny(normalizedMessage, "gia", "ngan sach", "toi da", "khong qua", "duoi")) {
+            maxNightlyPrice = extractMaxPrice(normalizedMessage).orElse(maxNightlyPrice);
+        }
+
+        Set<String> amenities = new LinkedHashSet<>();
+        if (!reset && previous != null && previous.getAmenities() != null) {
+            amenities.addAll(previous.getAmenities());
+        }
+        amenities.addAll(findEquipmentKeywords(normalizedMessage));
+
+        Integer selectedRoomId = !reset && previous != null ? previous.getSelectedRoomId() : null;
+        return new AgentContext(
+                conversationId,
+                intent,
+                checkIn,
+                checkOut,
+                positiveOrNull(adults),
+                nonNegativeOrNull(children),
+                positiveOrNull(bedrooms),
+                positiveOrNull(beds),
+                maxNightlyPrice,
+                List.copyOf(amenities),
+                selectedRoomId
+        );
+    }
+
+    private String resolveIntent(String normalizedMessage, String previousIntent) {
+        if (containsAny(normalizedMessage, "thanh toan", "dat coc", "sepay", "qr", "chuyen khoan", "tien mat")) {
+            return "PAYMENT";
+        }
+        if (containsAny(normalizedMessage, "huy phong", "huy lich", "hoan tien", "doi lich")) {
+            return "CANCELLATION";
+        }
+        if (containsAny(normalizedMessage, "ma giam gia", "coupon", "voucher", "khuyen mai", "serene10")) {
+            return "COUPON";
+        }
+        if (containsAny(normalizedMessage, "dich vu them", "thue them", "addon", "bbq", "bua sang", "giuong phu")) {
+            return "ADDON";
+        }
+        if (containsAny(normalizedMessage,
+                "dat phong", "tim phong", "goi y phong", "phong nao", "con phong", "lich trong",
+                "check in", "check-in", "nhan phong", "phong ngu", "giuong")) {
+            return "BOOKING";
+        }
+        if ("BOOKING".equals(previousIntent) && normalizedMessage.length() <= 120) {
+            return "BOOKING";
+        }
+        return "GENERAL";
+    }
+
+    private List<LocalDate> extractStayDates(String normalizedMessage) {
+        List<LocalDate> dates = new ArrayList<>();
+        LocalDate today = LocalDate.now();
+        if (normalizedMessage.contains("ngay kia")) {
+            dates.add(today.plusDays(2));
+        } else if (normalizedMessage.contains("ngay mai")) {
+            dates.add(today.plusDays(1));
+        } else if (normalizedMessage.contains("hom nay") || normalizedMessage.contains("toi nay")) {
+            dates.add(today);
+        }
+
+        Matcher matcher = DATE_PATTERN.matcher(normalizedMessage);
+        while (matcher.find() && dates.size() < 2) {
+            try {
+                int day = Integer.parseInt(matcher.group(1));
+                int month = Integer.parseInt(matcher.group(2));
+                String yearGroup = matcher.group(3);
+                int year = yearGroup == null
+                        ? today.getYear()
+                        : Integer.parseInt(yearGroup.length() == 2 ? "20" + yearGroup : yearGroup);
+                LocalDate parsed = LocalDate.of(year, month, day);
+                if (!dates.contains(parsed)) dates.add(parsed);
+            } catch (RuntimeException ignored) {
+                // Invalid natural-language date is handled as a missing field.
+            }
+        }
+        return dates;
+    }
+
+    private Integer extractInteger(Pattern pattern, String normalizedMessage) {
+        Matcher matcher = pattern.matcher(normalizedMessage);
+        if (!matcher.find()) return null;
+        try {
+            return Integer.parseInt(matcher.group(1));
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
+    private List<AiSuggestedRoomResponse> filterAgentRooms(
+            List<AiSuggestedRoomResponse> rooms,
+            AgentContext context
+    ) {
+        return rooms.stream()
+                .filter(room -> context.bedrooms() == null
+                        || room.getBedroomCount() != null && room.getBedroomCount() >= context.bedrooms())
+                .filter(room -> context.beds() == null
+                        || room.getBedCount() != null && room.getBedCount() >= context.beds())
+                .filter(room -> context.amenities().isEmpty() || context.amenities().stream().allMatch(amenity -> {
+                    String searchable = normalize(blankToUnknown(room.getEquipmentSummary()) + " "
+                            + String.join(" ", room.getEquipmentItems() == null ? List.of() : room.getEquipmentItems()));
+                    return searchable.contains(normalize(amenity));
+                }))
+                .sorted(Comparator
+                        .comparing((AiSuggestedRoomResponse room) -> room.getAverageRating() == null ? 0D : room.getAverageRating())
+                        .reversed()
+                        .thenComparing(AiSuggestedRoomResponse::getPricePerNight))
+                .toList();
+    }
+
+    private Integer resolveSelectedRoomId(
+            AgentContext context,
+            String normalizedMessage,
+            List<AiSuggestedRoomResponse> matchedRooms,
+            List<AiSuggestedRoomResponse> allRooms
+    ) {
+        if (!"BOOKING".equals(context.intent())) return context.selectedRoomId();
+
+        List<AiSuggestedRoomResponse> mentioned = findMentionedRooms(allRooms, normalizedMessage);
+        if (!mentioned.isEmpty()) return mentioned.get(0).getRoomId();
+
+        if (containsAny(normalizedMessage, "phong dau tien", "phong so 1", "phong 1", "chon phong nay", "dat phong nay")
+                && !matchedRooms.isEmpty()) {
+            return matchedRooms.get(0).getRoomId();
+        }
+        return context.selectedRoomId();
+    }
+
+    private AgentTurn buildAgentTurn(
+            AgentContext context,
+            List<AiSuggestedRoomResponse> matchedRooms,
+            List<AiSuggestedRoomResponse> allRooms
+    ) {
+        if (!"BOOKING".equals(context.intent())) {
+            return new AgentTurn("ANSWERING", List.of(), null);
+        }
+
+        List<String> missing = new ArrayList<>();
+        if (context.checkInDate() == null) missing.add("checkInDate");
+        if (context.checkOutDate() == null) missing.add("checkOutDate");
+        if (context.adults() == null || context.adults() < 1) missing.add("guests");
+
+        if (!missing.isEmpty()) {
+            String question;
+            if (missing.contains("checkInDate")) {
+                question = "Bạn muốn nhận phòng ngày nào? Ví dụ: 20/07/2026.";
+            } else if (missing.contains("checkOutDate")) {
+                question = "Bạn muốn trả phòng ngày nào, hoặc ở mấy đêm?";
+            } else {
+                question = "Đoàn của bạn có bao nhiêu người lớn và trẻ em?";
+            }
+            String answer = "Mình đã ghi nhận nhu cầu hiện có" + summarizeContext(context)
+                    + ". Để kiểm tra lịch phòng thật, " + lowerFirst(question);
+            return new AgentTurn("COLLECTING_REQUIREMENTS", List.copyOf(missing), null, answer);
+        }
+
+        if (!context.checkOutDate().isAfter(context.checkInDate())) {
+            return new AgentTurn(
+                    "COLLECTING_REQUIREMENTS",
+                    List.of("checkOutDate"),
+                    null,
+                    "Ngày trả phòng phải sau ngày nhận phòng. Bạn chọn lại ngày trả phòng giúp mình nhé."
+            );
+        }
+
+        if (context.checkInDate().isBefore(LocalDate.now())) {
+            return new AgentTurn(
+                    "COLLECTING_REQUIREMENTS",
+                    List.of("checkInDate", "checkOutDate"),
+                    null,
+                    "Ngày nhận phòng đã qua. Bạn chọn một kỳ lưu trú mới từ hôm nay trở đi để mình kiểm tra lịch thật nhé."
+            );
+        }
+
+        if (matchedRooms.isEmpty()) {
+            String answer = "Mình đã kiểm tra dữ liệu thật nhưng chưa có phòng đáp ứng trọn vẹn"
+                    + summarizeContext(context)
+                    + ". Bạn có thể đổi ngày, tăng ngân sách hoặc giảm một tiêu chí tiện nghi; mình sẽ kiểm tra lại ngay.";
+            return new AgentTurn(
+                    "NO_MATCH",
+                    List.of(),
+                    AiAgentActionResponse.builder().type("VIEW_ROOMS").label("Xem mọi phòng").href("/rooms").build(),
+                    answer
+            );
+        }
+
+        AiSuggestedRoomResponse selectedRoom = context.selectedRoomId() == null
+                ? null
+                : allRooms.stream().filter(room -> room.getRoomId().equals(context.selectedRoomId())).findFirst().orElse(null);
+        if (selectedRoom != null && matchedRooms.stream().anyMatch(room -> room.getRoomId().equals(selectedRoom.getRoomId()))) {
+            String answer = "Mình đã chuẩn bị **" + selectedRoom.getRoomName() + "** cho kỳ lưu trú "
+                    + formatStay(context) + ", " + context.totalGuests() + " khách. Giá tham khảo "
+                    + formatMoney(selectedRoom.getPricePerNight()) + "/đêm. Bấm nút bên dưới để kiểm tra lần cuối và xác nhận; phòng chỉ được giữ khi hệ thống tạo phiên thanh toán 5 phút.";
+            return new AgentTurn(
+                    "AWAITING_CONFIRMATION",
+                    List.of(),
+                    AiAgentActionResponse.builder()
+                            .type("OPEN_BOOKING")
+                            .label("Xác nhận đặt phòng")
+                            .href(selectedRoom.getBookingUrl())
+                            .roomId(selectedRoom.getRoomId())
+                            .build(),
+                    answer
+            );
+        }
+
+        String roomNames = matchedRooms.stream().limit(3)
+                .map(room -> "**" + room.getRoomName() + "** (" + formatMoney(room.getPricePerNight()) + "/đêm)")
+                .collect(Collectors.joining(", "));
+        String answer = "Mình tìm thấy " + matchedRooms.size() + " phòng còn trống " + formatStay(context)
+                + " cho " + context.totalGuests() + " khách. Phù hợp nhất là " + roomNames
+                + ". Bạn chọn tên một phòng hoặc bấm **Đặt phòng** trên thẻ để tiếp tục.";
+        return new AgentTurn(
+                "RECOMMENDING",
+                List.of(),
+                AiAgentActionResponse.builder().type("VIEW_ROOMS").label("Xem danh sách phù hợp").href(buildRoomsUrl(context)).build(),
+                answer
+        );
+    }
+
+    private AiConversationContextResponse toContextResponse(AgentContext context) {
+        return AiConversationContextResponse.builder()
+                .conversationId(context.conversationId())
+                .intent(context.intent())
+                .checkInDate(context.checkInDate())
+                .checkOutDate(context.checkOutDate())
+                .adults(context.adults())
+                .children(context.children())
+                .bedrooms(context.bedrooms())
+                .beds(context.beds())
+                .maxNightlyPrice(context.maxNightlyPrice())
+                .amenities(context.amenities())
+                .selectedRoomId(context.selectedRoomId())
+                .build();
+    }
+
+    private String buildConversationMessage(List<AiChatTurnRequest> history, String currentMessage) {
+        if (history == null || history.isEmpty()) return currentMessage;
+        String transcript = history.stream()
+                .filter(turn -> turn != null && turn.getContent() != null && !turn.getContent().isBlank())
+                .skip(Math.max(0, history.size() - 8L))
+                .map(turn -> ("assistant".equalsIgnoreCase(turn.getRole()) ? "Assistant" : "Guest")
+                        + ": " + turn.getContent().trim())
+                .collect(Collectors.joining("\n"));
+        return transcript + "\nGuest: " + currentMessage;
+    }
+
+    private String summarizeContext(AgentContext context) {
+        List<String> parts = new ArrayList<>();
+        if (context.hasCompleteStay()) parts.add(formatStay(context));
+        else if (context.checkInDate() != null) parts.add(" nhận phòng " + formatDate(context.checkInDate()));
+        if (context.totalGuests() != null) parts.add(context.totalGuests() + " khách");
+        if (context.bedrooms() != null) parts.add("từ " + context.bedrooms() + " phòng ngủ");
+        if (context.beds() != null) parts.add("từ " + context.beds() + " giường");
+        if (context.maxNightlyPrice() != null) parts.add("tối đa " + formatMoney(context.maxNightlyPrice()) + "/đêm");
+        if (!context.amenities().isEmpty()) parts.add("có " + String.join(", ", context.amenities()));
+        return parts.isEmpty() ? "" : ": " + String.join(", ", parts);
+    }
+
+    private String formatStay(AgentContext context) {
+        return "từ " + formatDate(context.checkInDate()) + " đến " + formatDate(context.checkOutDate());
+    }
+
+    private String formatDate(LocalDate date) {
+        return date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+    }
+
+    private String buildRoomsUrl(AgentContext context) {
+        StringBuilder url = new StringBuilder("/rooms?checkIn=").append(context.checkInDate())
+                .append("&checkOut=").append(context.checkOutDate())
+                .append("&adults=").append(context.adults() == null ? context.totalGuests() : context.adults())
+                .append("&children=").append(context.children() == null ? 0 : context.children());
+        if (context.bedrooms() != null) url.append("&bedrooms=").append(context.bedrooms());
+        if (context.beds() != null) url.append("&beds=").append(context.beds());
+        if (context.maxNightlyPrice() != null) url.append("&maxPrice=").append(context.maxNightlyPrice().toPlainString());
+        return url.toString();
+    }
+
+    private String buildRoomBookingUrl(Integer roomId, TimeRange timeRange) {
+        if (timeRange == null) return "/rooms/" + roomId;
+        return "/rooms/" + roomId
+                + "?agentBooking=1&checkIn=" + timeRange.startTime().toLocalDate()
+                + "&checkOut=" + timeRange.endTime().toLocalDate();
+    }
+
+    private boolean containsAny(String value, String... candidates) {
+        for (String candidate : candidates) {
+            if (value.contains(candidate)) return true;
+        }
+        return false;
+    }
+
+    private Integer positiveOrNull(Integer value) {
+        return value != null && value > 0 ? value : null;
+    }
+
+    private Integer nonNegativeOrNull(Integer value) {
+        return value != null && value >= 0 ? value : null;
+    }
+
+    private String lowerFirst(String value) {
+        if (value == null || value.isBlank()) return value;
+        return Character.toLowerCase(value.charAt(0)) + value.substring(1);
     }
 
     @Override
@@ -223,7 +650,10 @@ public class AiConsultantServiceImpl implements AiConsultantService {
                 .roomTypeName(room.getRoomType().getTypeName())
                 .roomTypeDescription(room.getRoomType().getDescription())
                 .pricePerHour(room.getRoomType().getPricePerHour())
+                .pricePerNight(room.getRoomType().getPricePerHour().multiply(NIGHT_STAY_HOURS))
                 .capacity(room.getMaxPeople())
+                .bedroomCount(room.getBedroomCount())
+                .bedCount(room.getBedCount())
                 .status(room.getStatus())
                 .imageUrl(room.getImageUrl())
                 .averageRating(reviewStats == null ? null : reviewStats.getAverageRating())
@@ -237,6 +667,8 @@ public class AiConsultantServiceImpl implements AiConsultantService {
                 .equipmentItems(buildEquipmentItems(equipment))
                 .availableInRequestedTime(available)
                 .reason(buildReason(room, available, equipment))
+                .detailUrl("/rooms/" + room.getId())
+                .bookingUrl(buildRoomBookingUrl(room.getId(), timeRange))
                 .build();
     }
 
@@ -316,11 +748,15 @@ public class AiConsultantServiceImpl implements AiConsultantService {
     }
 
     private Optional<String> buildPolicyAnswer(String normalizedMessage) {
+        if (containsAny(normalizedMessage, "xin chao", "chao ban", "hello", "hi homebot")
+                && !containsAny(normalizedMessage, "phong", "dat", "gia", "thanh toan")) {
+            return Optional.of("Chào bạn! Mình là HomeBot, trợ lý đặt phòng của The Serene Villa. Mình có thể tìm phòng theo ngày ở, số khách, ngân sách, số phòng ngủ, số giường và tiện nghi; đồng thời giải đáp về thanh toán, hủy phòng, ưu đãi và dịch vụ thuê thêm. Bạn đang dự định đi vào ngày nào?");
+        }
         if (isAskingBookingGuide(normalizedMessage)) {
             return Optional.of("Để đặt phòng, bạn chọn phòng phù hợp, chọn ngày và khung giờ còn trống, kiểm tra tổng tiền, nhập coupon nếu có, rồi xác nhận đặt phòng. Sau đó hệ thống sẽ chuyển sang bước thanh toán SePay.");
         }
         if (isAskingPayment(normalizedMessage)) {
-            return Optional.of("Hệ thống hỗ trợ thanh toán tiền mặt tại homestay hoặc thanh toán online qua SePay. Với online, bạn có thể đặt cọc 30% hoặc thanh toán toàn bộ tiền phòng. Phiên QR chưa thanh toán có thể hết hạn sau khoảng 15 phút.");
+            return Optional.of("Hệ thống hỗ trợ thanh toán tiền mặt tại homestay hoặc thanh toán online qua SePay. Với online, bạn có thể đặt cọc 50% hoặc thanh toán toàn bộ tiền phòng. Mỗi mã QR và thời gian giữ phòng có hiệu lực đúng 5 phút; nếu hết hạn mà chưa thanh toán, phòng sẽ tự được nhả để khách khác đặt.");
         }
         if (isAskingCancellation(normalizedMessage)) {
             return Optional.of("Bạn có thể hủy lịch của mình nếu còn trước giờ nhận phòng tối thiểu 24 tiếng. Luồng hiện tại tính hoàn 100% số tiền đã thanh toán, nhưng việc chuyển tiền hoàn từ cổng thanh toán thật vẫn là bước vận hành riêng.");
@@ -328,6 +764,12 @@ public class AiConsultantServiceImpl implements AiConsultantService {
         if (isAskingCoupon(normalizedMessage)) {
             return Optional.of("Ma giam gia duoc nhap o buoc checkout. He thong se kiem tra ma ton tai, con han va gia tri don toi thieu truoc khi tinh tien. "
                     + buildCouponContext());
+        }
+        if (containsAny(normalizedMessage, "dich vu them", "thue them", "addon", "bua sang", "giuong phu", "bbq")) {
+            return Optional.of("Bạn có thể chọn dịch vụ thuê thêm ngay trong bước xác nhận đặt phòng; sau khi check-in, các dịch vụ còn phục vụ cũng có thể được gọi thêm từ chi tiết booking. Giá và tình trạng phục vụ luôn lấy từ danh mục thật do admin quản lý, sau đó phần phát sinh sẽ được cộng vào số tiền cần kết toán.");
+        }
+        if (containsAny(normalizedMessage, "check in", "check-in", "nhan phong", "check out", "check-out", "tra phong")) {
+            return Optional.of("Giờ nhận phòng tiêu chuẩn là 14:00 và trả phòng trước 12:00 ngày cuối cùng, tương ứng 1 đêm = 22 giờ. Nhân viên có thể check-in sớm tối đa 5 phút khi phòng đã sẵn sàng; nếu khách đến muộn sau 14:00, booking hợp lệ vẫn được nhân viên xử lý trong ca phụ trách.");
         }
         return Optional.empty();
     }
@@ -378,7 +820,8 @@ public class AiConsultantServiceImpl implements AiConsultantService {
         prompt.append("- Guests can ask for homestay room suggestions by people count, budget, stay time, and desired amenities.\n");
         prompt.append("- A room in MAINTENANCE must not be suggested as bookable.\n");
         prompt.append("- If a requested time is known, only rooms with availableInRequestedTime=true are bookable for that time.\n");
-        prompt.append("- Online checkout uses SePay. Customers may pay a 50,000 VND deposit or the full amount in the next checkout step.\n");
+        prompt.append("- Online checkout uses SePay. Customers may pay a 50% deposit or the full amount in the next checkout step.\n");
+        prompt.append("- A payment QR and its room hold are valid for exactly 5 minutes. Chatting or viewing a room never holds it.\n");
         prompt.append("- Coupon validation is handled separately at checkout; do not promise a coupon unless context says so.\n\n");
         prompt.append("- If the user asks how to book, guide them to choose a room, choose time, confirm booking, then pay online.\n");
         prompt.append("- If the user asks about cancellation, say customer cancellation is supported before the policy deadline shown in their booking flow.\n\n");
@@ -1056,5 +1499,46 @@ public class AiConsultantServiceImpl implements AiConsultantService {
     }
 
     private record TimeRange(LocalDateTime startTime, LocalDateTime endTime) {
+    }
+
+    private record AgentContext(
+            String conversationId,
+            String intent,
+            LocalDate checkInDate,
+            LocalDate checkOutDate,
+            Integer adults,
+            Integer children,
+            Integer bedrooms,
+            Integer beds,
+            BigDecimal maxNightlyPrice,
+            List<String> amenities,
+            Integer selectedRoomId
+    ) {
+        private Integer totalGuests() {
+            if (adults == null && children == null) return null;
+            return (adults == null ? 0 : adults) + (children == null ? 0 : children);
+        }
+
+        private boolean hasCompleteStay() {
+            return checkInDate != null && checkOutDate != null;
+        }
+
+        private AgentContext withSelectedRoomId(Integer roomId) {
+            return new AgentContext(
+                    conversationId, intent, checkInDate, checkOutDate, adults, children,
+                    bedrooms, beds, maxNightlyPrice, amenities, roomId
+            );
+        }
+    }
+
+    private record AgentTurn(
+            String state,
+            List<String> missingFields,
+            AiAgentActionResponse action,
+            String answer
+    ) {
+        private AgentTurn(String state, List<String> missingFields, AiAgentActionResponse action) {
+            this(state, missingFields, action, "");
+        }
     }
 }

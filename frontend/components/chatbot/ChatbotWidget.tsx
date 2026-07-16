@@ -2,7 +2,15 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { CHATBOT_WELCOME, sendChatbotMessage } from '@/lib/chatbot/chatbot-service'
-import type { ChatMessage, QuickReply } from '@/lib/chatbot/types'
+import type {
+  ChatbotAction,
+  ChatbotAgentContext,
+  ChatbotSuggestedRoom,
+  ChatMessage,
+  QuickReply,
+} from '@/lib/chatbot/types'
+
+const CHATBOT_CONTEXT_KEY = 'the-serene-villa.chatbot-agent-context'
 
 function createId() {
   return `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -76,12 +84,65 @@ function MessageBubble({ message }: { message: ChatMessage }) {
   }
 
   return (
-    <div className="flex items-end gap-2.5 pr-6">
+    <div className="flex items-end gap-2.5 pr-1">
       <BotAvatar size="sm" />
-      <div className="max-w-[85%] rounded-2xl rounded-bl-md border border-outline-variant/50 bg-white/95 px-4 py-2.5 text-sm leading-relaxed text-on-surface shadow-[var(--shadow-card)] backdrop-blur-sm">
-        {formatMessageContent(message.content)}
+      <div className="min-w-0 max-w-[88%] space-y-2.5">
+        <div className="rounded-2xl rounded-bl-md border border-outline-variant/50 bg-white/95 px-4 py-2.5 text-sm leading-relaxed text-on-surface shadow-[var(--shadow-card)] backdrop-blur-sm">
+          {formatMessageContent(message.content)}
+        </div>
+        {message.suggestedRooms?.length ? <SuggestedRoomCards rooms={message.suggestedRooms} /> : null}
+        {message.action ? <AgentActionButton action={message.action} /> : null}
       </div>
     </div>
+  )
+}
+
+function formatNightlyPrice(value?: number) {
+  if (value == null || !Number.isFinite(value)) return 'Liên hệ'
+  return `${Math.round(value).toLocaleString('vi-VN')}đ/đêm`
+}
+
+function SuggestedRoomCards({ rooms }: { rooms: ChatbotSuggestedRoom[] }) {
+  return (
+    <div className="flex snap-x gap-2.5 overflow-x-auto pb-1 [scrollbar-width:thin]" aria-label="Phòng HomeBot gợi ý">
+      {rooms.map((room) => (
+        <article key={room.roomId} className="w-[225px] shrink-0 snap-start overflow-hidden rounded-2xl border border-[#ded3c5] bg-white shadow-sm">
+          <a href={room.detailUrl ?? `/rooms/${room.roomId}`} className="block">
+            <div className="relative h-24 overflow-hidden bg-[#e8e1d6]">
+              {room.imageUrl ? (
+                // The URL is managed by admin and can come from several approved CDNs.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={room.imageUrl} alt={`Ảnh ${room.roomName}`} loading="lazy" decoding="async" className="h-full w-full object-cover" />
+              ) : null}
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#09231c]/45 to-transparent" />
+            </div>
+            <div className="p-3">
+              <p className="line-clamp-1 font-display text-sm font-bold text-secondary">{room.roomName}</p>
+              <p className="mt-1 text-[11px] text-on-surface-variant">
+                {room.capacity ? `${room.capacity} khách` : 'Sức chứa đang cập nhật'}
+                {room.bedroomCount ? ` · ${room.bedroomCount} phòng ngủ` : ''}
+                {room.bedCount ? ` · ${room.bedCount} giường` : ''}
+              </p>
+              <div className="mt-2 flex items-center justify-between gap-2 border-t border-[#eee6dc] pt-2">
+                <span className="text-xs font-bold text-brand-orange">{formatNightlyPrice(room.pricePerNight)}</span>
+                {room.averageRating ? <span className="text-[10px] font-semibold text-secondary">★ {room.averageRating.toFixed(1)}</span> : null}
+              </div>
+            </div>
+          </a>
+          <a href={room.bookingUrl ?? room.detailUrl ?? `/rooms/${room.roomId}`} className="mx-3 mb-3 flex h-9 items-center justify-center rounded-full bg-secondary px-3 text-xs font-bold text-white transition hover:bg-brand-orange">
+            Đặt phòng
+          </a>
+        </article>
+      ))}
+    </div>
+  )
+}
+
+function AgentActionButton({ action }: { action: ChatbotAction }) {
+  return (
+    <a href={action.href} className="flex min-h-10 w-full items-center justify-center rounded-full bg-secondary px-4 text-xs font-bold text-white shadow-[0_8px_20px_rgba(23,58,49,.18)] transition hover:-translate-y-0.5 hover:bg-brand-orange">
+      {action.label}
+    </a>
   )
 }
 
@@ -120,10 +181,24 @@ export default function ChatbotWidget() {
   const [quickReplies, setQuickReplies] = useState<QuickReply[]>(CHATBOT_WELCOME.quickReplies ?? [])
   const [typing, setTyping] = useState(false)
   const [welcomed, setWelcomed] = useState(false)
+  const [agentContext, setAgentContext] = useState<ChatbotAgentContext>()
   const listRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const hotlineNumber = process.env.NEXT_PUBLIC_HOTLINE_NUMBER?.trim() ?? ''
   const hotlineHref = hotlineNumber ? `tel:${hotlineNumber.replace(/[^+\d]/g, '')}` : '/support'
+
+  useEffect(() => {
+    try {
+      const stored = window.sessionStorage.getItem(CHATBOT_CONTEXT_KEY)
+      if (stored) setAgentContext(JSON.parse(stored) as ChatbotAgentContext)
+    } catch {
+      window.sessionStorage.removeItem(CHATBOT_CONTEXT_KEY)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (agentContext) window.sessionStorage.setItem(CHATBOT_CONTEXT_KEY, JSON.stringify(agentContext))
+  }, [agentContext])
 
   const scrollToBottom = useCallback(() => {
     const el = listRef.current
@@ -171,7 +246,11 @@ export default function ChatbotWidget() {
       setTyping(true)
 
       try {
-        const reply = await sendChatbotMessage(trimmed)
+        const history = messages.slice(-8).map((message) => ({
+          role: message.role === 'assistant' ? 'assistant' as const : 'user' as const,
+          content: message.content,
+        }))
+        const reply = await sendChatbotMessage(trimmed, { context: agentContext, history })
         setMessages((prev) => [
           ...prev,
           {
@@ -179,15 +258,26 @@ export default function ChatbotWidget() {
             role: 'assistant',
             content: reply.content,
             createdAt: new Date().toISOString(),
+            suggestedRooms: reply.suggestedRooms,
+            action: reply.action,
+            state: reply.state,
           },
         ])
+        if (reply.context) setAgentContext(reply.context)
         setQuickReplies(reply.quickReplies ?? [])
       } finally {
         setTyping(false)
       }
     },
-    [typing],
+    [agentContext, messages, typing],
   )
+
+  const resetConversation = () => {
+    window.sessionStorage.removeItem(CHATBOT_CONTEXT_KEY)
+    setAgentContext(undefined)
+    setMessages([{ id: createId(), role: 'assistant', content: CHATBOT_WELCOME.content, createdAt: new Date().toISOString() }])
+    setQuickReplies(CHATBOT_WELCOME.quickReplies ?? [])
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -249,16 +339,21 @@ export default function ChatbotWidget() {
                 </p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/25"
-              aria-label="Đóng chat"
-            >
-              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" d="M6 6l12 12M18 6L6 18" />
-              </svg>
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button type="button" onClick={resetConversation} className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/25" aria-label="Bắt đầu cuộc trò chuyện mới" title="Làm mới hội thoại">
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 11a8 8 0 1 0-2.35 5.65M20 4v7h-7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              </button>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/25"
+                aria-label="Đóng chat"
+              >
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              </button>
+            </div>
           </div>
         </header>
 

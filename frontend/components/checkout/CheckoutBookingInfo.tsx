@@ -1,12 +1,30 @@
+'use client'
+
 import { formatDisplayDate, type CheckoutBooking } from '@/lib/checkout-data'
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 
 export default function CheckoutBookingInfo({ booking }: { booking: CheckoutBooking }) {
+  const [imageFailed, setImageFailed] = useState(false)
+
+  useEffect(() => {
+    setImageFailed(false)
+  }, [booking.image])
+
+  const showRoomImage = Boolean(booking.image) && !imageFailed
+
   return (
     <section className="overflow-hidden rounded-[28px] border border-[#DED7CB] bg-white shadow-[0_18px_50px_rgba(45,42,36,0.08)]">
       <div className="relative min-h-[190px] overflow-hidden bg-gradient-to-br from-[#173F35] via-[#245346] to-[#B28455]">
-        {booking.image ? (
-          <img src={booking.image} alt={booking.roomName} className="absolute inset-0 h-full w-full object-cover" />
+        {showRoomImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={booking.image}
+            alt={`Ảnh đại diện phòng ${booking.roomName}`}
+            className="absolute inset-0 h-full w-full object-cover"
+            loading="eager"
+            decoding="async"
+            onError={() => setImageFailed(true)}
+          />
         ) : (
           <div aria-hidden className="absolute inset-0 opacity-30">
             <div className="absolute -right-10 -top-20 h-64 w-64 rounded-full border border-white/40" />

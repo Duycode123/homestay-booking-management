@@ -18,7 +18,10 @@ public class AiSuggestedRoomResponse {
     private String roomTypeName;
     private String roomTypeDescription;
     private BigDecimal pricePerHour;
+    private BigDecimal pricePerNight;
     private Integer capacity;
+    private Integer bedroomCount;
+    private Integer bedCount;
     private RoomStatus status;
     private String imageUrl;
     private Double averageRating;
@@ -30,4 +33,6 @@ public class AiSuggestedRoomResponse {
     private List<String> equipmentItems;
     private Boolean availableInRequestedTime;
     private String reason;
+    private String detailUrl;
+    private String bookingUrl;
 }

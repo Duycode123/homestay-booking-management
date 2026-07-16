@@ -20,4 +20,9 @@ public class AiChatResponse {
     private List<String> suggestedQuestions;
     private boolean usedAi;
     private String mode;
+    private String state;
+    private String intent;
+    private List<String> missingFields;
+    private AiConversationContextResponse context;
+    private AiAgentActionResponse action;
 }

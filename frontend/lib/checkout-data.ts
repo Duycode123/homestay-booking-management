@@ -269,10 +269,11 @@ function getSafeImageUrl(value?: string | null) {
   const normalized = value?.trim()
   if (!normalized) return undefined
   if (normalized.startsWith('/')) return normalized
+  if (normalized.startsWith('images/')) return `/${normalized}`
 
   try {
     const url = new URL(normalized)
-    return url.protocol === 'https:' && url.hostname === 'res.cloudinary.com' ? normalized : undefined
+    return url.protocol === 'https:' ? normalized : undefined
   } catch {
     return undefined
   }

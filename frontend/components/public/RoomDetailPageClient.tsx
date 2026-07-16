@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import BookingQuickModal from '@/components/booking/BookingQuickModal'
 import AddonServiceImage from '@/components/addons/AddonServiceImage'
@@ -18,6 +19,7 @@ import { mapBackendRoomToBookingRoom } from '@/lib/room-mappers'
 import { fetchRoom, fetchRooms, type BackendRoom } from '@/lib/rooms-api'
 
 export default function RoomDetailPageClient({ roomId }: { roomId: string }) {
+  const searchParams = useSearchParams()
   const { isAuthenticated } = useAuth()
   const { favoriteIds, toggleFavorite } = useFavorites()
   const [room, setRoom] = useState<BookingRoom | null>(null)
@@ -30,6 +32,13 @@ export default function RoomDetailPageClient({ roomId }: { roomId: string }) {
   const [bookingOpen, setBookingOpen] = useState(false)
   const numericRoomId = Number(roomId)
   const isFavorite = favoriteIds.has(numericRoomId)
+  const agentCheckIn = searchParams.get('checkIn') ?? undefined
+  const agentCheckOut = searchParams.get('checkOut') ?? undefined
+  const shouldOpenAgentBooking = searchParams.get('agentBooking') === '1'
+
+  useEffect(() => {
+    if (room && shouldOpenAgentBooking) setBookingOpen(true)
+  }, [room, shouldOpenAgentBooking])
 
   useEffect(() => {
     let mounted = true
@@ -128,7 +137,15 @@ export default function RoomDetailPageClient({ roomId }: { roomId: string }) {
 
         <SimilarStaysSection rooms={similarRooms} />
       </section>
-      <BookingQuickModal room={room} open={bookingOpen} sourceRoute="/rooms" returnPath={`/rooms/${roomId}`} onClose={() => setBookingOpen(false)} />
+      <BookingQuickModal
+        room={room}
+        open={bookingOpen}
+        initialDate={agentCheckIn}
+        initialEndDate={agentCheckOut}
+        sourceRoute="/rooms"
+        returnPath={`/rooms/${roomId}`}
+        onClose={() => setBookingOpen(false)}
+      />
     </main>
   )
 }

@@ -1,12 +1,24 @@
 import api from '@/lib/api'
 import { getNightlyDisplayPrice } from '@/components/booking/booking-data'
-import type { ChatbotReply } from './types'
+import type {
+  ChatbotAction,
+  ChatbotAgentContext,
+  ChatbotReply,
+  ChatbotSession,
+  ChatbotSuggestedRoom,
+} from './types'
 
 type BackendChatbotReply = {
   answer: string
+  suggestedRooms?: ChatbotSuggestedRoom[]
   suggestedQuestions?: string[]
   usedAi?: boolean
   mode?: string
+  state?: string
+  intent?: string
+  missingFields?: string[]
+  context?: ChatbotAgentContext
+  action?: ChatbotAction
 }
 
 type ApiEnvelope<T> = {
@@ -131,8 +143,12 @@ function toQuickReplies(questions?: string[]) {
   }))
 }
 
-async function sendBackendChatbotMessage(message: string): Promise<ChatbotReply> {
-  const response = await api.post<ApiEnvelope<BackendChatbotReply>>('/api/ai/chat', { message })
+async function sendBackendChatbotMessage(message: string, session?: ChatbotSession): Promise<ChatbotReply> {
+  const response = await api.post<ApiEnvelope<BackendChatbotReply>>('/api/ai/chat', {
+    message,
+    context: session?.context,
+    history: session?.history?.slice(-8),
+  })
   const payload = response.data
   if (!payload.success || !payload.data?.answer) {
     throw new Error(payload.message || 'Chatbot chưa phản hồi được')
@@ -143,6 +159,12 @@ async function sendBackendChatbotMessage(message: string): Promise<ChatbotReply>
     quickReplies: toQuickReplies(payload.data.suggestedQuestions),
     usedAi: payload.data.usedAi,
     mode: payload.data.mode,
+    state: payload.data.state,
+    intent: payload.data.intent,
+    missingFields: payload.data.missingFields,
+    context: payload.data.context,
+    suggestedRooms: payload.data.suggestedRooms?.slice(0, 4),
+    action: payload.data.action,
   }
 }
 
@@ -494,14 +516,14 @@ export const CHATBOT_WELCOME: ChatbotReply = {
   ],
 }
 
-export async function sendChatbotMessage(message: string): Promise<ChatbotReply> {
+export async function sendChatbotMessage(message: string, session?: ChatbotSession): Promise<ChatbotReply> {
   const trimmed = message.trim()
   if (!trimmed) {
     return { content: 'Bạn gõ câu hỏi nhé — mình sẵn sàng hỗ trợ!' }
   }
 
   try {
-    return await sendBackendChatbotMessage(trimmed)
+    return await sendBackendChatbotMessage(trimmed, session)
   } catch {
     if (isAskingPrice(normalize(trimmed))) {
       try {

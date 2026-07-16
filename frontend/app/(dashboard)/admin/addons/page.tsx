@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type ReactNode } from 'react'
 import axios from 'axios'
 import AdminPageHeader from '@/components/admin/AdminPageHeader'
 import AdminStatCard from '@/components/admin/AdminStatCard'
@@ -8,7 +8,7 @@ import AdminToast from '@/components/admin/AdminToast'
 import AddonServiceImage from '@/components/addons/AddonServiceImage'
 import { IconClose, IconEquipment, IconPlus, IconRefresh, IconSearch } from '@/components/admin/AdminIcons'
 import ProjectSelect from '@/components/ui/ProjectSelect'
-import { getAdminRoomTypes } from '@/lib/admin/rooms/adminRoomApi'
+import { getAdminRoomTypes, uploadAdminRoomImage } from '@/lib/admin/rooms/adminRoomApi'
 import type { AdminRoomTypeOption } from '@/lib/admin/rooms/types'
 import {
   fetchAdminAddons,
@@ -38,6 +38,7 @@ export default function AdminAddonsPage() {
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
   const [editing, setEditing] = useState<AddonCatalogItem | null | undefined>(undefined)
   const [form, setForm] = useState<AddonCatalogPayload>(EMPTY_FORM)
   const [toast, setToast] = useState('')
@@ -83,13 +84,42 @@ export default function AdminAddonsPage() {
     })
     setEditing(item)
   }
-  const closeForm = () => { if (!saving) setEditing(undefined) }
+  const closeForm = () => { if (!saving && !uploadingImage) setEditing(undefined) }
+
+  const uploadImage = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+
+    const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp'])
+    if (!allowedTypes.has(file.type)) {
+      setError('Chỉ hỗ trợ ảnh JPG, PNG hoặc WebP.')
+      return
+    }
+    if (file.size > 12 * 1024 * 1024) {
+      setError('Ảnh dịch vụ không được vượt quá 12MB.')
+      return
+    }
+
+    setUploadingImage(true)
+    setError('')
+    try {
+      const uploaded = await uploadAdminRoomImage(file)
+      setForm((current) => ({ ...current, imageUrl: uploaded.secureUrl }))
+      setToast('Đã tải ảnh lên. Bấm “Lưu dịch vụ” để hoàn tất.')
+    } catch (reason) {
+      setError(getErrorMessage(reason, 'Không thể tải ảnh dịch vụ lên máy chủ lưu trữ.'))
+    } finally {
+      setUploadingImage(false)
+    }
+  }
 
   const submit = async () => {
     if (form.name.trim().length < 2 || !form.description.trim() || !form.unit.trim() || form.price <= 0) {
       setError('Vui lòng nhập đủ tên, mô tả, đơn vị tính và mức giá hợp lệ.')
       return
     }
+    if (uploadingImage) return
     setSaving(true)
     try {
       await saveAdminAddon({
@@ -185,11 +215,18 @@ export default function AdminAddonsPage() {
               <Field label="Trạng thái"><ProjectSelect value={String(form.active)} onChange={(event) => setForm({ ...form, active: event.target.value === 'true' })} className={inputClass}><option value="true">Đang phục vụ</option><option value="false">Tạm ngưng</option></ProjectSelect></Field>
               <Field label="Ảnh minh họa (không bắt buộc)" className="sm:col-span-2">
                 <input value={form.imageUrl ?? ''} maxLength={500} onChange={(event) => setForm({ ...form, imageUrl: event.target.value })} placeholder="https://... hoặc /images/..." className={inputClass} />
-                <p className="mt-2 text-xs leading-5 text-on-surface-variant">Khi deploy, dùng liên kết HTTPS hoặc đường dẫn bắt đầu bằng <strong>/images/</strong>.</p>
-                {form.imageUrl?.trim() && <AddonServiceImage imageUrl={form.imageUrl} name={form.name || 'dịch vụ'} className="mt-3 h-48 w-full rounded-2xl border border-outline-variant" eager />}
+                <div className="mt-3 grid gap-3 sm:grid-cols-[180px_1fr]">
+                  <AddonServiceImage imageUrl={form.imageUrl} name={form.name || 'dịch vụ'} className="h-32 w-full rounded-2xl border border-outline-variant" eager />
+                  <label className="flex cursor-pointer flex-col justify-center rounded-2xl border border-dashed border-outline bg-surface-container-low px-5 py-4 transition hover:border-brand-orange hover:bg-white">
+                    <span className="font-display text-sm font-bold text-brand-orange">{uploadingImage ? 'Đang tải ảnh...' : 'Chọn ảnh từ máy'}</span>
+                    <span className="mt-1 text-xs leading-5 text-on-surface-variant">JPG, PNG hoặc WebP · tối thiểu 1200×900px · tối đa 12MB. URL ảnh sẽ được tự động điền sau khi tải.</span>
+                    <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => void uploadImage(event)} disabled={uploadingImage || saving} className="sr-only" />
+                  </label>
+                </div>
+                <p className="mt-2 text-xs leading-5 text-on-surface-variant">Bạn cũng có thể dán liên kết HTTPS hoặc đường dẫn bắt đầu bằng <strong>/images/</strong>.</p>
               </Field>
             </div>
-            <footer className="sticky bottom-0 flex justify-end gap-3 border-t border-outline-variant bg-white/95 px-6 py-4 backdrop-blur"><button type="button" onClick={closeForm} disabled={saving} className="h-11 rounded-xl border border-outline-variant px-5 text-sm font-semibold text-on-surface-variant">Hủy</button><button type="button" onClick={() => void submit()} disabled={saving} className="h-11 rounded-xl bg-brand-greenDark px-6 text-sm font-semibold text-white shadow-lg shadow-brand-greenDark/15 disabled:opacity-60">{saving ? 'Đang lưu...' : 'Lưu dịch vụ'}</button></footer>
+            <footer className="sticky bottom-0 flex justify-end gap-3 border-t border-outline-variant bg-white/95 px-6 py-4 backdrop-blur"><button type="button" onClick={closeForm} disabled={saving || uploadingImage} className="h-11 rounded-xl border border-outline-variant px-5 text-sm font-semibold text-on-surface-variant disabled:opacity-60">Hủy</button><button type="button" onClick={() => void submit()} disabled={saving || uploadingImage} className="h-11 rounded-xl bg-brand-greenDark px-6 text-sm font-semibold text-white shadow-lg shadow-brand-greenDark/15 disabled:opacity-60">{uploadingImage ? 'Đang tải ảnh...' : saving ? 'Đang lưu...' : 'Lưu dịch vụ'}</button></footer>
           </section>
         </div>
       )}
