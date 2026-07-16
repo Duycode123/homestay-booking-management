@@ -23,6 +23,7 @@ import { resolveBookingRoom } from '@/lib/booking-room-service'
 import { savePendingBooking } from '@/lib/pending-booking'
 import { shouldBypassImageOptimization } from '@/lib/image-optimization'
 import { fetchAvailableAddons, type AddonCatalogItem, type AddonSelection } from '@/lib/addon-service'
+import AddonServiceImage from '@/components/addons/AddonServiceImage'
 
 export default function BookingConfirmationClient() {
   const router = useRouter()
@@ -267,7 +268,9 @@ export default function BookingConfirmationClient() {
                   {addonCatalog.map((item) => {
                     const quantity = addonQuantities[item.id] ?? 0
                     return (
-                      <div key={item.id} className={['rounded-2xl border p-4 transition', quantity > 0 ? 'border-[#245545] bg-[#EEF6F2]' : 'border-[#E4DED3] bg-white'].join(' ')}>
+                      <div key={item.id} className={['group overflow-hidden rounded-2xl border transition', quantity > 0 ? 'border-[#245545] bg-[#EEF6F2]' : 'border-[#E4DED3] bg-white'].join(' ')}>
+                        <AddonServiceImage imageUrl={item.imageUrl} name={item.name} className="h-28 w-full" />
+                        <div className="p-4">
                         <button type="button" onClick={() => setAddonQuantities((current) => ({ ...current, [item.id]: quantity > 0 ? 0 : 1 }))} className="w-full text-left">
                           <div className="flex items-start justify-between gap-3">
                             <div>
@@ -286,6 +289,7 @@ export default function BookingConfirmationClient() {
                               <button type="button" aria-label={`Tăng ${item.name}`} onClick={() => setAddonQuantities((current) => ({ ...current, [item.id]: Math.min(20, quantity + 1) }))} className="h-7 w-7 rounded-full hover:bg-[#F1ECE4]">+</button>
                             </div>
                           )}
+                        </div>
                         </div>
                       </div>
                     )

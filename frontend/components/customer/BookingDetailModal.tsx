@@ -6,6 +6,7 @@ import { formatCurrency } from '@/components/booking/booking-data'
 import BookingStatusBadge from '@/components/customer/BookingStatusBadge'
 import ProjectSelect from '@/components/ui/ProjectSelect'
 import { IconCalendar, IconClock, IconClose } from '@/components/customer/CustomerIcons'
+import AddonServiceImage from '@/components/addons/AddonServiceImage'
 import type { AuthUser } from '@/lib/auth'
 import {
   cancelDuringStayAddon,
@@ -270,7 +271,9 @@ function StayAddonSection({ booking }: { booking: BookingHistoryItem }) {
             {catalog.map((item) => {
               const quantity = quantities[item.id] ?? 0
               return (
-                <div key={item.id} className={['rounded-2xl border p-3', quantity ? 'border-secondary bg-white' : 'border-outline-variant bg-white/70'].join(' ')}>
+                <div key={item.id} className={['group overflow-hidden rounded-2xl border', quantity ? 'border-secondary bg-white' : 'border-outline-variant bg-white/70'].join(' ')}>
+                  <AddonServiceImage imageUrl={item.imageUrl} name={item.name} className="h-24 w-full" />
+                  <div className="p-3">
                   <button type="button" className="w-full text-left" onClick={() => setQuantities((current) => ({ ...current, [item.id]: quantity ? 0 : 1 }))}>
                     <p className="font-display font-bold text-on-surface">{item.name}</p>
                     <p className="mt-1 text-xs text-on-surface-variant">{formatCurrency(item.price)} / {item.unit}</p>
@@ -282,6 +285,7 @@ function StayAddonSection({ booking }: { booking: BookingHistoryItem }) {
                       <button type="button" onClick={() => setQuantities((current) => ({ ...current, [item.id]: Math.min(20, quantity + 1) }))} className="h-8 w-8 rounded-full border border-outline-variant bg-white">+</button>
                     </div>
                   )}
+                  </div>
                 </div>
               )
             })}

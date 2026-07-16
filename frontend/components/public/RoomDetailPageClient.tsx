@@ -4,11 +4,13 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import BookingQuickModal from '@/components/booking/BookingQuickModal'
+import AddonServiceImage from '@/components/addons/AddonServiceImage'
 import { formatCurrency, getNightlyDisplayPrice, type BookingRoom } from '@/components/booking/booking-data'
 import { HeartIcon } from '@/components/layout/FavoriteRoomsMenu'
 import { useAuth } from '@/contexts/AuthContext'
 import { useFavorites } from '@/contexts/FavoritesContext'
 import { fetchCommonAmenities, type CommonAmenity } from '@/lib/common-amenity-service'
+import { fetchAvailableAddons, type AddonCatalogItem } from '@/lib/addon-service'
 import { fetchPublicRoomEquipment } from '@/lib/public-room-equipment-service'
 import { fetchPublicReviewsByRoomId } from '@/lib/public-room-review-service'
 import type { BookingReview } from '@/lib/review-service'
@@ -20,6 +22,7 @@ export default function RoomDetailPageClient({ roomId }: { roomId: string }) {
   const { favoriteIds, toggleFavorite } = useFavorites()
   const [room, setRoom] = useState<BookingRoom | null>(null)
   const [commonAmenities, setCommonAmenities] = useState<CommonAmenity[]>([])
+  const [addonServices, setAddonServices] = useState<AddonCatalogItem[]>([])
   const [reviews, setReviews] = useState<BookingReview[]>([])
   const [similarRooms, setSimilarRooms] = useState<BookingRoom[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -38,7 +41,8 @@ export default function RoomDetailPageClient({ roomId }: { roomId: string }) {
       fetchPublicReviewsByRoomId(roomId).catch(() => []),
       fetchCommonAmenities().catch(() => []),
       fetchRooms().catch(() => []),
-    ]).then(async ([backendRoom, equipment, roomReviews, amenities, allRooms]) => {
+      fetchAvailableAddons(roomId).catch(() => []),
+    ]).then(async ([backendRoom, equipment, roomReviews, amenities, allRooms, addons]) => {
       if (!mounted) return
       if (!backendRoom) {
         setError('Không tìm thấy phòng homestay.')
@@ -50,6 +54,7 @@ export default function RoomDetailPageClient({ roomId }: { roomId: string }) {
       setRoom(mapBackendRoomToBookingRoom(backendRoom, 0, { averageRating, reviewCount: roomReviews.length }, equipment))
       setReviews(roomReviews)
       setCommonAmenities(amenities)
+      setAddonServices(addons)
       const candidates = getSimilarRoomCandidates(backendRoom, allRooms).slice(0, 4)
       const recommendations = await Promise.all(candidates.map(async (candidate, index) => {
         const candidateReviews = await fetchPublicReviewsByRoomId(String(candidate.id)).catch(() => [])
@@ -111,6 +116,7 @@ export default function RoomDetailPageClient({ roomId }: { roomId: string }) {
 
             <AmenitySection title="Tiện ích riêng của phòng" subtitle="Các thiết bị và tiện nghi được bố trí riêng trong phòng này." items={room.includedEquipments.map((name) => ({ name, description: 'Sẵn sàng phục vụ trong phòng.', iconName: 'private' }))} compact initialVisibleCount={8} />
             <AmenitySection title="Tiện ích chung của homestay" subtitle="Khách lưu trú tại phòng được sử dụng các khu vực chung dưới đây." items={commonAmenities} />
+            <AddonServicesSection items={addonServices} />
 
             <section className="rounded-[26px] border border-outline-variant bg-white p-6 sm:p-8"><h2 className="font-editorial text-3xl font-semibold text-secondary">Chính sách lưu trú</h2><div className="mt-5 grid gap-4 sm:grid-cols-2"><Policy title="Khung lưu trú" text="Nhận phòng từ 14:00 và trả phòng trước 12:00 ngày cuối cùng; thời gian tối thiểu 1 đêm." /><Policy title="Nhận phòng" text="Khách có thể check-in sớm tối đa 5 phút khi phòng đã sẵn sàng." /><Policy title="Hủy phòng" text="Gửi yêu cầu trước ít nhất 24 giờ để được admin xem xét hoàn tiền." /><Policy title="Sử dụng tiện ích chung" text="Giữ gìn vệ sinh, tuân thủ giờ hoạt động và hướng dẫn an toàn tại từng khu vực." /></div></section>
             <HouseRulesSection />
@@ -324,6 +330,37 @@ function Gallery({ images, roomName }: { images: string[]; roomName: string }) {
         </div>
       )}
     </>
+  )
+}
+
+function AddonServicesSection({ items }: { items: AddonCatalogItem[] }) {
+  if (items.length === 0) return null
+
+  return (
+    <section className="overflow-hidden rounded-[26px] border border-outline-variant bg-white shadow-[var(--shadow-card)]">
+      <div className="flex flex-col gap-2 border-b border-outline-variant px-6 py-6 sm:px-8">
+        <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-orange">Nâng tầm kỳ nghỉ</p>
+        <h2 className="font-editorial text-3xl font-semibold text-secondary">Dịch vụ thuê thêm</h2>
+        <p className="max-w-2xl leading-7 text-on-surface-variant">
+          Có thể chọn khi đặt phòng hoặc gọi thêm sau khi check-in. Chi phí chỉ được cộng theo số lượng thực tế.
+        </p>
+      </div>
+      <div className="grid gap-4 p-5 sm:grid-cols-2 sm:p-6 xl:grid-cols-3">
+        {items.map((item) => (
+          <article key={item.id} className="group overflow-hidden rounded-[22px] border border-outline-variant bg-[#fcfaf6] transition hover:-translate-y-0.5 hover:border-brand-orange/35 hover:shadow-[0_16px_38px_rgba(35,54,45,.10)]">
+            <AddonServiceImage imageUrl={item.imageUrl} name={item.name} />
+            <div className="p-4">
+              <h3 className="font-display text-lg font-bold text-secondary">{item.name}</h3>
+              <p className="mt-1 line-clamp-2 min-h-12 text-sm leading-6 text-on-surface-variant">{item.description}</p>
+              <div className="mt-4 flex items-center justify-between gap-3 border-t border-outline-variant pt-3">
+                <span className="font-display font-bold text-brand-orange">{formatCurrency(item.price)}</span>
+                <span className="rounded-full bg-primary-container/55 px-3 py-1 text-xs font-semibold text-secondary">mỗi {item.unit}</span>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
   )
 }
 
