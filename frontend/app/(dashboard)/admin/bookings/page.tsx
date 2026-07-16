@@ -99,6 +99,14 @@ export default function AdminBookingsPage() {
     setSelected(updated)
   }
 
+  const handleAddonChanged = async (bookingId: number) => {
+    const detail = await getAdminBookingById(bookingId)
+    if (detail) {
+      setSelected(detail)
+      setBookings((current) => current.map((item) => item.bookingId === bookingId ? detail : item))
+    }
+  }
+
   const handleCancellationReview = async (bookingId: number, approved: boolean) => {
     setReviewingBookingId(bookingId)
     setErrorMessage('')
@@ -249,6 +257,7 @@ export default function AdminBookingsPage() {
           onClose={() => setSelected(null)}
           onStatusChange={handleStatusChange}
           onSettleCheckout={handleSettleCheckout}
+          onAddonChanged={handleAddonChanged}
         />
     </>
   )

@@ -1,5 +1,6 @@
 import api from '@/lib/api'
 import type { HomestayRoom, SlotStatus, TimeSlot } from './types'
+import type { AddonSelection, BookingAddonItem } from '@/lib/addon-service'
 
 const OPEN_HOUR = 8
 const CLOSE_HOUR = 24
@@ -66,6 +67,9 @@ export type BookingResponse = {
   paymentMethod?: BookingPaymentMethod | null
   note?: string | null
   equipmentNotes?: string | null
+  roomAmount?: number | string
+  addonAmount?: number | string
+  addons?: BookingAddonItem[]
   canReview?: boolean | null
   alreadyReviewed?: boolean | null
 }
@@ -77,6 +81,7 @@ type CreateBookingRequest = {
   paymentMethod: BookingPaymentMethod
   couponCode?: string
   note?: string
+  addons?: AddonSelection[]
 }
 
 export type CreateBookingPayload = {
@@ -88,6 +93,7 @@ export type CreateBookingPayload = {
   paymentMethod: BookingPaymentMethod
   couponCode?: string
   note?: string
+  addons?: AddonSelection[]
 }
 
 function pad(value: number) {
@@ -312,6 +318,7 @@ export async function createBooking(payload: CreateBookingPayload): Promise<Book
     paymentMethod: payload.paymentMethod,
     couponCode: payload.couponCode?.trim() || undefined,
     note: payload.note?.trim() || undefined,
+    addons: payload.addons ?? [],
   }
 
   const response = await api.post<ApiResponse<BookingResponse>>('/api/bookings', request)

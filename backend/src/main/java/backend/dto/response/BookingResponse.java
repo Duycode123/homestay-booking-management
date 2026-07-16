@@ -1,5 +1,6 @@
 package backend.dto.response;
 
+import backend.addon.adapter.in.web.dto.BookingAddonResponse;
 import backend.entity.Booking;
 import backend.entity.BookingStatus;
 import backend.entity.CancellationRequestStatus;
@@ -11,6 +12,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -39,11 +41,14 @@ public class BookingResponse {
     private BigDecimal totalHours;
     private BigDecimal pricePerHour;
     private BigDecimal originalAmount;
+    private BigDecimal roomAmount;
+    private BigDecimal addonAmount;
     private String couponCode;
     private BigDecimal discountAmount;
     private BigDecimal totalAmount;
     private BigDecimal paidAmount;
     private BigDecimal remainingAmount;
+    private List<BookingAddonResponse> addons = List.of();
 
     private BookingStatus status;
     private PaymentMethod paymentMethod;
@@ -105,13 +110,16 @@ public class BookingResponse {
         }
         this.totalHours = booking.getTotalHours();
         this.pricePerHour = booking.getPricePerHour();
-        this.originalAmount = booking.getTotalHours() == null || booking.getPricePerHour() == null
+        this.originalAmount = booking.getRoomAmount() != null ? booking.getRoomAmount()
+                : booking.getTotalHours() == null || booking.getPricePerHour() == null
                 ? null
                 : booking.getTotalHours().multiply(booking.getPricePerHour());
+        this.roomAmount = this.originalAmount;
+        this.addonAmount = booking.getAddonAmount() == null ? BigDecimal.ZERO.setScale(2) : booking.getAddonAmount();
         this.couponCode = booking.getDiscountCode() == null ? null : booking.getDiscountCode().getCode();
         this.discountAmount = this.originalAmount == null || booking.getTotalAmount() == null
                 ? null
-                : this.originalAmount.subtract(booking.getTotalAmount()).max(BigDecimal.ZERO);
+                : this.originalAmount.subtract(booking.getTotalAmount().subtract(this.addonAmount)).max(BigDecimal.ZERO);
         this.totalAmount = booking.getTotalAmount();
         BigDecimal normalizedTotal = booking.getTotalAmount() == null
                 ? BigDecimal.ZERO

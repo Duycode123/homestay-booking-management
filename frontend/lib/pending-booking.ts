@@ -1,4 +1,5 @@
 import type { PaymentMethod } from '@/lib/payment-service'
+import type { AddonSelection } from '@/lib/addon-service'
 
 export const PENDING_BOOKING_KEY = 'pendingBooking'
 
@@ -10,7 +11,7 @@ export type PendingBooking = {
   startTime: string
   endTime: string
   duration: number
-  addons: string[]
+  addons: AddonSelection[]
   note?: string
   method?: PaymentMethod
   discountCode?: string
@@ -52,7 +53,7 @@ export function pendingBookingToSearchParams(booking: PendingBooking) {
     startTime: booking.startTime,
     endTime: booking.endTime,
     duration: String(booking.duration),
-    addons: booking.addons.join(','),
+    addons: booking.addons.map((item) => `${item.serviceId}:${item.quantity}`).join(','),
     note: booking.note ?? '',
   })
 
@@ -96,7 +97,17 @@ function normalizePendingBooking(value: unknown): PendingBooking | null {
     startTime: booking.startTime,
     endTime: booking.endTime,
     duration: booking.duration,
-    addons: booking.addons.filter((addonId): addonId is string => typeof addonId === 'string'),
+    addons: booking.addons.flatMap((item) => {
+      if (typeof item === 'string') {
+        const serviceId = Number(item)
+        return Number.isInteger(serviceId) && serviceId > 0 ? [{ serviceId, quantity: 1 }] : []
+      }
+      if (!item || typeof item !== 'object') return []
+      const candidate = item as Partial<AddonSelection>
+      return Number.isInteger(candidate.serviceId) && Number.isInteger(candidate.quantity) && Number(candidate.quantity) > 0
+        ? [{ serviceId: Number(candidate.serviceId), quantity: Math.min(20, Number(candidate.quantity)), note: candidate.note }]
+        : []
+    }),
     note: typeof booking.note === 'string' ? booking.note : undefined,
     method: isPaymentMethod(booking.method) ? booking.method : undefined,
     discountCode: typeof booking.discountCode === 'string' ? booking.discountCode : undefined,

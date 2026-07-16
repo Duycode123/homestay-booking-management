@@ -9,6 +9,12 @@ import { EmptyState, StaffPageShell, StatCard, Toast } from './StaffShared'
 import { cancelAdminBooking, fetchAdminBookings, getAdminBookingById, updateAdminBookingStatus } from '@/lib/admin/adminBookingApi'
 import { BOOKING_STATUS_LABELS, PAYMENT_STATUS_LABELS } from '@/lib/admin/bookingLabels'
 import { type AdminBooking, type BookingFilters, type BookingStatus, type PaymentStatus } from '@/lib/admin/types'
+import {
+  fetchManagementBookingAddons,
+  updateBookingAddonStatus,
+  type BookingAddonItem,
+  type BookingAddonStatus,
+} from '@/lib/addon-service'
 
 type StaffDateFilter = 'ALL' | 'TODAY' | 'UPCOMING'
 
@@ -292,6 +298,7 @@ export default function StaffBookingsPage() {
             booking={selectedBooking}
             onClose={() => setSelectedBooking(null)}
             onAction={(action) => requestStatusChange(selectedBooking, action)}
+            onAddonChanged={() => void selectBooking(selectedBooking)}
           />
         )}
 
@@ -479,10 +486,12 @@ function BookingDetailPanel({
   booking,
   onClose,
   onAction,
+  onAddonChanged,
 }: {
   booking: AdminBooking
   onClose: () => void
   onAction: (action: StaffBookingAction) => void
+  onAddonChanged: () => void
 }) {
   const actions = getAvailableActions(booking)
 
@@ -562,6 +571,8 @@ function BookingDetailPanel({
               </div>
             </div>
           </PanelSection>
+
+          <StaffAddonPanel booking={booking} onChanged={onAddonChanged} />
         </div>
 
         <footer className="border-t border-outline-variant bg-surface-container-low/40 px-5 py-4">
@@ -581,6 +592,88 @@ function BookingDetailPanel({
       </aside>
     </>
   )
+}
+
+function StaffAddonPanel({ booking, onChanged }: { booking: AdminBooking; onChanged: () => void }) {
+  const [items, setItems] = useState<BookingAddonItem[]>(booking.addons ?? [])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let active = true
+    setItems(booking.addons ?? [])
+    void fetchManagementBookingAddons(booking.bookingId)
+      .then((data) => { if (active) setItems(data) })
+      .catch(() => undefined)
+    return () => { active = false }
+  }, [booking.addons, booking.bookingId])
+
+  const update = async (item: BookingAddonItem, status: BookingAddonStatus) => {
+    setIsLoading(true)
+    setError('')
+    try {
+      const updated = await updateBookingAddonStatus(booking.bookingId, item.id, status)
+      setItems((current) => current.map((candidate) => candidate.id === updated.id ? updated : candidate))
+      onChanged()
+    } catch (updateError) {
+      setError(updateError instanceof Error ? updateError.message : 'Không thể cập nhật dịch vụ.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const visibleItems = items.filter((item) => item.status !== 'CANCELLED')
+  if (!visibleItems.length) return null
+
+  return (
+    <PanelSection title="Dịch vụ thuê thêm">
+      <div className="space-y-3">
+        {visibleItems.map((item) => {
+          const actions = nextAddonActions(item)
+          return (
+            <div key={item.id} className="rounded-2xl border border-outline-variant bg-surface-container-low p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="font-display font-bold text-on-surface">{item.name} × {item.quantity}</p>
+                  <p className="mt-1 text-xs text-on-surface-variant">{item.source === 'BOOKING' ? 'Đặt trước' : 'Gọi trong kỳ nghỉ'} · {formatCurrency(item.totalAmount)}</p>
+                </div>
+                <span className="rounded-full bg-primary-container px-3 py-1 text-xs font-bold text-on-primary-container">{staffAddonStatusLabel(item.status)}</span>
+              </div>
+              {item.note && <p className="mt-2 text-sm text-on-surface-variant">Ghi chú: {item.note}</p>}
+              {actions.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2 border-t border-outline-variant pt-3">
+                  {actions.map((action) => (
+                    <button key={action.status} type="button" disabled={isLoading} onClick={() => void update(item, action.status)} className={action.status === 'CANCELLED' ? 'btn-secondary border-error text-error' : 'btn-warm'}>
+                      {action.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })}
+        {error && <p className="rounded-xl bg-error-container px-3 py-2 text-sm text-on-error-container">{error}</p>}
+      </div>
+    </PanelSection>
+  )
+}
+
+function nextAddonActions(item: BookingAddonItem): Array<{ status: BookingAddonStatus; label: string }> {
+  if (item.status === 'REQUESTED') return [{ status: 'CONFIRMED', label: 'Xác nhận yêu cầu' }, { status: 'CANCELLED', label: 'Từ chối' }]
+  if (item.status === 'CONFIRMED') return [
+    { status: 'PREPARED', label: 'Đã chuẩn bị' },
+    { status: 'DELIVERED', label: 'Đã giao' },
+    ...(item.source === 'DURING_STAY' ? [{ status: 'CANCELLED' as const, label: 'Hủy dịch vụ' }] : []),
+  ]
+  if (item.status === 'PREPARED') return [
+    { status: 'DELIVERED', label: 'Xác nhận đã giao' },
+    ...(item.source === 'DURING_STAY' ? [{ status: 'CANCELLED' as const, label: 'Hủy dịch vụ' }] : []),
+  ]
+  return []
+}
+
+function staffAddonStatusLabel(status: BookingAddonStatus) {
+  return ({ PENDING_PAYMENT: 'Chờ thanh toán', REQUESTED: 'Khách vừa yêu cầu', CONFIRMED: 'Đã xác nhận', PREPARED: 'Đã chuẩn bị', DELIVERED: 'Đã giao', CANCELLED: 'Đã hủy' } as const)[status]
 }
 
 function PanelSection({ title, children }: { title: string; children: ReactNode }) {

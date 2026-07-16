@@ -1,5 +1,6 @@
 import axios from 'axios'
 import api from '@/lib/api'
+import type { BookingAddonItem } from '@/lib/addon-service'
 import {
   clearReviewDraft,
   loadReviewDraft,
@@ -61,7 +62,7 @@ export type BookingHistoryItem = {
   totalAmount: number
   status: CustomerBookingStatus
   paymentMethod?: string
-  addons?: string[]
+  addons?: BookingAddonItem[]
   note?: string
   review?: BookingReview
   canReview?: boolean
@@ -124,6 +125,7 @@ type BackendBooking = {
   refundBankName?: string | null
   refundAccountNumber?: string | null
   refundAccountHolder?: string | null
+  addons?: BookingAddonItem[]
 }
 
 type BackendReview = {
@@ -205,7 +207,11 @@ function mapBooking(booking: BackendBooking): BookingHistoryItem {
     totalAmount: parseAmount(booking.totalAmount),
     status: normalizeStatus(booking.status),
     paymentMethod: getPaymentMethodLabel(booking.paymentMethod),
-    addons: [],
+    addons: (booking.addons ?? []).map((item) => ({
+      ...item,
+      unitPrice: parseAmount(item.unitPrice),
+      totalAmount: parseAmount(item.totalAmount),
+    })),
     note: booking.note?.trim() || booking.equipmentNotes?.trim() || undefined,
     canReview: booking.canReview ?? undefined,
     alreadyReviewed: booking.alreadyReviewed ?? undefined,

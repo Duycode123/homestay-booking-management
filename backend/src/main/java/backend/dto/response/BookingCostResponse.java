@@ -26,5 +26,14 @@ public class BookingCostResponse {
     private BigDecimal originalAmount;
     private String couponCode;
     private BigDecimal discountAmount;
+    private BigDecimal addonAmount;
     private BigDecimal totalAmount;
+
+    public BookingCostResponse(Integer roomId, String roomName, String typeName, LocalDateTime startTime,
+                               LocalDateTime endTime, BigDecimal totalHours, BigDecimal pricePerHour,
+                               BigDecimal originalAmount, String couponCode, BigDecimal discountAmount,
+                               BigDecimal totalAmount) {
+        this(roomId, roomName, typeName, startTime, endTime, totalHours, pricePerHour, originalAmount,
+                couponCode, discountAmount, BigDecimal.ZERO.setScale(2), totalAmount);
+    }
 }

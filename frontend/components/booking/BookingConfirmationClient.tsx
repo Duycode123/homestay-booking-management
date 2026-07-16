@@ -22,6 +22,7 @@ import { clearQuickBookingDraft } from '@/components/booking/quick-booking-draft
 import { resolveBookingRoom } from '@/lib/booking-room-service'
 import { savePendingBooking } from '@/lib/pending-booking'
 import { shouldBypassImageOptimization } from '@/lib/image-optimization'
+import { fetchAvailableAddons, type AddonCatalogItem, type AddonSelection } from '@/lib/addon-service'
 
 export default function BookingConfirmationClient() {
   const router = useRouter()
@@ -36,6 +37,9 @@ export default function BookingConfirmationClient() {
   const [isResolvingRoom, setIsResolvingRoom] = useState(shouldResolveBackendRoom)
   const [confirmError, setConfirmError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [addonCatalog, setAddonCatalog] = useState<AddonCatalogItem[]>([])
+  const [addonQuantities, setAddonQuantities] = useState<Record<number, number>>({})
+  const [isLoadingAddons, setIsLoadingAddons] = useState(false)
 
   const displayRoom = apiRoom ?? room
   const roomSubtotal = displayRoom.pricePerHour * getBookingDuration(searchParams)
@@ -47,6 +51,14 @@ export default function BookingConfirmationClient() {
   const duration = getBookingDuration(searchParams)
   const endTime = searchParams.get('endTime') || calculateEndTime(startTime, duration)
   const note = searchParams.get('note')?.trim() || EMPTY_NOTE_TEXT
+  const selectedAddons = useMemo<AddonSelection[]>(() => Object.entries(addonQuantities)
+    .filter(([, quantity]) => quantity > 0)
+    .map(([serviceId, quantity]) => ({ serviceId: Number(serviceId), quantity })), [addonQuantities])
+  const addonTotal = useMemo(() => selectedAddons.reduce((total, selection) => {
+    const item = addonCatalog.find((candidate) => candidate.id === selection.serviceId)
+    return total + (item?.price ?? 0) * selection.quantity
+  }, 0), [addonCatalog, selectedAddons])
+  const grandTotal = roomSubtotal + addonTotal
   useEffect(() => {
     if (apiRoom) {
       setRoom(apiRoom)
@@ -75,6 +87,17 @@ export default function BookingConfirmationClient() {
       active = false
     }
   }, [apiRoom, roomId, shouldResolveBackendRoom])
+
+  useEffect(() => {
+    if (!displayRoom.id || !isNumericRoomId(displayRoom.id)) return
+    let active = true
+    setIsLoadingAddons(true)
+    void fetchAvailableAddons(displayRoom.id)
+      .then((items) => { if (active) setAddonCatalog(items) })
+      .catch(() => { if (active) setAddonCatalog([]) })
+      .finally(() => { if (active) setIsLoadingAddons(false) })
+    return () => { active = false }
+  }, [displayRoom.id])
 
   const handleConfirm = async () => {
     if (isAuthLoading) {
@@ -115,7 +138,7 @@ export default function BookingConfirmationClient() {
         startTime,
         endTime,
         duration,
-        addons: [],
+        addons: selectedAddons,
         note,
         method: paymentMethod,
       })
@@ -225,6 +248,52 @@ export default function BookingConfirmationClient() {
 
             <InfoSection title="Tiện nghi hiển thị" items={displayRoom.includedEquipments} />
 
+            <div className="mt-6 border-t border-[#E4DED3] pt-6">
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <p className="font-display text-xs font-bold uppercase tracking-[0.14em] text-[#B28455]">Nâng cấp kỳ nghỉ</p>
+                  <h3 className="mt-1 font-display text-xl font-bold">Dịch vụ thuê thêm</h3>
+                  <p className="mt-1 text-sm text-[#6A6C66]">Chọn trước để đội ngũ chuẩn bị đúng giờ nhận phòng.</p>
+                </div>
+                {addonTotal > 0 && <span className="rounded-full bg-[#E8F2ED] px-3 py-1 text-sm font-bold text-[#174638]">+ {formatCurrency(addonTotal)}</span>}
+              </div>
+
+              {isLoadingAddons ? (
+                <div className="mt-4 h-24 animate-pulse rounded-2xl bg-[#F5F1EA]" />
+              ) : addonCatalog.length === 0 ? (
+                <p className="mt-4 rounded-2xl border border-[#E4DED3] bg-[#FBF9F5] p-4 text-sm text-[#6A6C66]">Hiện chưa có dịch vụ thuê thêm áp dụng cho phòng này.</p>
+              ) : (
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {addonCatalog.map((item) => {
+                    const quantity = addonQuantities[item.id] ?? 0
+                    return (
+                      <div key={item.id} className={['rounded-2xl border p-4 transition', quantity > 0 ? 'border-[#245545] bg-[#EEF6F2]' : 'border-[#E4DED3] bg-white'].join(' ')}>
+                        <button type="button" onClick={() => setAddonQuantities((current) => ({ ...current, [item.id]: quantity > 0 ? 0 : 1 }))} className="w-full text-left">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="font-display font-bold text-[#174638]">{item.name}</p>
+                              <p className="mt-1 line-clamp-2 text-sm text-[#6A6C66]">{item.description}</p>
+                            </div>
+                            <span className={['mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold', quantity > 0 ? 'border-[#174638] bg-[#174638] text-white' : 'border-[#CFC6B8] text-transparent'].join(' ')}>✓</span>
+                          </div>
+                        </button>
+                        <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#DCD5CA] pt-3">
+                          <span className="text-sm font-bold text-[#B0753D]">{formatCurrency(item.price)} / {item.unit}</span>
+                          {quantity > 0 && (
+                            <div className="flex items-center rounded-full border border-[#CFC6B8] bg-white p-1">
+                              <button type="button" aria-label={`Giảm ${item.name}`} onClick={() => setAddonQuantities((current) => ({ ...current, [item.id]: Math.max(0, quantity - 1) }))} className="h-7 w-7 rounded-full hover:bg-[#F1ECE4]">−</button>
+                              <span className="w-8 text-center text-sm font-bold">{quantity}</span>
+                              <button type="button" aria-label={`Tăng ${item.name}`} onClick={() => setAddonQuantities((current) => ({ ...current, [item.id]: Math.min(20, quantity + 1) }))} className="h-7 w-7 rounded-full hover:bg-[#F1ECE4]">+</button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
             <div className="mt-6">
               <h3 className="font-display text-lg font-bold">Ghi chú khách hàng</h3>
               <div className="mt-3 whitespace-pre-wrap rounded-2xl border border-[#E4DED3] bg-[#FBF9F5] p-4 text-[#6A6C66]">
@@ -252,12 +321,13 @@ export default function BookingConfirmationClient() {
             <div className="my-4 h-px bg-[#E4DED3]" />
 
             <PaymentRow label="Tiền phòng" value={formatCurrency(roomSubtotal)} />
+            {addonTotal > 0 && <PaymentRow label="Dịch vụ thuê thêm" value={formatCurrency(addonTotal)} />}
 
             <div className="my-5 rounded-2xl bg-[#FBF9F5] p-4">
               <div className="flex items-center justify-between gap-4">
                 <span className="font-display text-lg font-bold">Tổng tham chiếu</span>
                 <span className="font-display text-3xl font-bold text-[#B28455]">
-                  {formatCurrency(roomSubtotal)}
+                  {formatCurrency(grandTotal)}
                 </span>
               </div>
             </div>

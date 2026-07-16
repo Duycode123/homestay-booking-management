@@ -1,4 +1,5 @@
 /** Aligns with backend BookingStatus for future API integration. */
+import type { BookingAddonItem } from '@/lib/addon-service'
 export type BookingStatus =
   | 'PENDING_PAYMENT'
   | 'DEPOSIT_PAID'
@@ -40,6 +41,9 @@ export type AdminBooking = {
   refundPercentage?: number
   refundMethod?: string
   expectedRefundAt?: string
+  roomAmount?: number
+  addonAmount?: number
+  addons?: BookingAddonItem[]
 }
 
 export type BookingFilters = {

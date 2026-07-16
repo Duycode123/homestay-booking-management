@@ -313,6 +313,7 @@ export default function CheckoutPageClient() {
           paymentMethod: mapPaymentMethodToBackend('bank_transfer'),
           couponCode: appliedDiscount?.code,
           note: payableBooking.note,
+          addons: draft.addons,
         })
 
         payableBooking = {

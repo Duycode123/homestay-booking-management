@@ -8,6 +8,7 @@ import { getBookingDetail } from '@/lib/customer-booking-service'
 import type { AppliedDiscount } from '@/lib/discount-service'
 import { getPendingBooking } from '@/lib/pending-booking'
 import type { PaymentMethod, PaymentStatus } from '@/lib/payment-service'
+import { fetchAvailableAddons } from '@/lib/addon-service'
 
 export type CheckoutBooking = {
   bookingId: string
@@ -188,7 +189,9 @@ export async function getCheckoutBookingFromParams(searchParams: URLSearchParams
     location,
     pricePerHour,
     equipments,
-    addons: [],
+    addons: (booking.addons ?? []).filter((item) => item.status !== 'CANCELLED').map((item) => ({
+      id: String(item.id), name: `${item.name} × ${item.quantity}`, price: Number(item.totalAmount) || 0,
+    })),
     discount: 0,
     serviceFee: 0,
     note: booking.note,
@@ -217,6 +220,12 @@ async function buildCheckoutBookingFromPending(
   const categoryLabel = room.roomTypeName?.trim() || inferCategoryLabel(searchParams.get('roomType'))
   const pricePerHour = room.pricePerHour
 
+  const addonCatalog = await fetchAvailableAddons(roomId).catch(() => [])
+  const selectedAddons = pending.addons.flatMap((selection) => {
+    const item = addonCatalog.find((candidate) => candidate.id === selection.serviceId)
+    return item ? [{ id: String(item.id), name: `${item.name} × ${selection.quantity}`, price: item.price * selection.quantity }] : []
+  })
+
   return {
     bookingId,
     backendBookingId,
@@ -234,7 +243,7 @@ async function buildCheckoutBookingFromPending(
     location: room.location || 'The Serene Villa',
     pricePerHour,
     equipments: room.equipment?.length ? room.equipment : [categoryLabel],
-    addons: [],
+    addons: selectedAddons,
     discount: 0,
     serviceFee: 0,
     note: pending.note,

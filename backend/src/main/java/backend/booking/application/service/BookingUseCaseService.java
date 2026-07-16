@@ -1,5 +1,9 @@
 package backend.booking.application.service;
 
+import backend.addon.adapter.in.web.dto.BookingAddonResponse;
+import backend.addon.application.port.in.AddonUseCase;
+import backend.addon.domain.model.AddonQuote;
+import backend.addon.domain.model.BookingAddonStatus;
 import backend.booking.application.model.PageResult;
 import backend.booking.application.policy.BookingStatusTransitionPolicy;
 import backend.booking.application.port.in.CalculateBookingCostUseCase;
@@ -137,6 +141,7 @@ public class BookingUseCaseService implements
     private final BookingCancellationNotificationService bookingCancellationNotificationService;
     private final ValidateCouponUseCase validateCouponUseCase;
     private final BookingStatusTransitionPolicy bookingStatusTransitionPolicy;
+    private final AddonUseCase addonUseCase;
     private final Clock clock;
 
     @Value("${app.booking.payment-expiration-seconds:300}")
@@ -155,6 +160,8 @@ public class BookingUseCaseService implements
         CostBreakdown costBreakdown = calculateCostBreakdown(
                 command.couponCode(), originalAmount, command.customerEmail(), null
         );
+        AddonQuote addonQuote = addonUseCase.quote(room.getId(), command.addons());
+        BigDecimal grandTotal = normalizeMoney(costBreakdown.totalAmount().add(addonQuote.totalAmount()));
 
         return new BookingCostResponse(
                 room.getId(),
@@ -167,7 +174,8 @@ public class BookingUseCaseService implements
                 costBreakdown.originalAmount(),
                 costBreakdown.couponCode(),
                 costBreakdown.discountAmount(),
-                costBreakdown.totalAmount()
+                addonQuote.totalAmount(),
+                grandTotal
         );
     }
 
@@ -196,6 +204,8 @@ public class BookingUseCaseService implements
         CostBreakdown costBreakdown = calculateCostBreakdown(
                 command.couponCode(), originalAmount, command.customerEmail(), null
         );
+        AddonQuote addonQuote = addonUseCase.quote(room.getId(), command.addons());
+        BigDecimal grandTotal = normalizeMoney(costBreakdown.totalAmount().add(addonQuote.totalAmount()));
         DiscountCode appliedDiscountCode = loadAppliedDiscountCode(costBreakdown.couponCode());
 
         Booking booking = Booking.builder()
@@ -206,7 +216,9 @@ public class BookingUseCaseService implements
                 .endTime(command.endTime())
                 .paymentMethod(command.paymentMethod())
                 .pricePerHour(pricePerHour)
-                .totalAmount(costBreakdown.totalAmount())
+                .roomAmount(normalizeMoney(originalAmount))
+                .addonAmount(addonQuote.totalAmount())
+                .totalAmount(grandTotal)
                 .status(BookingStatus.PENDING_PAYMENT)
                 .note(command.note())
                 .build();
@@ -220,6 +232,8 @@ public class BookingUseCaseService implements
                     exception
             );
         }
+
+        addonUseCase.attachInitialAddons(savedBooking.getId(), addonQuote);
 
         return toBookingResponse(savedBooking);
     }
@@ -427,6 +441,7 @@ public class BookingUseCaseService implements
         }
 
         if (command.status() == BookingStatus.COMPLETED) {
+            ensureNoOpenAddonRequests(booking);
             ensureBookingFullyPaid(booking);
         }
 
@@ -466,6 +481,8 @@ public class BookingUseCaseService implements
             throw new IllegalArgumentException("Phuong thuc thanh toan khong duoc de trong");
         }
 
+        ensureNoOpenAddonRequests(booking);
+
         BigDecimal paidAmount = loadPaidAmount(booking);
         BigDecimal totalAmount = normalizeMoney(booking.getTotalAmount());
         BigDecimal remainingAmount = totalAmount.subtract(paidAmount).max(ZERO_MONEY);
@@ -490,8 +507,9 @@ public class BookingUseCaseService implements
         booking.setStatus(BookingStatus.COMPLETED);
         booking.setCheckoutTime(now);
         Booking savedBooking = saveBookingPort.save(booking);
-
-        return new BookingResponse(savedBooking, totalAmount);
+        BookingResponse response = new BookingResponse(savedBooking, totalAmount);
+        attachAddonResponses(response, savedBooking);
+        return response;
     }
 
     @Override
@@ -516,6 +534,7 @@ public class BookingUseCaseService implements
         }
 
         Booking savedBooking = saveBookingPort.save(booking);
+        addonUseCase.cancelUndeliveredAddons(savedBooking.getId());
 
         return toManagementBookingResponse(savedBooking);
     }
@@ -619,6 +638,7 @@ public class BookingUseCaseService implements
                 : booking.getNote() + System.lineSeparator() + cancellationNote);
 
         Booking savedBooking = saveBookingPort.save(booking);
+        addonUseCase.cancelUndeliveredAddons(savedBooking.getId());
         LocalDateTime expectedRefundAt = bookingCancellationNotificationService.notifyCancellationRefund(
                 savedBooking,
                 refundAmount
@@ -1025,6 +1045,22 @@ public class BookingUseCaseService implements
         }
     }
 
+    private void ensureNoOpenAddonRequests(Booking booking) {
+        if (booking.getId() == null) {
+            return;
+        }
+
+        boolean hasOpenRequest = addonUseCase.listForBookingInternal(booking.getId()).stream()
+                .anyMatch(item -> item.status() == BookingAddonStatus.REQUESTED
+                        || item.status() == BookingAddonStatus.CONFIRMED
+                        || item.status() == BookingAddonStatus.PREPARED);
+        if (hasOpenRequest) {
+            throw new IllegalStateException(
+                    "Vui long hoan tat hoac huy cac dich vu thue them dang xu ly truoc khi checkout"
+            );
+        }
+    }
+
     private BigDecimal loadPaidAmount(Booking booking) {
         if (booking.getId() == null) {
             return ZERO_MONEY;
@@ -1041,15 +1077,25 @@ public class BookingUseCaseService implements
     }
 
     private BookingResponse toBookingResponse(Booking booking) {
-        return new BookingResponse(
+        BookingResponse response = new BookingResponse(
                 booking,
                 loadPaidAmount(booking),
                 booking.getId() != null && loadReviewPort.existsReviewByBookingId(booking.getId())
         );
+        attachAddonResponses(response, booking);
+        return response;
     }
 
     private BookingResponse toManagementBookingResponse(Booking booking) {
-        return new BookingResponse(booking, loadPaidAmount(booking));
+        BookingResponse response = new BookingResponse(booking, loadPaidAmount(booking));
+        attachAddonResponses(response, booking);
+        return response;
+    }
+
+    private void attachAddonResponses(BookingResponse response, Booking booking) {
+        if (booking.getId() == null) return;
+        response.setAddons(addonUseCase.listForBookingInternal(booking.getId()).stream()
+                .map(BookingAddonResponse::from).toList());
     }
 
     private void checkAdminOrStaff(User user) {

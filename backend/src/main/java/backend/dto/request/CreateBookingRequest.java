@@ -1,6 +1,8 @@
 package backend.dto.request;
 
+import backend.addon.adapter.in.web.dto.AddonSelectionRequest;
 import backend.entity.PaymentMethod;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
@@ -9,6 +11,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -34,4 +38,8 @@ public class CreateBookingRequest {
 
     @Size(max = 500, message = "Ghi chú không được vượt quá 500 ký tự")
     private String note;
+
+    @Valid
+    @Size(max = 20, message = "Toi da 20 loai dich vu cho moi booking")
+    private List<AddonSelectionRequest> addons = new ArrayList<>();
 }

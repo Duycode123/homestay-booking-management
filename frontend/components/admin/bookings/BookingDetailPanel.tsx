@@ -2,7 +2,7 @@
 
 import ProjectSelect from '@/components/ui/ProjectSelect'
 
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import {
   IconBookings,
   IconClock,
@@ -20,6 +20,11 @@ import {
   formatBookingDateTime,
 } from '@/lib/admin/adminBookingApi'
 import type { AdminBooking, BookingStatus } from '@/lib/admin/types'
+import {
+  updateBookingAddonStatus,
+  type BookingAddonItem,
+  type BookingAddonStatus,
+} from '@/lib/addon-service'
 import { BookingStatusBadge, PaymentStatusBadge } from './BookingBadges'
 
 type BookingDetailPanelProps = {
@@ -27,12 +32,19 @@ type BookingDetailPanelProps = {
   onClose: () => void
   onStatusChange: (bookingId: number, status: BookingStatus) => Promise<void>
   onSettleCheckout: (bookingId: number) => Promise<void>
+  onAddonChanged: (bookingId: number) => Promise<void>
 }
 
-export default function BookingDetailPanel({ booking, onClose, onStatusChange, onSettleCheckout }: BookingDetailPanelProps) {
+export default function BookingDetailPanel({ booking, onClose, onStatusChange, onSettleCheckout, onAddonChanged }: BookingDetailPanelProps) {
   const [pendingStatus, setPendingStatus] = useState<BookingStatus | ''>('')
   const [isSaving, setIsSaving] = useState(false)
   const [message, setMessage] = useState('')
+  const [addonItems, setAddonItems] = useState<BookingAddonItem[]>([])
+  const [addonSavingId, setAddonSavingId] = useState<number | null>(null)
+
+  useEffect(() => {
+    setAddonItems(booking?.addons ?? [])
+  }, [booking])
 
   if (!booking) return null
 
@@ -63,6 +75,22 @@ export default function BookingDetailPanel({ booking, onClose, onStatusChange, o
       setMessage(error instanceof Error ? error.message : 'Không thể kết toán booking.')
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleAddonStatus = async (item: BookingAddonItem, status: BookingAddonStatus) => {
+    if (!booking) return
+    setAddonSavingId(item.id)
+    setMessage('')
+    try {
+      const updated = await updateBookingAddonStatus(booking.bookingId, item.id, status)
+      setAddonItems((current) => current.map((entry) => entry.id === updated.id ? updated : entry))
+      await onAddonChanged(booking.bookingId)
+      setMessage('Cập nhật dịch vụ thành công.')
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Không thể cập nhật dịch vụ.')
+    } finally {
+      setAddonSavingId(null)
     }
   }
 
@@ -147,6 +175,28 @@ export default function BookingDetailPanel({ booking, onClose, onStatusChange, o
               >
                 {isSaving ? 'Đang kết toán...' : `Thu ${formatAdminPrice(booking.remainingAmount)} & checkout`}
               </button>
+            )}
+          </DetailCard>
+
+          <DetailCard title="Dịch vụ thuê thêm" icon={<IconEquipment className="h-4 w-4" />} accent="primary">
+            {addonItems.length === 0 ? (
+              <p className="text-sm text-on-surface-variant">Booking chưa có dịch vụ thuê thêm.</p>
+            ) : (
+              <div className="space-y-3">
+                {addonItems.map((item) => (
+                  <div key={item.id} className="rounded-xl border border-outline-variant bg-surface-container-low/55 p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-on-surface">{item.name} × {item.quantity}</p>
+                        <p className="mt-0.5 text-xs text-on-surface-variant">{item.source === 'BOOKING' ? 'Đặt cùng phòng' : 'Gọi trong kỳ lưu trú'} · {formatAdminPrice(item.totalAmount)}</p>
+                      </div>
+                      <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${addonStatusStyle[item.status]}`}>{addonStatusLabel[item.status]}</span>
+                    </div>
+                    <AddonActions item={item} busy={addonSavingId === item.id} onUpdate={(status) => void handleAddonStatus(item, status)} />
+                  </div>
+                ))}
+                <div className="flex items-center justify-between border-t border-outline-variant pt-3 text-sm"><span className="text-on-surface-variant">Đã tính vào booking</span><strong className="text-brand-orange">{formatAdminPrice(booking.addonAmount ?? 0)}</strong></div>
+              </div>
             )}
           </DetailCard>
 
@@ -355,4 +405,28 @@ function InfoRow({ label, value }: { label: string; value: string }) {
       <span className="text-right font-medium text-on-surface">{value}</span>
     </div>
   )
+}
+
+const addonStatusLabel: Record<BookingAddonStatus, string> = {
+  PENDING_PAYMENT: 'Chờ thanh toán', REQUESTED: 'Khách yêu cầu', CONFIRMED: 'Đã xác nhận',
+  PREPARED: 'Đã chuẩn bị', DELIVERED: 'Đã giao', CANCELLED: 'Đã hủy',
+}
+
+const addonStatusStyle: Record<BookingAddonStatus, string> = {
+  PENDING_PAYMENT: 'bg-[#fff3df] text-[#855d28]', REQUESTED: 'bg-[#fff3df] text-[#855d28]',
+  CONFIRMED: 'bg-[#e8f2ef] text-brand-greenDark', PREPARED: 'bg-[#e9efff] text-[#36558d]',
+  DELIVERED: 'bg-secondary-container/35 text-secondary', CANCELLED: 'bg-error-container/40 text-error',
+}
+
+function AddonActions({ item, busy, onUpdate }: { item: BookingAddonItem; busy: boolean; onUpdate: (status: BookingAddonStatus) => void }) {
+  const actions: Array<{ label: string; status: BookingAddonStatus; primary?: boolean }> = item.status === 'REQUESTED'
+    ? [{ label: 'Xác nhận', status: 'CONFIRMED', primary: true }, { label: 'Từ chối', status: 'CANCELLED' }]
+    : item.status === 'CONFIRMED'
+      ? [{ label: 'Đã chuẩn bị', status: 'PREPARED' }, { label: 'Giao ngay', status: 'DELIVERED', primary: true }, ...(item.source === 'DURING_STAY' ? [{ label: 'Hủy', status: 'CANCELLED' as const }] : [])]
+      : item.status === 'PREPARED'
+        ? [{ label: 'Xác nhận đã giao', status: 'DELIVERED', primary: true }, ...(item.source === 'DURING_STAY' ? [{ label: 'Hủy', status: 'CANCELLED' as const }] : [])]
+        : []
+
+  if (actions.length === 0) return null
+  return <div className="mt-3 flex flex-wrap gap-2">{actions.map((action) => <button key={action.status} type="button" disabled={busy} onClick={() => onUpdate(action.status)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50 ${action.primary ? 'bg-brand-greenDark text-white hover:bg-brand-greenLight' : 'border border-outline-variant bg-white text-on-surface-variant hover:border-brand-orange/40 hover:text-brand-orange'}`}>{busy ? 'Đang lưu...' : action.label}</button>)}</div>
 }

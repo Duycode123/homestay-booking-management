@@ -2,6 +2,7 @@ import axios from 'axios'
 import api from '@/lib/api'
 import type { AdminBooking, BookingFilters, BookingStatus, CancellationRequestStatus, PaymentStatus } from './types'
 import { formatAdminRoomTypeLabel } from './bookingLabels'
+import type { BookingAddonItem } from '@/lib/addon-service'
 
 type ApiResponse<T> = {
   success: boolean
@@ -39,6 +40,9 @@ type BackendBooking = {
   refundPercentage?: number | null
   refundMethod?: string | null
   expectedRefundAt?: string | null
+  roomAmount?: number | string | null
+  addonAmount?: number | string | null
+  addons?: BookingAddonItem[]
 }
 
 type ApiErrorResponse = {
@@ -163,6 +167,13 @@ function mapBackendBooking(booking: BackendBooking): AdminBooking {
     refundPercentage: booking.refundPercentage ?? undefined,
     refundMethod: normalizeText(booking.refundMethod) || undefined,
     expectedRefundAt: booking.expectedRefundAt ?? undefined,
+    roomAmount: booking.roomAmount == null ? undefined : parseNumeric(booking.roomAmount),
+    addonAmount: booking.addonAmount == null ? undefined : parseNumeric(booking.addonAmount),
+    addons: (booking.addons ?? []).map((item) => ({
+      ...item,
+      unitPrice: parseNumeric(item.unitPrice),
+      totalAmount: parseNumeric(item.totalAmount),
+    })),
   }
 }
 

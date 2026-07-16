@@ -1,5 +1,7 @@
 package backend.payment.application.service;
 
+import backend.addon.application.port.in.AddonUseCase;
+import backend.addon.domain.model.BookingAddonStatus;
 import backend.entity.Booking;
 import backend.entity.BookingStatus;
 import backend.entity.PaymentMethod;
@@ -66,6 +68,7 @@ public class PaymentCheckoutUseCaseService implements
     private final CouponUsageTrackingService couponUsageTrackingService;
     private final ValidateCouponUseCase validateCouponUseCase;
     private final LoadDiscountCodeForBookingPort loadDiscountCodeForBookingPort;
+    private final AddonUseCase addonUseCase;
 
     @Value("${app.booking.payment-expiration-seconds:300}")
     private long paymentExpirationSeconds;
@@ -85,6 +88,15 @@ public class PaymentCheckoutUseCaseService implements
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay don dat phong"));
         if (booking.getStatus() != BookingStatus.CHECKED_IN) {
             throw new IllegalStateException("Chi co the thu phan con lai khi booking dang check-in");
+        }
+        boolean hasOpenAddonRequest = addonUseCase.listForBookingInternal(bookingId).stream()
+                .anyMatch(item -> item.status() == BookingAddonStatus.REQUESTED
+                        || item.status() == BookingAddonStatus.CONFIRMED
+                        || item.status() == BookingAddonStatus.PREPARED);
+        if (hasOpenAddonRequest) {
+            throw new IllegalStateException(
+                    "Vui long hoan tat hoac huy cac dich vu thue them dang xu ly truoc khi tao thanh toan checkout"
+            );
         }
 
         BigDecimal totalAmount = resolveAmount(booking).setScale(2, RoundingMode.HALF_UP);
@@ -175,6 +187,7 @@ public class PaymentCheckoutUseCaseService implements
         if (bookingPaymentExpiresAt != null && !LocalDateTime.now().isBefore(bookingPaymentExpiresAt)) {
             booking.setStatus(BookingStatus.CANCELLED);
             bookingRepository.save(booking);
+            addonUseCase.cancelUndeliveredAddons(booking.getId());
             closeExistingOpenTransactions(booking.getId());
             throw new PaymentHoldExpiredException(
                     "Thoi gian giu phong 5 phut da het. Vui long chon lai phong va tao don moi"
@@ -295,9 +308,9 @@ public class PaymentCheckoutUseCaseService implements
             return false;
         }
 
-        BigDecimal originalAmount = booking.getPricePerHour()
-                .multiply(booking.getTotalHours())
-                .setScale(2, RoundingMode.HALF_UP);
+        BigDecimal originalAmount = booking.getRoomAmount() != null
+                ? booking.getRoomAmount().setScale(2, RoundingMode.HALF_UP)
+                : booking.getPricePerHour().multiply(booking.getTotalHours()).setScale(2, RoundingMode.HALF_UP);
         String customerEmail = booking.getCustomer() == null
                 || booking.getCustomer().getAccount() == null
                 ? null
@@ -317,7 +330,8 @@ public class PaymentCheckoutUseCaseService implements
 
         var discountCode = loadDiscountCodeForBookingPort.loadDiscountCodeForBooking(validation.code())
                 .orElseThrow(() -> new IllegalStateException("Khong the tai ma giam gia hop le de ap dung"));
-        BigDecimal payableAmount = validation.payableAmount().setScale(2, RoundingMode.HALF_UP);
+        BigDecimal addonAmount = booking.getAddonAmount() == null ? BigDecimal.ZERO : booking.getAddonAmount();
+        BigDecimal payableAmount = validation.payableAmount().add(addonAmount).setScale(2, RoundingMode.HALF_UP);
         boolean changed = booking.getDiscountCode() == null
                 || !booking.getDiscountCode().getId().equals(discountCode.getId())
                 || booking.getTotalAmount() == null
@@ -486,6 +500,7 @@ public class PaymentCheckoutUseCaseService implements
         } else if (booking.getStatus() == BookingStatus.PENDING_PAYMENT) {
             booking.setStatus(resolveSuccessfulBookingStatus(transaction));
             bookingRepository.save(booking);
+            addonUseCase.confirmInitialAddons(booking.getId());
         }
 
         couponUsageTrackingService.recordPaidBookingUsage(booking);
@@ -512,6 +527,7 @@ public class PaymentCheckoutUseCaseService implements
         if (booking != null && booking.getStatus() == BookingStatus.PENDING_PAYMENT) {
             booking.setStatus(BookingStatus.CANCELLED);
             bookingRepository.save(booking);
+            addonUseCase.cancelUndeliveredAddons(booking.getId());
         }
 
         paymentTransactionRepository.save(transaction);

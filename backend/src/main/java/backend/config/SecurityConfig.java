@@ -126,7 +126,7 @@ public class SecurityConfig {
                                 "/api/ai/chat",
                                 "/api/ai/suggested-questions"
                         ).permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/rooms/**", "/api/room-types/**", "/api/reviews", "/api/reviews/rooms/**", "/api/homepage/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/rooms/**", "/api/room-types/**", "/api/reviews", "/api/reviews/rooms/**", "/api/homepage/**", "/api/addons/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/reviews", "/api/reviews/images").hasRole("CUSTOMER")
                         .requestMatchers(HttpMethod.POST, "/api/rooms/**", "/api/room-types/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/rooms/**", "/api/room-types/**").hasRole("ADMIN")

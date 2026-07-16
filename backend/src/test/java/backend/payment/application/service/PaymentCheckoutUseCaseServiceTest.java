@@ -1,5 +1,6 @@
 package backend.payment.application.service;
 
+import backend.addon.application.port.in.AddonUseCase;
 import backend.config.SePayProperties;
 import backend.booking.application.port.out.LoadDiscountCodeForBookingPort;
 import backend.coupon.domain.port.in.ValidateCouponUseCase;
@@ -78,6 +79,9 @@ class PaymentCheckoutUseCaseServiceTest {
     @Mock
     private LoadDiscountCodeForBookingPort loadDiscountCodeForBookingPort;
 
+    @Mock
+    private AddonUseCase addonUseCase;
+
     private final SePayProperties sePayProperties = new SePayProperties();
 
     private PaymentCheckoutUseCaseService paymentCheckoutUseCaseService;
@@ -97,7 +101,8 @@ class PaymentCheckoutUseCaseServiceTest {
                 lockPaymentAggregatePort,
                 couponUsageTrackingService,
                 validateCouponUseCase,
-                loadDiscountCodeForBookingPort
+                loadDiscountCodeForBookingPort,
+                addonUseCase
         );
         ReflectionTestUtils.setField(paymentCheckoutUseCaseService, "paymentExpirationSeconds", 300L);
     }

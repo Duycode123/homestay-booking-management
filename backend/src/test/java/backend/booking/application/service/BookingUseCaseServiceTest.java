@@ -1,5 +1,7 @@
 package backend.booking.application.service;
 
+import backend.addon.application.port.in.AddonUseCase;
+import backend.addon.domain.model.AddonQuote;
 import backend.booking.application.model.PageResult;
 import backend.booking.application.port.in.command.CreateBookingCommand;
 import backend.booking.application.port.in.command.CancelCustomerBookingCommand;
@@ -128,6 +130,9 @@ class BookingUseCaseServiceTest {
     @Mock
     private ValidateCouponUseCase validateCouponUseCase;
 
+    @Mock
+    private AddonUseCase addonUseCase;
+
     private BookingUseCaseService bookingUseCaseService;
 
     private final Clock clock = Clock.fixed(
@@ -155,12 +160,15 @@ class BookingUseCaseServiceTest {
                 bookingCancellationNotificationService,
                 validateCouponUseCase,
                 new BookingStatusTransitionPolicy(),
+                addonUseCase,
                 clock
         );
 
         org.mockito.Mockito.lenient()
                 .when(loadStaffBookingScopePort.canAccessBooking(any(), any()))
                 .thenReturn(true);
+        org.mockito.Mockito.lenient().when(addonUseCase.quote(any(), any())).thenReturn(AddonQuote.empty());
+        org.mockito.Mockito.lenient().when(addonUseCase.listForBookingInternal(any())).thenReturn(List.of());
     }
 
     @Test

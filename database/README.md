@@ -48,6 +48,7 @@ The current backend source clearly models these areas:
 - app notification data
 - staff attendance data
 - facility condition report data
+- add-on service catalog and booking add-on lifecycle data
 - revoked token data
 
 Core model/entity classes currently present in backend source:
@@ -69,6 +70,7 @@ Core model/entity classes currently present in backend source:
 - `AppNotification`
 - `staff_attendance` table through the attendance JDBC adapter
 - `facility_condition_report` table through the facility condition JDBC adapter
+- `addon_service` and `booking_addon` through the add-on persistence adapter
 - `RevokedToken`
 
 ## Existing Files
@@ -111,6 +113,29 @@ Core model/entity classes currently present in backend source:
 - `ux_payment_transaction_one_open_per_booking` permits at most one open (`INITIALIZED` or `PENDING`) payment session per booking. The migration closes older duplicate sessions before creating the index.
 - Payment state changes lock booking first and payment transaction second; provider webhooks, polling, replacement QR creation, and expiry cleanup use the same order.
 - Shift registration and attendance use transaction-scoped PostgreSQL advisory locks around check-then-write rules; existing database exclusion/unique constraints remain final safeguards.
+- Add-on delivery locks the selected `booking_addon` row before changing status. Only the first valid transition to `DELIVERED` can add a during-stay service amount to the booking, preventing duplicate staff clicks from charging twice.
+
+## Booking Add-on Services
+
+Flyway migration `backend/src/main/resources/db/migration/V6__booking_addon_services.sql` adds:
+
+- `addon_service`: admin-managed catalog with price, unit, optional image, active state, and optional `room_tier_id` scope.
+- `booking_addon`: immutable price snapshot for a service selected with the booking or requested during a stay.
+- `booking.room_amount`: original room charge before coupon discount and add-ons.
+- `booking.addon_amount`: add-ons already included in the payable booking total.
+
+`booking_addon.source` values:
+
+- `BOOKING`: selected before booking confirmation and included in the initial deposit/full payment.
+- `DURING_STAY`: requested after check-in and included only when staff marks it delivered.
+
+`booking_addon.status` lifecycle:
+
+- Initial selection: `PENDING_PAYMENT -> CONFIRMED` after successful payment.
+- During-stay request: `REQUESTED -> CONFIRMED -> PREPARED -> DELIVERED`.
+- `CANCELLED` is allowed only before delivery. A delivered item is immutable and non-cancellable.
+
+Checkout is blocked while a service remains `REQUESTED`, `CONFIRMED`, or `PREPARED`. Staff must deliver or cancel each open item before collecting the final balance.
 
 ## Sample Data
 

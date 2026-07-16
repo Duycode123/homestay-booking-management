@@ -62,6 +62,13 @@ public class Booking {
     @Column(name = "total_price", nullable = false, precision = 12, scale = 2)
     private BigDecimal totalAmount;
 
+    @Column(name = "room_amount", nullable = false, precision = 12, scale = 2)
+    private BigDecimal roomAmount;
+
+    @Column(name = "addon_amount", nullable = false, precision = 12, scale = 2)
+    @Builder.Default
+    private BigDecimal addonAmount = BigDecimal.ZERO.setScale(2);
+
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "status", nullable = false, columnDefinition = "booking_status")
@@ -123,6 +130,12 @@ public class Booking {
     public void prePersist() {
         if (status == null) {
             status = BookingStatus.PENDING_PAYMENT;
+        }
+        if (roomAmount == null) {
+            roomAmount = totalAmount == null ? BigDecimal.ZERO.setScale(2) : totalAmount;
+        }
+        if (addonAmount == null) {
+            addonAmount = BigDecimal.ZERO.setScale(2);
         }
     }
 

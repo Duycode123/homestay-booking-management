@@ -63,7 +63,9 @@ public class BookingController {
                         request.getStartTime(),
                         request.getEndTime(),
                         request.getCouponCode(),
-                        authentication == null ? null : authentication.getName()
+                        authentication == null ? null : authentication.getName(),
+                        request.getAddons() == null ? java.util.List.of() : request.getAddons().stream()
+                                .map(backend.addon.adapter.in.web.dto.AddonSelectionRequest::toDomain).toList()
                 )
         );
 
@@ -85,7 +87,9 @@ public class BookingController {
                         request.getPaymentMethod(),
                         request.getCouponCode(),
                         request.getNote(),
-                        customerEmail
+                        customerEmail,
+                        request.getAddons() == null ? java.util.List.of() : request.getAddons().stream()
+                                .map(backend.addon.adapter.in.web.dto.AddonSelectionRequest::toDomain).toList()
                 )
         );
 

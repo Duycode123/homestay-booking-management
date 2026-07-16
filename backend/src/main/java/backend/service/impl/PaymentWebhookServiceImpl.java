@@ -1,5 +1,6 @@
 package backend.service.impl;
 
+import backend.addon.application.port.in.AddonUseCase;
 import backend.config.SePayProperties;
 import backend.config.VNPayProperties;
 import backend.dto.response.VNPayIpnResponse;
@@ -61,6 +62,7 @@ public class PaymentWebhookServiceImpl implements PaymentWebhookService {
     private final SePayProperties sePayProperties;
     private final CouponUsageTrackingService couponUsageTrackingService;
     private final ObjectMapper objectMapper;
+    private final AddonUseCase addonUseCase;
 
     @Override
     @Transactional
@@ -113,12 +115,16 @@ public class PaymentWebhookServiceImpl implements PaymentWebhookService {
             transaction.setPaidAt(paymentSuccess ? parsePayDate(params.get("vnp_PayDate")) : null);
 
             Booking booking = transaction.getBooking();
+            boolean initialPayment = booking.getStatus() == BookingStatus.PENDING_PAYMENT;
             if (booking.getStatus() == BookingStatus.PENDING_PAYMENT) {
                 booking.setStatus(paymentSuccess ? resolveSuccessfulBookingStatus(transaction) : BookingStatus.CANCELLED);
             }
 
             if (paymentSuccess) {
+                if (initialPayment) addonUseCase.confirmInitialAddons(booking.getId());
                 couponUsageTrackingService.recordPaidBookingUsage(booking);
+            } else if (initialPayment) {
+                addonUseCase.cancelUndeliveredAddons(booking.getId());
             }
 
             paymentTransactionRepository.save(transaction);
@@ -215,9 +221,12 @@ public class PaymentWebhookServiceImpl implements PaymentWebhookService {
         transaction.setPaidAt(parseSepayTransactionDate(firstText(payload, "transactionDate")));
 
         Booking booking = transaction.getBooking();
+        boolean initialPayment = booking.getStatus() == BookingStatus.PENDING_PAYMENT;
         if (booking.getStatus() == BookingStatus.PENDING_PAYMENT) {
             booking.setStatus(resolveSuccessfulBookingStatus(transaction));
         }
+
+        if (initialPayment) addonUseCase.confirmInitialAddons(booking.getId());
 
         couponUsageTrackingService.recordPaidBookingUsage(booking);
         try {
@@ -329,9 +338,12 @@ public class PaymentWebhookServiceImpl implements PaymentWebhookService {
         transaction.setPaidAt(parseSepayTransactionDate(firstText(gatewayTransaction, "transaction_date")));
 
         Booking booking = transaction.getBooking();
+        boolean initialPayment = booking.getStatus() == BookingStatus.PENDING_PAYMENT;
         if (booking.getStatus() == BookingStatus.PENDING_PAYMENT) {
             booking.setStatus(resolveSuccessfulBookingStatus(transaction));
         }
+
+        if (initialPayment) addonUseCase.confirmInitialAddons(booking.getId());
 
         couponUsageTrackingService.recordPaidBookingUsage(booking);
         try {
@@ -378,6 +390,7 @@ public class PaymentWebhookServiceImpl implements PaymentWebhookService {
         Booking booking = transaction.getBooking();
         if (booking != null && booking.getStatus() == BookingStatus.PENDING_PAYMENT) {
             booking.setStatus(BookingStatus.CANCELLED);
+            addonUseCase.cancelUndeliveredAddons(booking.getId());
         }
     }
 
@@ -393,6 +406,7 @@ public class PaymentWebhookServiceImpl implements PaymentWebhookService {
         Booking booking = transaction.getBooking();
         if (booking != null && booking.getStatus() == BookingStatus.PENDING_PAYMENT) {
             booking.setStatus(BookingStatus.CANCELLED);
+            addonUseCase.cancelUndeliveredAddons(booking.getId());
         }
     }
 

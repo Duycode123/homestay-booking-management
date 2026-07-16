@@ -1,5 +1,7 @@
 package backend.dto.request;
 
+import backend.addon.adapter.in.web.dto.AddonSelectionRequest;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
@@ -9,6 +11,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -28,4 +32,8 @@ public class CalculateBookingCostRequest {
 
     @Size(max = 255, message = "Mã giảm giá không được vượt quá 255 ký tự")
     private String couponCode;
+
+    @Valid
+    @Size(max = 20, message = "Toi da 20 loai dich vu cho moi booking")
+    private List<AddonSelectionRequest> addons = new ArrayList<>();
 }

@@ -7,6 +7,14 @@ import BookingStatusBadge from '@/components/customer/BookingStatusBadge'
 import ProjectSelect from '@/components/ui/ProjectSelect'
 import { IconCalendar, IconClock, IconClose } from '@/components/customer/CustomerIcons'
 import type { AuthUser } from '@/lib/auth'
+import {
+  cancelDuringStayAddon,
+  fetchAvailableAddons,
+  fetchCustomerBookingAddons,
+  requestDuringStayAddons,
+  type AddonCatalogItem,
+  type BookingAddonItem,
+} from '@/lib/addon-service'
 import { findRefundBank, REFUND_BANKS } from '@/lib/refund-banks'
 import {
   canReviewBooking,
@@ -148,10 +156,12 @@ export default function BookingDetailModal({
               />
               <Detail label="Tổng tiền" value={formatCurrency(booking.totalAmount)} highlight />
               <Detail label="Phương thức thanh toán" value={booking.paymentMethod || 'Chưa cập nhật'} />
-              <Detail label="Dịch vụ thuê thêm" value={booking.addons?.length ? booking.addons.join(', ') : 'Không có'} />
+              <Detail label="Dịch vụ thuê thêm" value={booking.addons?.length ? `${booking.addons.filter((item) => item.status !== 'CANCELLED').length} dịch vụ` : 'Không có'} />
               <Detail label="Ghi chú" value={booking.note || 'Không có ghi chú'} />
             </div>
           </section>
+
+          <StayAddonSection booking={booking} />
 
           <CancellationSection booking={booking} />
 
@@ -160,6 +170,137 @@ export default function BookingDetailModal({
       </div>
     </div>
   )
+}
+
+function StayAddonSection({ booking }: { booking: BookingHistoryItem }) {
+  const [catalog, setCatalog] = useState<AddonCatalogItem[]>([])
+  const [items, setItems] = useState<BookingAddonItem[]>(booking.addons ?? [])
+  const [quantities, setQuantities] = useState<Record<number, number>>({})
+  const [showPicker, setShowPicker] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+  const backendBookingId = booking.backendBookingId
+
+  useEffect(() => {
+    setItems(booking.addons ?? [])
+    setQuantities({})
+    setShowPicker(false)
+    setError('')
+    if (!backendBookingId) return
+    void fetchCustomerBookingAddons(backendBookingId).then(setItems).catch(() => undefined)
+  }, [backendBookingId, booking.addons])
+
+  useEffect(() => {
+    if (!showPicker) return
+    void fetchAvailableAddons(booking.roomId).then(setCatalog).catch(() => setError('Không thể tải danh sách dịch vụ.'))
+  }, [booking.roomId, showPicker])
+
+  const activeItems = items.filter((item) => item.status !== 'CANCELLED')
+  const submit = async () => {
+    if (!backendBookingId) return
+    const selections = Object.entries(quantities)
+      .filter(([, quantity]) => quantity > 0)
+      .map(([serviceId, quantity]) => ({ serviceId: Number(serviceId), quantity }))
+    if (!selections.length) {
+      setError('Vui lòng chọn ít nhất một dịch vụ.')
+      return
+    }
+    setIsLoading(true)
+    setError('')
+    try {
+      setItems(await requestDuringStayAddons(backendBookingId, selections))
+      setQuantities({})
+      setShowPicker(false)
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Không thể gửi yêu cầu dịch vụ.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const cancel = async (itemId: number) => {
+    if (!backendBookingId) return
+    setIsLoading(true)
+    try {
+      const updated = await cancelDuringStayAddon(backendBookingId, itemId)
+      setItems((current) => current.map((item) => item.id === updated.id ? updated : item))
+    } catch (cancelError) {
+      setError(cancelError instanceof Error ? cancelError.message : 'Không thể hủy yêu cầu dịch vụ.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  if (!activeItems.length && booking.status !== 'CHECKED_IN') return null
+
+  return (
+    <section className="rounded-[20px] border border-outline-variant bg-white p-5 shadow-[var(--shadow-card)]">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="font-display text-xs font-bold uppercase tracking-[0.14em] text-brand-orange">Trong kỳ lưu trú</p>
+          <h3 className="mt-1 font-display text-lg font-bold text-on-surface">Dịch vụ thuê thêm</h3>
+          <p className="mt-1 text-sm text-on-surface-variant">Khoản phát sinh chỉ được cộng khi nhân viên đã giao dịch vụ.</p>
+        </div>
+        {booking.status === 'CHECKED_IN' && (
+          <button type="button" onClick={() => setShowPicker((value) => !value)} className="rounded-full bg-secondary px-4 py-2 text-sm font-bold text-white transition hover:bg-secondary-container">
+            {showPicker ? 'Đóng lựa chọn' : 'Gọi thêm dịch vụ'}
+          </button>
+        )}
+      </div>
+
+      {activeItems.length > 0 && (
+        <div className="mt-4 grid gap-2">
+          {activeItems.map((item) => (
+            <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-outline-variant bg-surface-container-low px-4 py-3">
+              <div>
+                <p className="font-display font-bold text-on-surface">{item.name} × {item.quantity}</p>
+                <p className="mt-0.5 text-xs text-on-surface-variant">{addonStatusLabel(item.status)} · {formatCurrency(item.totalAmount)}</p>
+              </div>
+              {item.source === 'DURING_STAY' && item.status === 'REQUESTED' && (
+                <button type="button" disabled={isLoading} onClick={() => void cancel(item.id)} className="text-sm font-bold text-error hover:underline">Hủy yêu cầu</button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showPicker && (
+        <div className="mt-4 rounded-[18px] border border-[#dccdb8] bg-[#fbf7f0] p-4">
+          <div className="grid gap-2 sm:grid-cols-2">
+            {catalog.map((item) => {
+              const quantity = quantities[item.id] ?? 0
+              return (
+                <div key={item.id} className={['rounded-2xl border p-3', quantity ? 'border-secondary bg-white' : 'border-outline-variant bg-white/70'].join(' ')}>
+                  <button type="button" className="w-full text-left" onClick={() => setQuantities((current) => ({ ...current, [item.id]: quantity ? 0 : 1 }))}>
+                    <p className="font-display font-bold text-on-surface">{item.name}</p>
+                    <p className="mt-1 text-xs text-on-surface-variant">{formatCurrency(item.price)} / {item.unit}</p>
+                  </button>
+                  {quantity > 0 && (
+                    <div className="mt-3 flex items-center justify-end gap-3">
+                      <button type="button" onClick={() => setQuantities((current) => ({ ...current, [item.id]: Math.max(0, quantity - 1) }))} className="h-8 w-8 rounded-full border border-outline-variant bg-white">−</button>
+                      <span className="font-bold">{quantity}</span>
+                      <button type="button" onClick={() => setQuantities((current) => ({ ...current, [item.id]: Math.min(20, quantity + 1) }))} className="h-8 w-8 rounded-full border border-outline-variant bg-white">+</button>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          <button type="button" disabled={isLoading} onClick={() => void submit()} className="mt-4 h-11 w-full rounded-full bg-secondary font-display font-bold text-white disabled:opacity-60">
+            {isLoading ? 'Đang gửi...' : 'Gửi yêu cầu đến nhân viên'}
+          </button>
+        </div>
+      )}
+      {error && <p className="mt-3 rounded-xl bg-error-container px-3 py-2 text-sm text-on-error-container">{error}</p>}
+    </section>
+  )
+}
+
+function addonStatusLabel(status: BookingAddonItem['status']) {
+  return ({
+    PENDING_PAYMENT: 'Chờ thanh toán', REQUESTED: 'Chờ xác nhận', CONFIRMED: 'Đã xác nhận',
+    PREPARED: 'Đang chuẩn bị', DELIVERED: 'Đã giao', CANCELLED: 'Đã hủy',
+  } as const)[status]
 }
 
 function CancellationSection({ booking }: { booking: BookingHistoryItem }) {
