@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import BookingQuickModal from '@/components/booking/BookingQuickModal'
+import StaySearchBar from '@/components/public/StaySearchBar'
 import { formatCurrency, getNightlyDisplayPrice, type BookingRoom } from '@/components/booking/booking-data'
 import {
   readQuickBookingDraft,
@@ -648,7 +649,18 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="equipment" className="scroll-mt-20 bg-[#EFEAE1] py-20 sm:py-24">
+      <div className="relative z-20 mx-auto -mt-10 w-full max-w-[1400px] px-5 sm:px-8">
+        <div className="mb-4 flex items-end justify-between gap-4 px-1 text-secondary">
+          <div>
+            <p className="eyebrow text-brand-orange">Tìm kỳ lưu trú</p>
+            <p className="mt-1 hidden text-sm text-on-surface-variant sm:block">Chọn ngày và số khách, hệ thống sẽ đối chiếu lịch phòng thật.</p>
+          </div>
+          <span className="hidden text-xs font-semibold text-on-surface-variant lg:block">Nhận phòng 14:00 · Trả phòng 12:00</span>
+        </div>
+        <StaySearchBar />
+      </div>
+
+      <section id="equipment" className="scroll-mt-20 bg-[#EFEAE1] pb-20 pt-16 sm:pb-24 sm:pt-20">
         <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
           <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
             <div className="max-w-2xl">

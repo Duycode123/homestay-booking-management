@@ -9,6 +9,10 @@ export type RoomFilters = {
   search: string
   roomTierId: 'all' | string
   capacity: RoomCapacityFilter
+  minGuests: number
+  minBedrooms: number
+  minBeds: number
+  amenities: string[]
   availability: 'all' | RoomAvailabilityStatus
   minNightlyPrice: number
   maxNightlyPrice: number
@@ -23,10 +27,15 @@ export function filterRooms(rooms: Room[], filters: RoomFilters) {
     const matchesRoomTier = filters.roomTierId === 'all' || String(room.roomTierId) === filters.roomTierId
     const matchesAvailability = filters.availability === 'all' || room.availabilityStatus === filters.availability
     const matchesCapacity = filters.capacity === 'all' || (filters.capacity === 'small' && capacity <= 4) || (filters.capacity === 'medium' && capacity >= 5 && capacity <= 8) || (filters.capacity === 'large' && capacity >= 9)
+    const matchesGuestCount = filters.minGuests === 0 || capacity >= filters.minGuests
+    const matchesBedrooms = filters.minBedrooms === 0 || room.bedroomCount >= filters.minBedrooms
+    const matchesBeds = filters.minBeds === 0 || room.bedCount >= filters.minBeds
+    const roomAmenities = room.equipments.map(normalizeFilterValue)
+    const matchesAmenities = filters.amenities.every((amenity) => roomAmenities.includes(normalizeFilterValue(amenity)))
     const nightlyPrice = getNightlyDisplayPrice(room.pricePerHour)
     const matchesPrice = nightlyPrice >= filters.minNightlyPrice && nightlyPrice <= filters.maxNightlyPrice
 
-    return matchesSearch && matchesRoomTier && matchesAvailability && matchesCapacity && matchesPrice
+    return matchesSearch && matchesRoomTier && matchesAvailability && matchesCapacity && matchesGuestCount && matchesBedrooms && matchesBeds && matchesAmenities && matchesPrice
   })
 }
 
@@ -42,4 +51,8 @@ export function getAvailabilityLabel(status: RoomAvailabilityStatus, room?: Room
 function getRoomCapacityNumber(room: Room) {
   const [capacity] = room.capacity.match(/\d+/) ?? ['0']
   return Number(capacity)
+}
+
+function normalizeFilterValue(value: string) {
+  return value.trim().toLocaleLowerCase('vi-VN')
 }

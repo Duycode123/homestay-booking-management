@@ -4,6 +4,11 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import BookingQuickModal from '@/components/booking/BookingQuickModal'
+import StaySearchBar, {
+  buildStaySearchParams,
+  readStaySearchCriteria,
+  type StaySearchCriteria,
+} from '@/components/public/StaySearchBar'
 import {
   formatCurrency,
   getNightlyDisplayPrice,
@@ -20,7 +25,7 @@ import {
   shouldReopenQuickBooking,
 } from '@/components/booking/quick-booking-draft'
 import { usePublicRoomCatalog } from '@/hooks/usePublicRoomCatalog'
-import { fetchAvailableSlots } from '@/lib/booking/bookingApi'
+import { checkRoomAvailabilityRange, fetchAvailableSlots } from '@/lib/booking/bookingApi'
 import type { TimeSlot } from '@/lib/booking/types'
 import { shouldBypassImageOptimization } from '@/lib/image-optimization'
 import { fetchRoomTypes, type BackendRoomType } from '@/lib/rooms-api'
@@ -67,12 +72,17 @@ const defaultFilters: RoomFilters = {
   search: '',
   roomTierId: 'all',
   capacity: 'all',
+  minGuests: 0,
+  minBedrooms: 0,
+  minBeds: 0,
+  amenities: [],
   availability: 'all',
   minNightlyPrice: MIN_NIGHTLY_PRICE,
   maxNightlyPrice: MAX_NIGHTLY_PRICE,
 }
 
 type RoomSlotsById = Record<string, TimeSlot[] | undefined>
+type StayAvailabilityByRoomId = Record<string, boolean | undefined>
 
 type TodayRoomSummary = {
   available: number
@@ -94,6 +104,11 @@ type QuickBookingState = {
 export default function RoomsPublicPage() {
   const router = useRouter()
   const [filters, setFilters] = useState<RoomFilters>(defaultFilters)
+  const [isMoreFiltersOpen, setIsMoreFiltersOpen] = useState(false)
+  const [stayCriteria, setStayCriteria] = useState<StaySearchCriteria | null>(null)
+  const [stayAvailabilityByRoomId, setStayAvailabilityByRoomId] = useState<StayAvailabilityByRoomId>({})
+  const [isStayAvailabilityLoading, setIsStayAvailabilityLoading] = useState(false)
+  const [stayAvailabilityErrorCount, setStayAvailabilityErrorCount] = useState(0)
   const { rooms, source: catalogSource, isLoading, isRefreshing, error: catalogError } = usePublicRoomCatalog()
   const [roomTiers, setRoomTiers] = useState<BackendRoomType[]>([])
   const [quickBooking, setQuickBooking] = useState<QuickBookingState | null>(null)
@@ -112,7 +127,13 @@ export default function RoomsPublicPage() {
     )),
     [rooms, todaySlotsByRoomId, tomorrowSlotsByRoomId],
   )
-  const filteredRooms = useMemo(() => filterRooms(liveRooms, filters), [liveRooms, filters])
+  const availableAmenities = useMemo(() => Array.from(new Set(liveRooms.flatMap((room) => room.equipments).filter(Boolean)))
+    .sort((left, right) => left.localeCompare(right, 'vi')), [liveRooms])
+  const filteredRooms = useMemo(() => {
+    const matchesDetailFilters = filterRooms(liveRooms, filters)
+    if (!stayCriteria || isStayAvailabilityLoading) return stayCriteria ? [] : matchesDetailFilters
+    return matchesDetailFilters.filter((room) => stayAvailabilityByRoomId[room.id] === true)
+  }, [filters, isStayAvailabilityLoading, liveRooms, stayAvailabilityByRoomId, stayCriteria])
   const todayRoomSummary = useMemo(() => summarizeTodayRooms(liveRooms), [liveRooms])
   const isInitialScheduleLoading = isLoading || (isTodayScheduleLoading && scheduleUpdatedAt === null)
   const bookableRoomCount = todayRoomSummary.available
@@ -125,12 +146,21 @@ export default function RoomsPublicPage() {
     ? Math.round((bookableRoomCount / liveRooms.length) * 100)
     : 0
   const hasActiveFilters =
-    filters.search.trim() !== '' ||
     filters.roomTierId !== 'all' ||
     filters.capacity !== 'all' ||
+    filters.minBedrooms > 0 || filters.minBeds > 0 || filters.amenities.length > 0 ||
     filters.availability !== 'all' ||
     filters.minNightlyPrice !== MIN_NIGHTLY_PRICE ||
     filters.maxNightlyPrice !== MAX_NIGHTLY_PRICE
+  const additionalFilterCount = [
+    filters.roomTierId !== 'all',
+    filters.minBedrooms > 0,
+    filters.minBeds > 0,
+    filters.amenities.length > 0,
+    filters.availability !== 'all',
+    filters.capacity !== 'all',
+    filters.minNightlyPrice !== MIN_NIGHTLY_PRICE || filters.maxNightlyPrice !== MAX_NIGHTLY_PRICE,
+  ].filter(Boolean).length
 
   useEffect(() => {
     let isMounted = true
@@ -212,6 +242,55 @@ export default function RoomsPublicPage() {
   }, [])
 
   useEffect(() => {
+    const criteria = readStaySearchCriteria(window.location.search)
+    if (!criteria) return
+    setStayCriteria(criteria)
+    setFilters((current) => ({
+      ...current,
+      search: criteria.keyword,
+      minGuests: criteria.adults + criteria.children,
+    }))
+  }, [])
+
+  useEffect(() => {
+    if (!stayCriteria || rooms.length === 0) {
+      setStayAvailabilityByRoomId({})
+      setStayAvailabilityErrorCount(0)
+      setIsStayAvailabilityLoading(false)
+      return
+    }
+
+    let isMounted = true
+    setIsStayAvailabilityLoading(true)
+    setStayAvailabilityErrorCount(0)
+
+    void Promise.all(rooms.map(async (room) => {
+      if (!/^\d+$/.test(room.id) || isRoomTemporarilyUnavailable(room)) {
+        return { roomId: room.id, available: false, failed: false }
+      }
+      try {
+        const result = await checkRoomAvailabilityRange(
+          room.id,
+          stayCriteria.checkIn,
+          stayCriteria.checkOut,
+        )
+        return { roomId: room.id, available: result.available, failed: false }
+      } catch {
+        return { roomId: room.id, available: false, failed: true }
+      }
+    })).then((results) => {
+      if (!isMounted) return
+      setStayAvailabilityByRoomId(Object.fromEntries(results.map((result) => [result.roomId, result.available])))
+      setStayAvailabilityErrorCount(results.filter((result) => result.failed).length)
+      setIsStayAvailabilityLoading(false)
+    })
+
+    return () => {
+      isMounted = false
+    }
+  }, [rooms, stayCriteria])
+
+  useEffect(() => {
     if (nearestHoldExpiry === undefined) return
 
     // Give the backend expiry sweep a short window to release the booking,
@@ -291,6 +370,24 @@ export default function RoomsPublicPage() {
 
   const updateFilter = <Key extends keyof RoomFilters>(key: Key, value: RoomFilters[Key]) => {
     setFilters((current) => ({ ...current, [key]: value }))
+  }
+
+  const handleStaySearch = (criteria: StaySearchCriteria) => {
+    setStayCriteria(criteria)
+    setFilters((current) => ({
+      ...current,
+      search: criteria.keyword,
+      minGuests: criteria.adults + criteria.children,
+    }))
+    router.replace(`/rooms?${buildStaySearchParams(criteria).toString()}`, { scroll: false })
+  }
+
+  const resetDetailFilters = () => {
+    setFilters({
+      ...defaultFilters,
+      search: stayCriteria?.keyword ?? '',
+      minGuests: stayCriteria ? stayCriteria.adults + stayCriteria.children : 0,
+    })
   }
 
   const showRoomsByAvailability = (availability: RoomAvailabilityStatus) => {
@@ -400,30 +497,30 @@ export default function RoomsPublicPage() {
       </section>
 
       <section id="room-catalog" className="mx-auto max-w-[1400px] scroll-mt-24 px-5 py-12 sm:px-8 sm:py-14">
-        <div className="rounded-[22px] border border-[#ded5c9] bg-white p-3 shadow-[0_18px_50px_rgba(29,49,41,0.09)] sm:p-4">
+        <StaySearchBar variant="catalog" initialValues={stayCriteria ?? undefined} onSearch={handleStaySearch} />
+
+        <div className="mt-4 rounded-[22px] border border-[#ded5c9] bg-white p-3 shadow-[0_18px_50px_rgba(29,49,41,0.08)] sm:p-4">
           <div className="flex flex-col gap-3 border-b border-[#eee7de] px-2 pb-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="font-display text-base font-bold text-secondary">Tìm kỳ nghỉ phù hợp</p>
-              <p className="mt-0.5 text-xs text-on-surface-variant">Chọn nhanh nhu cầu và ngân sách cho một đêm lưu trú.</p>
+              <p className="font-display text-base font-bold text-secondary">Tinh chỉnh lựa chọn</p>
+              <p className="mt-0.5 text-xs text-on-surface-variant">Lọc sâu theo không gian ngủ, tiện nghi và ngân sách mỗi đêm.</p>
             </div>
             <div className="flex items-center gap-2">
               <span className="rounded-full bg-[#eef5f1] px-3 py-1.5 text-xs font-bold text-secondary">
-                {filteredRooms.length} phòng
+                {isStayAvailabilityLoading ? 'Đang kiểm tra lịch' : `${filteredRooms.length} phòng`}
               </span>
               <button
                 type="button"
-                onClick={() => setFilters(defaultFilters)}
+                onClick={resetDetailFilters}
                 disabled={!hasActiveFilters}
                 className="rounded-full px-3 py-1.5 text-xs font-semibold text-[#9a6739] transition hover:bg-[#f8efe5] disabled:cursor-default disabled:opacity-35"
               >
-                Đặt lại
+                Đặt lại bộ lọc
               </button>
             </div>
           </div>
 
-          <div className="grid gap-2 pt-3 md:grid-cols-2 xl:grid-cols-[1.55fr_repeat(4,minmax(0,1fr))]">
-            <SearchField value={filters.search} onChange={(value) => updateFilter('search', value)} />
-
+          <div className="grid gap-2 pt-3 md:grid-cols-2 xl:grid-cols-5">
             <CompactFilterSelect
               label="Loại phòng"
               value={filters.roomTierId}
@@ -440,16 +537,21 @@ export default function RoomsPublicPage() {
               ]}
             />
             <CompactFilterSelect
-              label="Sức chứa"
-              value={filters.capacity}
-              onChange={(value) => updateFilter('capacity', value as RoomCapacityFilter)}
-              options={capacityOptions}
+              label="Phòng ngủ"
+              value={String(filters.minBedrooms)}
+              onChange={(value) => updateFilter('minBedrooms', Number(value))}
+              options={buildCountOptions('phòng ngủ', 6)}
             />
             <CompactFilterSelect
-              label="Trạng thái"
-              value={filters.availability}
-              onChange={(value) => updateFilter('availability', value as 'all' | RoomAvailabilityStatus)}
-              options={availabilityOptions}
+              label="Số giường"
+              value={String(filters.minBeds)}
+              onChange={(value) => updateFilter('minBeds', Number(value))}
+              options={buildCountOptions('giường', 10)}
+            />
+            <AmenitiesFilter
+              options={availableAmenities}
+              selected={filters.amenities}
+              onChange={(amenities) => updateFilter('amenities', amenities)}
             />
             <NightlyPriceFilter
               min={filters.minNightlyPrice}
@@ -462,15 +564,60 @@ export default function RoomsPublicPage() {
               }}
             />
           </div>
+
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-[#f0e9e0] px-1 pt-3">
+            <div className="flex flex-wrap gap-2">
+              {stayCriteria && <FilterSummaryChip label={`${stayCriteria.adults + stayCriteria.children} khách`} />}
+              {filters.minBedrooms > 0 && <FilterSummaryChip label={`Từ ${filters.minBedrooms} phòng ngủ`} />}
+              {filters.minBeds > 0 && <FilterSummaryChip label={`Từ ${filters.minBeds} giường`} />}
+              {filters.amenities.slice(0, 2).map((amenity) => <FilterSummaryChip key={amenity} label={amenity} />)}
+              {filters.amenities.length > 2 && <FilterSummaryChip label={`+${filters.amenities.length - 2} tiện nghi`} />}
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsMoreFiltersOpen((open) => !open)}
+              className="inline-flex items-center gap-2 rounded-full border border-[#dfd3c3] bg-[#fbf8f3] px-4 py-2 text-xs font-bold text-secondary transition hover:border-[#b28455]"
+              aria-expanded={isMoreFiltersOpen}
+            >
+              Bộ lọc khác
+              {additionalFilterCount > 0 && <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-secondary px-1 text-[10px] text-white">{additionalFilterCount}</span>}
+              <ChevronDownIcon className={['h-4 w-4 transition-transform', isMoreFiltersOpen ? 'rotate-180' : ''].join(' ')} />
+            </button>
+          </div>
+
+          {isMoreFiltersOpen && (
+            <div className="mt-3 grid gap-2 rounded-[18px] border border-[#e8dfd3] bg-[#fbf8f3] p-3 md:grid-cols-2">
+              <CompactFilterSelect
+                label="Sức chứa tổng quát"
+                value={filters.capacity}
+                onChange={(value) => updateFilter('capacity', value as RoomCapacityFilter)}
+                options={capacityOptions}
+              />
+              <CompactFilterSelect
+                label="Trạng thái hôm nay"
+                value={filters.availability}
+                onChange={(value) => updateFilter('availability', value as 'all' | RoomAvailabilityStatus)}
+                options={availabilityOptions}
+              />
+            </div>
+          )}
         </div>
 
         <div className="mt-8 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div>
             <p className="font-display text-xl font-bold text-on-surface">
-              {isLoading ? 'Đang tải phòng...' : `${filteredRooms.length} phòng phù hợp`}
+              {isLoading
+                ? 'Đang tải phòng...'
+                : isStayAvailabilityLoading
+                  ? 'Đang đối chiếu kỳ lưu trú...'
+                  : `${filteredRooms.length} phòng phù hợp`}
             </p>
             <p className="mt-1 text-sm text-on-surface-variant">
-              {isLoading
+              {isStayAvailabilityLoading
+                ? `Đang kiểm tra lịch thật từ ${formatShortStayDate(stayCriteria?.checkIn)} đến ${formatShortStayDate(stayCriteria?.checkOut)}.`
+                : stayAvailabilityErrorCount > 0
+                  ? `${stayAvailabilityErrorCount} phòng chưa thể đối chiếu lịch, vui lòng thử tìm lại.`
+                  : isLoading
                 ? 'Đang tải danh sách phòng...'
                 : catalogSource === 'backend'
                   ? isRefreshing
@@ -482,7 +629,7 @@ export default function RoomsPublicPage() {
           <p className="text-xs font-medium text-on-surface-variant">Giá đã bao gồm trọn một đêm lưu trú</p>
         </div>
 
-        {isLoading ? (
+        {isLoading || isStayAvailabilityLoading ? (
           <RoomCatalogSkeleton />
         ) : filteredRooms.length > 0 ? (
           <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
@@ -491,8 +638,12 @@ export default function RoomsPublicPage() {
                 key={room.id}
                 room={room}
                 todaySlots={todaySlotsByRoomId[room.id]}
-                onBook={(room) => setQuickBooking({ room })}
-                onViewDetail={(room) => router.push(`/rooms/${room.id}`)}
+                onBook={(room) => setQuickBooking({
+                  room,
+                  initialDate: stayCriteria?.checkIn,
+                  initialEndDate: stayCriteria?.checkOut,
+                })}
+                onViewDetail={(room) => router.push(`/rooms/${room.id}${stayCriteria ? `?${buildStaySearchParams(stayCriteria).toString()}` : ''}`)}
               />
             ))}
           </div>
@@ -500,7 +651,7 @@ export default function RoomsPublicPage() {
           <div className="mt-8 rounded-[18px] border border-dashed border-outline-variant bg-white px-6 py-16 text-center shadow-[var(--shadow-card)]">
             <p className="font-display text-2xl font-bold text-on-surface">Không tìm thấy phòng</p>
             <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-on-surface-variant">
-              Thử đổi từ khóa tìm kiếm hoặc nới rộng bộ lọc loại phòng, sức chứa, trạng thái lịch.
+              Chưa có phòng đáp ứng đồng thời kỳ lưu trú, số khách và các tiện nghi đã chọn. Hãy đổi ngày hoặc nới rộng bộ lọc chi tiết.
             </p>
           </div>
         )}
@@ -516,7 +667,7 @@ export default function RoomsPublicPage() {
           initialDuration={quickBooking.initialDuration}
           initialNote={quickBooking.initialNote}
           sourceRoute="/rooms"
-          returnPath="/rooms"
+          returnPath={stayCriteria ? `/rooms?${buildStaySearchParams(stayCriteria).toString()}` : '/rooms'}
           onClose={() => setQuickBooking(null)}
         />
       )}
@@ -680,6 +831,12 @@ function RoomCard({
           <InfoPill label="Giá mỗi đêm" value={`${formatCurrency(getNightlyDisplayPrice(room.pricePerHour))} / đêm`} />
         </div>
 
+        <div className="mt-3 flex items-center gap-4 text-xs font-semibold text-[#646b65]">
+          <span className="inline-flex items-center gap-1.5"><BedroomIcon />{room.bedroomCount} phòng ngủ</span>
+          <span className="h-1 w-1 rounded-full bg-[#c5b7a6]" />
+          <span className="inline-flex items-center gap-1.5"><BedIcon />{room.bedCount} giường</span>
+        </div>
+
         <div className="mt-4 flex flex-wrap gap-2 pb-4">
           {room.equipments.slice(0, 3).map((equipment) => (
             <span
@@ -726,36 +883,67 @@ function RoomCard({
   )
 }
 
-function SearchField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+function AmenitiesFilter({ options, selected, onChange }: { options: string[]; selected: string[]; onChange: (values: string[]) => void }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const wrapperRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!isOpen) return
+    const close = (event: MouseEvent) => {
+      if (!wrapperRef.current?.contains(event.target as Node)) setIsOpen(false)
+    }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [isOpen])
+
+  const toggle = (amenity: string) => {
+    onChange(selected.includes(amenity)
+      ? selected.filter((value) => value !== amenity)
+      : [...selected, amenity])
+  }
+
   return (
-    <div className="group flex min-h-[62px] items-center gap-3 rounded-2xl bg-[#f8f4ee] px-4 transition-all duration-200 hover:bg-[#f5efe7] focus-within:bg-white focus-within:shadow-[0_0_0_2px_rgba(184,136,87,0.32),0_8px_24px_rgba(29,49,41,0.08)]">
-      <SearchIcon />
-      <div className="min-w-0 flex-1">
-        <label htmlFor="room-catalog-search" className="block font-display text-[10px] font-bold uppercase tracking-[0.12em] text-[#817970]">
-          Tìm phòng
-        </label>
-        <input
-          id="room-catalog-search"
-          type="text"
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          autoComplete="off"
-          placeholder="Tên phòng hoặc tiện nghi"
-          className="room-catalog-search-input mt-1 w-full bg-transparent text-sm font-medium text-on-surface placeholder:font-normal placeholder:text-[#aaa39a]"
-        />
-      </div>
-      {value && (
-        <button
-          type="button"
-          onClick={() => onChange('')}
-          aria-label="Xóa nội dung tìm kiếm"
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#8d857c] transition hover:bg-[#eee7de] hover:text-secondary focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b88857]"
-        >
-          <CloseIcon />
-        </button>
+    <div ref={wrapperRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen((open) => !open)}
+        className={[
+          'flex min-h-[62px] w-full items-center justify-between rounded-2xl border px-4 text-left transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b88857]',
+          isOpen ? 'border-[#b88857] bg-white shadow-[0_0_0_3px_rgba(184,136,87,0.10)]' : 'border-[#e6ddd2] bg-[#fcfaf7] hover:border-[#d4c2ad] hover:bg-white',
+        ].join(' ')}
+        aria-expanded={isOpen}
+      >
+        <span className="min-w-0">
+          <span className="block font-display text-[10px] font-bold uppercase tracking-[0.12em] text-[#817970]">Tiện nghi</span>
+          <span className="mt-1 block truncate text-sm font-semibold text-on-surface">{selected.length > 0 ? `${selected.length} tiện nghi đã chọn` : 'Chọn tiện nghi'}</span>
+        </span>
+        <ChevronDownIcon className={['ml-3 h-4 w-4 shrink-0 text-[#8b8278] transition-transform', isOpen ? 'rotate-180' : ''].join(' ')} />
+      </button>
+      {isOpen && (
+        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-40 min-w-[270px] rounded-2xl border border-[#ded3c5] bg-white p-3 shadow-[0_20px_55px_rgba(29,49,41,0.17)]">
+          <div className="flex items-center justify-between border-b border-[#eee7de] pb-2">
+            <p className="font-display text-xs font-bold text-secondary">Tiện nghi cần có</p>
+            {selected.length > 0 && <button type="button" onClick={() => onChange([])} className="text-[11px] font-bold text-[#9a6739]">Bỏ chọn</button>}
+          </div>
+          <div className="mt-2 max-h-64 space-y-1 overflow-y-auto pr-1">
+            {options.length > 0 ? options.map((amenity) => {
+              const checked = selected.includes(amenity)
+              return (
+                <button key={amenity} type="button" onClick={() => toggle(amenity)} className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left text-sm text-on-surface transition hover:bg-[#faf5ee]">
+                  <span className={['flex h-5 w-5 shrink-0 items-center justify-center rounded-md border', checked ? 'border-secondary bg-secondary text-white' : 'border-[#d8cdbc] bg-white'].join(' ')}>{checked && <SelectedIcon />}</span>
+                  <span className="line-clamp-2">{amenity}</span>
+                </button>
+              )
+            }) : <p className="px-2 py-4 text-center text-xs text-on-surface-variant">Chưa có dữ liệu tiện nghi.</p>}
+          </div>
+        </div>
       )}
     </div>
   )
+}
+
+function FilterSummaryChip({ label }: { label: string }) {
+  return <span className="rounded-full border border-[#ded3c5] bg-[#fbf8f3] px-3 py-1.5 text-[11px] font-semibold text-[#5f665f]">{label}</span>
 }
 
 function CompactFilterSelect({
@@ -989,23 +1177,6 @@ function formatPriceInMillions(value: number) {
   return `${Number.isInteger(millions) ? millions : millions.toFixed(1)} triệu`
 }
 
-function SearchIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="h-5 w-5 shrink-0 text-[#9a6739] transition-transform duration-200 group-focus-within:scale-110">
-      <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="1.8" />
-      <path d="m16 16 4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function CloseIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" className="h-4 w-4">
-      <path d="m6 6 8 8m0-8-8 8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-    </svg>
-  )
-}
-
 function SelectedIcon() {
   return (
     <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-secondary text-white">
@@ -1092,6 +1263,25 @@ function InfoPill({ label, value }: { label: string; value: string }) {
       <p className="mt-1 font-semibold text-on-surface">{value}</p>
     </div>
   )
+}
+
+function BedroomIcon() { return <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4 text-[#9b6b3c]" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M4 20V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v15M8 20v-5h8v5M9 8h6" strokeLinecap="round" strokeLinejoin="round"/></svg> }
+function BedIcon() { return <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4 text-[#9b6b3c]" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M3 19v-8M21 19v-5a3 3 0 0 0-3-3H9v8M3 15h18M7 11V8h5a3 3 0 0 1 3 3" strokeLinecap="round" strokeLinejoin="round"/></svg> }
+
+function buildCountOptions(unit: string, max: number) {
+  return [
+    { value: '0', label: `Tất cả ${unit}` },
+    ...Array.from({ length: max }, (_, index) => ({
+      value: String(index + 1),
+      label: `Từ ${index + 1} ${unit}`,
+    })),
+  ]
+}
+
+function formatShortStayDate(value?: string) {
+  if (!value) return '--/--/----'
+  const [year, month, day] = value.split('-').map(Number)
+  return new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(year, month - 1, day))
 }
 
 function summarizeTodayRooms(rooms: Room[]): TodayRoomSummary {
