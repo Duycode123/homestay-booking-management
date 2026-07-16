@@ -233,6 +233,13 @@ public class BookingPersistenceAdapter implements
             if (criteria.roomId() != null) {
                 predicates.add(criteriaBuilder.equal(root.get("room").get("id"), criteria.roomId()));
             }
+            if (criteria.allowedBookingIds() != null) {
+                if (criteria.allowedBookingIds().isEmpty()) {
+                    predicates.add(criteriaBuilder.disjunction());
+                } else {
+                    predicates.add(root.get("id").in(criteria.allowedBookingIds()));
+                }
+            }
             if (criteria.from() != null) {
                 predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("startTime"), criteria.from()));
             }

@@ -143,6 +143,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/staff/performance/**").hasRole("STAFF")
                         .requestMatchers("/api/staff/shift-registrations/**").hasRole("STAFF")
                         .requestMatchers("/api/admin/equipment/**").hasAnyRole("ADMIN", "STAFF")
+                        .requestMatchers("/api/admin/bookings/*/cancellation-request/**").hasRole("ADMIN")
                         .requestMatchers("/api/admin/bookings/**").hasAnyRole("ADMIN", "STAFF")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/bookings/**").authenticated()

@@ -120,6 +120,7 @@ export default function StaffSchedulePage() {
   const [attendanceError, setAttendanceError] = useState('')
   const [isAttendanceLoading, setIsAttendanceLoading] = useState(false)
   const [shiftDetail, setShiftDetail] = useState<ShiftDetailState | null>(null)
+  const [shiftBookingsById, setShiftBookingsById] = useState<Record<number, StaffShiftBooking[]>>({})
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false)
   const [registrations, setRegistrations] = useState<StaffShiftRegistration[]>([])
   const [selectedRegistrationSlots, setSelectedRegistrationSlots] = useState<ShiftRegistrationSlot[]>([])
@@ -206,6 +207,31 @@ export default function StaffSchedulePage() {
   }, [loadSchedule])
 
   useEffect(() => {
+    const shifts = [...schedule, ...nextWeekSchedule]
+    if (shifts.length === 0) {
+      setShiftBookingsById({})
+      return
+    }
+
+    let cancelled = false
+    void Promise.all(
+      shifts.map(async (shift) => {
+        try {
+          return [shift.shiftId, await fetchShiftBookings(shift.shiftId)] as const
+        } catch {
+          return [shift.shiftId, []] as const
+        }
+      }),
+    ).then((entries) => {
+      if (!cancelled) setShiftBookingsById(Object.fromEntries(entries))
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [nextWeekSchedule, schedule])
+
+  useEffect(() => {
     const refreshTimer = window.setInterval(() => {
       void loadSchedule(false)
     }, 20000)
@@ -248,18 +274,6 @@ export default function StaffSchedulePage() {
     [nextWeekSchedule],
   )
 
-  const shiftMap = useMemo(() => {
-    return shiftCells.reduce<Record<string, StaffShiftCell>>((acc, cell) => {
-      acc[getCellKey(cell.dayKey, cell.shiftName)] = cell
-      return acc
-    }, {})
-  }, [shiftCells])
-  const nextWeekShiftMap = useMemo(() => {
-    return nextWeekShiftCells.reduce<Record<string, StaffShiftCell>>((acc, cell) => {
-      acc[getCellKey(cell.dayKey, cell.shiftName)] = cell
-      return acc
-    }, {})
-  }, [nextWeekShiftCells])
   const registrationMap = useMemo(() => {
     return registrations.reduce<Record<string, StaffShiftRegistration>>((acc, registration) => {
       acc[getSlotKey(registration.workDate, registration.startTime, registration.endTime)] = registration
@@ -272,7 +286,6 @@ export default function StaffSchedulePage() {
   const activeWeekDays = scheduleView === 'CURRENT_WEEK' ? weekDays : nextWeekDays
   const activeWeekRange = scheduleView === 'CURRENT_WEEK' ? weekRange : nextWeekRange
   const activeShiftCells = scheduleView === 'CURRENT_WEEK' ? shiftCells : nextWeekShiftCells
-  const activeShiftMap = scheduleView === 'CURRENT_WEEK' ? shiftMap : nextWeekShiftMap
   const isLoadingActiveSchedule = scheduleView === 'CURRENT_WEEK' ? isLoadingSchedule : isLoadingNextWeekSchedule
   const activeScheduleCopy =
     scheduleView === 'CURRENT_WEEK'
@@ -588,10 +601,10 @@ export default function StaffSchedulePage() {
             description={activeScheduleCopy.description}
             weekDays={activeWeekDays}
             shiftCells={activeShiftCells}
-            shiftMap={activeShiftMap}
             isLoading={isLoadingActiveSchedule}
             emptyTitle={activeScheduleCopy.emptyTitle}
             emptyDescription={activeScheduleCopy.emptyDescription}
+            shiftBookingsById={shiftBookingsById}
             onOpenShiftDetails={openShiftDetails}
           />
         </section>
@@ -654,103 +667,88 @@ function ScheduleGrid({
   description,
   weekDays,
   shiftCells,
-  shiftMap,
   isLoading,
   emptyTitle,
   emptyDescription,
+  shiftBookingsById,
   onOpenShiftDetails,
 }: {
   title: string
   description: string
   weekDays: WeekDay[]
   shiftCells: StaffShiftCell[]
-  shiftMap: Record<string, StaffShiftCell>
   isLoading: boolean
   emptyTitle: string
   emptyDescription: string
+  shiftBookingsById: Record<number, StaffShiftBooking[]>
   onOpenShiftDetails: (cell: StaffShiftCell) => void
 }) {
   return (
     <section className="overflow-hidden rounded-[26px] border border-[#e3d8ca] bg-white shadow-[0_18px_50px_rgba(31,54,44,0.09)]">
-      <div className="p-5 pb-4 sm:px-7 sm:pt-7">
-      <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h2 className="font-display text-xl font-bold text-on-surface">{title}</h2>
-          <p className="mt-1 text-sm text-on-surface-variant">{description}</p>
+      <div className="border-b border-[#eee6dc] bg-[linear-gradient(135deg,#fff,#f7f2ea)] p-5 sm:px-7 sm:py-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-brand-orange">Lịch cá nhân</p>
+            <h2 className="mt-1 font-display text-xl font-bold text-on-surface">{title}</h2>
+            <p className="mt-1 text-sm text-on-surface-variant">{description} Chỉ hiển thị ca được phân công cho bạn.</p>
+          </div>
+          <span className="w-fit rounded-full border border-[#dfd4c6] bg-white px-3 py-1.5 text-xs font-semibold text-on-surface-variant shadow-sm">
+            {weekDays[0] ? formatShortDate(weekDays[0].isoDate) : ''} - {weekDays[weekDays.length - 1] ? formatShortDate(weekDays[weekDays.length - 1].isoDate) : ''}
+          </span>
         </div>
-        <span className="text-xs font-semibold text-on-surface-variant">
-          {weekDays[0] ? formatShortDate(weekDays[0].isoDate) : ''} - {weekDays[weekDays.length - 1] ? formatShortDate(weekDays[weekDays.length - 1].isoDate) : ''}
-        </span>
-      </div>
       </div>
 
       {isLoading ? (
-        <div className="m-5 rounded-2xl border border-dashed border-outline-variant bg-surface-container-low px-4 py-10 text-center text-sm text-on-surface-variant sm:mx-7 sm:mb-7">
-          Đang tải lịch làm việc...
+        <div className="grid gap-3 p-5 sm:grid-cols-2 sm:p-7 xl:grid-cols-4">
+          {Array.from({ length: 7 }).map((_, index) => <div key={index} className="h-44 animate-pulse rounded-2xl bg-surface-container-low" />)}
         </div>
       ) : shiftCells.length === 0 ? (
         <EmptyState title={emptyTitle} description={emptyDescription} />
       ) : (
-        <div className="overflow-x-auto border-t border-[#eee6dc]">
-          <table className="w-full min-w-[980px] border-separate border-spacing-0 text-left">
-            <thead>
-              <tr>
-                <th className="h-14 w-[152px] border-b border-r border-[#e8dfd4] bg-[#f8f5f0]" />
-                {weekDays.map((day) => (
-                  <th
-                    key={day.key}
-                    className="h-14 border-b border-r border-[#e8dfd4] bg-[#f8f5f0] text-center font-display text-base font-bold text-[#26372f] last:border-r-0"
-                  >
-                    <div>{day.label}</div>
-                    <div className="mt-1 text-xs font-semibold text-on-surface-variant">{day.shortDate}</div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {SHIFT_ROWS.map((row) => (
-                <tr key={row.name}>
-                  <th className="h-[148px] w-[152px] border-b border-r border-[#e8dfd4] bg-[#fcfaf7] px-3 align-middle sm:px-4">
-                    <div>
-                      <p className="font-display text-lg font-bold text-on-surface">{row.name}</p>
-                      <span className="mt-2 inline-flex rounded-full bg-[#edf3ef] px-3 py-1 text-xs font-bold text-secondary">
-                        {row.startTime} - {row.endTime}
-                      </span>
-                    </div>
-                  </th>
-                  {weekDays.map((day) => {
-                    const cell = shiftMap[getCellKey(day.key, row.name)] ?? createEmptyCell(day, row)
-                    const meta = getShiftStatusMeta(cell.status)
+        <div className="grid gap-3 p-5 sm:grid-cols-2 sm:p-7 xl:grid-cols-4">
+          {weekDays.map((day) => {
+            const dayShifts = shiftCells.filter((cell) => cell.date === day.isoDate)
+            const isToday = day.isoDate === toDateKey(new Date())
+            return (
+              <article key={day.isoDate} className={['min-h-44 rounded-[20px] border p-4', isToday ? 'border-secondary/30 bg-[#f1f7f4] shadow-[0_12px_28px_rgba(23,58,49,0.08)]' : 'border-[#e6ddd2] bg-[#fcfaf7]'].join(' ')}>
+                <div className="flex items-center justify-between border-b border-[#e8dfd4] pb-3">
+                  <div>
+                    <p className="font-display text-sm font-bold text-on-surface">{day.longLabel}</p>
+                    <p className="mt-0.5 text-xs text-on-surface-variant">{day.shortDate}</p>
+                  </div>
+                  {isToday && <span className="rounded-full bg-secondary px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">Hôm nay</span>}
+                </div>
 
-                    return (
-                      <td
-                        key={`${day.key}-${row.name}`}
-                        className={[
-                          'h-[148px] border-b border-r border-[#e8dfd4] align-middle last:border-r-0',
-                          cell.status === 'EMPTY' ? 'bg-[#fbfaf8]' : 'bg-white',
-                        ].join(' ')}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => void onOpenShiftDetails(cell)}
-                          className="flex h-full w-full items-center justify-center p-3 text-center transition hover:bg-[#faf4ec] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-orange"
-                        >
-                          <span
-                            className={[
-                              'inline-flex rounded-full px-3 py-2 font-display text-xs font-bold shadow-sm',
-                              meta.className,
-                            ].join(' ')}
-                          >
-                            {meta.label}
-                          </span>
+                {dayShifts.length > 0 ? (
+                  <div className="mt-3 space-y-2.5">
+                    {dayShifts.map((cell) => {
+                      const meta = getShiftStatusMeta(cell.status)
+                      const bookingCount = cell.shiftId ? (shiftBookingsById[cell.shiftId]?.length ?? 0) : 0
+                      return (
+                        <button key={cell.cellId} type="button" onClick={() => onOpenShiftDetails(cell)} className="group w-full rounded-2xl border border-white bg-white p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-brand-orange/35 hover:shadow-md">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="font-display text-sm font-bold text-secondary">{cell.shiftName}</p>
+                              <p className="mt-1 text-xs font-semibold text-on-surface-variant">{cell.startTime} - {cell.endTime}</p>
+                            </div>
+                            <span className={['rounded-full px-2 py-1 text-[10px] font-bold', meta.className].join(' ')}>{meta.label}</span>
+                          </div>
+                          <div className="mt-3 flex items-center justify-between rounded-xl bg-[#f7f3ed] px-3 py-2 text-xs">
+                            <span className="text-on-surface-variant">Booking trong ca</span>
+                            <strong className="text-secondary">{bookingCount}</strong>
+                          </div>
                         </button>
-                      </td>
-                    )
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="flex min-h-24 items-center justify-center text-center">
+                    <p className="text-xs leading-5 text-on-surface-variant">Không có ca được phân công</p>
+                  </div>
+                )}
+              </article>
+            )
+          })}
         </div>
       )}
     </section>
@@ -812,29 +810,18 @@ function ShiftRegistrationModal({
           </div>
         )}
 
-        <div className="overflow-x-auto rounded-[20px] border border-[#e3d8ca] bg-white">
-          <table className="w-full min-w-[880px] border-separate border-spacing-0 text-left">
-            <thead>
-              <tr>
-                <th className="h-14 w-[145px] border-b border-r border-[#e8dfd4] bg-[#f8f5f0] px-4 text-xs font-bold uppercase tracking-wider text-on-surface-variant">
-                  Ca
-                </th>
-                {weekDays.map((day) => (
-                  <th key={day.key} className="h-14 border-b border-r border-[#e8dfd4] bg-[#f8f5f0] px-3 text-center font-display text-sm font-bold text-on-surface last:border-r-0">
-                    <div>{day.label}</div>
-                    <div className="mt-1 text-xs font-semibold text-on-surface-variant">{day.shortDate}</div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {shiftRows.map((row) => (
-                <tr key={row.name}>
-                  <th className="h-[104px] border-b border-r border-[#e8dfd4] bg-[#fcfaf7] px-4 align-middle">
-                    <p className="font-display text-base font-bold text-on-surface">{row.name}</p>
-                    <p className="mt-1 text-xs font-semibold text-on-surface-variant">{row.startTime} - {row.endTime}</p>
-                  </th>
-                  {weekDays.map((day) => {
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {weekDays.map((day) => (
+            <article key={day.isoDate} className="rounded-[20px] border border-[#e3d8ca] bg-[#fcfaf7] p-4">
+              <div className="flex items-center justify-between border-b border-[#e8dfd4] pb-3">
+                <div>
+                  <p className="font-display text-sm font-bold text-on-surface">{day.longLabel}</p>
+                  <p className="mt-0.5 text-xs text-on-surface-variant">{day.shortDate}</p>
+                </div>
+                <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-on-surface-variant shadow-sm">3 ca</span>
+              </div>
+              <div className="mt-3 space-y-2">
+                {shiftRows.map((row) => {
                     const slot: ShiftRegistrationSlot = {
                       workDate: day.isoDate,
                       startTime: row.startTime,
@@ -847,33 +834,33 @@ function ShiftRegistrationModal({
                     const meta = registration ? getRegistrationStatusMeta(registration.status) : null
 
                     return (
-                      <td key={`${day.key}-${row.name}`} className="h-[104px] border-b border-r border-[#e8dfd4] bg-[#fdfcf9] p-2 align-middle last:border-r-0">
-                        <button
-                          type="button"
-                          onClick={() => onToggleSlot(slot)}
-                          disabled={isBlocked || isLoading || isSubmitting}
-                          className={[
-                            'flex h-full w-full flex-col items-center justify-center gap-1.5 rounded-2xl border px-2 text-center transition',
-                            isSelected
-                              ? 'border-brand-orange bg-[#f7ecdd] text-on-primary-container shadow-[inset_0_0_0_1px_rgba(184,136,87,0.10)]'
-                              : 'border-[#e6ddd2] bg-white text-on-surface hover:border-brand-orange/50 hover:bg-[#fffaf4]',
-                            isBlocked ? 'cursor-not-allowed opacity-75 hover:border-outline-variant' : '',
-                          ].join(' ')}
-                        >
-                          <span className="font-display text-sm font-bold">
-                            {isSelected ? 'Đã chọn' : meta?.label ?? 'Có thể đăng ký'}
-                          </span>
-                          {registration?.rejectionReason && (
-                            <span className="line-clamp-2 text-xs text-on-surface-variant">{registration.rejectionReason}</span>
-                          )}
-                        </button>
-                      </td>
+                      <button
+                        key={`${day.key}-${row.name}`}
+                        type="button"
+                        onClick={() => onToggleSlot(slot)}
+                        disabled={isBlocked || isLoading || isSubmitting}
+                        className={[
+                          'flex w-full items-center justify-between gap-3 rounded-2xl border px-3 py-3 text-left transition',
+                          isSelected
+                            ? 'border-brand-orange bg-[#f7ecdd] text-on-primary-container shadow-sm'
+                            : 'border-[#e6ddd2] bg-white text-on-surface hover:border-brand-orange/50 hover:bg-[#fffaf4]',
+                          isBlocked ? 'cursor-not-allowed opacity-75 hover:border-outline-variant' : '',
+                        ].join(' ')}
+                      >
+                        <span>
+                          <span className="block font-display text-sm font-bold">{row.name}</span>
+                          <span className="mt-0.5 block text-xs text-on-surface-variant">{row.startTime} - {row.endTime}</span>
+                          {registration?.rejectionReason && <span className="mt-1 line-clamp-1 block text-[11px] text-error">{registration.rejectionReason}</span>}
+                        </span>
+                        <span className={['shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold', isSelected ? 'bg-brand-orange text-white' : meta?.className ?? 'bg-[#edf3ef] text-secondary'].join(' ')}>
+                          {isSelected ? 'Đã chọn' : meta?.label ?? 'Chọn'}
+                        </span>
+                      </button>
                     )
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                })}
+              </div>
+            </article>
+          ))}
         </div>
 
         <div className="flex flex-col gap-3 rounded-[18px] bg-[#f8f5f0] p-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">

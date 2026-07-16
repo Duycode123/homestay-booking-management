@@ -9,6 +9,7 @@ import backend.booking.application.port.in.command.CheckoutSettlementMethod;
 import backend.booking.application.port.in.command.ReviewCustomerCancellationCommand;
 import backend.booking.application.port.in.query.CustomerBookingHistoryQuery;
 import backend.booking.application.port.in.query.GetCustomerBookingDetailQuery;
+import backend.booking.application.port.in.query.GetBookingManagementDetailQuery;
 import backend.booking.application.port.in.query.GetRoomAvailabilityQuery;
 import backend.booking.application.port.out.LoadBookingPort;
 import backend.booking.application.port.out.CreatePendingRefundPort;
@@ -17,6 +18,7 @@ import backend.booking.application.port.out.LoadDiscountCodeForBookingPort;
 import backend.booking.application.port.out.LoadReviewPort;
 import backend.booking.application.port.out.LoadRoomPort;
 import backend.booking.application.port.out.LoadStaffForBookingPort;
+import backend.booking.application.port.out.LoadStaffBookingScopePort;
 import backend.booking.application.port.out.LoadSuccessfulPaymentAmountPort;
 import backend.booking.application.port.out.LoadUserPort;
 import backend.booking.application.port.out.SaveBookingPort;
@@ -64,6 +66,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -108,6 +111,9 @@ class BookingUseCaseServiceTest {
     private LoadStaffForBookingPort loadStaffForBookingPort;
 
     @Mock
+    private LoadStaffBookingScopePort loadStaffBookingScopePort;
+
+    @Mock
     private LoadSuccessfulPaymentAmountPort loadSuccessfulPaymentAmountPort;
 
     @Mock
@@ -142,6 +148,7 @@ class BookingUseCaseServiceTest {
                 searchBookingsForManagementPort,
                 loadReviewPort,
                 loadStaffForBookingPort,
+                loadStaffBookingScopePort,
                 loadSuccessfulPaymentAmountPort,
                 savePaymentTransactionPort,
                 createPendingRefundPort,
@@ -150,6 +157,41 @@ class BookingUseCaseServiceTest {
                 new BookingStatusTransitionPolicy(),
                 clock
         );
+
+        org.mockito.Mockito.lenient()
+                .when(loadStaffBookingScopePort.canAccessBooking(any(), any()))
+                .thenReturn(true);
+    }
+
+    @Test
+    void limitsStaffBookingListToBookingsOverlappingTheirAssignedShifts() {
+        User staffUser = User.builder().id(3).email("staff@example.com").role(Role.STAFF).build();
+        Set<Integer> accessibleBookingIds = Set.of(21, 22);
+        ArgumentCaptor<BookingManagementSearchCriteria> criteriaCaptor =
+                ArgumentCaptor.forClass(BookingManagementSearchCriteria.class);
+
+        when(loadUserPort.loadUserByEmail(staffUser.getEmail())).thenReturn(Optional.of(staffUser));
+        when(loadStaffBookingScopePort.loadAccessibleBookingIds(staffUser.getEmail()))
+                .thenReturn(accessibleBookingIds);
+        when(searchBookingsForManagementPort.loadBookingsForManagement(any())).thenReturn(List.of());
+
+        bookingUseCaseService.getAllBookings(new ListBookingsForManagementQuery(null, staffUser.getEmail()));
+
+        verify(searchBookingsForManagementPort).loadBookingsForManagement(criteriaCaptor.capture());
+        assertEquals(accessibleBookingIds, criteriaCaptor.getValue().allowedBookingIds());
+    }
+
+    @Test
+    void rejectsStaffAccessToBookingOutsideAssignedShifts() {
+        User staffUser = User.builder().id(3).email("staff@example.com").role(Role.STAFF).build();
+        when(loadUserPort.loadUserByEmail(staffUser.getEmail())).thenReturn(Optional.of(staffUser));
+        when(loadStaffBookingScopePort.canAccessBooking(staffUser.getEmail(), 99)).thenReturn(false);
+
+        assertThrows(ForbiddenException.class, () -> bookingUseCaseService.getBookingDetail(
+                new GetBookingManagementDetailQuery(99, staffUser.getEmail())
+        ));
+
+        verify(loadBookingPort, never()).loadBooking(99);
     }
 
     @Test

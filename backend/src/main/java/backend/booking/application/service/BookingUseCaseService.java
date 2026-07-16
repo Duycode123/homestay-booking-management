@@ -33,6 +33,7 @@ import backend.booking.application.port.out.LoadDiscountCodeForBookingPort;
 import backend.booking.application.port.out.LoadReviewPort;
 import backend.booking.application.port.out.LoadRoomPort;
 import backend.booking.application.port.out.LoadStaffForBookingPort;
+import backend.booking.application.port.out.LoadStaffBookingScopePort;
 import backend.booking.application.port.out.LoadSuccessfulPaymentAmountPort;
 import backend.booking.application.port.out.LoadUserPort;
 import backend.booking.application.port.out.SaveBookingPort;
@@ -81,6 +82,7 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -128,6 +130,7 @@ public class BookingUseCaseService implements
     private final SearchBookingsForManagementPort searchBookingsForManagementPort;
     private final LoadReviewPort loadReviewPort;
     private final LoadStaffForBookingPort loadStaffForBookingPort;
+    private final LoadStaffBookingScopePort loadStaffBookingScopePort;
     private final LoadSuccessfulPaymentAmountPort loadSuccessfulPaymentAmountPort;
     private final SavePaymentTransactionPort savePaymentTransactionPort;
     private final CreatePendingRefundPort createPendingRefundPort;
@@ -320,9 +323,10 @@ public class BookingUseCaseService implements
     public List<BookingResponse> getAllBookings(ListBookingsForManagementQuery query) {
         User currentUser = getCurrentUser(query.currentUserEmail());
         checkAdminOrStaff(currentUser);
+        Set<Integer> allowedBookingIds = resolveStaffBookingScope(currentUser, query.currentUserEmail());
 
         return searchBookingsForManagementPort
-                .loadBookingsForManagement(toManagementCriteria(query, null, null)).stream()
+                .loadBookingsForManagement(toManagementCriteria(query, null, null, allowedBookingIds)).stream()
                 .map(this::toManagementBookingResponse)
                 .toList();
     }
@@ -331,6 +335,7 @@ public class BookingUseCaseService implements
     public PagedResponse<BookingResponse> getBookingsPage(ListBookingsForManagementQuery query) {
         User currentUser = getCurrentUser(query.currentUserEmail());
         checkAdminOrStaff(currentUser);
+        Set<Integer> allowedBookingIds = resolveStaffBookingScope(currentUser, query.currentUserEmail());
 
         int page = query.page() == null ? 0 : query.page();
         int size = query.size() == null ? 10 : query.size();
@@ -343,7 +348,7 @@ public class BookingUseCaseService implements
         }
 
         PageResult<Booking> bookingPage = searchBookingsForManagementPort.searchBookingsForManagement(
-                toManagementCriteria(query, page, size)
+                toManagementCriteria(query, page, size, allowedBookingIds)
         );
 
         return PagedResponse.of(
@@ -360,7 +365,8 @@ public class BookingUseCaseService implements
     private BookingManagementSearchCriteria toManagementCriteria(
             ListBookingsForManagementQuery query,
             Integer page,
-            Integer size
+            Integer size,
+            Set<Integer> allowedBookingIds
     ) {
         if (query.from() != null && query.to() != null && query.from().isAfter(query.to())) {
             throw new IllegalArgumentException("Thoi gian bat dau khong duoc sau thoi gian ket thuc");
@@ -382,7 +388,8 @@ public class BookingUseCaseService implements
                 page,
                 size,
                 sortProperty,
-                sortDirection
+                sortDirection,
+                allowedBookingIds
         );
     }
 
@@ -390,6 +397,7 @@ public class BookingUseCaseService implements
     public BookingResponse getBookingDetail(GetBookingManagementDetailQuery query) {
         User currentUser = getCurrentUser(query.currentUserEmail());
         checkAdminOrStaff(currentUser);
+        requireStaffBookingAccess(currentUser, query.currentUserEmail(), query.bookingId());
 
         Booking booking = loadBookingPort.loadBooking(query.bookingId())
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay don dat phong"));
@@ -402,6 +410,7 @@ public class BookingUseCaseService implements
     public BookingResponse updateBookingStatus(UpdateBookingStatusCommand command) {
         User currentUser = getCurrentUser(command.currentUserEmail());
         checkAdminOrStaff(currentUser);
+        requireStaffBookingAccess(currentUser, command.currentUserEmail(), command.bookingId());
 
         if (command.status() == null) {
             throw new IllegalArgumentException("Trang thai don khong duoc de trong");
@@ -445,6 +454,7 @@ public class BookingUseCaseService implements
     public BookingResponse settleBookingAtCheckout(SettleBookingAtCheckoutCommand command) {
         User currentUser = getCurrentUser(command.currentUserEmail());
         checkAdminOrStaff(currentUser);
+        requireStaffBookingAccess(currentUser, command.currentUserEmail(), command.bookingId());
 
         Booking booking = loadBookingPort.loadBookingForUpdate(command.bookingId())
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay don dat phong"));
@@ -489,6 +499,7 @@ public class BookingUseCaseService implements
     public BookingResponse cancelBooking(CancelBookingForManagementCommand command) {
         User currentUser = getCurrentUser(command.currentUserEmail());
         checkAdminOrStaff(currentUser);
+        requireStaffBookingAccess(currentUser, command.currentUserEmail(), command.bookingId());
 
         Booking booking = loadBookingPort.loadBooking(command.bookingId())
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay don dat phong"));
@@ -1047,6 +1058,23 @@ public class BookingUseCaseService implements
         if (!role.equals("ADMIN") && !role.equals("STAFF")) {
             throw new ForbiddenException("Ban khong co quyen quan ly don dat phong");
         }
+    }
+
+    private Set<Integer> resolveStaffBookingScope(User currentUser, String currentUserEmail) {
+        if (!isStaff(currentUser)) {
+            return null;
+        }
+        return loadStaffBookingScopePort.loadAccessibleBookingIds(currentUserEmail);
+    }
+
+    private void requireStaffBookingAccess(User currentUser, String currentUserEmail, Integer bookingId) {
+        if (isStaff(currentUser) && !loadStaffBookingScopePort.canAccessBooking(currentUserEmail, bookingId)) {
+            throw new ForbiddenException("Don dat phong nay khong thuoc ca lam viec cua ban");
+        }
+    }
+
+    private boolean isStaff(User user) {
+        return String.valueOf(user.getRole()).trim().equals("STAFF");
     }
 
     private record CostBreakdown(

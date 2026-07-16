@@ -31,6 +31,8 @@ Allow a staff member to see assigned shifts and the room bookings that overlap a
 4. Backend loads non-cancelled bookings whose time window overlaps the shift window.
 5. Backend returns bookings ordered by start time.
 
+The staff room-operation and booking-management views apply the same scope. A booking is visible and actionable only when its stay window overlaps at least one shift assigned to the authenticated staff member. Admin accounts remain unrestricted.
+
 ## Main Flow - Register Available Shifts
 
 1. Staff opens the work schedule view and chooses to register shifts.
@@ -68,6 +70,7 @@ Allow a staff member to see assigned shifts and the room bookings that overlap a
 
 - Staff can only see their own shifts.
 - Staff can only open bookings for a shift assigned to themselves.
+- Staff booking list, detail, status update, cancellation, and checkout settlement are restricted to bookings overlapping their assigned shifts; knowing another booking id does not bypass this rule.
 - Booking lookup uses overlapping time windows: `booking.startTime < shiftEnd` and `booking.endTime > shiftStart`.
 - Cancelled bookings are excluded from the shift booking list.
 - Staff can only register shifts for next week.
@@ -79,6 +82,8 @@ Allow a staff member to see assigned shifts and the room bookings that overlap a
 
 - `GET /api/staff/schedule/shifts?fromDate=YYYY-MM-DD&toDate=YYYY-MM-DD`
 - `GET /api/staff/schedule/shifts/{shiftId}/bookings`
+- `GET /api/admin/bookings` (admin sees all; staff response is scoped to assigned shifts)
+- `GET|PATCH|PUT|POST /api/admin/bookings/{bookingId}/...` (staff ownership is checked before access or mutation)
 - `GET /api/staff/shift-registrations/my?fromDate=YYYY-MM-DD&toDate=YYYY-MM-DD`
 - `POST /api/staff/shift-registrations`
 - `GET /api/admin/shift-registrations?fromDate=YYYY-MM-DD&toDate=YYYY-MM-DD&staffId=ID`
@@ -101,7 +106,9 @@ Allow a staff member to see assigned shifts and the room bookings that overlap a
 - `StaffScheduleUseCaseService` enforces staff ownership and date range rules.
 - `ShiftRegistrationUseCaseService` enforces next-week registration, overlap checks, and approval workflow rules.
 - `StaffSchedulePersistenceAdapter` reads shifts and bookings through outbound persistence ports.
+- `JdbcStaffBookingScopeAdapter` supplies the booking use case with staff-scoped booking ids without leaking shift persistence into the application core.
 - `JdbcShiftRegistrationAdapter` persists registration requests through outbound persistence ports.
+- The staff frontend presents assigned shifts as responsive daily agenda cards, displays the real booking count for each shift, and uses the same assigned-shift data for the room-operation responsibility fields.
 
 ## Known Gaps
 

@@ -7,6 +7,7 @@ import AuthGuard from '@/components/AuthGuard'
 import { StaffPageShell } from './StaffShared'
 import { fetchAdminEquipment } from '@/lib/admin/equipment/adminEquipmentApi'
 import { fetchRooms } from '@/lib/rooms-api'
+import { fetchShiftBookings, fetchStaffSchedule, type StaffScheduleShift, type StaffShiftBooking } from '@/lib/staff-schedule-service'
 import {
   parseBackendId,
   recordStaffEquipmentCondition,
@@ -228,11 +229,88 @@ const issueTypeLabels: Record<IssueType, string> = {
   OTHER: 'Khác',
 }
 
+type DutyBookingAssignment = {
+  shift: StaffScheduleShift
+  booking: StaffShiftBooking
+}
+
+function toDateKey(date: Date) {
+  const pad = (value: number) => String(value).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
+function getStaffDutyRange() {
+  const from = new Date()
+  from.setHours(0, 0, 0, 0)
+  const to = new Date(from)
+  to.setDate(to.getDate() + 14)
+  return { fromDate: toDateKey(from), toDate: toDateKey(to) }
+}
+
+async function loadDutyBookingAssignments(shifts: StaffScheduleShift[]): Promise<DutyBookingAssignment[]> {
+  const results = await Promise.allSettled(
+    shifts.map(async (shift) => {
+      const bookings = await fetchShiftBookings(shift.shiftId)
+      return bookings.map((booking) => ({ shift, booking }))
+    }),
+  )
+  const unique = new Map<number, DutyBookingAssignment>()
+  results.flatMap((result) => result.status === 'fulfilled' ? result.value : []).forEach((assignment) => {
+    if (!unique.has(assignment.booking.bookingId)) unique.set(assignment.booking.bookingId, assignment)
+  })
+  return [...unique.values()]
+}
+
+function applyDutyAssignments(rooms: StaffRoom[], assignments: DutyBookingAssignment[]) {
+  const now = Date.now()
+  return rooms.map((room) => {
+    const candidates = assignments
+      .filter(({ booking }) => normalizeText(booking.roomName) === normalizeText(room.name))
+      .sort((first, second) => new Date(first.booking.startTime).getTime() - new Date(second.booking.startTime).getTime())
+    const assignment = candidates.find(({ booking }) => new Date(booking.endTime).getTime() >= now) ?? candidates[0]
+
+    if (!assignment) {
+      return {
+        ...room,
+        currentBooking: undefined,
+        updatedAt: 'Không có booking trong ca của bạn',
+        assignedStaff: 'Chưa được phân công',
+      }
+    }
+
+    const start = new Date(assignment.booking.startTime)
+    const end = new Date(assignment.booking.endTime)
+    const shiftDate = new Date(`${assignment.shift.date}T00:00:00`)
+    const shiftName = getDutyShiftName(assignment.shift.startTime)
+    return {
+      ...room,
+      currentBooking: {
+        bookingId: `BR${String(assignment.booking.bookingId).padStart(8, '0')}`,
+        customerName: assignment.booking.customerName,
+        timeRange: `${start.toLocaleDateString('vi-VN')} · ${formatTime(start)} - ${formatTime(end)}`,
+      },
+      updatedAt: `${shiftDate.toLocaleDateString('vi-VN')} · ${assignment.shift.startTime.slice(0, 5)} - ${assignment.shift.endTime.slice(0, 5)}`,
+      assignedStaff: `Bạn · ${shiftName}`,
+    }
+  })
+}
+
+function getDutyShiftName(startTime: string) {
+  const hour = Number(startTime.slice(0, 2))
+  if (hour < 12) return 'Ca sáng'
+  if (hour < 18) return 'Ca chiều'
+  return 'Ca tối'
+}
+
+function formatTime(date: Date) {
+  return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })
+}
+
 export default function StaffRoomsPage() {
   const [activeTab, setActiveTab] = useState<StaffRoomsTab>('ROOMS')
-  const [rooms, setRooms] = useState(initialRooms)
-  const [equipment, setEquipment] = useState(initialEquipment)
-  const [issues, setIssues] = useState(initialIssues)
+  const [rooms, setRooms] = useState<StaffRoom[]>([])
+  const [equipment, setEquipment] = useState<StaffEquipment[]>([])
+  const [issues, setIssues] = useState<StaffIssue[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [roomQuery, setRoomQuery] = useState('')
   const [roomStatus, setRoomStatus] = useState<RoomStatus | 'ALL'>('ALL')
@@ -330,7 +408,8 @@ export default function StaffRoomsPage() {
   const refreshData = async () => {
     setIsLoading(true)
     try {
-      const [roomsResult, equipmentResult] = await Promise.allSettled([
+      const range = getStaffDutyRange()
+      const [roomsResult, equipmentResult, shiftsResult] = await Promise.allSettled([
         fetchRooms(),
         fetchAdminEquipment({
           query: '',
@@ -339,6 +418,7 @@ export default function StaffRoomsPage() {
           sortBy: 'room',
           sortOrder: 'asc',
         }),
+        fetchStaffSchedule(range.fromDate, range.toDate),
       ])
 
       if (roomsResult.status === 'rejected') {
@@ -346,11 +426,15 @@ export default function StaffRoomsPage() {
       }
 
       const backendEquipment = equipmentResult.status === 'fulfilled' ? equipmentResult.value : []
-      setRooms(mapBackendRoomsToStaffRooms(roomsResult.value, backendEquipment))
+      const shifts = shiftsResult.status === 'fulfilled' ? shiftsResult.value : []
+      const bookingAssignments = await loadDutyBookingAssignments(shifts)
+      setRooms(applyDutyAssignments(mapBackendRoomsToStaffRooms(roomsResult.value, backendEquipment), bookingAssignments))
       setEquipment(backendEquipment.map(mapBackendEquipmentToStaffEquipment))
 
       if (equipmentResult.status === 'rejected') {
         showToast(equipmentResult.reason instanceof Error ? equipmentResult.reason.message : 'Không thể tải danh sách tiện nghi.')
+      } else if (shiftsResult.status === 'rejected') {
+        showToast(shiftsResult.reason instanceof Error ? shiftsResult.reason.message : 'Không thể tải ca làm được phân công.')
       } else {
         showToast('Đã làm mới dữ liệu vận hành mới nhất.')
       }
@@ -922,7 +1006,7 @@ function RoomCard({
       <div className="mt-5 rounded-2xl border border-outline-variant bg-surface-container-low p-4">
         {room.currentBooking ? (
           <div>
-            <p className="font-display text-xs font-bold uppercase tracking-wide text-brand-orange">Booking hiện tại</p>
+            <p className="font-display text-xs font-bold uppercase tracking-wide text-brand-orange">Booking thuộc ca của bạn</p>
             <p className="mt-2 font-display text-base font-bold text-on-surface">{room.currentBooking.customerName}</p>
             <p className="mt-1 text-sm text-on-surface-variant">
               {room.currentBooking.bookingId} · {room.currentBooking.timeRange}
@@ -930,8 +1014,8 @@ function RoomCard({
           </div>
         ) : (
           <div>
-            <p className="font-display text-sm font-bold text-on-surface">Chưa có booking hiện tại</p>
-            <p className="mt-1 text-sm text-on-surface-variant">Phòng có thể được phân công cho ca tiếp theo.</p>
+            <p className="font-display text-sm font-bold text-on-surface">Không có booking trong ca của bạn</p>
+            <p className="mt-1 text-sm text-on-surface-variant">Thông tin booking của ca nhân viên khác được bảo mật.</p>
           </div>
         )}
       </div>
@@ -945,8 +1029,8 @@ function RoomCard({
       </div>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
-        <Metric label="Cập nhật" value={room.updatedAt} />
-        <Metric label="Phụ trách" value={room.assignedStaff ?? 'Chưa phân công'} />
+        <Metric label="Ca phụ trách" value={room.updatedAt} />
+        <Metric label="Phân công" value={room.assignedStaff ?? 'Chưa được phân công'} />
       </div>
 
       <div className="mt-5 flex flex-col gap-2 sm:flex-row">
