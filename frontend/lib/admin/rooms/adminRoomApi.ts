@@ -324,6 +324,7 @@ export function toRoomFormData(room: AdminRoom): RoomFormData {
     equipments: room.equipments.join('\n'),
     image: room.imageUrl ?? '',
     additionalImages: (room.imageUrls ?? []).filter((image) => image !== room.imageUrl).slice(0, 3),
+    selectedEquipmentKeys: [],
   }
 }
 
@@ -393,4 +394,5 @@ export const EMPTY_ROOM_FORM: RoomFormData = {
   equipments: '',
   image: '',
   additionalImages: [],
+  selectedEquipmentKeys: [],
 }

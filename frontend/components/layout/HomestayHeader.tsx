@@ -29,6 +29,8 @@ export default function HomestayHeader() {
   const { user, isAuthenticated } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const activeHomeSection = useHomepageActiveSection()
+  const hotlineNumber = process.env.NEXT_PUBLIC_HOTLINE_NUMBER?.trim() ?? ''
+  const hotlineHref = hotlineNumber ? `tel:${hotlineNumber.replace(/[^+\d]/g, '')}` : '/support'
 
   useEffect(() => {
     setMenuOpen(false)
@@ -138,6 +140,20 @@ export default function HomestayHeader() {
           </nav>
 
           <div className="hidden min-h-[44px] shrink-0 items-center justify-end gap-3 xl:flex">
+            <Link
+              href={hotlineHref}
+              className="group relative flex h-11 w-11 items-center justify-center rounded-full border border-brand-orange/40 bg-white text-secondary shadow-[0_10px_26px_rgba(23,58,49,0.09)] transition hover:-translate-y-0.5 hover:border-brand-orange hover:bg-[#f7efe4]"
+              aria-label={hotlineNumber ? `Gọi hotline ${hotlineNumber}` : 'Mở trung tâm hotline và hỗ trợ'}
+              title={hotlineNumber ? `Hotline ${hotlineNumber}` : 'Hotline & hỗ trợ'}
+            >
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+                <path d="M8.1 3.8 5.8 5.2c-1 .6-1.4 1.8-1 2.9 2 5.2 5.9 9.1 11.1 11.1 1.1.4 2.3 0 2.9-1l1.4-2.3-4.5-2-1.2 1.5c-2.7-1.3-4.6-3.2-5.9-5.9l1.5-1.2-2-4.5Z" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M14.5 5.2a5 5 0 0 1 4.3 4.3M14.8 2a8 8 0 0 1 7.2 7.2" strokeLinecap="round" />
+              </svg>
+              <span className="pointer-events-none absolute right-0 top-full mt-2 hidden whitespace-nowrap rounded-lg bg-secondary px-3 py-1.5 text-[11px] font-semibold text-white shadow-lg group-hover:block">
+                {hotlineNumber || 'Hotline & hỗ trợ'}
+              </span>
+            </Link>
             {isAuthenticated && user ? (
               <>
                 <FavoriteRoomsMenu />
@@ -211,6 +227,19 @@ export default function HomestayHeader() {
                 )
               })}
             </nav>
+            <Link
+              href={hotlineHref}
+              onClick={() => setMenuOpen(false)}
+              className="mt-2 flex items-center justify-between rounded-2xl border border-brand-orange/35 bg-white px-4 py-3 text-sm font-semibold text-secondary shadow-sm"
+            >
+              <span className="inline-flex items-center gap-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f3e6d5] text-secondary">
+                  <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden><path d="M8.1 3.8 5.8 5.2c-1 .6-1.4 1.8-1 2.9 2 5.2 5.9 9.1 11.1 11.1 1.1.4 2.3 0 2.9-1l1.4-2.3-4.5-2-1.2 1.5c-2.7-1.3-4.6-3.2-5.9-5.9l1.5-1.2-2-4.5Z" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                </span>
+                <span><span className="block">Hotline hỗ trợ</span><span className="block text-xs font-normal text-on-surface-variant">{hotlineNumber || 'Trung tâm hỗ trợ khách hàng'}</span></span>
+              </span>
+              <span aria-hidden>→</span>
+            </Link>
             {isAuthenticated && user ? (
               <div className="mt-4 flex items-center justify-end gap-3">
                 <FavoriteRoomsMenu onNavigate={() => setMenuOpen(false)} />

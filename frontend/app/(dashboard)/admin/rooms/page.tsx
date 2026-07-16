@@ -40,6 +40,7 @@ import {
 import type {
   AdminRoom,
   AdminRoomTypeOption,
+  RoomEquipmentOption,
   RoomFilters,
   RoomFormData,
   RoomTypeFormData,
@@ -65,6 +66,19 @@ type EquipmentModalState =
 
 function normalize(value: string) {
   return value.trim().toLowerCase()
+}
+
+function equipmentSelectionKey(name: string, type: AdminEquipment['equipmentType']) {
+  return `${type}:${name.trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()}`
+}
+
+function toRoomFormDataWithEquipment(room: AdminRoom, equipment: AdminEquipment[]): RoomFormData {
+  return {
+    ...toRoomFormData(room),
+    selectedEquipmentKeys: equipment
+      .filter((item) => item.roomId === Number(room.id))
+      .map((item) => equipmentSelectionKey(item.equipmentName, item.equipmentType)),
+  }
 }
 
 function filterAndSortRooms(rooms: AdminRoom[], filters: RoomFilters) {
@@ -172,6 +186,17 @@ export default function AdminRoomsPage() {
 
   const visibleRooms = useMemo(() => filterAndSortRooms(rooms, filters), [rooms, filters])
 
+  const equipmentOptions = useMemo<RoomEquipmentOption[]>(() => {
+    const options = new Map<string, RoomEquipmentOption>()
+    equipment.forEach((item) => {
+      const key = equipmentSelectionKey(item.equipmentName, item.equipmentType)
+      if (!options.has(key)) {
+        options.set(key, { key, name: item.equipmentName, equipmentType: item.equipmentType })
+      }
+    })
+    return [...options.values()].sort((first, second) => first.name.localeCompare(second.name, 'vi'))
+  }, [equipment])
+
   const stats = useMemo(() => {
     const active = rooms.filter((room) => room.status === 'active' || room.status === 'occupied').length
     const maintenance = rooms.filter((room) => room.status === 'maintenance').length
@@ -183,8 +208,28 @@ export default function AdminRoomsPage() {
     }
   }, [rooms])
 
+  const syncRoomEquipment = async (roomId: number, selectedKeys: string[]) => {
+    const selected = new Set(selectedKeys)
+    const current = equipment.filter((item) => item.roomId === roomId)
+    const currentKeys = new Set(current.map((item) => equipmentSelectionKey(item.equipmentName, item.equipmentType)))
+    const toCreate = equipmentOptions.filter((option) => selected.has(option.key) && !currentKeys.has(option.key))
+    const toDelete = current.filter((item) => !selected.has(equipmentSelectionKey(item.equipmentName, item.equipmentType)))
+
+    await Promise.all([
+      ...toCreate.map((option) => createAdminEquipment({
+        roomId,
+        equipmentName: option.name,
+        equipmentType: option.equipmentType,
+        status: 'GOOD',
+        notes: '',
+      })),
+      ...toDelete.map((item) => deleteAdminEquipment(item.equipmentId)),
+    ])
+  }
+
   const handleCreate = async (data: RoomFormData) => {
-    await createAdminRoom(data)
+    const created = await createAdminRoom(data)
+    await syncRoomEquipment(Number(created.id), data.selectedEquipmentKeys)
     setToast('Thêm phòng homestay thành công.')
     await loadRooms()
   }
@@ -194,6 +239,7 @@ export default function AdminRoomsPage() {
 
     const updated = await updateAdminRoom(formModal.roomId, data)
     if (!updated) throw new Error('Không tìm thấy phòng homestay.')
+    await syncRoomEquipment(Number(formModal.roomId), data.selectedEquipmentKeys)
 
     setToast('Cập nhật phòng homestay thành công.')
     setSelected((current) => (current?.id === updated.id ? updated : current))
@@ -375,7 +421,7 @@ export default function AdminRoomsPage() {
               selectedId={selected?.id ?? null}
               onSelect={setSelected}
               onEdit={(room) =>
-                setFormModal({ open: true, mode: 'edit', roomId: room.id, data: toRoomFormData(room) })
+                setFormModal({ open: true, mode: 'edit', roomId: room.id, data: toRoomFormDataWithEquipment(room, equipment) })
               }
               onDelete={setDeleteTarget}
               onMaintenance={(room) => void handleMaintenance(room)}
@@ -413,7 +459,7 @@ export default function AdminRoomsPage() {
           room={selected}
           onClose={() => setSelected(null)}
           onEdit={(room) =>
-            setFormModal({ open: true, mode: 'edit', roomId: room.id, data: toRoomFormData(room) })
+            setFormModal({ open: true, mode: 'edit', roomId: room.id, data: toRoomFormDataWithEquipment(room, equipment) })
           }
         />
 
@@ -422,6 +468,7 @@ export default function AdminRoomsPage() {
           mode={formModal.open ? formModal.mode : 'create'}
           initialData={formModal.open ? formModal.data : EMPTY_ROOM_FORM}
           roomTypes={roomTypes}
+          equipmentOptions={equipmentOptions}
           onClose={() => setFormModal({ open: false })}
           onSubmit={formModal.open && formModal.mode === 'edit' ? handleUpdate : handleCreate}
         />

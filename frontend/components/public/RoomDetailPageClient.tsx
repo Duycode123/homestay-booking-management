@@ -109,7 +109,7 @@ export default function RoomDetailPageClient({ roomId }: { roomId: string }) {
               </div>
             </section>
 
-            <AmenitySection title="Tiện ích riêng của phòng" subtitle="Các thiết bị và tiện nghi được bố trí riêng trong phòng này." items={room.includedEquipments.map((name) => ({ name, description: 'Sẵn sàng phục vụ trong phòng.', iconName: 'private' }))} />
+            <AmenitySection title="Tiện ích riêng của phòng" subtitle="Các thiết bị và tiện nghi được bố trí riêng trong phòng này." items={room.includedEquipments.map((name) => ({ name, description: 'Sẵn sàng phục vụ trong phòng.', iconName: 'private' }))} compact initialVisibleCount={8} />
             <AmenitySection title="Tiện ích chung của homestay" subtitle="Khách lưu trú tại phòng được sử dụng các khu vực chung dưới đây." items={commonAmenities} />
 
             <section className="rounded-[26px] border border-outline-variant bg-white p-6 sm:p-8"><h2 className="font-editorial text-3xl font-semibold text-secondary">Chính sách lưu trú</h2><div className="mt-5 grid gap-4 sm:grid-cols-2"><Policy title="Khung lưu trú" text="Nhận phòng từ 14:00 và trả phòng trước 12:00 ngày cuối cùng; thời gian tối thiểu 1 đêm." /><Policy title="Nhận phòng" text="Khách có thể check-in sớm tối đa 5 phút khi phòng đã sẵn sàng." /><Policy title="Hủy phòng" text="Gửi yêu cầu trước ít nhất 24 giờ để được admin xem xét hoàn tiền." /><Policy title="Sử dụng tiện ích chung" text="Giữ gìn vệ sinh, tuân thủ giờ hoạt động và hướng dẫn an toàn tại từng khu vực." /></div></section>
@@ -327,8 +327,49 @@ function Gallery({ images, roomName }: { images: string[]; roomName: string }) {
   )
 }
 
-function AmenitySection({ title, subtitle, items }: { title: string; subtitle: string; items: Array<{ name: string; description: string; iconName?: string; imageUrl?: string | null }> }) {
-  return <section className="rounded-[26px] border border-outline-variant bg-white p-6 sm:p-8"><h2 className="font-editorial text-3xl font-semibold text-secondary">{title}</h2><p className="mt-2 text-on-surface-variant">{subtitle}</p>{items.length ? <div className="mt-7 grid gap-x-8 gap-y-6 sm:grid-cols-2">{items.map((item) => <article key={item.name} className="flex gap-4"><div className="relative flex h-20 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#eee3d3] text-secondary">{item.imageUrl ? <Image src={item.imageUrl} alt="" fill unoptimized sizes="96px" className="object-cover" /> : <AmenityIcon name={item.name} iconName={item.iconName} />}</div><div><h3 className="font-display text-base font-bold text-secondary">{item.name}</h3><p className="mt-1 text-sm leading-6 text-on-surface-variant">{item.description}</p></div></article>)}</div> : <p className="mt-6 rounded-2xl bg-surface-container px-4 py-3 text-sm text-on-surface-variant">Chưa có dữ liệu tiện ích.</p>}</section>
+function AmenitySection({ title, subtitle, items, compact = false, initialVisibleCount = 8 }: { title: string; subtitle: string; items: Array<{ name: string; description: string; iconName?: string; imageUrl?: string | null }>; compact?: boolean; initialVisibleCount?: number }) {
+  const [expanded, setExpanded] = useState(false)
+  const hasMore = compact && items.length > initialVisibleCount
+  const visibleItems = hasMore && !expanded ? items.slice(0, initialVisibleCount) : items
+
+  return (
+    <section className="rounded-[26px] border border-outline-variant bg-white p-6 sm:p-8">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="font-editorial text-3xl font-semibold text-secondary">{title}</h2>
+          <p className="mt-2 text-on-surface-variant">{subtitle}</p>
+        </div>
+        {compact && items.length > 0 && (
+          <span className="rounded-full bg-[#edf4f1] px-3 py-1.5 text-xs font-bold text-secondary">{items.length} tiện nghi</span>
+        )}
+      </div>
+      {items.length ? (
+        <>
+          <div className={compact ? 'mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3' : 'mt-7 grid gap-x-8 gap-y-6 sm:grid-cols-2'}>
+            {visibleItems.map((item) => (
+              <article key={item.name} className={compact ? 'flex min-w-0 items-center gap-3 rounded-2xl border border-outline-variant bg-[#fcfaf6] p-3' : 'flex gap-4'}>
+                <div className={compact ? 'relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#eee3d3] text-secondary [&_svg]:h-6 [&_svg]:w-6' : 'relative flex h-20 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#eee3d3] text-secondary'}>
+                  {item.imageUrl ? <Image src={item.imageUrl} alt="" fill unoptimized sizes={compact ? '48px' : '96px'} className="object-cover" /> : <AmenityIcon name={item.name} iconName={item.iconName} />}
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-display truncate text-sm font-bold text-secondary sm:text-base">{item.name}</h3>
+                  {!compact && <p className="mt-1 text-sm leading-6 text-on-surface-variant">{item.description}</p>}
+                </div>
+              </article>
+            ))}
+          </div>
+          {hasMore && (
+            <div className="mt-6 flex justify-center border-t border-outline-variant pt-5">
+              <button type="button" onClick={() => setExpanded((current) => !current)} className="inline-flex items-center gap-2 rounded-full border border-secondary/25 bg-white px-5 py-2.5 text-sm font-bold text-secondary shadow-sm transition hover:-translate-y-0.5 hover:bg-[#f5f0e8]" aria-expanded={expanded}>
+                {expanded ? 'Thu gọn tiện nghi' : `Xem tất cả ${items.length} tiện nghi`}
+                <svg viewBox="0 0 20 20" className={['h-4 w-4 transition-transform', expanded ? 'rotate-180' : ''].join(' ')} fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden><path d="m5 7.5 5 5 5-5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              </button>
+            </div>
+          )}
+        </>
+      ) : <p className="mt-6 rounded-2xl bg-surface-container px-4 py-3 text-sm text-on-surface-variant">Chưa có dữ liệu tiện ích.</p>}
+    </section>
+  )
 }
 
 function AmenityIcon({ name, iconName }: { name: string; iconName?: string }) {

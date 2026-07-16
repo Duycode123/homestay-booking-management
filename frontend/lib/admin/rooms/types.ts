@@ -51,6 +51,13 @@ export type RoomFormData = {
   equipments: string
   image: string
   additionalImages: string[]
+  selectedEquipmentKeys: string[]
+}
+
+export type RoomEquipmentOption = {
+  key: string
+  name: string
+  equipmentType: 'WIFI' | 'AIR_CONDITIONER' | 'TV' | 'WATER_HEATER' | 'OTHER'
 }
 
 export type RoomFormErrors = Partial<Record<keyof RoomFormData, string>>

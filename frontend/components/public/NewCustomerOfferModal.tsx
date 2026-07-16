@@ -95,7 +95,7 @@ export default function NewCustomerOfferModal() {
 
         <div className="relative min-h-[235px] overflow-hidden md:min-h-[500px]">
           <Image
-            src="/images/Banner.png"
+            src="/images/Bannercoupon.png"
             alt="Không gian nghỉ dưỡng xanh tại The Serene Villa"
             fill
             priority

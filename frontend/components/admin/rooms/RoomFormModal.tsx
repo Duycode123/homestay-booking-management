@@ -4,7 +4,7 @@ import ProjectSelect from '@/components/ui/ProjectSelect'
 
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { uploadAdminRoomImage, validateRoomForm } from '@/lib/admin/rooms/adminRoomApi'
-import type { AdminRoomTypeOption, RoomFormData, RoomFormErrors } from '@/lib/admin/rooms/types'
+import type { AdminRoomTypeOption, RoomEquipmentOption, RoomFormData, RoomFormErrors } from '@/lib/admin/rooms/types'
 import {
   roomCategoryLabels,
   roomCategoryOptions,
@@ -17,6 +17,7 @@ type RoomFormModalProps = {
   mode: 'create' | 'edit'
   initialData: RoomFormData
   roomTypes?: AdminRoomTypeOption[]
+  equipmentOptions?: RoomEquipmentOption[]
   onClose: () => void
   onSubmit: (data: RoomFormData) => Promise<void>
 }
@@ -55,6 +56,7 @@ export default function RoomFormModal({
   mode,
   initialData,
   roomTypes = [],
+  equipmentOptions = [],
   onClose,
   onSubmit,
 }: RoomFormModalProps) {
@@ -189,6 +191,15 @@ export default function RoomFormModal({
     while (additionalImages.length < 3) additionalImages.push('')
     additionalImages[imageIndex - 1] = value
     set({ additionalImages })
+  }
+
+  const toggleEquipment = (key: string) => {
+    const selected = form.selectedEquipmentKeys.includes(key)
+    set({
+      selectedEquipmentKeys: selected
+        ? form.selectedEquipmentKeys.filter((item) => item !== key)
+        : [...form.selectedEquipmentKeys, key],
+    })
   }
 
   return (
@@ -386,6 +397,69 @@ export default function RoomFormModal({
                   Có thể tải lên Cloudinary hoặc dùng ảnh tĩnh trong project. Với ảnh tĩnh, chép file 1600×1200px vào frontend/public/images/rooms/ten-phong/ rồi nhập đường dẫn /images/rooms/ten-phong/ten-anh.jpg.
                 </p>
                 {errors.image && <p className="mt-1 text-xs text-error">{errors.image}</p>}
+              </section>
+
+              <section className="rounded-2xl border border-outline-variant bg-surface-container-low/45 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className={labelClass}>Tiện nghi riêng của phòng</p>
+                    <p className="text-xs leading-5 text-on-surface-variant">
+                      Tích chọn các tiện nghi có sẵn. Dữ liệu sẽ đồng bộ ngay sang trang chi tiết phòng.
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-white px-3 py-1 text-[11px] font-bold text-secondary shadow-sm">
+                    {form.selectedEquipmentKeys.length} đã chọn
+                  </span>
+                </div>
+
+                {equipmentOptions.length > 0 ? (
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                    {equipmentOptions.map((option) => {
+                      const checked = form.selectedEquipmentKeys.includes(option.key)
+                      return (
+                        <label
+                          key={option.key}
+                          className={[
+                            'flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-3 transition',
+                            checked
+                              ? 'border-secondary/35 bg-[#eaf3ef] text-secondary shadow-sm'
+                              : 'border-outline-variant bg-white text-on-surface hover:border-brand-orange/45',
+                          ].join(' ')}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleEquipment(option.key)}
+                            className="peer sr-only"
+                          />
+                          <span
+                            aria-hidden
+                            className={[
+                              'flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition',
+                              checked ? 'border-secondary bg-secondary text-white' : 'border-outline bg-white',
+                            ].join(' ')}
+                          >
+                            {checked && (
+                              <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.2">
+                                <path d="m4 10 4 4 8-9" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            )}
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block truncate text-sm font-semibold">{option.name}</span>
+                            <span className="block text-[10px] uppercase tracking-[0.08em] text-on-surface-variant">
+                              {option.equipmentType.replaceAll('_', ' ')}
+                            </span>
+                          </span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <p className="mt-4 rounded-xl border border-dashed border-outline bg-white px-4 py-3 text-xs leading-5 text-on-surface-variant">
+                    Chưa có danh mục tiện nghi riêng. Hãy tạo tiện nghi ở khu “Tiện nghi riêng” bên dưới, sau đó mở lại form phòng để tích chọn.
+                  </p>
+                )}
               </section>
 
               {serverError && (
