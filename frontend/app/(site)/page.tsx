@@ -198,7 +198,7 @@ function getAvailabilityBadgeClassName(tone: AvailabilityTone) {
   }
 
   return [
-    'mb-8 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-left font-display text-sm font-semibold transition',
+    'mb-5 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-left font-display text-sm font-semibold transition',
     toneClassName[tone],
   ].join(' ')
 }
@@ -523,7 +523,7 @@ export default function HomePage() {
   return (
     <main id="main-content" className="min-h-screen overflow-x-hidden bg-brand-bgGray text-on-surface">
 
-      <section className="relative flex min-h-[700px] items-center overflow-hidden bg-secondary text-white lg:min-h-[calc(100svh-5rem)]">
+      <section className="relative flex min-h-[540px] items-center overflow-hidden bg-secondary text-white sm:min-h-[570px] lg:min-h-[610px]">
         <Image
           src="/images/homestay-luxury-hero.webp"
           alt="Phòng ngủ homestay cao cấp với nội thất gỗ, chăn ga linen và cửa nhìn ra khu vườn"
@@ -535,7 +535,7 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(17,42,35,0.96)_0%,rgba(17,42,35,0.82)_38%,rgba(17,42,35,0.18)_72%,rgba(17,42,35,0.18)_100%)]" />
         <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-b from-transparent to-black/18" />
 
-        <div className="relative mx-auto grid w-full max-w-[1400px] items-center gap-12 px-5 py-20 sm:px-8 lg:grid-cols-[1fr_390px] lg:py-24">
+        <div className="relative mx-auto grid w-full max-w-[1400px] items-center gap-8 px-5 pb-20 pt-12 sm:px-8 sm:pb-24 sm:pt-14 lg:grid-cols-[1fr_360px] lg:py-14">
           <div className="max-w-3xl">
             <button
               type="button"
@@ -553,20 +553,20 @@ export default function HomePage() {
               </p>
             )}
 
-            <p className="eyebrow mb-6 text-primary-fixed">Boutique nature stay</p>
-            <h1 className="font-editorial text-5xl font-semibold leading-[0.98] tracking-[-0.035em] text-white sm:text-6xl lg:text-[5.4rem]">
+            <p className="eyebrow mb-4 text-primary-fixed">Boutique nature stay</p>
+            <h1 className="font-editorial text-5xl font-semibold leading-[0.98] tracking-[-0.035em] text-white sm:text-[3.65rem] lg:text-[4.45rem]">
               Một kỳ nghỉ
               <span className="mt-2 block text-primary-fixed">
                 vừa vặn với bạn.
               </span>
             </h1>
 
-            <p className="mt-7 max-w-xl text-base leading-8 text-white/74 sm:text-lg">
+            <p className="mt-5 max-w-xl text-base leading-7 text-white/74 sm:text-[17px]">
               Không gian riêng tư, tiện nghi được chuẩn bị kỹ và lịch trống minh bạch. Chọn căn phòng phù hợp,
               đặt theo khung giờ linh hoạt và nhận hỗ trợ ngay khi cần.
             </p>
 
-            <div className="mt-10 flex flex-wrap items-center gap-4">
+            <div className="mt-7 flex flex-wrap items-center gap-4">
               <Link
                 href="/rooms"
                 className="rounded-full bg-white px-6 py-3.5 font-display text-sm font-semibold text-secondary shadow-[0_16px_38px_rgba(0,0,0,0.18)] transition-all hover:-translate-y-0.5"
@@ -581,7 +581,7 @@ export default function HomePage() {
               </Link>
             </div>
 
-            <div className="mt-14 grid max-w-2xl grid-cols-3 gap-4">
+            <div className="mt-8 grid max-w-2xl grid-cols-3 gap-4">
               {stats.map((item) => (
                 <div
                   key={item.label}
@@ -649,18 +649,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      <div className="relative z-20 mx-auto -mt-10 w-full max-w-[1400px] px-5 sm:px-8">
-        <div className="mb-4 flex items-end justify-between gap-4 px-1 text-secondary">
-          <div>
-            <p className="eyebrow text-brand-orange">Tìm kỳ lưu trú</p>
-            <p className="mt-1 hidden text-sm text-on-surface-variant sm:block">Chọn ngày và số khách, hệ thống sẽ đối chiếu lịch phòng thật.</p>
-          </div>
-          <span className="hidden text-xs font-semibold text-on-surface-variant lg:block">Nhận phòng 14:00 · Trả phòng 12:00</span>
-        </div>
+      <div className="relative z-20 mx-auto -mt-9 w-full max-w-[1400px] px-5 sm:px-8">
         <StaySearchBar />
       </div>
 
-      <section id="equipment" className="scroll-mt-20 bg-[#EFEAE1] pb-20 pt-16 sm:pb-24 sm:pt-20">
+      <section id="equipment" className="scroll-mt-20 bg-[#EFEAE1] pb-20 pt-12 sm:pb-24 sm:pt-16">
         <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
           <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
             <div className="max-w-2xl">

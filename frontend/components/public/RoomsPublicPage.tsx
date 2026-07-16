@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import BookingQuickModal from '@/components/booking/BookingQuickModal'
-import StaySearchBar, {
+import {
   buildStaySearchParams,
   readStaySearchCriteria,
   type StaySearchCriteria,
@@ -372,16 +372,6 @@ export default function RoomsPublicPage() {
     setFilters((current) => ({ ...current, [key]: value }))
   }
 
-  const handleStaySearch = (criteria: StaySearchCriteria) => {
-    setStayCriteria(criteria)
-    setFilters((current) => ({
-      ...current,
-      search: criteria.keyword,
-      minGuests: criteria.adults + criteria.children,
-    }))
-    router.replace(`/rooms?${buildStaySearchParams(criteria).toString()}`, { scroll: false })
-  }
-
   const resetDetailFilters = () => {
     setFilters({
       ...defaultFilters,
@@ -497,13 +487,11 @@ export default function RoomsPublicPage() {
       </section>
 
       <section id="room-catalog" className="mx-auto max-w-[1400px] scroll-mt-24 px-5 py-12 sm:px-8 sm:py-14">
-        <StaySearchBar variant="catalog" initialValues={stayCriteria ?? undefined} onSearch={handleStaySearch} />
-
-        <div className="mt-4 rounded-[22px] border border-[#ded5c9] bg-white p-3 shadow-[0_18px_50px_rgba(29,49,41,0.08)] sm:p-4">
+        <div className="rounded-[22px] border border-[#ded5c9] bg-white p-3 shadow-[0_18px_50px_rgba(29,49,41,0.08)] sm:p-4">
           <div className="flex flex-col gap-3 border-b border-[#eee7de] px-2 pb-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-display text-base font-bold text-secondary">Tinh chỉnh lựa chọn</p>
-              <p className="mt-0.5 text-xs text-on-surface-variant">Lọc sâu theo không gian ngủ, tiện nghi và ngân sách mỗi đêm.</p>
+              <p className="mt-0.5 text-xs text-on-surface-variant">Các phòng bên dưới đã phù hợp kỳ lưu trú và số khách; tiếp tục lọc theo nhu cầu chi tiết.</p>
             </div>
             <div className="flex items-center gap-2">
               <span className="rounded-full bg-[#eef5f1] px-3 py-1.5 text-xs font-bold text-secondary">
@@ -567,6 +555,7 @@ export default function RoomsPublicPage() {
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-[#f0e9e0] px-1 pt-3">
             <div className="flex flex-wrap gap-2">
+              {stayCriteria && <FilterSummaryChip label={`${formatShortStayDate(stayCriteria.checkIn)} → ${formatShortStayDate(stayCriteria.checkOut)}`} />}
               {stayCriteria && <FilterSummaryChip label={`${stayCriteria.adults + stayCriteria.children} khách`} />}
               {filters.minBedrooms > 0 && <FilterSummaryChip label={`Từ ${filters.minBedrooms} phòng ngủ`} />}
               {filters.minBeds > 0 && <FilterSummaryChip label={`Từ ${filters.minBeds} giường`} />}
