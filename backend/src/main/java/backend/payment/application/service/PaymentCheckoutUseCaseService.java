@@ -26,6 +26,7 @@ import backend.payment.application.port.out.FindSePayIncomingPaymentPort;
 import backend.payment.application.port.out.model.SePayIncomingPayment;
 import backend.payment.application.port.out.model.SePayIncomingPaymentQuery;
 import backend.payment.application.port.out.model.SePayPortalCheckoutRequest;
+import backend.payment.application.support.PaymentTimeNormalizer;
 import backend.repository.BookingRepository;
 import backend.repository.PaymentTransactionRepository;
 import backend.repository.UserRepository;
@@ -370,8 +371,10 @@ public class PaymentCheckoutUseCaseService implements
         SePayIncomingPaymentQuery query = new SePayIncomingPaymentQuery(
                 transaction.getTransactionReference(),
                 transaction.getAmount(),
-                transaction.getCreatedAt() == null ? LocalDateTime.now().toLocalDate() : transaction.getCreatedAt().toLocalDate(),
-                LocalDateTime.now().toLocalDate(),
+                PaymentTimeNormalizer.systemLocalToSePayDate(
+                        transaction.getCreatedAt() == null ? LocalDateTime.now() : transaction.getCreatedAt()
+                ),
+                PaymentTimeNormalizer.systemLocalToSePayDate(LocalDateTime.now()),
                 transaction.getCreatedAt()
         );
 

@@ -4,6 +4,7 @@ import backend.config.SePayProperties;
 import backend.payment.application.port.out.FindSePayIncomingPaymentPort;
 import backend.payment.application.port.out.model.SePayIncomingPayment;
 import backend.payment.application.port.out.model.SePayIncomingPaymentQuery;
+import backend.payment.application.support.PaymentTimeNormalizer;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -228,7 +229,8 @@ public class SePayTransactionLookupAdapter implements FindSePayIncomingPaymentPo
         }
 
         try {
-            return LocalDateTime.parse(rawDate, SEPAY_DATE_TIME_FORMATTER);
+            LocalDateTime sePayDateTime = LocalDateTime.parse(rawDate, SEPAY_DATE_TIME_FORMATTER);
+            return PaymentTimeNormalizer.sePayToSystemLocal(sePayDateTime);
         } catch (DateTimeParseException exception) {
             return null;
         }

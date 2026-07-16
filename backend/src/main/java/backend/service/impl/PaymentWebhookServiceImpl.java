@@ -9,6 +9,7 @@ import backend.entity.PaymentProvider;
 import backend.entity.PaymentTransaction;
 import backend.entity.PaymentTransactionStatus;
 import backend.repository.PaymentTransactionRepository;
+import backend.payment.application.support.PaymentTimeNormalizer;
 import backend.service.CouponUsageTrackingService;
 import backend.service.PaymentWebhookService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -608,7 +609,8 @@ public class PaymentWebhookServiceImpl implements PaymentWebhookService {
         }
 
         try {
-            return LocalDateTime.parse(rawTransactionDate, SEPAY_DATE_TIME_FORMATTER);
+            LocalDateTime sePayDateTime = LocalDateTime.parse(rawTransactionDate, SEPAY_DATE_TIME_FORMATTER);
+            return PaymentTimeNormalizer.sePayToSystemLocal(sePayDateTime);
         } catch (DateTimeParseException exception) {
             return LocalDateTime.now();
         }

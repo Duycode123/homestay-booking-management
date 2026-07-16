@@ -59,6 +59,7 @@ Allow an authenticated customer to select a valid room/time range, see the expec
 - Portal payment fails: backend marks the pending transaction as `FAILED` and marks the held booking as `CANCELLED`.
 - Payment timeout: the single deadline is `booking.created_at + app.booking.payment-expiration-seconds` (default `300`, or 5 minutes). Both the room hold and every initial-payment SePay QR use this exact deadline. Creating another QR for the same booking never extends the hold. At the deadline, the transaction and still-pending booking are marked `CANCELLED`, releasing availability.
 - Payment API responses serialize `expiresAt` with an explicit UTC offset. This prevents a Render UTC timestamp from being interpreted as Vietnam local time by the browser and expiring a newly created QR seven hours early.
+- SePay transaction timestamps are Vietnam local time. The SePay lookup and webhook adapters convert them to the backend system timeline before comparing them with the QR deadline or storing `paid_at`; otherwise a valid Render payment would be misclassified as seven hours late.
 - If SePay reports that money arrived after session expiry, the transaction is retained as `SUCCEEDED` with response code `LATE_PAYMENT_REQUIRES_REFUND`, while the booking stays cancelled to avoid reclaiming a room that may already have been released. The customer must contact support for reconciliation instead of paying again.
 
 ## Business Rules
