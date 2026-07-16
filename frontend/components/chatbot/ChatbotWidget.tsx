@@ -122,6 +122,8 @@ export default function ChatbotWidget() {
   const [welcomed, setWelcomed] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const hotlineNumber = process.env.NEXT_PUBLIC_HOTLINE_NUMBER?.trim() ?? ''
+  const hotlineHref = hotlineNumber ? `tel:${hotlineNumber.replace(/[^+\d]/g, '')}` : '/support'
 
   const scrollToBottom = useCallback(() => {
     const el = listRef.current
@@ -201,13 +203,28 @@ export default function ChatbotWidget() {
 
   return (
     <div className="pointer-events-none fixed bottom-4 right-4 z-[60] sm:bottom-6 sm:right-6">
+      <a
+        href={hotlineHref}
+        className="pointer-events-auto group absolute bottom-[calc(100%+0.65rem)] right-0 z-0 flex h-12 w-12 items-center justify-center rounded-full border border-white/70 bg-gradient-to-br from-brand-greenLight to-brand-greenDark text-white shadow-[0_10px_30px_rgba(23,58,49,0.32)] transition-all hover:scale-105 hover:shadow-[0_14px_36px_rgba(23,58,49,0.38)] active:scale-95 sm:h-14 sm:w-14"
+        aria-label={hotlineNumber ? `Gọi hotline ${hotlineNumber}` : 'Mở trung tâm hỗ trợ'}
+        title={hotlineNumber ? `Hotline ${hotlineNumber}` : 'Hotline hỗ trợ'}
+      >
+        <svg viewBox="0 0 24 24" className="h-5 w-5 sm:h-6 sm:w-6" fill="none" stroke="currentColor" strokeWidth="1.9" aria-hidden>
+          <path d="M8.1 3.8 5.8 5.2c-1 .6-1.4 1.8-1 2.9 2 5.2 5.9 9.1 11.1 11.1 1.1.4 2.3 0 2.9-1l1.4-2.3-4.5-2-1.2 1.5c-2.7-1.3-4.6-3.2-5.9-5.9l1.5-1.2-2-4.5Z" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M14.5 5.2a5 5 0 0 1 4.3 4.3M14.8 2a8 8 0 0 1 7.2 7.2" strokeLinecap="round" />
+        </svg>
+        <span className="pointer-events-none absolute right-full mr-2 hidden whitespace-nowrap rounded-lg bg-secondary px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-lg group-hover:block">
+          {hotlineNumber || 'Hotline hỗ trợ'}
+        </span>
+      </a>
+
       {/* Panel — absolute above launcher so height never pushes into browser chrome */}
       <div
         role="dialog"
         aria-label="HomeBot trợ lý ảo"
         aria-hidden={!open}
         className={[
-          'pointer-events-auto absolute bottom-[calc(100%+0.75rem)] right-0 flex w-[min(100vw-2rem,400px)] flex-col overflow-hidden rounded-[28px] border border-white/60 bg-white/90 shadow-[var(--shadow-elevated)] backdrop-blur-xl transition-all duration-300 ease-out',
+          'pointer-events-auto absolute bottom-[calc(100%+0.65rem)] right-0 z-20 flex w-[min(100vw-2rem,400px)] flex-col overflow-hidden rounded-[28px] border border-white/60 bg-white/90 shadow-[var(--shadow-elevated)] backdrop-blur-xl transition-all duration-300 ease-out',
           // Fixed height within viewport: leave room for launcher + safe margins
           'h-[min(560px,calc(100dvh-7.5rem))] max-h-[calc(100dvh-7.5rem)]',
           open
@@ -300,7 +317,7 @@ export default function ChatbotWidget() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={[
-          'pointer-events-auto group relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-brand-orange via-brand-orange to-brand-orangeHover text-white shadow-[0_12px_40px_rgba(178,132,85,0.45)] transition-all duration-300 hover:scale-105 hover:shadow-[0_16px_48px_rgba(178,132,85,0.5)] active:scale-95 sm:h-16 sm:w-16',
+          'pointer-events-auto group relative flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-brand-orange via-brand-orange to-brand-orangeHover text-white shadow-[0_10px_30px_rgba(178,132,85,0.42)] transition-all duration-300 hover:scale-105 hover:shadow-[0_14px_38px_rgba(178,132,85,0.48)] active:scale-95 sm:h-14 sm:w-14',
           open ? 'rotate-0' : '',
         ].join(' ')}
         aria-label={open ? 'Đóng HomeBot' : 'Mở HomeBot'}
@@ -319,11 +336,11 @@ export default function ChatbotWidget() {
           className="absolute -inset-1 rounded-full bg-gradient-to-br from-brand-orange/30 to-transparent opacity-0 blur-md transition-opacity group-hover:opacity-100"
         />
         {open ? (
-          <svg viewBox="0 0 24 24" className="relative h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2.2">
+          <svg viewBox="0 0 24 24" className="relative h-5 w-5 sm:h-6 sm:w-6" fill="none" stroke="currentColor" strokeWidth="2.2">
             <path strokeLinecap="round" d="M6 6l12 12M18 6L6 18" />
           </svg>
         ) : (
-          <svg viewBox="0 0 24 24" className="relative h-7 w-7" fill="currentColor">
+          <svg viewBox="0 0 24 24" className="relative h-6 w-6 sm:h-7 sm:w-7" fill="currentColor">
             <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.2L4 17.2V4h16v12z" />
             <circle cx="8" cy="10" r="1.2" />
             <circle cx="12" cy="10" r="1.2" />
