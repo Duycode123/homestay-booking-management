@@ -114,6 +114,21 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(ImageStorageUnavailableException.class)
+    public ResponseEntity<ApiResponse<String>> handleImageStorageUnavailable(
+            ImageStorageUnavailableException ex,
+            HttpServletRequest request
+    ) {
+        log.error("Image storage unavailable for {}", request.getRequestURI(), ex);
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(
+                ApiResponse.<String>builder()
+                        .success(false)
+                        .message("Dịch vụ lưu ảnh tạm thời chưa sẵn sàng. Vui lòng thử lại sau.")
+                        .data(null)
+                        .build()
+        );
+    }
+
     @ExceptionHandler(ForbiddenException.class)
     public ResponseEntity<ApiResponse<String>> handleForbidden(ForbiddenException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(

@@ -1,10 +1,12 @@
 package backend.review.adapter.out.cloudinary;
 
 import backend.config.CloudinaryProperties;
+import backend.exception.ImageStorageUnavailableException;
 import backend.review.application.model.ReviewImageFile;
 import backend.review.application.model.ReviewImageUploadResult;
 import backend.review.application.port.out.ReviewImageStoragePort;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpEntity;
@@ -26,6 +28,7 @@ import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class CloudinaryReviewImageStorageAdapter implements ReviewImageStoragePort {
 
     private final CloudinaryProperties properties;
@@ -68,7 +71,9 @@ public class CloudinaryReviewImageStorageAdapter implements ReviewImageStoragePo
             }
             return new ReviewImageUploadResult(publicId, secureUrl);
         } catch (RestClientResponseException exception) {
-            throw new IllegalStateException("Cloudinary upload anh danh gia that bai: HTTP " + exception.getStatusCode().value());
+            log.warn("Cloudinary review upload rejected with status {}: {}",
+                    exception.getStatusCode().value(), safeResponse(exception.getResponseBodyAsString()));
+            throw new ImageStorageUnavailableException("Cloudinary review upload failed", exception);
         }
     }
 
@@ -88,10 +93,10 @@ public class CloudinaryReviewImageStorageAdapter implements ReviewImageStoragePo
     }
 
     private String reviewFolder() {
-        String baseFolder = properties.getFolder();
-        return baseFolder == null || baseFolder.isBlank()
-                ? "homestay/reviews"
-                : baseFolder.trim().replaceAll("/+$", "") + "/reviews";
+        String configured = properties.getReviewFolder();
+        return configured == null || configured.isBlank()
+                ? "homestay-booking-management/reviews"
+                : configured.trim().replaceAll("/+$", "");
     }
 
     private String sign(Map<String, String> params) {
@@ -112,8 +117,8 @@ public class CloudinaryReviewImageStorageAdapter implements ReviewImageStoragePo
     }
 
     private void assertConfigured() {
-        if (isBlank(properties.getCloudName()) || isBlank(properties.getApiKey()) || isBlank(properties.getApiSecret())) {
-            throw new IllegalStateException("Chua cau hinh Cloudinary cloud name, api key hoac api secret");
+        if (!properties.hasValidCredentials()) {
+            throw new ImageStorageUnavailableException("Cloudinary credentials are missing or invalid");
         }
     }
 
@@ -123,5 +128,10 @@ public class CloudinaryReviewImageStorageAdapter implements ReviewImageStoragePo
 
     private String stringValue(Object value) {
         return value instanceof String text && !text.isBlank() ? text : null;
+    }
+
+    private String safeResponse(String responseBody) {
+        if (responseBody == null || responseBody.isBlank()) return "empty response";
+        return responseBody.replaceAll("(?i)(api[_-]?secret|signature)\\s*[:=]\\s*[^,}]+", "$1=[redacted]");
     }
 }

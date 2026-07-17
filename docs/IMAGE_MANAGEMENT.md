@@ -12,7 +12,16 @@ $env:CLOUDINARY_API_KEY="api_key_cua_ban"
 $env:CLOUDINARY_API_SECRET="api_secret_cua_ban"
 $env:CLOUDINARY_FOLDER="homestay-booking-management/rooms"
 $env:CLOUDINARY_AVATAR_FOLDER="homestay-booking-management/avatars"
+$env:CLOUDINARY_REVIEW_FOLDER="homestay-booking-management/reviews"
 ```
+
+Có thể dùng một biến duy nhất do Cloudinary cung cấp thay cho ba biến đầu:
+
+```powershell
+$env:CLOUDINARY_URL="cloudinary://api_key:api_secret@cloud_name"
+```
+
+Trên Render, chỉ cấu hình **một trong hai cách** trên rồi deploy lại. Không để giá trị mẫu như `your_api_key`. HTTP 401 từ Cloudinary có nghĩa là API key/secret không thuộc cloud name tương ứng hoặc credential đã bị thu hồi.
 
 Không commit API key hoặc API secret thật vào `application.properties`, `.env` hay tài liệu.
 
@@ -46,6 +55,13 @@ Chỉ sử dụng ảnh tự chụp, ảnh được chủ sở hữu cấp phép
 1. Người dùng mở **Hồ sơ cá nhân** và chọn **Thay ảnh**.
 2. Frontend gửi file đến `POST /api/users/me/avatar`.
 3. Backend upload vào thư mục avatar và lưu URL vào `account.avatar_url`.
+
+## Ảnh đánh giá
+
+1. Khách chỉ được tải JPG, PNG hoặc WebP, tối đa 5MB/ảnh và 4 ảnh/đánh giá.
+2. Frontend gửi từng ảnh đến `POST /api/reviews/images`.
+3. Backend ký request bằng credential Cloudinary phía server và lưu ảnh trong `CLOUDINARY_REVIEW_FOLDER`.
+4. Khi gửi đánh giá, database chỉ lưu các URL HTTPS Cloudinary đã trả về.
 
 ## Ảnh giao diện tĩnh
 
