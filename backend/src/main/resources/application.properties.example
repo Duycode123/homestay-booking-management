@@ -60,6 +60,16 @@ app.frontend.base-url=${APP_FRONTEND_BASE_URL:http://localhost:3000}
 # Comma-separated exact origins. Never use credentialed wildcard origins in production.
 app.cors.allowed-origins=${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://127.0.0.1:3000}
 
+# ===== Google OAuth2 =====
+# Create a Web application client in Google Auth Platform. Never commit the real secret.
+spring.security.oauth2.client.registration.google.client-id=${GOOGLE_CLIENT_ID:oauth-disabled-client}
+spring.security.oauth2.client.registration.google.client-secret=${GOOGLE_CLIENT_SECRET:oauth-disabled-secret}
+spring.security.oauth2.client.registration.google.scope=openid,profile,email
+spring.security.oauth2.client.registration.google.redirect-uri=${OAUTH_REDIRECT_URI:http://localhost:3000/login/oauth2/code/google}
+app.oauth.success-url=${OAUTH_SUCCESS_URL:http://localhost:3000/oauth/callback}
+app.oauth.failure-url=${OAUTH_FAILURE_URL:http://localhost:3000/login}
+server.forward-headers-strategy=framework
+
 # ===== Cloudinary =====
 # Keep the API secret server-side only. The frontend uploads images through the backend.
 cloudinary.url=${CLOUDINARY_URL:}

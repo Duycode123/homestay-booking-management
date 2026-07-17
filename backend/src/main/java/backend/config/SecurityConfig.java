@@ -1,5 +1,7 @@
 package backend.config;
 
+import backend.auth.adapter.in.oauth.OAuthLoginFailureHandler;
+import backend.auth.adapter.in.oauth.OAuthLoginSuccessHandler;
 import backend.repository.UserRepository;
 import backend.security.CsrfAccessDeniedHandler;
 import backend.security.JwtAuthenticationFilter;
@@ -38,6 +40,8 @@ public class SecurityConfig {
     private final AuthRateLimitFilter authRateLimitFilter;
     private final UnauthenticatedHandler unauthenticatedHandler;
     private final CsrfAccessDeniedHandler csrfAccessDeniedHandler;
+    private final OAuthLoginSuccessHandler oauthLoginSuccessHandler;
+    private final OAuthLoginFailureHandler oauthLoginFailureHandler;
 
     @Value("${app.cookie.secure:false}")
     private boolean secureCookies;
@@ -103,7 +107,11 @@ public class SecurityConfig {
         }
 
         http.sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                        session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                )
+                .oauth2Login(oauth -> oauth
+                        .successHandler(oauthLoginSuccessHandler)
+                        .failureHandler(oauthLoginFailureHandler)
                 )
                 .authenticationProvider(authenticationProvider())
                 .exceptionHandling(exceptions ->
@@ -112,6 +120,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.GET, "/", "/api/health").permitAll()
                         .requestMatchers(
+                                "/oauth2/**",
+                                "/login/oauth2/**",
                                 "/api/auth/register",
                                 "/api/auth/login",
                                 "/api/auth/refresh",

@@ -387,6 +387,20 @@ The `account` table stores email verification state for customer registration.
   - `database/migrations/20260709_add_account_enabled.sql`
   - `database/migrations/20260714_harden_account_sessions_and_reset_tokens.sql`
 
+## OAuth Identity Table
+
+`oauth_identity` links a verified external identity to an existing local account without exposing provider tokens to the frontend.
+
+- Main relationship: `account_id -> account.id` with cascade delete.
+- `provider` currently accepts `GOOGLE` only.
+- `provider_subject` stores Google's stable `sub` identifier; an email address is never used as the provider identity key.
+- `(provider, provider_subject)` is unique so one Google identity cannot authenticate multiple accounts.
+- `(account_id, provider)` is unique so one account has at most one identity per provider.
+- `last_login_at` records the latest successful provider login.
+- Google accounts with verified email may link to an existing enabled customer account with the same normalized email.
+- Admin and staff accounts cannot be linked or created through social login.
+- Migration: `database/migrations/20260717_add_oauth_identity.sql` and runtime Flyway `V8__add_oauth_identity.sql`.
+
 ## Reporting Optimization Assets
 
 `database/migrations/20260702_optimize_reporting_indexes.sql` adds report-oriented structures on the English schema.

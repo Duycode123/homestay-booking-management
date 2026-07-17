@@ -10,6 +10,8 @@ public interface AuthAccountPort {
 
     Optional<User> loadUserByEmail(String email);
 
+    Optional<User> loadUserById(Integer id);
+
     Optional<User> loadUserByResetToken(String resetToken);
 
     Optional<User> loadUserByEmailVerificationTokenHash(String emailVerificationTokenHash);

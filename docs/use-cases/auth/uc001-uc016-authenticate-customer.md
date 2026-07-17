@@ -5,7 +5,7 @@
 - Source: Product Backlog `UC001`, `UC016`
 - Primary actor: Customer
 - Supporting actors: Authentication system, email service
-- Current status in repo: Implemented with email verification and cookie-based JWT session flow
+- Current status in repo: Implemented with email verification, Google OAuth, and cookie-based JWT session flow
 
 ## Goal
 
@@ -23,6 +23,8 @@ Allow a customer to register, verify their email address, sign in, refresh sessi
 - `GET /api/auth/csrf`
 - `POST /api/auth/forgot-password`
 - `POST /api/auth/reset-password`
+- `GET /oauth2/authorization/google`
+- `GET /login/oauth2/code/google`
 
 ## Preconditions
 
@@ -66,6 +68,17 @@ Allow a customer to register, verify their email address, sign in, refresh sessi
 4. Backend issues access and refresh tokens.
 5. Backend sets auth cookies and returns the auth payload.
 
+### Login with Google
+
+1. Customer selects **Continue with Google** on the login page.
+2. The browser starts the OAuth flow through the same Next.js origin and Google authenticates the customer.
+3. Google redirects to `/login/oauth2/code/google`; Next.js proxies the callback to Spring Security.
+4. Backend requires a verified Google email and uses Google's stable `sub` claim as the identity key.
+5. Backend loads the linked customer, links an existing enabled customer with the same verified email, or creates a new verified customer account.
+6. Backend refuses to link admin/staff or disabled accounts.
+7. Backend issues the same access/refresh JWT HttpOnly cookies used by password login.
+8. Browser returns to `/oauth/callback`, restores the customer profile, and enters the customer site.
+
 ### Refresh Session
 
 1. Client sends the refresh request with refresh cookie.
@@ -95,6 +108,7 @@ Allow a customer to register, verify their email address, sign in, refresh sessi
 - Expired or invalid verification token: backend denies verification and clears stale token data when applicable.
 - Resend too soon, already verified, disabled, or unknown email: backend returns the same generic success response without sending mail.
 - Invalid credentials: backend returns authentication failure.
+- Missing Google subject/email, unverified Google email, disabled account, or admin/staff email: backend rejects OAuth login and redirects to login with a generic error.
 - Missing or invalid refresh token: backend denies refresh.
 - Unknown or disabled email on forgot-password: backend returns the same generic success response to prevent account enumeration.
 - Expired or invalid reset token: backend denies reset.
@@ -122,12 +136,16 @@ Allow a customer to register, verify their email address, sign in, refresh sessi
 - A missing or mismatched CSRF token returns HTTP 403 with code `CSRF_TOKEN_INVALID`; the browser obtains a fresh token and retries the original request at most once.
 - Generic HTTP 401 responses must not clear authentication cookies because an older in-flight request could otherwise erase a newly established login session. Cookie clearing belongs to the explicit logout flow.
 - Login, registration, forgot/reset password, and verification resend endpoints are limited to 10 requests per IP/path per 15-minute window.
+- Social login creates customer accounts only. It never grants `STAFF` or `ADMIN`.
+- Provider access/ID tokens are not stored in the database or exposed to browser JavaScript.
+- Google identities are keyed by `(provider, provider_subject)`, not by mutable profile fields.
 
 ## Data Touched
 
 - `User`
 - `Customer`
 - `RevokedToken`
+- `oauth_identity`
 - reset token fields on user account
 - email verification fields on user account
 
@@ -145,6 +163,7 @@ Allow a customer to register, verify their email address, sign in, refresh sessi
 - The CSRF cookie uses the project-specific name `HOMESTAY-XSRF-TOKEN`, path `/`, and the configured secure-cookie policy. This isolates current sessions from stale framework-default `XSRF-TOKEN` cookies.
 - When a browser sends duplicate legacy/current access cookies, the JWT inbound adapter evaluates every raw cookie candidate and authenticates with the newest valid, non-revoked access token.
 - Auth application service owns the core registration, login, verification, resend, and reset flows behind use case ports.
+- `OAuthUserLoginService` owns Google account linking/creation behind `AuthenticateOAuthUserUseCase`, `OAuthIdentityPort`, `AuthAccountPort`, and `AuthSecurityPort`.
 
 ## Known Gaps / Follow-up
 

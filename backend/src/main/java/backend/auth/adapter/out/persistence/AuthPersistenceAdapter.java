@@ -28,6 +28,11 @@ public class AuthPersistenceAdapter implements AuthAccountPort {
     }
 
     @Override
+    public Optional<User> loadUserById(Integer id) {
+        return userRepository.findById(id);
+    }
+
+    @Override
     public Optional<User> loadUserByResetToken(String resetToken) {
         return userRepository.findByResetToken(resetToken);
     }

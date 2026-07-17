@@ -39,6 +39,14 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
+        source: '/oauth2/:path*',
+        destination: `${backendApiUrl}/oauth2/:path*`,
+      },
+      {
+        source: '/login/oauth2/:path*',
+        destination: `${backendApiUrl}/login/oauth2/:path*`,
+      },
+      {
         source: '/api/:path*',
         destination: `${backendApiUrl}/api/:path*`,
       },
