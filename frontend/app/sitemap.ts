@@ -1,4 +1,7 @@
 import type { MetadataRoute } from 'next'
+import { getPublicRoomsForSeo } from '@/lib/public/room-seo'
+
+export const revalidate = 3600
 
 const publicRoutes = [
   { path: '/', changeFrequency: 'weekly', priority: 1 },
@@ -13,12 +16,24 @@ const publicRoutes = [
   { path: '/terms', changeFrequency: 'yearly', priority: 0.3 },
 ] as const
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000')
+  const rooms = await getPublicRoomsForSeo()
 
-  return publicRoutes.map(({ path, changeFrequency, priority }) => ({
+  const staticRoutes: MetadataRoute.Sitemap = publicRoutes.map(({ path, changeFrequency, priority }) => ({
     url: new URL(path, siteUrl).toString(),
     changeFrequency,
     priority,
   }))
+
+  const roomRoutes: MetadataRoute.Sitemap = rooms
+    .filter((room) => Number.isInteger(room.id) && room.id > 0)
+    .map((room) => ({
+      url: new URL(`/rooms/${room.id}`, siteUrl).toString(),
+      changeFrequency: 'daily',
+      priority: 0.8,
+      images: [room.imageUrl, ...(room.imageUrls ?? [])].filter((image): image is string => Boolean(image)),
+    }))
+
+  return [...staticRoutes, ...roomRoutes]
 }
