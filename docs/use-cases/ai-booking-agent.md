@@ -23,7 +23,7 @@ Help guests discover a suitable room through natural conversation while keeping 
 2. HomeBot accumulates check-in date, check-out date, adults, children, budget, bedrooms, beds and amenities in a client-session context.
 3. HomeBot asks one focused question for the next required field.
 4. Once dates and guest count are complete, the backend checks real room data and booking overlaps.
-5. HomeBot presents matching rooms with image, nightly price, capacity and sleeping layout.
+5. HomeBot ranks matching rooms by fit, approved review quality and price, then presents at most three options with image, nightly price, capacity and sleeping layout.
 6. The guest chooses a room; HomeBot repeats the selected room, stay and guest count for confirmation.
 7. The guest explicitly continues to the existing booking modal from the confirmation action.
 8. The existing booking flow rechecks availability and price, requires login, creates the booking and starts payment.
@@ -46,6 +46,8 @@ Help guests discover a suitable room through natural conversation while keeping 
 - The payment QR and room hold last exactly five minutes.
 - Online payment supports a 50% deposit or full payment.
 - Gemini can phrase answers but must not invent rooms, prices, promotions, availability or booking state.
+- HomeBot may recommend only rooms and room tiers that are active in the customer-visible catalog; inactive/test records are excluded at the data boundary.
+- A normal recommendation contains at most three rooms. After the guest selects one room, only that room remains in the response cards.
 - A booking is never created solely from ambiguous natural-language text; the guest must explicitly continue through confirmation.
 - Conversation context, transcript and quick replies are stored in versioned `sessionStorage`, not persisted as a customer profile or booking record.
 

@@ -40,6 +40,9 @@ Help a customer ask natural-language questions about room options, pricing, capa
 - Room, price, capacity, status, and availability facts must come from the database context.
 - Equipment names, equipment status, equipment notes, image URLs, and approved review ratings must come from database context.
 - Rooms in `MAINTENANCE` must not be suggested as bookable.
+- Rooms in `INACTIVE` or belonging to an inactive room tier must never enter AI context or recommendation cards.
+- Normal answers recommend at most three best-fitting rooms; rating comparisons return only the highest-rated relevant room.
+- Default ranking prefers the smallest sufficient capacity, then approved review rating, then nightly price.
 - Broken or maintenance equipment must be visible as unavailable equipment, not promised as ready.
 - When a time range is known, rooms with blocking bookings are not bookable for that range.
 - Gemini must not invent coupons, prices, room names, or availability.

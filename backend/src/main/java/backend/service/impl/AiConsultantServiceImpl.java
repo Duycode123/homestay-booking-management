@@ -49,6 +49,7 @@ public class AiConsultantServiceImpl implements AiConsultantService {
     private static final BigDecimal NIGHT_STAY_HOURS = BigDecimal.valueOf(22);
     private static final LocalTime CHECK_IN_TIME = LocalTime.of(14, 0);
     private static final LocalTime CHECK_OUT_TIME = LocalTime.of(12, 0);
+    private static final int MAX_ROOM_RECOMMENDATIONS = 3;
 
     private static final List<BookingStatus> ROOM_BLOCKING_STATUSES = List.of(
             BookingStatus.PENDING_PAYMENT,
@@ -115,13 +116,15 @@ public class AiConsultantServiceImpl implements AiConsultantService {
                 : resolveTimeRange(request, normalizedMessage);
 
         List<AiSuggestedRoomResponse> allAvailableRooms = safeGetRoomContext(timeRange);
+        boolean ratingRequest = isAskingRating(normalizedMessage);
         List<AiSuggestedRoomResponse> matchedRooms = filterAgentRooms(
                 filterRooms(allAvailableRooms, people, maxPrice, timeRange),
-                agentContext
+                agentContext,
+                ratingRequest
         );
         Integer selectedRoomId = resolveSelectedRoomId(agentContext, normalizedMessage, matchedRooms, allAvailableRooms);
         agentContext = agentContext.withSelectedRoomId(selectedRoomId);
-        AgentTurn agentTurn = buildAgentTurn(agentContext, matchedRooms, allAvailableRooms);
+        AgentTurn agentTurn = buildAgentTurn(agentContext, matchedRooms, allAvailableRooms, ratingRequest);
 
         String localAnswer = "BOOKING".equals(agentContext.intent())
                 ? agentTurn.answer()
@@ -162,7 +165,7 @@ public class AiConsultantServiceImpl implements AiConsultantService {
 
         return AiChatResponse.builder()
                 .answer(answer)
-                .suggestedRooms(showRoomCards ? matchedRooms.stream().limit(4).toList() : List.of())
+                .suggestedRooms(selectSuggestedRooms(showRoomCards, matchedRooms, agentContext, agentTurn, ratingRequest))
                 .interpretedStartTime(timeRange == null ? null : timeRange.startTime())
                 .interpretedEndTime(timeRange == null ? null : timeRange.endTime())
                 .interpretedPeople(people)
@@ -342,8 +345,18 @@ public class AiConsultantServiceImpl implements AiConsultantService {
 
     private List<AiSuggestedRoomResponse> filterAgentRooms(
             List<AiSuggestedRoomResponse> rooms,
-            AgentContext context
+            AgentContext context,
+            boolean ratingRequest
     ) {
+        Comparator<AiSuggestedRoomResponse> comparator = ratingRequest
+                ? Comparator.comparingDouble(this::ratingValue).reversed()
+                        .thenComparing(Comparator.comparingLong(this::reviewCount).reversed())
+                        .thenComparingInt(room -> capacitySurplus(room, context.totalGuests()))
+                        .thenComparing(AiSuggestedRoomResponse::getPricePerNight)
+                : Comparator.comparingInt((AiSuggestedRoomResponse room) -> capacitySurplus(room, context.totalGuests()))
+                        .thenComparing(Comparator.comparingDouble(this::ratingValue).reversed())
+                        .thenComparing(AiSuggestedRoomResponse::getPricePerNight);
+
         return rooms.stream()
                 .filter(room -> context.bedrooms() == null
                         || room.getBedroomCount() != null && room.getBedroomCount() >= context.bedrooms())
@@ -354,11 +367,21 @@ public class AiConsultantServiceImpl implements AiConsultantService {
                             + String.join(" ", room.getEquipmentItems() == null ? List.of() : room.getEquipmentItems()));
                     return searchable.contains(normalize(amenity));
                 }))
-                .sorted(Comparator
-                        .comparing((AiSuggestedRoomResponse room) -> room.getAverageRating() == null ? 0D : room.getAverageRating())
-                        .reversed()
-                        .thenComparing(AiSuggestedRoomResponse::getPricePerNight))
+                .sorted(comparator)
                 .toList();
+    }
+
+    private double ratingValue(AiSuggestedRoomResponse room) {
+        return room.getAverageRating() == null ? 0D : room.getAverageRating();
+    }
+
+    private long reviewCount(AiSuggestedRoomResponse room) {
+        return room.getApprovedReviewCount() == null ? 0L : room.getApprovedReviewCount();
+    }
+
+    private int capacitySurplus(AiSuggestedRoomResponse room, Integer guests) {
+        if (guests == null || room.getCapacity() == null) return Integer.MAX_VALUE;
+        return Math.max(0, room.getCapacity() - guests);
     }
 
     private Integer resolveSelectedRoomId(
@@ -382,7 +405,8 @@ public class AiConsultantServiceImpl implements AiConsultantService {
     private AgentTurn buildAgentTurn(
             AgentContext context,
             List<AiSuggestedRoomResponse> matchedRooms,
-            List<AiSuggestedRoomResponse> allRooms
+            List<AiSuggestedRoomResponse> allRooms,
+            boolean ratingRequest
     ) {
         if (!"BOOKING".equals(context.intent())) {
             return new AgentTurn("ANSWERING", List.of(), null);
@@ -437,6 +461,20 @@ public class AiConsultantServiceImpl implements AiConsultantService {
             );
         }
 
+        if (ratingRequest) {
+            AiSuggestedRoomResponse bestRated = matchedRooms.get(0);
+            String ratingText = reviewCount(bestRated) == 0
+                    ? "chưa có đánh giá đã duyệt"
+                    : String.format("%.1f/5 từ %d đánh giá", ratingValue(bestRated), reviewCount(bestRated));
+            return new AgentTurn(
+                    "RECOMMENDING",
+                    List.of(),
+                    AiAgentActionResponse.builder().type("VIEW_ROOM").label("Xem phòng").href(bestRated.getDetailUrl()).roomId(bestRated.getRoomId()).build(),
+                    "Phòng được đánh giá cao nhất phù hợp yêu cầu là **" + bestRated.getRoomName()
+                            + "** — " + ratingText + ", " + formatMoney(bestRated.getPricePerNight()) + "/đêm."
+            );
+        }
+
         AiSuggestedRoomResponse selectedRoom = context.selectedRoomId() == null
                 ? null
                 : allRooms.stream().filter(room -> room.getRoomId().equals(context.selectedRoomId())).findFirst().orElse(null);
@@ -457,18 +495,38 @@ public class AiConsultantServiceImpl implements AiConsultantService {
             );
         }
 
-        String roomNames = matchedRooms.stream().limit(3)
+        String roomNames = matchedRooms.stream().limit(MAX_ROOM_RECOMMENDATIONS)
                 .map(room -> "**" + room.getRoomName() + "** (" + formatMoney(room.getPricePerNight()) + "/đêm)")
                 .collect(Collectors.joining(", "));
-        String answer = "Mình tìm thấy " + matchedRooms.size() + " phòng còn trống " + formatStay(context)
-                + " cho " + context.totalGuests() + " khách. Phù hợp nhất là " + roomNames
-                + ". Bạn chọn tên một phòng hoặc bấm **Đặt phòng** trên thẻ để tiếp tục.";
+        String answer = "Có " + matchedRooms.size() + " phòng đáp ứng. Phù hợp nhất: " + roomNames
+                + ". Chọn một phòng để tiếp tục.";
         return new AgentTurn(
                 "RECOMMENDING",
                 List.of(),
                 AiAgentActionResponse.builder().type("VIEW_ROOMS").label("Xem danh sách phù hợp").href(buildRoomsUrl(context)).build(),
                 answer
         );
+    }
+
+    private List<AiSuggestedRoomResponse> selectSuggestedRooms(
+            boolean showRoomCards,
+            List<AiSuggestedRoomResponse> matchedRooms,
+            AgentContext context,
+            AgentTurn turn,
+            boolean ratingRequest
+    ) {
+        if (!showRoomCards || matchedRooms.isEmpty() || "NO_MATCH".equals(turn.state())) {
+            return List.of();
+        }
+        if ("AWAITING_CONFIRMATION".equals(turn.state()) && context.selectedRoomId() != null) {
+            return matchedRooms.stream()
+                    .filter(room -> room.getRoomId().equals(context.selectedRoomId()))
+                    .limit(1)
+                    .toList();
+        }
+        return matchedRooms.stream()
+                .limit(ratingRequest ? 1 : MAX_ROOM_RECOMMENDATIONS)
+                .toList();
     }
 
     private AiConversationContextResponse toContextResponse(AgentContext context) {
@@ -567,6 +625,8 @@ public class AiConsultantServiceImpl implements AiConsultantService {
         Map<Integer, BookingRepository.RoomUpcomingBookingStatsProjection> bookingStatsByRoom = getBookingStatsByRoom();
 
         return roomRepository.findAllByOrderByRoomNameAsc().stream()
+                .filter(room -> room.getStatus() != RoomStatus.INACTIVE)
+                .filter(room -> room.getRoomType() != null && room.getRoomType().isActive())
                 .map(room -> toSuggestedRoom(
                         room,
                         timeRange,
@@ -736,8 +796,8 @@ public class AiConsultantServiceImpl implements AiConsultantService {
         }
         answer.append(". ");
 
-        answer.append("Bạn có thể tham khảo: ");
-        answer.append(formatRoomList(matchedRooms));
+        answer.append("Gợi ý tốt nhất: ");
+        answer.append(formatRoomList(matchedRooms.stream().limit(MAX_ROOM_RECOMMENDATIONS).toList()));
         answer.append(".");
 
         if (timeRange == null) {
@@ -784,10 +844,12 @@ public class AiConsultantServiceImpl implements AiConsultantService {
                 When the customer asks for a room, always recommend concrete room names from context when possible.
                 Do not answer with generic uncertainty if the database context contains matching rooms or close alternatives.
                 Do not invent room names, prices, capacity, availability, promotions, or payment rules.
+                Never mention a room that is absent from the provided context.
+                Recommend at most 3 best-matching rooms; do not enumerate the whole catalog unless explicitly requested.
                 First answer the customer's direct question, then suggest the next best action.
                 If no room fully matches, explain the blocking reason and suggest the closest alternatives from context.
                 If the context is not enough, ask one short follow-up question.
-                Keep the answer concise and practical for a guest who wants to book a homestay room.
+                Keep the answer to 1-3 short sentences unless the customer explicitly asks for detailed instructions.
                 """;
     }
 

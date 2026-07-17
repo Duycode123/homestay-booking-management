@@ -146,6 +146,30 @@ class AiConsultantServiceImplTest {
         assertThat(selectResponse.getAction().getLabel()).isEqualTo("Xác nhận đặt phòng");
         assertThat(selectResponse.getAction().getHref())
                 .contains("/rooms/7", "agentBooking=1", "checkIn=2027-07-20", "checkOut=2027-07-22");
+        assertThat(selectResponse.getSuggestedRooms()).extracting("roomName")
+                .containsExactly("Deluxe Garden 203");
+    }
+
+    @Test
+    void shouldExcludeInactiveRoomsAndReturnOnlyThreeBestMatches() {
+        Room exactFit = room(1, "Standard Garden 101", RoomStatus.AVAILABLE, 2, 100_000);
+        Room second = room(2, "Standard Courtyard 103", RoomStatus.AVAILABLE, 3, 105_000);
+        Room third = room(3, "Deluxe Balcony 201", RoomStatus.AVAILABLE, 4, 120_000);
+        Room fourth = room(4, "Family Garden 302", RoomStatus.AVAILABLE, 6, 140_000);
+        Room inactiveTestRoom = room(99, "Test1", RoomStatus.INACTIVE, 2, 1_000);
+        when(roomRepository.findAllByOrderByRoomNameAsc())
+                .thenReturn(List.of(fourth, inactiveTestRoom, third, second, exactFit));
+
+        AiChatRequest request = new AiChatRequest();
+        request.setMessage("Tìm phòng từ 20/07/2027 đến 22/07/2027 cho 2 người lớn");
+
+        AiChatResponse response = service.chat(request);
+
+        assertThat(response.getState()).isEqualTo("RECOMMENDING");
+        assertThat(response.getSuggestedRooms()).extracting("roomName")
+                .containsExactly("Standard Garden 101", "Standard Courtyard 103", "Deluxe Balcony 201")
+                .doesNotContain("Test1");
+        assertThat(response.getAnswer()).doesNotContain("Test1", "Family Garden 302");
     }
 
     @Test
@@ -181,21 +205,25 @@ class AiConsultantServiceImplTest {
     }
 
     private Room availableRoom() {
+        return room(7, "Deluxe Garden 203", RoomStatus.AVAILABLE, 4, 150_000);
+    }
+
+    private Room room(int id, String name, RoomStatus status, int capacity, long hourlyRate) {
         RoomType roomType = RoomType.builder()
                 .id(2)
                 .typeName("Deluxe")
                 .description("Phòng hướng vườn")
-                .pricePerHour(BigDecimal.valueOf(150_000))
+                .pricePerHour(BigDecimal.valueOf(hourlyRate))
                 .active(true)
                 .build();
         return Room.builder()
-                .id(7)
-                .roomName("Deluxe Garden 203")
+                .id(id)
+                .roomName(name)
                 .roomType(roomType)
-                .maxPeople(4)
+                .maxPeople(capacity)
                 .bedroomCount(2)
                 .bedCount(2)
-                .status(RoomStatus.AVAILABLE)
+                .status(status)
                 .imageUrl("https://example.com/deluxe-garden.jpg")
                 .build();
     }
