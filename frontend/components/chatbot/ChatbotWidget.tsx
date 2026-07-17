@@ -11,11 +11,12 @@ import type {
 } from '@/lib/chatbot/types'
 
 const CHATBOT_CONTEXT_KEY = 'the-serene-villa.chatbot-agent-context'
-const CHATBOT_SESSION_KEY = 'the-serene-villa.chatbot-agent-session.v1'
+const LEGACY_CHATBOT_SESSION_KEY = 'the-serene-villa.chatbot-agent-session.v1'
+const CHATBOT_SESSION_KEY = 'the-serene-villa.chatbot-agent-session.v2'
 const MAX_PERSISTED_MESSAGES = 30
 
 type PersistedChatbotSession = {
-  version: 1
+  version: 2
   savedAt: string
   messages: ChatMessage[]
   quickReplies: QuickReply[]
@@ -275,7 +276,7 @@ export default function ChatbotWidget() {
       const storedSession = window.sessionStorage.getItem(CHATBOT_SESSION_KEY)
       if (storedSession) {
         const session = JSON.parse(storedSession) as PersistedChatbotSession
-        if (session.version === 1) {
+        if (session.version === 2) {
           const restoredMessages = Array.isArray(session.messages)
             ? session.messages.slice(-MAX_PERSISTED_MESSAGES)
             : []
@@ -292,6 +293,7 @@ export default function ChatbotWidget() {
       window.sessionStorage.removeItem(CHATBOT_SESSION_KEY)
       window.sessionStorage.removeItem(CHATBOT_CONTEXT_KEY)
     } finally {
+      window.sessionStorage.removeItem(LEGACY_CHATBOT_SESSION_KEY)
       setSessionReady(true)
     }
   }, [])
@@ -299,7 +301,7 @@ export default function ChatbotWidget() {
   useEffect(() => {
     if (!sessionReady) return
     const session: PersistedChatbotSession = {
-      version: 1,
+      version: 2,
       savedAt: new Date().toISOString(),
       messages: messages.slice(-MAX_PERSISTED_MESSAGES),
       quickReplies,
@@ -383,6 +385,7 @@ export default function ChatbotWidget() {
 
   const resetConversation = () => {
     window.sessionStorage.removeItem(CHATBOT_SESSION_KEY)
+    window.sessionStorage.removeItem(LEGACY_CHATBOT_SESSION_KEY)
     window.sessionStorage.removeItem(CHATBOT_CONTEXT_KEY)
     setAgentContext(undefined)
     setMessages([{ id: createId(), role: 'assistant', content: CHATBOT_WELCOME.content, createdAt: new Date().toISOString() }])

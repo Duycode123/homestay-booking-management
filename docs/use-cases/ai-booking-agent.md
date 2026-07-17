@@ -32,6 +32,7 @@ Help guests discover a suitable room through natural conversation while keeping 
 
 - No exact match: explain that no room meets every condition and offer the room list so the guest can relax filters.
 - Gemini unavailable: return the deterministic database-backed response.
+- Booking-agent endpoint temporarily unavailable: retry once, continue collecting required fields in the browser and never claim a room is available until the real schedule can be checked.
 - Anonymous guest: preserve the existing quick-booking draft and redirect through login.
 - Availability changes after a recommendation: the normal booking use case rejects the stale choice on its final availability check.
 - Guest asks about payment, cancellation, coupons or add-ons: answer that intent without discarding the booking context.

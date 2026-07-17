@@ -194,7 +194,7 @@ function extractPeopleCount(normalized: string) {
 }
 
 function extractMaxPrice(normalized: string) {
-  const match = normalized.match(/(?:duoi|toi da|khong qua|tam|khoang)?\s*(\d+(?:[.,]\d+)?)\s*(k|nghin|ngan|trieu|m|vnd|d|dong)/)
+  const match = normalized.match(/(?:duoi|toi da|khong qua|tam|khoang)?\s*(\d+(?:[.,]\d+)?)\s*(k|nghin|ngan|trieu|m|vnd|d|dong)\b/)
   if (!match) return null
 
   const rawValue = Number(match[1].replace(',', '.'))
@@ -210,6 +210,148 @@ function formatMoney(value: number | string | null | undefined) {
   const numberValue = typeof value === 'string' ? Number(value) : value
   if (!numberValue || Number.isNaN(numberValue)) return 'chưa có giá'
   return `${numberValue.toLocaleString('vi-VN')}đ/đêm`
+}
+
+function toIsoDate(day: number, month: number, year?: number) {
+  const resolvedYear = year == null ? new Date().getFullYear() : year < 100 ? 2000 + year : year
+  const value = new Date(resolvedYear, month - 1, day)
+  if (value.getFullYear() !== resolvedYear || value.getMonth() !== month - 1 || value.getDate() !== day) {
+    return undefined
+  }
+  return `${resolvedYear}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
+function localIsoDate(offsetDays: number) {
+  const value = new Date()
+  value.setDate(value.getDate() + offsetDays)
+  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`
+}
+
+function addIsoDays(value: string, days: number) {
+  const [year, month, day] = value.split('-').map(Number)
+  const date = new Date(year, month - 1, day)
+  date.setDate(date.getDate() + days)
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
+function extractStayDates(normalized: string) {
+  const relativeDate = normalized.includes('ngay kia')
+    ? localIsoDate(2)
+    : normalized.includes('ngay mai')
+      ? localIsoDate(1)
+      : normalized.includes('hom nay') || normalized.includes('toi nay')
+        ? localIsoDate(0)
+        : undefined
+  const dates = relativeDate ? [relativeDate] : []
+  const pattern = /(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?/g
+  for (const match of normalized.matchAll(pattern)) {
+    const parsed = toIsoDate(Number(match[1]), Number(match[2]), match[3] ? Number(match[3]) : undefined)
+    if (parsed && !dates.includes(parsed)) dates.push(parsed)
+    if (dates.length === 2) break
+  }
+  return dates
+}
+
+function buildBookingAgentFallbackReply(
+  message: string,
+  previous?: ChatbotAgentContext,
+): ChatbotReply | null {
+  const normalized = normalize(message)
+  const bookingIntent = previous?.intent === 'BOOKING' || [
+    'dat phong', 'tim phong', 'goi y phong', 'con phong', 'lich trong', 'nhan phong', 'check-in',
+  ].some((keyword) => normalized.includes(keyword))
+  if (!bookingIntent) return null
+
+  const context: ChatbotAgentContext = {
+    ...previous,
+    conversationId: previous?.conversationId ?? `browser-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    intent: 'BOOKING',
+  }
+  const dates = extractStayDates(normalized)
+  if (dates.length >= 2) {
+    context.checkInDate = dates[0]
+    context.checkOutDate = dates[1]
+  } else if (dates.length === 1) {
+    if (normalized.includes('tra phong') || normalized.includes('check out') || normalized.includes('checkout')) {
+      context.checkOutDate = dates[0]
+    } else if (!context.checkInDate) {
+      context.checkInDate = dates[0]
+    } else if (!context.checkOutDate) {
+      context.checkOutDate = dates[0]
+    }
+  }
+
+  const nights = normalized.match(/(\d{1,2})\s*(dem|night)\b/)
+  if (context.checkInDate && nights) context.checkOutDate = addIsoDays(context.checkInDate, Number(nights[1]))
+
+  const adults = normalized.match(/(\d{1,2})\s*(nguoi lon|adult)\b/)
+  const children = normalized.match(/(\d{1,2})\s*(tre em|tre nho|child|children)\b/)
+  const people = normalized.match(/(\d{1,3})\s*(nguoi|khach|thanh vien|ban)\b/)
+  if (adults) context.adults = Number(adults[1])
+  if (children) context.children = Number(children[1])
+  if (!adults && !children && people) context.adults = Number(people[1])
+
+  const missingFields = [
+    !context.checkInDate ? 'checkInDate' : undefined,
+    !context.checkOutDate ? 'checkOutDate' : undefined,
+    !context.adults ? 'guests' : undefined,
+  ].filter((value): value is string => Boolean(value))
+
+  if (missingFields.includes('checkInDate')) {
+    return {
+      content: 'Mình sẽ kiểm tra lịch phòng thật cho bạn. Trước tiên, bạn muốn **nhận phòng ngày nào**?',
+      quickReplies: [
+        { id: 'agent-fallback-tomorrow', label: 'Ngày mai', message: 'Nhận phòng ngày mai' },
+        { id: 'agent-fallback-date', label: 'Nhập ngày khác', message: 'Tôi muốn nhận phòng ngày ' },
+      ],
+      mode: 'SAFE_BOOKING_FALLBACK',
+      state: 'COLLECTING_REQUIREMENTS',
+      intent: 'BOOKING',
+      missingFields,
+      context,
+    }
+  }
+  if (missingFields.includes('checkOutDate')) {
+    return {
+      content: 'Mình đã ghi nhận ngày nhận phòng. Bạn muốn **ở mấy đêm** hoặc trả phòng ngày nào?',
+      quickReplies: [
+        { id: 'agent-fallback-1-night', label: 'Ở 1 đêm', message: 'Ở 1 đêm' },
+        { id: 'agent-fallback-2-nights', label: 'Ở 2 đêm', message: 'Ở 2 đêm' },
+      ],
+      mode: 'SAFE_BOOKING_FALLBACK',
+      state: 'COLLECTING_REQUIREMENTS',
+      intent: 'BOOKING',
+      missingFields,
+      context,
+    }
+  }
+  if (missingFields.includes('guests')) {
+    return {
+      content: 'Kỳ lưu trú đã được ghi nhận. Đoàn của bạn có **bao nhiêu người lớn và trẻ em**?',
+      quickReplies: [
+        { id: 'agent-fallback-2-adults', label: '2 người lớn', message: '2 người lớn' },
+        { id: 'agent-fallback-family', label: '2 lớn, 1 trẻ em', message: '2 người lớn và 1 trẻ em' },
+      ],
+      mode: 'SAFE_BOOKING_FALLBACK',
+      state: 'COLLECTING_REQUIREMENTS',
+      intent: 'BOOKING',
+      missingFields,
+      context,
+    }
+  }
+
+  return {
+    content: 'Mình đã ghi nhận đủ kỳ lưu trú và số khách, nhưng hệ thống lịch thật đang kết nối lại nên chưa thể xác nhận phòng trống. Bạn bấm **Kiểm tra lại lịch**; mình sẽ không gợi ý hoặc giữ phòng khi chưa kiểm tra được dữ liệu booking.',
+    quickReplies: [
+      { id: 'agent-fallback-retry', label: 'Kiểm tra lại lịch', message },
+      { id: 'agent-fallback-support', label: 'Liên hệ hỗ trợ', message: 'Làm sao liên hệ nhân viên?' },
+    ],
+    mode: 'SAFE_BOOKING_FALLBACK',
+    state: 'AGENT_TEMPORARILY_UNAVAILABLE',
+    intent: 'BOOKING',
+    missingFields: [],
+    context,
+  }
 }
 
 function normalizeRoomPrice(room: RoomApiItem) {
@@ -525,6 +667,18 @@ export async function sendChatbotMessage(message: string, session?: ChatbotSessi
   try {
     return await sendBackendChatbotMessage(trimmed, session)
   } catch {
+    // Render free instances can need a short wake-up window. Retry once before
+    // using a safe client fallback so a transient cold start does not degrade the flow.
+    await delay(900)
+    try {
+      return await sendBackendChatbotMessage(trimmed, session)
+    } catch {
+      // Continue with a deterministic fallback below.
+    }
+
+    const bookingFallback = buildBookingAgentFallbackReply(trimmed, session?.context)
+    if (bookingFallback) return bookingFallback
+
     if (isAskingPrice(normalize(trimmed))) {
       try {
         const priceDbFallback = await buildPriceDbFallbackReply()
