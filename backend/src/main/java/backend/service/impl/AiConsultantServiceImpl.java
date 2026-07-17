@@ -71,7 +71,7 @@ public class AiConsultantServiceImpl implements AiConsultantService {
     private static final Pattern PEOPLE_PATTERN =
             Pattern.compile("(\\d{1,3})\\s*(nguoi|khach|thanh vien|ban)");
     private static final Pattern PRICE_PATTERN =
-            Pattern.compile("(\\d+(?:[\\.,]\\d+)?)\\s*(k|nghin|ngan|trieu|m|vnd|d|dong)");
+            Pattern.compile("(\\d+(?:[\\.,]\\d+)?)\\s*(k|nghin|ngan|trieu|m|vnd|d|dong)\\b");
     private static final Pattern HOUR_RANGE_PATTERN =
             Pattern.compile("(\\d{1,2})(?:[:h](\\d{1,2}))?\\s*(?:h|gio)?\\s*(?:-|den|toi|~)\\s*(\\d{1,2})(?:[:h](\\d{1,2}))?\\s*(?:h|gio)?");
     private static final Pattern DURATION_PATTERN =

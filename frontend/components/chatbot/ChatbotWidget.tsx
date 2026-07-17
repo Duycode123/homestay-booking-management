@@ -11,6 +11,16 @@ import type {
 } from '@/lib/chatbot/types'
 
 const CHATBOT_CONTEXT_KEY = 'the-serene-villa.chatbot-agent-context'
+const CHATBOT_SESSION_KEY = 'the-serene-villa.chatbot-agent-session.v1'
+const MAX_PERSISTED_MESSAGES = 30
+
+type PersistedChatbotSession = {
+  version: 1
+  savedAt: string
+  messages: ChatMessage[]
+  quickReplies: QuickReply[]
+  context?: ChatbotAgentContext
+}
 
 function createId() {
   return `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -70,7 +80,13 @@ function TypingIndicator() {
   )
 }
 
-function MessageBubble({ message }: { message: ChatMessage }) {
+function MessageBubble({
+  message,
+  onSelectRoom,
+}: {
+  message: ChatMessage
+  onSelectRoom: (room: ChatbotSuggestedRoom) => void
+}) {
   const isUser = message.role === 'user'
 
   if (isUser) {
@@ -90,7 +106,9 @@ function MessageBubble({ message }: { message: ChatMessage }) {
         <div className="rounded-2xl rounded-bl-md border border-outline-variant/50 bg-white/95 px-4 py-2.5 text-sm leading-relaxed text-on-surface shadow-[var(--shadow-card)] backdrop-blur-sm">
           {formatMessageContent(message.content)}
         </div>
-        {message.suggestedRooms?.length ? <SuggestedRoomCards rooms={message.suggestedRooms} /> : null}
+        {message.suggestedRooms?.length ? (
+          <SuggestedRoomCards rooms={message.suggestedRooms} onSelectRoom={onSelectRoom} />
+        ) : null}
         {message.action ? <AgentActionButton action={message.action} /> : null}
       </div>
     </div>
@@ -102,7 +120,13 @@ function formatNightlyPrice(value?: number) {
   return `${Math.round(value).toLocaleString('vi-VN')}đ/đêm`
 }
 
-function SuggestedRoomCards({ rooms }: { rooms: ChatbotSuggestedRoom[] }) {
+function SuggestedRoomCards({
+  rooms,
+  onSelectRoom,
+}: {
+  rooms: ChatbotSuggestedRoom[]
+  onSelectRoom: (room: ChatbotSuggestedRoom) => void
+}) {
   return (
     <div className="flex snap-x gap-2.5 overflow-x-auto pb-1 [scrollbar-width:thin]" aria-label="Phòng HomeBot gợi ý">
       {rooms.map((room) => (
@@ -129,11 +153,69 @@ function SuggestedRoomCards({ rooms }: { rooms: ChatbotSuggestedRoom[] }) {
               </div>
             </div>
           </a>
-          <a href={room.bookingUrl ?? room.detailUrl ?? `/rooms/${room.roomId}`} className="mx-3 mb-3 flex h-9 items-center justify-center rounded-full bg-secondary px-3 text-xs font-bold text-white transition hover:bg-brand-orange">
-            Đặt phòng
-          </a>
+          <div className="mx-3 mb-3 grid grid-cols-2 gap-2">
+            <a
+              href={room.detailUrl ?? `/rooms/${room.roomId}`}
+              className="flex h-9 items-center justify-center rounded-full border border-secondary/20 px-3 text-xs font-bold text-secondary transition hover:border-secondary/40 hover:bg-secondary/5"
+            >
+              Xem phòng
+            </a>
+            <button
+              type="button"
+              onClick={() => onSelectRoom(room)}
+              className="flex h-9 items-center justify-center rounded-full bg-secondary px-3 text-xs font-bold text-white transition hover:bg-brand-orange"
+            >
+              Chọn phòng
+            </button>
+          </div>
         </article>
       ))}
+    </div>
+  )
+}
+
+function formatContextDate(value?: string) {
+  if (!value) return undefined
+  const [year, month, day] = value.split('-').map(Number)
+  if (!year || !month || !day) return value
+  return new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit' }).format(
+    new Date(year, month - 1, day),
+  )
+}
+
+function AgentContextSummary({ context }: { context?: ChatbotAgentContext }) {
+  if (!context || !Object.values(context).some((value) => value != null && value !== '')) return null
+
+  const stay = context.checkInDate
+    ? `${formatContextDate(context.checkInDate)}${context.checkOutDate ? ` → ${formatContextDate(context.checkOutDate)}` : ''}`
+    : undefined
+  const guests = context.adults
+    ? `${context.adults} người lớn${context.children ? `, ${context.children} trẻ em` : ''}`
+    : undefined
+  const scale = [
+    context.bedrooms ? `${context.bedrooms} phòng ngủ` : undefined,
+    context.beds ? `${context.beds} giường` : undefined,
+  ].filter(Boolean).join(' · ')
+  const budget = context.maxNightlyPrice
+    ? `≤ ${Math.round(context.maxNightlyPrice).toLocaleString('vi-VN')}đ/đêm`
+    : undefined
+  const values = [stay, guests, scale || undefined, budget].filter(Boolean)
+
+  if (values.length === 0) return null
+
+  return (
+    <div className="shrink-0 border-b border-outline-variant/35 bg-[#f7f2ea]/95 px-4 py-2.5">
+      <div className="flex items-start gap-2.5">
+        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-secondary text-white" aria-hidden>
+          <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="m5 12 4 4L19 6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+        <div className="min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-brand-orange">HomeBot đã ghi nhận</p>
+          <p className="mt-0.5 line-clamp-2 text-[11px] leading-4 text-on-surface-variant">{values.join(' · ')}</p>
+        </div>
+      </div>
     </div>
   )
 }
@@ -182,6 +264,7 @@ export default function ChatbotWidget() {
   const [typing, setTyping] = useState(false)
   const [welcomed, setWelcomed] = useState(false)
   const [agentContext, setAgentContext] = useState<ChatbotAgentContext>()
+  const [sessionReady, setSessionReady] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const hotlineNumber = process.env.NEXT_PUBLIC_HOTLINE_NUMBER?.trim() ?? ''
@@ -189,16 +272,42 @@ export default function ChatbotWidget() {
 
   useEffect(() => {
     try {
-      const stored = window.sessionStorage.getItem(CHATBOT_CONTEXT_KEY)
-      if (stored) setAgentContext(JSON.parse(stored) as ChatbotAgentContext)
+      const storedSession = window.sessionStorage.getItem(CHATBOT_SESSION_KEY)
+      if (storedSession) {
+        const session = JSON.parse(storedSession) as PersistedChatbotSession
+        if (session.version === 1) {
+          const restoredMessages = Array.isArray(session.messages)
+            ? session.messages.slice(-MAX_PERSISTED_MESSAGES)
+            : []
+          setMessages(restoredMessages)
+          setQuickReplies(Array.isArray(session.quickReplies) ? session.quickReplies : [])
+          setAgentContext(session.context)
+          setWelcomed(restoredMessages.length > 0)
+        }
+      } else {
+        const storedContext = window.sessionStorage.getItem(CHATBOT_CONTEXT_KEY)
+        if (storedContext) setAgentContext(JSON.parse(storedContext) as ChatbotAgentContext)
+      }
     } catch {
+      window.sessionStorage.removeItem(CHATBOT_SESSION_KEY)
       window.sessionStorage.removeItem(CHATBOT_CONTEXT_KEY)
+    } finally {
+      setSessionReady(true)
     }
   }, [])
 
   useEffect(() => {
-    if (agentContext) window.sessionStorage.setItem(CHATBOT_CONTEXT_KEY, JSON.stringify(agentContext))
-  }, [agentContext])
+    if (!sessionReady) return
+    const session: PersistedChatbotSession = {
+      version: 1,
+      savedAt: new Date().toISOString(),
+      messages: messages.slice(-MAX_PERSISTED_MESSAGES),
+      quickReplies,
+      context: agentContext,
+    }
+    window.sessionStorage.setItem(CHATBOT_SESSION_KEY, JSON.stringify(session))
+    window.sessionStorage.removeItem(CHATBOT_CONTEXT_KEY)
+  }, [agentContext, messages, quickReplies, sessionReady])
 
   const scrollToBottom = useCallback(() => {
     const el = listRef.current
@@ -211,7 +320,7 @@ export default function ChatbotWidget() {
   }, [messages, typing, open, scrollToBottom])
 
   useEffect(() => {
-    if (open && !welcomed) {
+    if (sessionReady && open && !welcomed) {
       setWelcomed(true)
       setMessages([
         {
@@ -223,7 +332,7 @@ export default function ChatbotWidget() {
       ])
       setQuickReplies(CHATBOT_WELCOME.quickReplies ?? [])
     }
-  }, [open, welcomed])
+  }, [open, sessionReady, welcomed])
 
   useEffect(() => {
     if (open) {
@@ -273,11 +382,19 @@ export default function ChatbotWidget() {
   )
 
   const resetConversation = () => {
+    window.sessionStorage.removeItem(CHATBOT_SESSION_KEY)
     window.sessionStorage.removeItem(CHATBOT_CONTEXT_KEY)
     setAgentContext(undefined)
     setMessages([{ id: createId(), role: 'assistant', content: CHATBOT_WELCOME.content, createdAt: new Date().toISOString() }])
     setQuickReplies(CHATBOT_WELCOME.quickReplies ?? [])
   }
+
+  const selectRoom = useCallback(
+    (room: ChatbotSuggestedRoom) => {
+      void submitMessage(`Tôi muốn đặt phòng ${room.roomName}`)
+    },
+    [submitMessage],
+  )
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -357,13 +474,15 @@ export default function ChatbotWidget() {
           </div>
         </header>
 
+        <AgentContextSummary context={agentContext} />
+
         {/* Messages — only this region scrolls */}
         <div
           ref={listRef}
           className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain bg-gradient-to-b from-brand-bgGray/50 to-white px-4 py-4"
         >
           {messages.map((msg) => (
-            <MessageBubble key={msg.id} message={msg} />
+            <MessageBubble key={msg.id} message={msg} onSelectRoom={selectRoom} />
           ))}
           {typing ? <TypingIndicator /> : null}
         </div>

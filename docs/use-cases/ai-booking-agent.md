@@ -23,9 +23,10 @@ Help guests discover a suitable room through natural conversation while keeping 
 2. HomeBot accumulates check-in date, check-out date, adults, children, budget, bedrooms, beds and amenities in a client-session context.
 3. HomeBot asks one focused question for the next required field.
 4. Once dates and guest count are complete, the backend checks real room data and booking overlaps.
-5. HomeBot presents matching rooms with image, nightly price, capacity, sleeping layout and a booking action.
-6. The guest selects a room and explicitly continues to the existing booking modal.
-7. The existing booking flow rechecks availability and price, requires login, creates the booking and starts payment.
+5. HomeBot presents matching rooms with image, nightly price, capacity and sleeping layout.
+6. The guest chooses a room; HomeBot repeats the selected room, stay and guest count for confirmation.
+7. The guest explicitly continues to the existing booking modal from the confirmation action.
+8. The existing booking flow rechecks availability and price, requires login, creates the booking and starts payment.
 
 ## Alternate and error flows
 
@@ -45,7 +46,7 @@ Help guests discover a suitable room through natural conversation while keeping 
 - Online payment supports a 50% deposit or full payment.
 - Gemini can phrase answers but must not invent rooms, prices, promotions, availability or booking state.
 - A booking is never created solely from ambiguous natural-language text; the guest must explicitly continue through confirmation.
-- Conversation context is stored in `sessionStorage`, not persisted as a customer profile or booking record.
+- Conversation context, transcript and quick replies are stored in versioned `sessionStorage`, not persisted as a customer profile or booking record.
 
 ## Related endpoints
 
@@ -63,7 +64,9 @@ Help guests discover a suitable room through natural conversation while keeping 
 
 - The orchestration is deterministic and stateful across browser-session turns.
 - Gemini remains optional and is used for broad natural-language answers; booking slot collection and tool decisions stay in Java.
-- Room cards deep-link to the existing room page and prefill the selected stay dates.
+- Room cards separate “view” from “choose”; choosing a room requires a second explicit confirmation before opening the booking form.
+- The chat panel restores the bounded recent transcript and collected requirements after a same-tab reload.
+- Room deep-links prefill the selected stay dates, but booking creation remains in the established transactional booking use case.
 
 ## Known gaps
 
