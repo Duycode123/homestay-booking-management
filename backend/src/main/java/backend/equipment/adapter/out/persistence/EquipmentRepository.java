@@ -1,7 +1,5 @@
 package backend.equipment.adapter.out.persistence;
 
-import backend.equipment.domain.model.EquipmentStatus;
-import backend.equipment.domain.model.EquipmentType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -38,18 +36,4 @@ public interface EquipmentRepository extends JpaRepository<EquipmentJpaEntity, I
             """)
     Optional<EquipmentJpaEntity> findDetailById(@Param("equipmentId") Integer equipmentId);
 
-    @Query("""
-            select e
-            from EquipmentJpaEntity e
-            join fetch e.room r
-            where (:roomId is null or r.id = :roomId)
-              and (:type is null or e.type = :type)
-              and (:status is null or e.status = :status)
-            order by r.roomName asc, e.name asc, e.id asc
-            """)
-    List<EquipmentJpaEntity> search(
-            @Param("roomId") Integer roomId,
-            @Param("type") EquipmentType type,
-            @Param("status") EquipmentStatus status
-    );
 }

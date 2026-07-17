@@ -589,7 +589,7 @@ public class AiConsultantServiceImpl implements AiConsultantService {
 
     private Map<Integer, List<EquipmentJpaEntity>> getEquipmentByRoom() {
         try {
-            return equipmentRepository.search(null, null, null).stream()
+            return equipmentRepository.findAllWithRoom().stream()
                     .collect(Collectors.groupingBy(equipment -> equipment.getRoom().getId()));
         } catch (RuntimeException ignored) {
             return Map.of();

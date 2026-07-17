@@ -25,6 +25,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class AiConsultantServiceImplTest {
@@ -32,6 +33,7 @@ class AiConsultantServiceImplTest {
     private GeminiAiClient geminiAiClient;
     private RoomRepository roomRepository;
     private BookingRepository bookingRepository;
+    private EquipmentRepository equipmentRepository;
     private AiConsultantServiceImpl service;
 
     @BeforeEach
@@ -40,11 +42,11 @@ class AiConsultantServiceImplTest {
         bookingRepository = mock(BookingRepository.class);
         DiscountCodeRepository discountCodeRepository = mock(DiscountCodeRepository.class);
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
-        EquipmentRepository equipmentRepository = mock(EquipmentRepository.class);
+        equipmentRepository = mock(EquipmentRepository.class);
         geminiAiClient = mock(GeminiAiClient.class);
 
         when(roomRepository.findAllByOrderByRoomNameAsc()).thenReturn(List.of());
-        when(equipmentRepository.search(null, null, null)).thenReturn(List.of());
+        when(equipmentRepository.findAllWithRoom()).thenReturn(List.of());
         when(reviewRepository.findApprovedRoomReviewStats()).thenReturn(List.of());
         when(bookingRepository.findBlockingBookings(anyInt(), any(), any(), anyList())).thenReturn(List.of());
         when(geminiAiClient.isConfigured()).thenReturn(false);
@@ -128,6 +130,7 @@ class AiConsultantServiceImplTest {
         assertThat(searchResponse.getState()).isEqualTo("RECOMMENDING");
         assertThat(searchResponse.getSuggestedRooms()).extracting("roomName")
                 .containsExactly("Deluxe Garden 203");
+        verify(equipmentRepository).findAllWithRoom();
         assertThat(searchResponse.getSuggestedRooms().get(0).getBookingUrl())
                 .contains("/rooms/7", "agentBooking=1", "checkIn=2027-07-20", "checkOut=2027-07-22");
 
