@@ -31,6 +31,7 @@ export const metadata: Metadata = {
   category: 'travel',
   alternates: {
     canonical: '/',
+    languages: { 'vi-VN': '/' },
   },
   openGraph: {
     type: 'website',
@@ -88,6 +89,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="vi">
+      <head>
+        <link rel="preconnect" href="https://cdn.justfly.vn" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
+      </head>
       <body className="font-sans antialiased">
         <AccessibilityClientProvider />
         <AuthProvider>

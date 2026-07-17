@@ -108,20 +108,13 @@ export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenu
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
         aria-haspopup="menu"
-        aria-label="Mở menu tài khoản"
-        className="group flex min-h-12 items-center gap-2.5 rounded-full border border-[#ddccb4] bg-[#fffdfa] py-1.5 pl-1.5 pr-3 shadow-[0_8px_22px_rgba(32,57,48,.09)] transition duration-300 hover:-translate-y-0.5 hover:border-[#b98853]/55 hover:shadow-[0_12px_28px_rgba(32,57,48,.14)] focus:outline-none focus:ring-2 focus:ring-[#b98853]/25"
+        aria-label={`Mở menu tài khoản của ${displayName}`}
+        className="group flex h-11 w-11 items-center justify-center rounded-full border border-[#ddccb4] bg-[#fffdfa] p-1 shadow-[0_7px_20px_rgba(32,57,48,.08)] transition duration-300 hover:-translate-y-0.5 hover:border-[#b98853]/55 hover:shadow-[0_11px_26px_rgba(32,57,48,.13)] focus:outline-none focus:ring-2 focus:ring-[#b98853]/25"
       >
         <span className="relative">
           <AccountAvatar avatarUrl={avatarUrl} initial={avatarInitial} size="trigger" />
           <OnlineDot className="bottom-0 right-0" />
         </span>
-        <span className="hidden min-w-0 text-left sm:block">
-          <span className="block max-w-[165px] truncate font-display text-sm font-bold text-[#25332d]">{displayName}</span>
-          <span className="block text-[9px] font-bold uppercase tracking-[0.15em] text-[#8a7356]">{roleLabels[role]}</span>
-        </span>
-        <svg className={`h-4 w-4 text-[#806b50] transition-transform duration-300 ${open ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
-          <path d="m7 10 5 5 5-5" />
-        </svg>
       </button>
 
       {open ? (
@@ -129,36 +122,31 @@ export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenu
           role="menu"
           aria-label="Tài khoản"
           className={[
-            'absolute z-[100] mt-3 w-[min(340px,calc(100vw-24px))] overflow-hidden rounded-[22px] border border-[#d8c9b5] bg-[#fffdfa] shadow-[0_26px_70px_rgba(20,47,38,.24)]',
+            'absolute z-[100] mt-2.5 w-[min(306px,calc(100vw-24px))] overflow-hidden rounded-[18px] border border-[#d8c9b5] bg-[#fffdfa] shadow-[0_24px_60px_rgba(20,47,38,.22)]',
             align === 'full' ? 'right-0' : 'right-0',
           ].join(' ')}
         >
-          <div className="relative border-b border-white/10 bg-[linear-gradient(145deg,#173f35,#254f43)] px-5 py-5 text-white">
+          <div className="relative border-b border-white/10 bg-[linear-gradient(145deg,#173f35,#254f43)] px-4 py-4 text-white">
             <div className="pointer-events-none absolute -right-12 -top-16 h-40 w-40 rounded-full border border-white/10" aria-hidden />
-            <div className="relative flex items-center gap-3.5">
+            <div className="relative flex items-center gap-3">
               <span className="relative">
                 <AccountAvatar avatarUrl={avatarUrl} initial={avatarInitial} size="menu" />
-                <OnlineDot className="bottom-0 right-0 border-[#214b3f]" />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate font-display text-base font-bold text-white">{displayName}</p>
+                <p className="truncate font-display text-[15px] font-bold text-white">{displayName}</p>
                 <p className="mt-0.5 text-xs text-white/65">{roleLabels[role]}</p>
-                <p className="mt-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-[#a9e3c6]">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#6bd19c]" aria-hidden />
-                  Đang hoạt động
-                </p>
               </div>
             </div>
           </div>
 
-          <div className="space-y-2 border-b border-[#e8ddcf] px-5 py-4">
+          <div className="space-y-1.5 border-b border-[#e8ddcf] px-4 py-3">
             {email ? <ContactRow icon="mail" value={email} /> : null}
             {phone ? <ContactRow icon="phone" value={phone} /> : (
               <p className="text-xs leading-5 text-[#8b877e]">Bổ sung số điện thoại trong Thông tin cá nhân để được hỗ trợ nhanh hơn.</p>
             )}
           </div>
 
-          <div className="space-y-1.5 p-2.5">
+          <div className="space-y-0.5 p-2">
             {workspaceLink ? (
               <MenuLink href={workspaceLink.href} label={workspaceLink.label} icon="dashboard" onClick={handleNavigate} />
             ) : null}
@@ -166,13 +154,13 @@ export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenu
             <MenuLink href="/customer/account-settings" label="Cài đặt tài khoản" icon="settings" onClick={handleNavigate} />
           </div>
 
-          <div className="border-t border-[#e8ddcf] bg-[#fbf7f1] p-2.5">
+          <div className="border-t border-[#e8ddcf] bg-[#fbf7f1] p-2">
             <button
               type="button"
               onClick={handleLogout}
               disabled={isLoggingOut}
               role="menuitem"
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[#bd3535] transition hover:bg-[#fff0f0] focus:outline-none focus:ring-2 focus:ring-[#bd3535]/20 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex w-full items-center gap-3 rounded-[10px] px-3 py-2.5 text-left text-[#bd3535] transition hover:bg-[#fff0f0] focus:outline-none focus:ring-2 focus:ring-[#bd3535]/20 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Icon name="logout" />
               <span className="font-display text-sm font-semibold">{isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}</span>
@@ -191,14 +179,14 @@ function MenuLink({ href, label, icon, emphasized = false, onClick }: { href: st
       onClick={onClick}
       role="menuitem"
       className={[
-        'group flex items-center justify-between rounded-xl border px-3 py-2.5 transition focus:outline-none focus:ring-2 focus:ring-[#b98853]/25',
+        'group flex items-center justify-between rounded-[10px] border px-3 py-2.5 transition focus:outline-none focus:ring-2 focus:ring-[#b98853]/25',
         emphasized
-          ? 'border-[#c7965e] bg-[#f7efe4] text-[#173f35] hover:bg-[#f1e3d1]'
+          ? 'border-transparent bg-[#f7efe4] text-[#173f35] hover:bg-[#f1e3d1]'
           : 'border-transparent text-[#303833] hover:border-[#e2d5c3] hover:bg-[#f8f3ec]',
       ].join(' ')}
     >
       <span className="flex items-center gap-3">
-        <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${emphasized ? 'bg-[#173f35] text-white' : 'bg-[#efe5d7] text-[#74593b]'}`}>
+        <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${emphasized ? 'bg-[#173f35] text-white' : 'bg-[#efe5d7] text-[#74593b]'}`}>
           <Icon name={icon} />
         </span>
         <span className="font-display text-sm font-semibold">{label}</span>
@@ -218,10 +206,10 @@ function ContactRow({ icon, value }: { icon: 'mail' | 'phone'; value: string }) 
 }
 
 function AccountAvatar({ avatarUrl, initial, size }: { avatarUrl?: string; initial: string; size: 'trigger' | 'menu' }) {
-  const classes = size === 'menu' ? 'h-14 w-14 border-2 border-[#d8b98e] text-lg' : 'h-9 w-9 text-sm'
+  const classes = size === 'menu' ? 'h-11 w-11 border border-[#d8b98e] text-base' : 'h-9 w-9 text-sm'
   return (
     <span className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#173f35] font-display font-bold text-white ${classes}`}>
-      {avatarUrl ? <img src={avatarUrl} alt="Ảnh đại diện" width={size === 'menu' ? 56 : 36} height={size === 'menu' ? 56 : 36} decoding="async" className="h-full w-full object-cover" /> : initial}
+      {avatarUrl ? <img src={avatarUrl} alt="Ảnh đại diện" width={size === 'menu' ? 44 : 36} height={size === 'menu' ? 44 : 36} decoding="async" className="h-full w-full object-cover" /> : initial}
     </span>
   )
 }

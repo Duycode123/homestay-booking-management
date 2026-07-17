@@ -150,6 +150,7 @@ export default function StaySearchBar({
           />
           {activeDateField && (
             <CompactCalendar
+              sidebar={isSidebar}
               activeField={activeDateField}
               visibleMonth={visibleMonth}
               checkIn={checkIn}
@@ -251,10 +252,10 @@ function DateButton({ className, label, value, active, onClick }: { className: s
   )
 }
 
-function CompactCalendar({ activeField, visibleMonth, checkIn, checkOut, minDate, maxDate, onPrevious, onNext, onSelect }: { activeField: Exclude<ActiveDateField, null>; visibleMonth: string; checkIn: string; checkOut: string; minDate: string; maxDate: string; onPrevious: () => void; onNext: () => void; onSelect: (date: string) => void }) {
+function CompactCalendar({ sidebar, activeField, visibleMonth, checkIn, checkOut, minDate, maxDate, onPrevious, onNext, onSelect }: { sidebar?: boolean; activeField: Exclude<ActiveDateField, null>; visibleMonth: string; checkIn: string; checkOut: string; minDate: string; maxDate: string; onPrevious: () => void; onNext: () => void; onSelect: (date: string) => void }) {
   const cells = getCalendarCells(visibleMonth)
   return (
-    <div className="absolute left-0 z-50 mt-2 w-[320px] rounded-[22px] border border-[#ded2c3] bg-white p-4 shadow-[0_26px_66px_rgba(30,48,40,.2)] sm:w-[350px]">
+    <div className={`absolute left-0 z-50 mt-2 rounded-[22px] border border-[#ded2c3] bg-white p-4 shadow-[0_26px_66px_rgba(30,48,40,.2)] ${sidebar ? 'w-full' : 'w-[320px] sm:w-[350px]'}`}>
       <div className="flex items-center justify-between">
         <button type="button" onClick={onPrevious} className="flex h-9 w-9 items-center justify-center rounded-full border border-[#e2d8ca] text-lg text-secondary hover:border-[#b28455]" aria-label="Tháng trước">‹</button>
         <div className="text-center">

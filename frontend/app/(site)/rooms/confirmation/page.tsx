@@ -1,5 +1,14 @@
+import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import BookingConfirmationClient from '@/components/booking/BookingConfirmationClient'
+
+export const metadata: Metadata = {
+  title: 'Xác nhận đặt phòng',
+  alternates: { canonical: null },
+  openGraph: null,
+  twitter: null,
+  robots: { index: false, follow: false, noarchive: true },
+}
 
 export default function RoomBookingConfirmationPage() {
   return (

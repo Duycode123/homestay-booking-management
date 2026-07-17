@@ -21,6 +21,7 @@ export function createPublicPageMetadata({
     description,
     alternates: {
       canonical: path,
+      languages: { 'vi-VN': path },
     },
     openGraph: {
       type: 'website',
@@ -43,6 +44,17 @@ export function createPublicPageMetadata({
       title: socialTitle,
       description,
       images: [socialImage],
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+        'max-video-preview': -1,
+      },
     },
   }
 }

@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import BookingQuickModal from '@/components/booking/BookingQuickModal'
 import {
-  default as StaySearchBar,
   buildStaySearchParams,
   readStaySearchCriteria,
   type StaySearchCriteria,
@@ -57,13 +56,6 @@ const NIGHTLY_PRICE_STEP = 100_000
 
 type RoomSortOption = 'recommended' | 'rating_desc' | 'price_asc' | 'price_desc' | 'capacity_desc'
 
-const availabilityOptions: Array<{ value: 'all' | RoomAvailabilityStatus; label: string }> = [
-  { value: 'all', label: 'Tất cả trạng thái' },
-  { value: 'AVAILABLE', label: 'Còn trống hôm nay' },
-  { value: 'ALMOST_FULL', label: 'Đang giữ chỗ' },
-  { value: 'FULL_TODAY', label: 'Kín lịch hôm nay' },
-]
-
 const capacityOptions: Array<{ value: RoomCapacityFilter; label: string }> = [
   { value: 'all', label: 'Mọi sức chứa' },
   { value: 'small', label: '1-4 người' },
@@ -73,6 +65,7 @@ const capacityOptions: Array<{ value: RoomCapacityFilter; label: string }> = [
 
 const defaultFilters: RoomFilters = {
   search: '',
+  roomName: '',
   roomTierId: 'all',
   capacity: 'all',
   minGuests: 0,
@@ -152,6 +145,7 @@ export default function RoomsPublicPage() {
     ? Math.round((bookableRoomCount / liveRooms.length) * 100)
     : 0
   const hasActiveFilters =
+    filters.roomName.trim().length > 0 ||
     filters.roomTierId !== 'all' ||
     filters.capacity !== 'all' ||
     filters.minBedrooms > 0 || filters.amenities.length > 0 || filters.minRating > 0 ||
@@ -378,16 +372,6 @@ export default function RoomsPublicPage() {
     setSortBy('recommended')
   }
 
-  const handleStaySearch = (criteria: StaySearchCriteria) => {
-    setStayCriteria(criteria)
-    setFilters((current) => ({
-      ...current,
-      search: criteria.keyword,
-      minGuests: criteria.adults + criteria.children,
-    }))
-    router.replace(`/rooms?${buildStaySearchParams(criteria).toString()}`, { scroll: false })
-  }
-
   const showRoomsByAvailability = (availability: RoomAvailabilityStatus) => {
     setFilters((current) => ({ ...current, availability }))
     window.requestAnimationFrame(() => {
@@ -496,59 +480,55 @@ export default function RoomsPublicPage() {
 
       <section id="room-catalog" className="mx-auto max-w-[1480px] scroll-mt-24 px-4 py-10 sm:px-7 sm:py-14">
         <div className="grid items-start gap-7 lg:grid-cols-[320px_minmax(0,1fr)] xl:gap-9">
-          <aside className="lg:sticky lg:top-24">
-            <div className="rounded-[24px] border border-[#d9cebf] bg-[#fffdfa] shadow-[0_20px_55px_rgba(29,49,41,.10)]">
-              <div className="rounded-t-[23px] bg-[linear-gradient(135deg,#173a31,#285648)] px-5 py-5 text-white">
+          <aside className="self-start">
+            <div className="overflow-hidden rounded-[24px] border border-[#d9cebf] bg-[#fffdfa] shadow-[0_20px_55px_rgba(29,49,41,.10)]">
+              <div className="rounded-t-[23px] bg-[linear-gradient(135deg,#173a31,#285648)] px-5 py-4 text-white">
                 <div className="flex items-center gap-3">
                   <FilterControlIcon name="tune" prominent />
                   <div>
-                    <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#e3bc8e]">Tìm kiếm tinh tuyển</p>
-                    <h2 className="mt-1 font-display text-lg font-bold">Kỳ nghỉ của bạn</h2>
+                    <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#e3bc8e]">Bộ lọc chi tiết</p>
+                    <h2 className="mt-1 font-display text-lg font-bold">Tinh chỉnh lựa chọn</h2>
                   </div>
                 </div>
-                <p className="mt-3 text-xs leading-5 text-white/60">Thay đổi ngày, số khách và nhu cầu; kết quả được đối chiếu ngay với lịch phòng thật.</p>
+                <p className="mt-2.5 text-xs leading-5 text-white/65">Lọc thêm theo loại phòng, quy mô, đánh giá, ngân sách và tiện nghi.</p>
               </div>
 
-              <div className="space-y-6 p-4">
-                <StaySearchBar
-                  variant="sidebar"
-                  initialValues={stayCriteria ?? undefined}
-                  onSearch={handleStaySearch}
+              <div className="space-y-5 p-4">
+                <SidebarRoomNameSearch
+                  value={filters.roomName}
+                  onChange={(value) => updateFilter('roomName', value)}
                 />
 
-                <FilterDivider title="Chi tiết phòng" />
-                <div className="space-y-3">
-                  <CompactFilterSelect
-                    label="Loại phòng"
-                    icon="tier"
-                    value={filters.roomTierId}
-                    onChange={(value) => updateFilter('roomTierId', value)}
-                    options={[
-                      { value: 'all', label: 'Tất cả loại phòng' },
-                      ...roomTiers.map((tier) => ({
-                        value: String(tier.id),
-                        label: getPublicRoomTierLabel(tier.typeName, {
-                          category: inferRoomCategoryFromTypeName(`${tier.typeName} ${tier.description ?? ''}`),
-                          capacity: tier.capacity,
-                        }),
-                      })),
-                    ]}
-                  />
-                  <CompactFilterSelect
-                    label="Số phòng ngủ"
-                    icon="room"
-                    value={String(filters.minBedrooms)}
-                    onChange={(value) => updateFilter('minBedrooms', Number(value))}
-                    options={buildCountOptions('phòng ngủ', 6)}
-                  />
-                  <CompactFilterSelect
-                    label="Quy mô căn"
-                    icon="guests"
-                    value={filters.capacity}
-                    onChange={(value) => updateFilter('capacity', value as RoomCapacityFilter)}
-                    options={capacityOptions}
-                  />
-                </div>
+                <FilterDivider title="Loại phòng" />
+                <SidebarSingleChoiceFilter
+                  value={filters.roomTierId}
+                  onChange={(value) => updateFilter('roomTierId', value)}
+                  options={[
+                    { value: 'all', label: 'Tất cả loại phòng' },
+                    ...roomTiers.map((tier) => ({
+                      value: String(tier.id),
+                      label: getPublicRoomTierLabel(tier.typeName, {
+                        category: inferRoomCategoryFromTypeName(`${tier.typeName} ${tier.description ?? ''}`),
+                        capacity: tier.capacity,
+                      }),
+                    })),
+                  ]}
+                />
+
+                <FilterDivider title="Số phòng ngủ" />
+                <SidebarSingleChoiceFilter
+                  value={String(filters.minBedrooms)}
+                  onChange={(value) => updateFilter('minBedrooms', Number(value))}
+                  options={buildCountOptions('phòng ngủ', 6)}
+                  collapsedAfter={4}
+                />
+
+                <FilterDivider title="Sức chứa" />
+                <SidebarSingleChoiceFilter
+                  value={filters.capacity}
+                  onChange={(value) => updateFilter('capacity', value as RoomCapacityFilter)}
+                  options={capacityOptions}
+                />
 
                 <FilterDivider title="Điểm đánh giá" />
                 <RatingFilter value={filters.minRating} onChange={(value) => updateFilter('minRating', value)} />
@@ -567,15 +547,14 @@ export default function RoomsPublicPage() {
                   selected={filters.amenities}
                   onChange={(values) => updateFilter('amenities', values)}
                 />
+              </div>
 
-                <FilterDivider title="Trạng thái phòng" />
-                <AvailabilityFilter value={filters.availability} onChange={(value) => updateFilter('availability', value)} />
-
+              <div className="border-t border-[#e7ddcf] bg-[#fffdfa]/95 p-3 backdrop-blur">
                 <button
                   type="button"
                   onClick={resetDetailFilters}
                   disabled={!hasActiveFilters && sortBy === 'recommended'}
-                  className="h-11 w-full rounded-xl border border-[#cfbfaa] bg-white font-display text-sm font-bold text-secondary transition hover:border-[#aa7949] hover:bg-[#faf4eb] disabled:cursor-default disabled:opacity-40"
+                  className="h-10 w-full rounded-xl border border-[#cfbfaa] bg-white font-display text-sm font-bold text-secondary transition hover:border-[#aa7949] hover:bg-[#faf4eb] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#b28455]/15 disabled:cursor-default disabled:opacity-40"
                 >
                   Đặt lại bộ lọc chi tiết
                 </button>
@@ -894,6 +873,42 @@ function FilterControlIcon({ name, prominent = false }: { name: FilterControlIco
   )
 }
 
+function SidebarRoomNameSearch({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  return (
+    <label className="block">
+      <span className="mb-2 block font-display text-[10px] font-bold uppercase tracking-[0.15em] text-[#765b3e]">
+        Tìm tên phòng
+      </span>
+      <span className="flex min-h-12 items-center gap-3 rounded-[16px] border border-[#ded2c3] bg-white px-3.5 shadow-[0_5px_18px_rgba(37,57,48,.04)] transition focus-within:border-[#a9794b] focus-within:ring-4 focus-within:ring-[#b28455]/10">
+        <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5 shrink-0 text-[#a56f3e]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+          <circle cx="11" cy="11" r="6.5" />
+          <path d="m16 16 4 4" />
+        </svg>
+        <input
+          type="text"
+          role="searchbox"
+          aria-label="Tìm theo tên phòng"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder="Ví dụ: Deluxe Garden"
+          autoComplete="off"
+          className="min-w-0 flex-1 border-0 bg-transparent py-3 text-sm font-medium text-secondary outline-none placeholder:text-[#aaa399]"
+        />
+        {value ? (
+          <button
+            type="button"
+            onClick={() => onChange('')}
+            aria-label="Xóa tên phòng đang tìm"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#8c867d] transition hover:bg-[#f3e9dc] hover:text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b28455]/25"
+          >
+            <span aria-hidden>×</span>
+          </button>
+        ) : null}
+      </span>
+    </label>
+  )
+}
+
 function FilterDivider({ title }: { title: string }) {
   return (
     <div className="flex items-center gap-3">
@@ -905,32 +920,86 @@ function FilterDivider({ title }: { title: string }) {
 
 function RatingFilter({ value, onChange }: { value: number; onChange: (value: number) => void }) {
   const options = [
-    { value: 0, label: 'Tất cả', stars: 'Mọi đánh giá' },
-    { value: 4.5, label: 'Xuất sắc', stars: '4.5 sao trở lên' },
-    { value: 4, label: 'Rất tốt', stars: '4.0 sao trở lên' },
-    { value: 3, label: 'Tốt', stars: '3.0 sao trở lên' },
+    { value: 0, label: 'Tất cả đánh giá' },
+    { value: 5, label: '5 sao', description: 'Xuất sắc' },
+    { value: 4, label: '4 sao trở lên', description: 'Rất tốt' },
+    { value: 3, label: '3 sao trở lên', description: 'Tốt' },
+    { value: 2, label: '2 sao trở lên' },
+    { value: 1, label: '1 sao trở lên' },
   ]
 
   return (
-    <div className="grid grid-cols-2 gap-2">
-      {options.map((option) => {
-        const selected = value === option.value
-        return (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => onChange(option.value)}
-            aria-pressed={selected}
-            className={[
-              'rounded-xl border px-3 py-2.5 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b28455]/30',
-              selected ? 'border-secondary bg-[#edf4f0] text-secondary' : 'border-[#e3d9cc] bg-white text-[#5f655f] hover:border-[#c9ad89] hover:bg-[#fdf9f3]',
-            ].join(' ')}
-          >
-            <span className="block font-display text-xs font-bold">{option.value > 0 ? `★ ${option.label}` : option.label}</span>
-            <span className="mt-0.5 block text-[9px] text-[#89837a]">{option.stars}</span>
-          </button>
-        )
-      })}
+    <SidebarSingleChoiceFilter
+      value={value}
+      onChange={onChange}
+      options={options}
+      renderLeading={(option) => option.value > 0 ? (
+        <span className="min-w-[58px] text-[11px] tracking-[0.08em] text-[#b47b3d]" aria-hidden>
+          {'★'.repeat(Number(option.value))}
+        </span>
+      ) : null}
+    />
+  )
+}
+
+type SidebarChoiceValue = string | number
+type SidebarChoiceOption<T extends SidebarChoiceValue> = {
+  value: T
+  label: string
+  description?: string
+}
+
+function SidebarSingleChoiceFilter<T extends SidebarChoiceValue>({
+  value,
+  options,
+  onChange,
+  collapsedAfter,
+  renderLeading,
+}: {
+  value: T
+  options: SidebarChoiceOption<T>[]
+  onChange: (value: T) => void
+  collapsedAfter?: number
+  renderLeading?: (option: SidebarChoiceOption<T>) => ReactNode
+}) {
+  const [expanded, setExpanded] = useState(false)
+  const visibleOptions = collapsedAfter && !expanded ? options.slice(0, collapsedAfter) : options
+  const hiddenCount = Math.max(0, options.length - visibleOptions.length)
+
+  return (
+    <div>
+      <div className="space-y-1">
+        {visibleOptions.map((option) => {
+          const checked = value === option.value
+          return (
+            <button
+              key={String(option.value)}
+              type="button"
+              onClick={() => onChange(option.value)}
+              aria-pressed={checked}
+              className="group flex min-h-10 w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition hover:bg-[#faf4eb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b28455]/25"
+            >
+              <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] border transition ${checked ? 'border-secondary bg-secondary text-white' : 'border-[#cfc3b3] bg-white group-hover:border-[#aa8258]'}`}>
+                {checked ? <SelectedIcon /> : null}
+              </span>
+              {renderLeading?.(option)}
+              <span className="min-w-0 flex-1">
+                <span className={`block text-xs font-semibold ${checked ? 'text-secondary' : 'text-[#565e59]'}`}>{option.label}</span>
+                {option.description ? <span className="mt-0.5 block text-[10px] text-[#8b857c]">{option.description}</span> : null}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+      {collapsedAfter && options.length > collapsedAfter ? (
+        <button
+          type="button"
+          onClick={() => setExpanded((current) => !current)}
+          className="mt-2 text-xs font-bold text-[#966438] transition hover:text-secondary hover:underline"
+        >
+          {expanded ? 'Thu gọn' : `Xem thêm ${hiddenCount} lựa chọn`}
+        </button>
+      ) : null}
     </div>
   )
 }
@@ -971,8 +1040,8 @@ function SidebarAmenitiesFilter({ options, selected, onChange }: { options: stri
         {visibleOptions.map((amenity) => {
           const checked = selected.includes(amenity)
           return (
-            <button key={amenity} type="button" onClick={() => toggle(amenity)} className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition hover:bg-[#faf4eb]">
-              <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${checked ? 'border-secondary bg-secondary text-white' : 'border-[#d7cbbb] bg-white'}`}>{checked ? <SelectedIcon /> : null}</span>
+            <button key={amenity} type="button" onClick={() => toggle(amenity)} aria-pressed={checked} className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition hover:bg-[#faf4eb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b28455]/25">
+              <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] border ${checked ? 'border-secondary bg-secondary text-white' : 'border-[#d7cbbb] bg-white'}`}>{checked ? <SelectedIcon /> : null}</span>
               <span className="line-clamp-2 text-xs font-medium text-[#5c635e]">{amenity}</span>
             </button>
           )
@@ -980,19 +1049,6 @@ function SidebarAmenitiesFilter({ options, selected, onChange }: { options: stri
         {options.length === 0 ? <p className="py-3 text-center text-xs text-on-surface-variant">Chưa có dữ liệu tiện nghi.</p> : null}
       </div>
       {options.length > 6 ? <button type="button" onClick={() => setExpanded((current) => !current)} className="mt-2 text-xs font-bold text-[#966438] hover:underline">{expanded ? 'Thu gọn' : `Xem thêm ${options.length - 6} tiện nghi`}</button> : null}
-    </div>
-  )
-}
-
-function AvailabilityFilter({ value, onChange }: { value: 'all' | RoomAvailabilityStatus; onChange: (value: 'all' | RoomAvailabilityStatus) => void }) {
-  return (
-    <div className="space-y-1.5">
-      {availabilityOptions.map((option) => (
-        <button key={option.value} type="button" onClick={() => onChange(option.value)} className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-left text-xs font-semibold transition ${value === option.value ? 'border-secondary bg-[#edf4f0] text-secondary' : 'border-transparent bg-[#faf7f2] text-[#626862] hover:border-[#d9c8b2]'}`}>
-          {option.label}
-          <span className={`h-2.5 w-2.5 rounded-full border ${value === option.value ? 'border-secondary bg-secondary shadow-[0_0_0_3px_rgba(23,58,49,.12)]' : 'border-[#bdb2a4] bg-white'}`} aria-hidden />
-        </button>
-      ))}
     </div>
   )
 }
