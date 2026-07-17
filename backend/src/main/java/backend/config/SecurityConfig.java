@@ -21,7 +21,6 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.ObjectPostProcessor;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -42,17 +41,13 @@ public class SecurityConfig {
     private final CsrfAccessDeniedHandler csrfAccessDeniedHandler;
     private final OAuthLoginSuccessHandler oauthLoginSuccessHandler;
     private final OAuthLoginFailureHandler oauthLoginFailureHandler;
+    private final PasswordEncoder passwordEncoder;
 
     @Value("${app.cookie.secure:false}")
     private boolean secureCookies;
 
     @Value("${app.security.csrf.enabled:true}")
     private boolean csrfEnabled;
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
 
     @Bean
     public UserDetailsService userDetailsService() {
@@ -73,7 +68,7 @@ public class SecurityConfig {
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(userDetailsService());
-        authProvider.setPasswordEncoder(passwordEncoder());
+        authProvider.setPasswordEncoder(passwordEncoder);
         return authProvider;
     }
 

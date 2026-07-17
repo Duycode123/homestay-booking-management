@@ -3,8 +3,8 @@ package backend.auth.application.service;
 import backend.auth.application.port.in.AuthenticateOAuthUserUseCase;
 import backend.auth.application.port.in.command.OAuthUserCommand;
 import backend.auth.application.port.out.AuthAccountPort;
-import backend.auth.application.port.out.AuthSecurityPort;
 import backend.auth.application.port.out.OAuthIdentityPort;
+import backend.auth.application.port.out.OAuthSecurityPort;
 import backend.dto.response.AuthResponse;
 import backend.entity.Customer;
 import backend.entity.Role;
@@ -25,7 +25,7 @@ public class OAuthUserLoginService implements AuthenticateOAuthUserUseCase {
 
     private final AuthAccountPort authAccountPort;
     private final OAuthIdentityPort oauthIdentityPort;
-    private final AuthSecurityPort authSecurityPort;
+    private final OAuthSecurityPort oauthSecurityPort;
 
     @Override
     @Transactional
@@ -51,8 +51,8 @@ public class OAuthUserLoginService implements AuthenticateOAuthUserUseCase {
 
         oauthIdentityPort.recordLogin(provider, subject);
         return AuthResponse.builder()
-                .accessToken(authSecurityPort.generateAccessToken(user))
-                .refreshToken(authSecurityPort.generateRefreshToken(user))
+                .accessToken(oauthSecurityPort.generateAccessToken(user))
+                .refreshToken(oauthSecurityPort.generateRefreshToken(user))
                 .role(user.getRole().name())
                 .email(user.getEmail())
                 .emailVerificationRequired(false)
@@ -84,7 +84,7 @@ public class OAuthUserLoginService implements AuthenticateOAuthUserUseCase {
 
         User newUser = User.builder()
                 .email(email)
-                .password(authSecurityPort.encodePassword(UUID.randomUUID().toString()))
+                .password(oauthSecurityPort.encodePassword(UUID.randomUUID().toString()))
                 .role(Role.CUSTOMER)
                 .emailVerified(true)
                 .enabled(true)

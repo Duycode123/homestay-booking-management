@@ -2,8 +2,8 @@ package backend.auth.application.service;
 
 import backend.auth.application.port.in.command.OAuthUserCommand;
 import backend.auth.application.port.out.AuthAccountPort;
-import backend.auth.application.port.out.AuthSecurityPort;
 import backend.auth.application.port.out.OAuthIdentityPort;
+import backend.auth.application.port.out.OAuthSecurityPort;
 import backend.dto.response.AuthResponse;
 import backend.entity.Role;
 import backend.entity.User;
@@ -31,27 +31,27 @@ class OAuthUserLoginServiceTest {
     @Mock
     private OAuthIdentityPort oauthIdentityPort;
     @Mock
-    private AuthSecurityPort authSecurityPort;
+    private OAuthSecurityPort oauthSecurityPort;
 
     private OAuthUserLoginService service;
 
     @BeforeEach
     void setUp() {
-        service = new OAuthUserLoginService(authAccountPort, oauthIdentityPort, authSecurityPort);
+        service = new OAuthUserLoginService(authAccountPort, oauthIdentityPort, oauthSecurityPort);
     }
 
     @Test
     void createsVerifiedCustomerAndLinksGoogleIdentity() {
         when(oauthIdentityPort.findAccountId("GOOGLE", "google-123")).thenReturn(Optional.empty());
         when(authAccountPort.loadUserByEmail("guest@example.com")).thenReturn(Optional.empty());
-        when(authSecurityPort.encodePassword(any())).thenReturn("encoded-random-password");
+        when(oauthSecurityPort.encodePassword(any())).thenReturn("encoded-random-password");
         when(authAccountPort.saveUser(any())).thenAnswer(invocation -> {
             User user = invocation.getArgument(0);
             user.setId(42);
             return user;
         });
-        when(authSecurityPort.generateAccessToken(any())).thenReturn("access");
-        when(authSecurityPort.generateRefreshToken(any())).thenReturn("refresh");
+        when(oauthSecurityPort.generateAccessToken(any())).thenReturn("access");
+        when(oauthSecurityPort.generateRefreshToken(any())).thenReturn("refresh");
 
         AuthResponse response = service.authenticate(command());
 
@@ -78,8 +78,8 @@ class OAuthUserLoginServiceTest {
                 .build();
         when(oauthIdentityPort.findAccountId("GOOGLE", "google-123")).thenReturn(Optional.of(7));
         when(authAccountPort.loadUserById(7)).thenReturn(Optional.of(user));
-        when(authSecurityPort.generateAccessToken(user)).thenReturn("access");
-        when(authSecurityPort.generateRefreshToken(user)).thenReturn("refresh");
+        when(oauthSecurityPort.generateAccessToken(user)).thenReturn("access");
+        when(oauthSecurityPort.generateRefreshToken(user)).thenReturn("refresh");
 
         service.authenticate(command());
 
