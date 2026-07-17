@@ -122,11 +122,11 @@ export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenu
           role="menu"
           aria-label="Tài khoản"
           className={[
-            'absolute z-[100] mt-3 w-[min(320px,calc(100vw-24px))] overflow-hidden rounded-[22px] border border-[#d8c9b5]/90 bg-[#fffdfa] shadow-[0_26px_70px_rgba(20,47,38,.24)]',
+            'absolute z-[100] mt-3 w-[min(340px,calc(100vw-24px))] overflow-hidden rounded-[22px] border border-[#d8c9b5] bg-[#fffdfa] shadow-[0_26px_70px_rgba(20,47,38,.24)]',
             align === 'full' ? 'right-0' : 'right-0',
           ].join(' ')}
         >
-          <div className="relative border-b border-white/10 bg-[linear-gradient(145deg,#123c32,#285548)] px-5 py-[18px] text-white">
+          <div className="relative border-b border-white/10 bg-[linear-gradient(145deg,#173f35,#254f43)] px-5 py-5 text-white">
             <div className="pointer-events-none absolute -right-12 -top-16 h-40 w-40 rounded-full border border-white/10" aria-hidden />
             <div className="relative flex items-center gap-3">
               <span className="relative">
@@ -139,14 +139,14 @@ export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenu
             </div>
           </div>
 
-          <div className="space-y-2 border-b border-[#e8ddcf] px-5 py-3.5">
+          <div className="space-y-2 border-b border-[#e8ddcf] px-5 py-4">
             {email ? <ContactRow icon="mail" value={email} /> : null}
             {phone ? <ContactRow icon="phone" value={phone} /> : (
               <p className="text-xs leading-5 text-[#8b877e]">Bổ sung số điện thoại trong Thông tin cá nhân để được hỗ trợ nhanh hơn.</p>
             )}
           </div>
 
-          <div className="space-y-1 p-2.5">
+          <div className="space-y-1.5 p-2.5">
             {workspaceLink ? (
               <MenuLink href={workspaceLink.href} label={workspaceLink.label} icon="dashboard" onClick={handleNavigate} />
             ) : null}
@@ -157,7 +157,7 @@ export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenu
             <MenuLink href="/customer/account-settings" label="Cài đặt tài khoản" icon="settings" onClick={handleNavigate} />
           </div>
 
-          <div className="border-t border-[#e8ddcf] bg-[#fbf7f1] p-2.5">
+          <div className="border-t border-[#e8ddcf] bg-[#fbf7f1] p-2">
             <button
               type="button"
               onClick={handleLogout}
@@ -182,14 +182,14 @@ function MenuLink({ href, label, icon, emphasized = false, onClick }: { href: st
       onClick={onClick}
       role="menuitem"
       className={[
-        'group flex items-center justify-between rounded-[13px] border px-3 py-2.5 transition duration-200 focus:outline-none focus:ring-2 focus:ring-[#b98853]/25',
+        'group flex items-center justify-between rounded-xl border px-3 py-2.5 transition focus:outline-none focus:ring-2 focus:ring-[#b98853]/25',
         emphasized
           ? 'border-transparent bg-[#f7efe4] text-[#173f35] hover:bg-[#f1e3d1]'
           : 'border-transparent text-[#303833] hover:border-[#e2d5c3] hover:bg-[#f8f3ec]',
       ].join(' ')}
     >
       <span className="flex items-center gap-3">
-        <span className={`flex h-8 w-8 items-center justify-center rounded-[10px] transition-colors ${emphasized ? 'bg-[#173f35] text-white shadow-[0_5px_12px_rgba(23,63,53,.18)]' : 'bg-[#efe5d7] text-[#74593b] group-hover:bg-[#e7d8c5]'}`}>
+        <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${emphasized ? 'bg-[#173f35] text-white' : 'bg-[#efe5d7] text-[#74593b]'}`}>
           <Icon name={icon} />
         </span>
         <span className="font-display text-sm font-semibold">{label}</span>
