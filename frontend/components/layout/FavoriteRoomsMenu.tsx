@@ -62,7 +62,7 @@ export default function FavoriteRoomsMenu({ onNavigate }: FavoriteRoomsMenuProps
         aria-expanded={panelOpen}
         aria-haspopup="dialog"
         aria-label={`Phòng yêu thích${favorites.length ? `, ${favorites.length} phòng` : ''}`}
-        className="group relative flex h-12 w-12 items-center justify-center rounded-full border border-[#d9c6aa] bg-white text-[#715334] shadow-[0_8px_24px_rgba(36,58,49,.10)] transition-all hover:-translate-y-0.5 hover:border-[#bc8951] hover:bg-[#fff8ee] focus:outline-none focus:ring-2 focus:ring-brand-orange/25"
+        className="group relative flex h-11 w-11 items-center justify-center rounded-full border border-[#ddccb4] bg-[#fffdfa] text-[#715334] shadow-[0_7px_20px_rgba(32,57,48,.08)] transition-all hover:-translate-y-0.5 hover:border-[#b98853]/55 hover:bg-[#fff8ee] focus:outline-none focus:ring-2 focus:ring-brand-orange/25"
       >
         <HeartIcon filled={favorites.length > 0} className="h-5 w-5" />
         {favorites.length > 0 && (

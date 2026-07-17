@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import AccountMenu from '@/components/layout/AccountMenu'
 import FavoriteRoomsMenu from '@/components/layout/FavoriteRoomsMenu'
+import NotificationMenu from '@/components/layout/NotificationMenu'
 import { useAuth } from '@/contexts/AuthContext'
 import { useHomepageActiveSection } from '@/hooks/useHomepageActiveSection'
 import {
@@ -141,6 +142,7 @@ export default function HomestayHeader() {
             {isAuthenticated && user ? (
               <>
                 <FavoriteRoomsMenu />
+                <NotificationMenu />
                 <AccountMenu />
               </>
             ) : (
@@ -214,6 +216,7 @@ export default function HomestayHeader() {
             {isAuthenticated && user ? (
               <div className="mt-4 flex items-center justify-end gap-3">
                 <FavoriteRoomsMenu onNavigate={() => setMenuOpen(false)} />
+                <NotificationMenu onNavigate={() => setMenuOpen(false)} />
                 <AccountMenu align="full" onNavigate={() => setMenuOpen(false)} />
               </div>
             ) : (

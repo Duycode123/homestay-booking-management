@@ -137,6 +137,21 @@ Flyway migration `backend/src/main/resources/db/migration/V6__booking_addon_serv
 
 Checkout is blocked while a service remains `REQUESTED`, `CONFIRMED`, or `PREPARED`. Staff must deliver or cancel each open item before collecting the final balance.
 
+## Editable Room Private Amenities
+
+Flyway migration `backend/src/main/resources/db/migration/V7__seed_editable_room_private_amenities.sql`
+adds three room-specific amenities to each of the 12 named demo rooms. These rows are
+operational `equipment` records, not frontend mock data or runtime fallback content:
+
+- the admin room form reads them from the equipment API
+- administrators can add, edit, reassign, or delete them normally
+- public room detail pages read the same persisted rows
+- the migration runs once, so a deleted amenity is not recreated when the application restarts
+
+The migration matches rooms by normalized room name and skips an amenity when the same room
+already has an equipment row with that normalized name. A database without one of the named
+rooms simply skips that room safely.
+
 ## Sample Data
 
 For local development or demo setup, `database/sample-data/seed_rooms_and_equipment.sql` inserts sample:
