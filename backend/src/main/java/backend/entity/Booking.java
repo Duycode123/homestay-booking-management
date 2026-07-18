@@ -80,7 +80,7 @@ public class Booking {
     @Column(name = "equipment_notes", length = 500)
     private String instrumentNote;
 
-    @Column(name = "created_at", insertable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @Enumerated(EnumType.STRING)
@@ -128,6 +128,9 @@ public class Booking {
 
     @PrePersist
     public void prePersist() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
         if (status == null) {
             status = BookingStatus.PENDING_PAYMENT;
         }

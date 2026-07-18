@@ -9,6 +9,8 @@ RUN cp src/main/resources/application.properties.example src/main/resources/appl
 FROM eclipse-temurin:21-jre
 
 WORKDIR /app
+ENV TZ=Asia/Ho_Chi_Minh
+ENV JAVA_TOOL_OPTIONS="-Duser.timezone=Asia/Ho_Chi_Minh"
 COPY --from=build /app/target/homestay-booking-backend-0.0.1-SNAPSHOT.jar app.jar
 
 EXPOSE 10000

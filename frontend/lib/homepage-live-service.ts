@@ -127,13 +127,24 @@ export function maskCustomerName(customerName: string) {
 
 export function formatRelativeTime(createdAt: string, now = new Date()) {
   const createdDate = new Date(createdAt)
-  const diffInMinutes = Math.max(0, Math.round((now.getTime() - createdDate.getTime()) / 60000))
+  if (Number.isNaN(createdDate.getTime())) return ''
+
+  const diffInMinutes = Math.max(0, Math.floor((now.getTime() - createdDate.getTime()) / 60000))
 
   if (diffInMinutes < 1) return 'vừa xong'
   if (diffInMinutes < 60) return `${diffInMinutes} phút trước`
 
-  const diffInHours = Math.round(diffInMinutes / 60)
-  return `${diffInHours} giờ trước`
+  const diffInHours = Math.floor(diffInMinutes / 60)
+  if (diffInHours < 24) return `${diffInHours} giờ trước`
+
+  const diffInDays = Math.floor(diffInHours / 24)
+  if (diffInDays < 7) return `${diffInDays} ngày trước`
+
+  return new Intl.DateTimeFormat('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(createdDate)
 }
 
 export function getActivityActionLabel(action: RecentActivity['action']) {
