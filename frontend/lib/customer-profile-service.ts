@@ -97,8 +97,19 @@ function normalizeCurrentUser(currentUser: CurrentUserApiResponse, fallback?: Au
 }
 
 export async function fetchCurrentUser(user?: AuthUser | null): Promise<CustomerProfile> {
-  const response = await api.get<CurrentUserApiResponse>('/api/users/me')
-  return normalizeCurrentUser(response.data, user)
+  const response = await api.get<CurrentUserApiResponse>('/api/users/me', {
+    params: { requestTime: Date.now() },
+  })
+  const currentProfile = normalizeCurrentUser(response.data, user)
+  const expectedEmail = user?.email?.trim().toLowerCase()
+  const actualEmail = currentProfile.email.trim().toLowerCase()
+
+  if (expectedEmail && actualEmail && expectedEmail !== actualEmail) {
+    clearStoredCustomerProfile()
+    throw new Error('Authenticated profile does not match the current session')
+  }
+
+  return currentProfile
 }
 
 export async function updateCustomerProfile(payload: UpdateCustomerProfilePayload): Promise<CustomerProfile> {

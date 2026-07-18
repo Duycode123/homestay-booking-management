@@ -7,15 +7,19 @@ const AUTH_SESSION_MARKER_KEY = 'homestay_has_auth_session'
 const CSRF_COOKIE_NAME = 'HOMESTAY-XSRF-TOKEN'
 const UNSAFE_METHODS = new Set(['post', 'put', 'patch', 'delete'])
 
+// Keep browser API calls on the frontend origin. Next.js proxies them to Render,
+// so HttpOnly auth cookies always belong to one stable public domain.
+const BROWSER_API_BASE_URL = ''
+
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || '',
+  baseURL: BROWSER_API_BASE_URL,
   withCredentials: true,
   // Spring returns a masked request token; do not let Axios overwrite it from a legacy cookie.
   xsrfCookieName: '',
 })
 
 const csrfClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || '',
+  baseURL: BROWSER_API_BASE_URL,
   withCredentials: true,
   xsrfCookieName: '',
 })
@@ -25,6 +29,17 @@ let csrfPromise: Promise<{ headerName: string; token: string }> | null = null
 let csrfToken: { headerName: string; token: string } | null = null
 let csrfCookieSnapshot = ''
 let sessionExpiryRedirectStarted = false
+let authTransitionDepth = 0
+
+export async function beginAuthTransition() {
+  authTransitionDepth += 1
+  if (refreshPromise) await refreshPromise.catch(() => undefined)
+  invalidateCsrfCache()
+}
+
+export function endAuthTransition() {
+  authTransitionDepth = Math.max(0, authTransitionDepth - 1)
+}
 
 export function hasStoredAuthSession() {
   if (typeof window === 'undefined') return false
@@ -194,7 +209,7 @@ api.interceptors.response.use(
       return Promise.reject(error)
     }
 
-    if (!hasStoredAuthSession()) {
+    if (!hasStoredAuthSession() || authTransitionDepth > 0) {
       return Promise.reject(error)
     }
 

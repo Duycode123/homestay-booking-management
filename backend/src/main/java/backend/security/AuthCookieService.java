@@ -44,7 +44,9 @@ public class AuthCookieService {
         return ResponseCookie.from(name, value)
                 .httpOnly(true)
                 .secure(secure)
-                .sameSite("Strict")
+                // OAuth returns through a top-level cross-site navigation from Google.
+                // Lax still blocks cross-site subrequests while supporting that redirect.
+                .sameSite("Lax")
                 .path("/")
                 .maxAge(maxAge)
                 .build();
@@ -54,7 +56,7 @@ public class AuthCookieService {
         return ResponseCookie.from(name, "")
                 .httpOnly(true)
                 .secure(secure)
-                .sameSite("Strict")
+                .sameSite("Lax")
                 .path("/")
                 .maxAge(Duration.ZERO)
                 .build();

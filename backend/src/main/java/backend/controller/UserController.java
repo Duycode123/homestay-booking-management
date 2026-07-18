@@ -22,6 +22,7 @@ import backend.user.application.port.in.query.GetCurrentUserProfileQuery;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -51,10 +52,13 @@ public class UserController {
     private final AuthCookieService authCookieService;
 
     @GetMapping("/me")
-    public UserResponse me(Authentication authentication) {
-        return getCurrentUserProfileUseCase.getProfile(
+    public ResponseEntity<UserResponse> me(Authentication authentication) {
+        UserResponse profile = getCurrentUserProfileUseCase.getProfile(
                 new GetCurrentUserProfileQuery(authentication == null ? null : authentication.getName())
         );
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(profile);
     }
 
     @RequestMapping(value = "/me", method = {RequestMethod.PUT, RequestMethod.PATCH})

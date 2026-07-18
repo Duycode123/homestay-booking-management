@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
 const LOGIN_PATH = '/login'
-const HOME_PATH = '/'
 const ACCESS_COOKIE_NAME = 'access_token'
 const AUTH_COOKIE_NAMES = [ACCESS_COOKIE_NAME, 'refresh_token']
 const TOKEN_EXPIRY_SKEW_SECONDS = 5
@@ -37,23 +36,11 @@ function isExpired(payload: { exp?: number } | null) {
   return payload.exp <= Math.floor(Date.now() / 1000) + TOKEN_EXPIRY_SKEW_SECONDS
 }
 
-function getRoleFromPayload(payload: { role?: string } | null) {
-  return payload?.role?.trim().toUpperCase() ?? null
-}
-
 function redirectToLogin(request: NextRequest) {
   const loginUrl = request.nextUrl.clone()
   loginUrl.pathname = LOGIN_PATH
   loginUrl.searchParams.set('redirect', request.nextUrl.pathname)
   return NextResponse.redirect(loginUrl)
-}
-
-function redirectUnauthorized(request: NextRequest) {
-  const homeUrl = request.nextUrl.clone()
-  homeUrl.pathname = HOME_PATH
-  homeUrl.search = ''
-  homeUrl.searchParams.set('error', 'unauthorized')
-  return NextResponse.redirect(homeUrl)
 }
 
 export function proxy(request: NextRequest) {
@@ -70,13 +57,8 @@ export function proxy(request: NextRequest) {
     return redirectToLogin(request)
   }
 
-  if (request.nextUrl.pathname.startsWith('/admin')) {
-    const role = getRoleFromPayload(accessTokenPayload)
-    if (role !== 'ADMIN') {
-      return redirectUnauthorized(request)
-    }
-  }
-
+  // Role authorization is based on the backend-verified session and protected
+  // APIs. An unsigned JWT payload decoded at the edge is only an expiry hint.
   return NextResponse.next()
 }
 

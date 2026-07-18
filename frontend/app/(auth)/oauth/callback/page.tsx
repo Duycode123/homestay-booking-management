@@ -19,10 +19,10 @@ export default function OAuthCallbackPage() {
 
     const completeLogin = async () => {
       try {
-        rememberAuthSession()
         clearStoredCustomerProfile()
         const sessionUser = await getSessionRole()
         const currentProfile = await fetchCurrentUser(sessionUser)
+        rememberAuthSession()
         login({
           ...sessionUser,
           id: currentProfile.id ?? sessionUser.id,
@@ -33,9 +33,10 @@ export default function OAuthCallbackPage() {
           phone: currentProfile.phone,
           avatarUrl: currentProfile.avatarUrl,
         })
-        router.replace(getPostLoginPath(sessionUser.role))
+        router.replace(getPostLoginPath(currentProfile.role))
       } catch {
         clearStoredAuthSession()
+        clearStoredCustomerProfile()
         setError('Không thể hoàn tất đăng nhập Google. Vui lòng quay lại và thử lại.')
       }
     }

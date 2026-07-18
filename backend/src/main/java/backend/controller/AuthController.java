@@ -24,6 +24,7 @@ import backend.dto.request.ResendEmailVerificationRequest;
 import backend.dto.request.ResetPasswordRequest;
 import backend.dto.request.VerifyEmailRequest;
 import backend.dto.response.AuthResponse;
+import backend.dto.response.AuthSessionResponse;
 import backend.entity.User;
 import backend.security.AuthCookieService;
 import jakarta.validation.Valid;
@@ -122,7 +123,7 @@ public class AuthController {
     }
 
     @GetMapping("/session")
-    public ResponseEntity<Map<String, String>> session(Authentication authentication) {
+    public ResponseEntity<?> session(Authentication authentication) {
         if (authentication == null
                 || !authentication.isAuthenticated()
                 || !(authentication.getPrincipal() instanceof User user)) {
@@ -130,7 +131,14 @@ public class AuthController {
                     .body(Map.of("message", "Phien dang nhap khong hop le"));
         }
 
-        return ResponseEntity.ok(Map.of("role", user.getRole().name()));
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(AuthSessionResponse.builder()
+                        .id(user.getId())
+                        .role(user.getRole().name())
+                        .email(user.getEmail())
+                        .avatarUrl(user.getAvatarUrl())
+                        .build());
     }
 
     @PostMapping("/forgot-password")

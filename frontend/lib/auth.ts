@@ -1,6 +1,7 @@
 import api, {
+  beginAuthTransition,
   clearStoredAuthSession,
-  hasStoredAuthSession,
+  endAuthTransition,
   rememberAuthSession,
 } from '@/lib/api'
 
@@ -31,6 +32,14 @@ export function normalizeUserRole(role?: string | null): UserRole {
   return 'CUSTOMER'
 }
 
+function requireUserRole(role?: string | null): UserRole {
+  const normalizedRole = role?.trim().toUpperCase()
+  if (normalizedRole === 'ADMIN' || normalizedRole === 'STAFF' || normalizedRole === 'CUSTOMER') {
+    return normalizedRole
+  }
+  throw new Error('Invalid authenticated user role')
+}
+
 export function normalizeAuthUser(data: AuthApiUser, fallback?: AuthUser | null): AuthUser {
   return {
     ...fallback,
@@ -46,23 +55,31 @@ export function getPostLoginPath(role: UserRole) {
 }
 
 export const loginSession = async (email: string, password: string) => {
-  const response = await api.post<AuthApiUser>('/api/auth/login', { email, password })
-  rememberAuthSession()
-  return normalizeAuthUser(response.data)
+  await beginAuthTransition()
+  try {
+    clearStoredAuthSession()
+    const response = await api.post<AuthApiUser>('/api/auth/login', { email, password })
+    const authenticatedUser = normalizeAuthUser(response.data)
+    authenticatedUser.role = requireUserRole(response.data.role ?? response.data.vaiTro)
+    rememberAuthSession()
+    return authenticatedUser
+  } finally {
+    endAuthTransition()
+  }
 }
 
 export const getSessionRole = async () => {
   const response = await api.get<AuthApiUser>('/api/auth/session')
-  return normalizeAuthUser(response.data)
+  const sessionUser = normalizeAuthUser(response.data)
+  sessionUser.role = requireUserRole(response.data.role ?? response.data.vaiTro)
+  return sessionUser
 }
 
 export const restoreSession = async () => {
-  if (!hasStoredAuthSession()) {
-    throw new Error('No stored auth session')
-  }
-
   try {
-    return await getSessionRole()
+    const sessionUser = await getSessionRole()
+    rememberAuthSession()
+    return sessionUser
   } catch (error) {
     clearStoredAuthSession()
     throw error
@@ -70,6 +87,11 @@ export const restoreSession = async () => {
 }
 
 export const logoutSession = async () => {
-  await api.post('/api/auth/logout')
-  clearStoredAuthSession()
+  await beginAuthTransition()
+  try {
+    await api.post('/api/auth/logout')
+    clearStoredAuthSession()
+  } finally {
+    endAuthTransition()
+  }
 }

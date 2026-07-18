@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { getPostLoginPath, loginSession } from '@/lib/auth'
 import { clearStoredCustomerProfile, fetchCurrentUser } from '@/lib/customer-profile-service'
+import { clearStoredAuthSession } from '@/lib/api'
 import AuthBanner from '@/components/auth/AuthBanner'
 import AuthTabs from '@/components/auth/AuthTabs'
 import RegisterSuccessBanner from '@/components/auth/RegisterSuccessBanner'
@@ -164,7 +165,11 @@ export default function LoginPage() {
 
         <button
           type="button"
-          onClick={() => window.location.assign('/oauth2/authorization/google')}
+          onClick={() => {
+            clearStoredAuthSession()
+            clearStoredCustomerProfile()
+            window.location.assign('/oauth2/authorization/google')
+          }}
           className="flex w-full items-center justify-center gap-3 rounded-full border border-outline-variant bg-white px-5 py-3.5 font-display text-sm font-semibold text-on-surface shadow-sm transition hover:border-brand-orange/50 hover:bg-[#fbf8f3] focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">

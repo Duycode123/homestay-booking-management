@@ -6,6 +6,12 @@ import { useAuth } from '@/contexts/AuthContext'
 
 type UserRole = 'ADMIN' | 'STAFF' | 'CUSTOMER'
 
+const ROLE_HOME: Record<UserRole, string> = {
+  ADMIN: '/admin/dashboard',
+  STAFF: '/staff/dashboard',
+  CUSTOMER: '/',
+}
+
 interface AuthGuardProps {
   allowedRoles: UserRole[]
   children: React.ReactNode
@@ -28,7 +34,11 @@ export default function AuthGuard({ allowedRoles, children }: AuthGuardProps) {
       return
     }
     if (!allowedRoles.includes(user.role)) {
-      router.replace('/?error=unauthorized')
+      // The session endpoint is the source of truth for the current role.
+      // A role mismatch commonly means the user revisited a URL belonging to
+      // the previous account, so send them to their own area without exposing
+      // a misleading "login failed" error on the public home page.
+      router.replace(ROLE_HOME[user.role])
     }
   }, [user, allowedRoles, isLoading, isLoggingOut, router])
 

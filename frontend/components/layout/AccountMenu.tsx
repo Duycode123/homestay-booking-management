@@ -46,6 +46,9 @@ export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenu
       return
     }
 
+    // Do not display data from the previous account while the new profile loads.
+    setProfile(null)
+
     void fetchCurrentUser(user)
       .then((currentUser) => {
         if (mounted) setProfile(currentUser)

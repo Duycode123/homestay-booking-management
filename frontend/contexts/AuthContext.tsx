@@ -50,6 +50,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch {
       if (operationId === authOperationId.current) {
+        clearStoredCustomerProfile()
+        clearClientUserCaches()
         setUser(null)
       }
     } finally {
@@ -65,6 +67,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = (sessionUser: AuthUser) => {
     authOperationId.current += 1
+    clearStoredCustomerProfile()
+    clearClientUserCaches()
     setUser(sessionUser)
     setIsLoading(false)
     setIsLoggingOut(false)

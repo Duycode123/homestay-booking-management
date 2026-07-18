@@ -1,8 +1,11 @@
 package backend.auth.adapter.in.oauth;
 
+import backend.config.FrontendUrlBuilder;
+import backend.security.AuthCookieService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Value;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.stereotype.Component;
@@ -11,9 +14,10 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.io.IOException;
 
 @Component
+@RequiredArgsConstructor
 public class OAuthLoginFailureHandler implements AuthenticationFailureHandler {
-    @Value("${app.oauth.failure-url:http://localhost:3000/login}")
-    private String failureUrl;
+    private final FrontendUrlBuilder frontendUrlBuilder;
+    private final AuthCookieService authCookieService;
 
     @Override
     public void onAuthenticationFailure(
@@ -24,7 +28,9 @@ public class OAuthLoginFailureHandler implements AuthenticationFailureHandler {
         if (request.getSession(false) != null) {
             request.getSession(false).invalidate();
         }
-        String redirectUrl = UriComponentsBuilder.fromUriString(failureUrl)
+        response.addHeader(HttpHeaders.SET_COOKIE, authCookieService.clearAccessCookie().toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, authCookieService.clearRefreshCookie().toString());
+        String redirectUrl = UriComponentsBuilder.fromUriString(frontendUrlBuilder.linkTo("/login"))
                 .queryParam("oauthError", "google_login_failed")
                 .build()
                 .toUriString();

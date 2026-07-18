@@ -2,13 +2,13 @@ package backend.auth.adapter.in.oauth;
 
 import backend.auth.application.port.in.AuthenticateOAuthUserUseCase;
 import backend.auth.application.port.in.command.OAuthUserCommand;
+import backend.config.FrontendUrlBuilder;
 import backend.dto.response.AuthResponse;
 import backend.security.AuthCookieService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -26,9 +26,7 @@ public class OAuthLoginSuccessHandler implements AuthenticationSuccessHandler {
     private final AuthenticateOAuthUserUseCase authenticateOAuthUserUseCase;
     private final AuthCookieService authCookieService;
     private final OAuthLoginFailureHandler failureHandler;
-
-    @Value("${app.oauth.success-url:http://localhost:3000/oauth/callback}")
-    private String successUrl;
+    private final FrontendUrlBuilder frontendUrlBuilder;
 
     @Override
     public void onAuthenticationSuccess(
@@ -56,7 +54,7 @@ public class OAuthLoginSuccessHandler implements AuthenticationSuccessHandler {
             if (request.getSession(false) != null) {
                 request.getSession(false).invalidate();
             }
-            response.sendRedirect(successUrl);
+            response.sendRedirect(frontendUrlBuilder.linkTo("/oauth/callback"));
         } catch (RuntimeException exception) {
             failureHandler.onAuthenticationFailure(
                     request,

@@ -142,6 +142,7 @@ class BackendApplicationTests {
     @Test
     void sessionAuthenticatesFromHttpOnlyAccessCookie() throws Exception {
         User user = User.builder()
+                .id(27)
                 .email("cookie-session@example.com")
                 .password("unused")
                 .role(Role.CUSTOMER)
@@ -152,6 +153,9 @@ class BackendApplicationTests {
         mockMvc.perform(get("/api/auth/session")
                         .cookie(new Cookie(AuthCookieService.ACCESS_COOKIE_NAME, accessToken)))
                 .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-store"))
+                .andExpect(jsonPath("$.id").value(27))
+                .andExpect(jsonPath("$.email").value("cookie-session@example.com"))
                 .andExpect(jsonPath("$.role").value("CUSTOMER"));
     }
 
@@ -238,6 +242,8 @@ class BackendApplicationTests {
                 .andExpect(status().isOk())
                 .andExpect(cookie().httpOnly(AuthCookieService.ACCESS_COOKIE_NAME, true))
                 .andExpect(cookie().httpOnly(AuthCookieService.REFRESH_COOKIE_NAME, true))
+                .andExpect(cookie().sameSite(AuthCookieService.ACCESS_COOKIE_NAME, "Lax"))
+                .andExpect(cookie().sameSite(AuthCookieService.REFRESH_COOKIE_NAME, "Lax"))
                 .andExpect(jsonPath("$.role").value("CUSTOMER"))
                 .andExpect(jsonPath("$.accessToken").doesNotExist())
                 .andExpect(jsonPath("$.refreshToken").doesNotExist());
