@@ -13,6 +13,8 @@ public class AuthCookieService {
 
     public static final String ACCESS_COOKIE_NAME = "access_token";
     public static final String REFRESH_COOKIE_NAME = "refresh_token";
+    public static final String SERVLET_SESSION_COOKIE_NAME = "JSESSIONID";
+    public static final String SPRING_SESSION_COOKIE_NAME = "SESSION";
 
     private final boolean secure;
     private final JwtProperties jwtProperties;
@@ -53,7 +55,9 @@ public class AuthCookieService {
                 clearCookie(ACCESS_COOKIE_NAME, "/api"),
                 clearCookie(REFRESH_COOKIE_NAME, "/api"),
                 clearCookie(ACCESS_COOKIE_NAME, "/api/auth"),
-                clearCookie(REFRESH_COOKIE_NAME, "/api/auth")
+                clearCookie(REFRESH_COOKIE_NAME, "/api/auth"),
+                clearCookie(SERVLET_SESSION_COOKIE_NAME, "/"),
+                clearCookie(SPRING_SESSION_COOKIE_NAME, "/")
         );
     }
 

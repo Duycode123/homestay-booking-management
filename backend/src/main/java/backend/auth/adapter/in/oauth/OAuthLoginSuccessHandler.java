@@ -5,6 +5,7 @@ import backend.auth.application.port.in.command.OAuthUserCommand;
 import backend.config.FrontendUrlBuilder;
 import backend.dto.response.AuthResponse;
 import backend.security.AuthCookieService;
+import backend.security.AuthenticationSessionService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -25,6 +26,7 @@ import java.io.IOException;
 public class OAuthLoginSuccessHandler implements AuthenticationSuccessHandler {
     private final AuthenticateOAuthUserUseCase authenticateOAuthUserUseCase;
     private final AuthCookieService authCookieService;
+    private final AuthenticationSessionService authenticationSessionService;
     private final OAuthLoginFailureHandler failureHandler;
     private final FrontendUrlBuilder frontendUrlBuilder;
 
@@ -49,14 +51,12 @@ public class OAuthLoginSuccessHandler implements AuthenticationSuccessHandler {
                     principal.getAttribute("picture")
             ));
 
+            authenticationSessionService.clear(request);
             authCookieService.clearAuthCookies().forEach(cookie ->
                     response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString())
             );
             response.addHeader(HttpHeaders.SET_COOKIE, authCookieService.accessCookie(authResponse.getAccessToken()).toString());
             response.addHeader(HttpHeaders.SET_COOKIE, authCookieService.refreshCookie(authResponse.getRefreshToken()).toString());
-            if (request.getSession(false) != null) {
-                request.getSession(false).invalidate();
-            }
             response.sendRedirect(frontendUrlBuilder.linkTo("/oauth/callback"));
         } catch (RuntimeException exception) {
             failureHandler.onAuthenticationFailure(

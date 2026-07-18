@@ -34,6 +34,8 @@ Let a user sign in with email/password or Google and establish exactly one trust
 - A user with a valid session but the wrong role is redirected only after the verified backend session has loaded.
 - Login, refresh, and logout are serialized in one browser tab so an older refresh response cannot overwrite a new login.
 - Logout clears current cookies plus legacy `/api` and `/api/auth` cookie paths before removing all cached frontend identity data.
+- JWT cookies are the only persisted source of authenticated identity. OAuth may create a short-lived servlet session for the Google handshake, but it is invalidated after the callback and its security context is never persisted.
+- Login, token refresh, logout, and OAuth completion also clear legacy `JSESSIONID`/`SESSION` cookies. A valid JWT always replaces any stale request authentication so an earlier account cannot override the newly signed-in account.
 - If login succeeds but the optional profile request is temporarily unavailable, the verified session remains signed in and the profile is retried by the account UI.
 
 ## Business and security rules

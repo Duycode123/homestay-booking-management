@@ -2,6 +2,7 @@ package backend.auth.adapter.in.oauth;
 
 import backend.config.FrontendUrlBuilder;
 import backend.security.AuthCookieService;
+import backend.security.AuthenticationSessionService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ import java.io.IOException;
 public class OAuthLoginFailureHandler implements AuthenticationFailureHandler {
     private final FrontendUrlBuilder frontendUrlBuilder;
     private final AuthCookieService authCookieService;
+    private final AuthenticationSessionService authenticationSessionService;
 
     @Override
     public void onAuthenticationFailure(
@@ -25,9 +27,7 @@ public class OAuthLoginFailureHandler implements AuthenticationFailureHandler {
             HttpServletResponse response,
             AuthenticationException exception
     ) throws IOException {
-        if (request.getSession(false) != null) {
-            request.getSession(false).invalidate();
-        }
+        authenticationSessionService.clear(request);
         authCookieService.clearAuthCookies().forEach(cookie ->
                 response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString())
         );

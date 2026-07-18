@@ -26,6 +26,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
 import org.springframework.beans.factory.annotation.Value;
 
 @Configuration
@@ -104,6 +105,13 @@ public class SecurityConfig {
 
         http.sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                )
+                // OAuth may use a short-lived HttpSession for its authorization request,
+                // but authenticated identity must never persist there. JWT cookies are
+                // the only identity source after the callback completes.
+                .securityContext(securityContext -> securityContext
+                        .requireExplicitSave(true)
+                        .securityContextRepository(new RequestAttributeSecurityContextRepository())
                 )
                 .oauth2Login(oauth -> oauth
                         .successHandler(oauthLoginSuccessHandler)

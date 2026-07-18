@@ -32,6 +32,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.mock.web.MockHttpSession;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -123,8 +124,10 @@ class BackendApplicationTests {
                 .build();
         String accessToken = jwtService.generateAccessToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
+        MockHttpSession legacySession = new MockHttpSession();
 
         var logoutResult = mockMvc.perform(post("/api/auth/logout")
+                        .session(legacySession)
                         .cookie(
                                 new Cookie(AuthCookieService.ACCESS_COOKIE_NAME, accessToken),
                                 new Cookie(AuthCookieService.REFRESH_COOKIE_NAME, refreshToken)
@@ -139,6 +142,9 @@ class BackendApplicationTests {
         var clearCookieHeaders = logoutResult.getResponse().getHeaders(HttpHeaders.SET_COOKIE);
         assertTrue(clearCookieHeaders.stream().anyMatch(value -> value.contains("Path=/api;")));
         assertTrue(clearCookieHeaders.stream().anyMatch(value -> value.contains("Path=/api/auth;")));
+        assertTrue(clearCookieHeaders.stream().anyMatch(value -> value.startsWith("JSESSIONID=")));
+        assertTrue(clearCookieHeaders.stream().anyMatch(value -> value.startsWith("SESSION=")));
+        assertTrue(legacySession.isInvalid());
 
         assertTrue(tokenRevocationService.isRevoked(accessToken));
         assertTrue(tokenRevocationService.isRevoked(refreshToken));

@@ -27,6 +27,8 @@ import backend.dto.response.AuthResponse;
 import backend.dto.response.AuthSessionResponse;
 import backend.entity.User;
 import backend.security.AuthCookieService;
+import backend.security.AuthenticationSessionService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -58,6 +60,7 @@ public class AuthController {
     private final VerifyEmailUseCase verifyEmailUseCase;
     private final ResendEmailVerificationUseCase resendEmailVerificationUseCase;
     private final AuthCookieService authCookieService;
+    private final AuthenticationSessionService authenticationSessionService;
     private final FrontendUrlBuilder frontendUrlBuilder;
 
     @GetMapping("/csrf")
@@ -85,12 +88,16 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody @Valid LoginRequest request) {
+    public ResponseEntity<AuthResponse> login(
+            @RequestBody @Valid LoginRequest request,
+            HttpServletRequest servletRequest
+    ) {
         AuthResponse response = loginUserUseCase.login(new LoginUserCommand(
                 request.getEmail(),
                 request.getPassword()
         ));
 
+        authenticationSessionService.clear(servletRequest);
         ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok();
         addClearAuthCookieHeaders(responseBuilder);
         return responseBuilder
@@ -101,11 +108,15 @@ public class AuthController {
 
     @PostMapping("/refresh")
     public ResponseEntity<AuthResponse> refresh(
-            @CookieValue(value = AuthCookieService.REFRESH_COOKIE_NAME, required = false) String refreshToken
+            @CookieValue(value = AuthCookieService.REFRESH_COOKIE_NAME, required = false) String refreshToken,
+            HttpServletRequest servletRequest
     ) {
         AuthResponse response = refreshSessionUseCase.refresh(new RefreshSessionCommand(refreshToken));
 
-        return ResponseEntity.ok()
+        authenticationSessionService.clear(servletRequest);
+        ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok();
+        addClearAuthCookieHeaders(responseBuilder);
+        return responseBuilder
                 .header(HttpHeaders.SET_COOKIE, authCookieService.accessCookie(response.getAccessToken()).toString())
                 .header(HttpHeaders.SET_COOKIE, authCookieService.refreshCookie(response.getRefreshToken()).toString())
                 .body(response);
@@ -114,8 +125,10 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<Map<String, String>> logout(
             @CookieValue(value = AuthCookieService.ACCESS_COOKIE_NAME, required = false) String accessToken,
-            @CookieValue(value = AuthCookieService.REFRESH_COOKIE_NAME, required = false) String refreshToken
+            @CookieValue(value = AuthCookieService.REFRESH_COOKIE_NAME, required = false) String refreshToken,
+            HttpServletRequest servletRequest
     ) {
+        authenticationSessionService.clear(servletRequest);
         logoutUseCase.logout(new LogoutCommand(accessToken, refreshToken));
 
         ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok();

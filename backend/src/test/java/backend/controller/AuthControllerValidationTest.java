@@ -12,6 +12,7 @@ import backend.auth.application.port.in.command.RequestPasswordResetCommand;
 import backend.config.FrontendUrlBuilder;
 import backend.exception.GlobalExceptionHandler;
 import backend.security.AuthCookieService;
+import backend.security.AuthenticationSessionService;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -57,6 +58,8 @@ class AuthControllerValidationTest {
     @Mock
     private AuthCookieService authCookieService;
     @Mock
+    private AuthenticationSessionService authenticationSessionService;
+    @Mock
     private FrontendUrlBuilder frontendUrlBuilder;
 
     private MockMvc mockMvc;
@@ -78,6 +81,7 @@ class AuthControllerValidationTest {
                         verifyEmailUseCase,
                         resendEmailVerificationUseCase,
                         authCookieService,
+                        authenticationSessionService,
                         frontendUrlBuilder
                 ))
                 .setControllerAdvice(new GlobalExceptionHandler())

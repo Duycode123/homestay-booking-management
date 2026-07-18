@@ -89,7 +89,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
 
-        if (newestCandidate != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+        if (newestCandidate != null) {
             UserDetails userDetails = newestCandidate.userDetails();
             UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                     userDetails, null, userDetails.getAuthorities()
