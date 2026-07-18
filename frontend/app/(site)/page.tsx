@@ -504,6 +504,242 @@ function BedIcon() {
   )
 }
 
+function TrustSpotlight() {
+  const promises = [
+    {
+      icon: 'calendar' as IconName,
+      title: 'Lịch trống được đối chiếu thực tế',
+      description: 'Chỉ gợi ý những căn còn phù hợp với khoảng ngày bạn đã chọn.',
+    },
+    {
+      icon: 'shield' as IconName,
+      title: 'Chi phí rõ ràng trước khi xác nhận',
+      description: 'Giá lưu trú, ưu đãi và khoản cần thanh toán luôn được hiển thị trước bước tiếp theo.',
+    },
+    {
+      icon: 'amenities' as IconName,
+      title: 'Đón tiếp chu đáo theo từng kỳ lưu trú',
+      description: 'Đội ngũ chuẩn bị phòng, tiện nghi và hỗ trợ đúng vào thời điểm bạn cần.',
+    },
+  ]
+
+  return (
+    <section id="why-serene" className="scroll-mt-24 bg-[#EFEAE1] py-16 sm:py-20 lg:py-24">
+      <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
+        <div className="relative overflow-hidden rounded-[28px] border border-secondary/10 bg-secondary px-6 py-8 text-white shadow-[0_28px_70px_rgba(23,58,49,0.2)] sm:px-9 sm:py-11 lg:px-12 lg:py-14">
+          <div aria-hidden className="pointer-events-none absolute -left-28 -top-36 h-[28rem] w-[28rem] rounded-full border border-white/10" />
+          <div aria-hidden className="pointer-events-none absolute -bottom-44 right-10 h-[30rem] w-[30rem] rounded-full border border-brand-orange/20" />
+          <div aria-hidden className="pointer-events-none absolute right-[30%] top-0 h-full w-px bg-gradient-to-b from-transparent via-white/10 to-transparent" />
+
+          <div className="relative grid gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-14">
+            <div className="flex flex-col justify-between">
+              <div>
+                <p className="eyebrow text-primary-fixed">Vì sao chọn The Serene Villa</p>
+                <h2 className="font-editorial mt-4 max-w-xl text-4xl font-semibold leading-[1.06] text-white sm:text-5xl lg:text-[3.5rem]">
+                  Một kỳ nghỉ an tâm bắt đầu từ những điều được chuẩn bị kỹ.
+                </h2>
+                <p className="mt-5 max-w-xl text-base leading-8 text-white/72 sm:text-[1.05rem]">
+                  Chúng tôi biến những băn khoăn trước chuyến đi thành một hành trình rõ ràng: chọn đúng căn, biết chính xác chi phí và luôn có người đồng hành khi bạn cần.
+                </p>
+              </div>
+
+              <div className="mt-9 flex flex-wrap gap-3">
+                <Link
+                  href="/rooms"
+                  className="inline-flex h-12 items-center justify-center rounded-full bg-white px-6 font-display text-sm font-semibold text-secondary transition-[background-color,color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:bg-primary-fixed hover:shadow-[0_14px_28px_rgba(0,0,0,0.18)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white motion-reduce:transform-none"
+                >
+                  Khám phá không gian lưu trú
+                </Link>
+                <Link
+                  href="/process"
+                  className="inline-flex h-12 items-center justify-center rounded-full border border-white/25 bg-white/[0.03] px-6 font-display text-sm font-semibold text-white transition-[background-color,border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-white/45 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white motion-reduce:transform-none"
+                >
+                  Xem quy trình lưu trú
+                </Link>
+              </div>
+            </div>
+
+            <div className="grid gap-3 self-center">
+              {promises.map((promise, index) => (
+                <article
+                  key={promise.title}
+                  className="group relative overflow-hidden rounded-2xl border border-white/12 bg-white/[0.055] p-5 transition-[background-color,border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-white/28 hover:bg-white/[0.09] motion-reduce:transform-none sm:p-6"
+                >
+                  <div aria-hidden className="absolute inset-y-0 left-0 w-1 origin-bottom scale-y-0 bg-primary-fixed transition-transform duration-200 group-hover:scale-y-100" />
+                  <div className="relative flex gap-4">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/10 text-primary-fixed transition-transform duration-200 group-hover:scale-105 motion-reduce:transform-none">
+                      <Icon name={promise.icon} className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-fixed">0{index + 1}</p>
+                      <h3 className="mt-1 font-display text-base font-bold text-white sm:text-[1.05rem]">{promise.title}</h3>
+                      <p className="mt-1.5 text-sm leading-6 text-white/64">{promise.description}</p>
+                    </div>
+                  </div>
+                </article>
+              ))}
+              <p className="pt-2 text-xs leading-5 text-white/52">The Serene Villa ưu tiên thông tin rõ ràng và trải nghiệm vừa vặn hơn những lời hứa quá mức.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function SereneExperience() {
+  const moments = [
+    {
+      icon: 'calendar' as IconName,
+      title: 'Lịch lưu trú minh bạch',
+      description: 'Khoảng ngày phù hợp được đối chiếu với lịch phòng thực tế trước khi bạn tiếp tục.',
+    },
+    {
+      icon: 'shield' as IconName,
+      title: 'Chi phí rõ ràng',
+      description: 'Giá phòng, ưu đãi và khoản cần thanh toán được hiển thị trước khi xác nhận.',
+    },
+    {
+      icon: 'amenities' as IconName,
+      title: 'Chăm chút đúng lúc',
+      description: 'Phòng và tiện nghi được chuẩn bị theo nhịp lưu trú của từng vị khách.',
+    },
+  ]
+
+  return (
+    <section id="why-serene" className="scroll-mt-24 bg-[#efeae1] py-16 sm:py-20 lg:py-24">
+      <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
+        <div className="grid items-stretch gap-7 lg:grid-cols-[minmax(0,.92fr)_minmax(0,1.08fr)] lg:gap-12">
+          <div className="flex flex-col justify-center py-3 lg:py-10">
+            <p className="eyebrow text-brand-orange">Vì sao chọn The Serene Villa</p>
+            <h2 className="font-editorial mt-4 max-w-xl text-4xl font-semibold leading-[1.08] text-secondary sm:text-5xl">
+              Một nơi chậm lại để mỗi kỳ nghỉ có nhiều ý nghĩa hơn.
+            </h2>
+            <p className="mt-5 max-w-xl text-base leading-8 text-on-surface-variant sm:text-[1.05rem]">
+              The Serene Villa không chỉ là nơi nghỉ. Chúng tôi dành sự kỹ lưỡng cho những điều thường bị bỏ quên, để hành trình của bạn luôn nhẹ nhàng từ lúc chọn phòng đến khi rời đi.
+            </p>
+
+            <div className="mt-8 divide-y divide-[#dfd5c6] border-y border-[#dfd5c6]">
+              {moments.map((moment, index) => (
+                <article key={moment.title} className="group flex gap-4 py-4 first:pt-5 last:pb-5">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#dfd5c6] bg-[#fbf8f2] text-brand-orange transition-[background-color,color,transform] duration-200 group-hover:scale-105 group-hover:bg-secondary group-hover:text-white motion-reduce:transform-none">
+                    <Icon name={moment.icon} className="h-[18px] w-[18px]" />
+                  </span>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-orange">0{index + 1}</p>
+                    <h3 className="mt-0.5 font-display text-base font-bold text-secondary">{moment.title}</h3>
+                    <p className="mt-1 text-sm leading-6 text-on-surface-variant">{moment.description}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+
+          <div className="group relative min-h-[360px] overflow-hidden rounded-[26px] border border-[#dfd5c6] bg-[#d9d0c2] sm:min-h-[460px]">
+            <Image
+              src="/images/homestay-luxury-hero.webp"
+              alt="Không gian nghỉ ngơi yên tĩnh tại The Serene Villa"
+              fill
+              sizes="(max-width: 1023px) 100vw, 55vw"
+              className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.025] motion-reduce:transform-none"
+              priority={false}
+            />
+            <div className="absolute inset-0 bg-[#143c32]/30" aria-hidden />
+            <div className="absolute bottom-5 left-5 right-5 rounded-2xl border border-white/25 bg-[#153d32]/88 p-5 text-white backdrop-blur-sm sm:bottom-7 sm:left-7 sm:right-auto sm:max-w-sm sm:p-6">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#f2d5a8]">The Serene way</p>
+              <p className="mt-2 font-editorial text-2xl font-semibold leading-tight">Không gian đủ riêng tư, dịch vụ vừa đủ gần.</p>
+              <p className="mt-3 text-sm leading-6 text-white/72">Một trải nghiệm lưu trú được vận hành bằng sự rõ ràng, tôn trọng nhịp riêng và những chi tiết tử tế.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function EquipmentShowcase() {
+  return (
+    <section id="equipment" className="scroll-mt-20 bg-[#EFEAE1] pb-20 pt-14 sm:pb-24 sm:pt-20">
+      <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
+        <div className="grid gap-8 border-b border-outline-variant pb-9 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+          <div className="max-w-3xl">
+            <p className="eyebrow text-brand-orange">Tiện nghi homestay</p>
+            <h2 className="font-editorial mt-3 max-w-2xl text-4xl font-semibold leading-[1.08] text-secondary sm:text-5xl">
+              Những điều nhỏ bé làm nên một kỳ nghỉ dễ chịu.
+            </h2>
+            <p className="mt-4 max-w-2xl text-base leading-7 text-on-surface-variant">
+              Mỗi không gian được chuẩn bị cho nhịp nghỉ riêng của bạn — từ kết nối, thư giãn đến những chi tiết sẵn sàng trước giờ nhận phòng.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-4 lg:justify-end">
+            <p className="hidden max-w-44 text-right text-xs leading-5 text-on-surface-variant sm:block">Các tiện nghi cụ thể luôn được cập nhật tại từng trang phòng.</p>
+            <span className="flex h-12 min-w-12 items-center justify-center rounded-full border border-outline bg-[#F7F3EC] px-3 font-display text-sm font-bold text-secondary" aria-label="6 nhóm tiện nghi chính">
+              06
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+          <p className="max-w-xl text-sm leading-6 text-on-surface-variant">Khám phá các nhóm tiện nghi được đội ngũ The Serene Villa duy trì trong suốt quá trình vận hành.</p>
+          <Link
+            href="/amenities"
+            className="inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-outline bg-transparent px-5 font-display text-sm font-semibold text-secondary transition-[background-color,border-color,color,transform] duration-200 hover:-translate-y-0.5 hover:border-secondary hover:bg-secondary hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-secondary motion-reduce:transform-none"
+          >
+            Xem toàn bộ tiện nghi
+          </Link>
+        </div>
+
+        <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-12 lg:gap-5">
+          {equipmentCategories.map((category) => (
+            <article
+              key={category.title}
+              className={[
+                'group relative overflow-hidden rounded-[20px] border p-6 sm:p-7',
+                'transition-[transform,border-color,background-color,box-shadow] duration-200 ease-out',
+                'focus-within:ring-2 focus-within:ring-secondary/35',
+                category.layout,
+                category.featured
+                  ? 'border-secondary bg-secondary text-white shadow-[0_22px_50px_rgba(20,57,47,0.18)] hover:-translate-y-0.5 hover:bg-[#123d31]'
+                  : 'border-outline-variant bg-white/90 shadow-[0_12px_30px_rgba(63,51,35,0.06)] hover:-translate-y-0.5 hover:border-brand-orange/50 hover:bg-[#FFFEFB] hover:shadow-[0_18px_36px_rgba(63,51,35,0.09)]',
+              ].join(' ')}
+            >
+              {category.featured && <div aria-hidden className="absolute -right-20 -top-20 h-56 w-56 rounded-full border border-white/10" />}
+              <div
+                className={[
+                  'relative mb-6 flex h-11 w-11 items-center justify-center rounded-full',
+                  'transition-[background-color,color,transform] duration-200 group-hover:scale-105 motion-reduce:transform-none',
+                  category.featured ? 'bg-white/12 text-primary-fixed' : 'bg-primary-container text-brand-orange group-hover:bg-brand-orange group-hover:text-white',
+                ].join(' ')}
+              >
+                <Icon name={category.icon} />
+              </div>
+              <p className={category.featured ? 'relative text-xs font-semibold uppercase tracking-[0.16em] text-primary-fixed' : 'text-xs font-semibold uppercase tracking-[0.16em] text-brand-orange'}>
+                {category.eyebrow}
+              </p>
+              <h3 className={category.featured ? 'relative mt-3 font-editorial text-3xl font-semibold leading-tight text-white sm:text-[2rem]' : 'mt-3 font-editorial text-2xl font-semibold leading-tight text-secondary'}>
+                {category.title}
+              </h3>
+              <p className={category.featured ? 'relative mt-3 max-w-lg text-sm leading-6 text-white/72' : 'mt-3 text-sm leading-6 text-on-surface-variant'}>{category.description}</p>
+              <div className={category.featured ? 'relative mt-6 flex flex-wrap gap-2 border-t border-white/15 pt-4' : 'mt-6 flex flex-wrap gap-2 border-t border-outline-variant pt-4'}>
+                {category.items.map((item) => (
+                  <span key={item} className={category.featured ? 'rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-medium text-white/88' : 'rounded-full border border-outline-variant bg-surface-container-low px-3 py-1.5 text-xs font-medium text-on-surface-variant'}>
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <p className="mt-6 border-l-2 border-brand-orange/55 pl-4 text-xs leading-5 text-on-surface-variant sm:text-sm">
+          Tiện nghi riêng có thể khác theo từng hạng phòng. Vui lòng xem trang chi tiết phòng để kiểm tra danh sách chính xác trước khi đặt.
+        </p>
+      </div>
+    </section>
+  )
+}
+
 type QuickBookingState = {
   room: BookingRoom
   initialDate?: string
@@ -703,7 +939,9 @@ export default function HomePage() {
         <StaySearchBar />
       </div>
 
-      <section id="equipment" className="scroll-mt-20 bg-[#EFEAE1] pb-20 pt-14 sm:pb-24 sm:pt-20">
+      <SereneExperience />
+
+      <section id="equipment-legacy" className="hidden">
         <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
           <div className="grid gap-8 border-b border-outline-variant pb-9 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
             <div className="max-w-3xl">
@@ -798,7 +1036,9 @@ export default function HomePage() {
         onBook={(room) => setQuickBooking({ room })}
       />
 
-      <section className="relative scroll-mt-24 overflow-hidden bg-white py-20 sm:py-24">
+      <EquipmentShowcase />
+
+      <section aria-hidden className="hidden">
         <div className="relative mx-auto grid max-w-[1400px] items-center gap-12 px-5 sm:px-8 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="max-w-2xl">
             <p className="eyebrow text-brand-orange">Đặt phòng chủ động</p>

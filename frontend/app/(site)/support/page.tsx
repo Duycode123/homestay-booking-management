@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { SupportFaqSection } from '@/components/public/SupportFaqSection'
 import { createPublicPageMetadata } from '@/lib/seo'
 
 export const metadata = createPublicPageMetadata({
@@ -10,21 +10,29 @@ export const metadata = createPublicPageMetadata({
 const faqs = [
   {
     question: 'Làm thế nào để đặt phòng?',
-    answer: 'Chọn một phòng còn trống, chọn ngày và khung giờ phù hợp, sau đó xác nhận thông tin trước khi thanh toán.',
+    answer: 'Chọn phòng còn trống, nhập ngày nhận và trả phòng, sau đó xác nhận thông tin lưu trú. Khi tạo mã QR, phòng được giữ trong tối đa 5 phút để bạn hoàn tất thanh toán.',
   },
   {
-    question: 'Tôi có thể thay đổi hoặc hủy lịch không?',
-    answer: 'Điều kiện thay đổi và hoàn tiền phụ thuộc thời điểm hủy. Vui lòng xem chính sách hủy trước khi gửi yêu cầu.',
+    question: 'Tôi có thể thanh toán bằng những hình thức nào?',
+    answer: 'Bạn có thể thanh toán trực tuyến bằng VietQR/SePay cho toàn bộ hoặc tiền cọc theo tùy chọn của booking. Phần còn lại, nếu có, được nhân viên kết toán khi checkout.',
   },
   {
     question: 'Làm sao biết thanh toán đã thành công?',
-    answer: 'Trạng thái thanh toán được cập nhật trong lịch sử đặt phòng sau khi hệ thống xác nhận giao dịch.',
+    answer: 'Hệ thống tự đối soát giao dịch sau khi ngân hàng xác nhận. Bạn sẽ thấy trang thanh toán thành công, nhận thông báo và có thể kiểm tra lại trong Lịch sử đặt phòng.',
+  },
+  {
+    question: 'Tôi có thể thay đổi hoặc hủy lịch không?',
+    answer: 'Bạn có thể gửi yêu cầu hủy từ lịch sử đặt phòng. Điều kiện duyệt và hoàn tiền được áp dụng theo thời điểm hủy cùng chính sách lưu trú của The Serene Villa.',
   },
   {
     question: 'Tôi cần hỗ trợ trong thời gian lưu trú thì làm gì?',
-    answer: 'Đăng nhập và gửi báo cáo sự cố kèm thông tin phòng để đội ngũ vận hành có thể xử lý nhanh hơn.',
+    answer: 'Đăng nhập và gửi báo cáo sự cố kèm phòng, thời điểm và mô tả. Yêu cầu sẽ được chuyển tới đội ngũ vận hành để xử lý nhanh hơn.',
   },
-]
+  {
+    question: 'Tôi quên mật khẩu hoặc không xác thực được email?',
+    answer: 'Bạn có thể dùng chức năng Quên mật khẩu để nhận liên kết đặt lại qua email. Nếu liên kết hết hạn hoặc email chưa đến, hãy yêu cầu gửi lại và kiểm tra cả mục Spam.',
+  },
+] as const
 
 export default function SupportPage() {
   const faqSchema = {
@@ -41,45 +49,18 @@ export default function SupportPage() {
     <main className="bg-brand-bgGray text-on-surface">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
       <section className="border-b border-outline-variant bg-secondary text-white">
-        <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-24">
+        <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-20">
           <p className="eyebrow text-primary-fixed">Trung tâm hỗ trợ</p>
-          <h1 className="font-editorial mt-5 max-w-3xl text-5xl font-semibold leading-[1.03] sm:text-6xl">
-            Chúng tôi đồng hành trong từng bước lưu trú.
+          <h1 className="font-editorial mt-4 max-w-3xl text-5xl font-semibold leading-[1.03] sm:text-6xl">
+            Mọi thông tin cần thiết cho một kỳ nghỉ trọn vẹn.
           </h1>
-          <p className="mt-6 max-w-2xl text-base leading-8 text-white/70">
-            Tìm câu trả lời nhanh về đặt phòng, thanh toán, thay đổi lịch và hỗ trợ vận hành.
+          <p className="mt-5 max-w-2xl text-base leading-8 text-white/70">
+            Tìm câu trả lời nhanh về đặt phòng, thanh toán, thay đổi lịch và hỗ trợ vận hành trong thời gian lưu trú.
           </p>
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-6xl gap-10 px-5 py-16 sm:px-8 lg:grid-cols-[1fr_320px] lg:py-20">
-        <div>
-          <p className="eyebrow text-brand-orange">Câu hỏi thường gặp</p>
-          <div className="mt-6 divide-y divide-outline-variant border-y border-outline-variant">
-            {faqs.map((faq, index) => (
-              <article key={faq.question} className="grid gap-3 py-6 sm:grid-cols-[40px_1fr] sm:gap-5">
-                <span className="font-editorial text-2xl text-brand-orange">{String(index + 1).padStart(2, '0')}</span>
-                <div>
-                  <h2 className="text-lg font-bold text-on-surface">{faq.question}</h2>
-                  <p className="mt-2 text-sm leading-7 text-on-surface-variant">{faq.answer}</p>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-
-        <aside className="h-fit border border-outline-variant bg-white p-7 shadow-[var(--shadow-card)] lg:sticky lg:top-28">
-          <p className="eyebrow text-brand-orange">Cần thêm trợ giúp?</p>
-          <h2 className="font-editorial mt-4 text-3xl font-semibold text-secondary">Gửi đúng thông tin, nhận hỗ trợ nhanh hơn.</h2>
-          <p className="mt-4 text-sm leading-7 text-on-surface-variant">
-            Đăng nhập để gửi yêu cầu gắn với tài khoản và đơn đặt phòng của bạn.
-          </p>
-          <Link href="/customer/report-issue" className="btn-warm mt-6 w-full">Gửi yêu cầu hỗ trợ</Link>
-          <Link href="/cancellation-policy" className="mt-3 flex min-h-11 items-center justify-center text-sm font-semibold text-secondary hover:text-brand-orange">
-            Xem chính sách hủy
-          </Link>
-        </aside>
-      </section>
+      <SupportFaqSection faqs={faqs} />
     </main>
   )
 }

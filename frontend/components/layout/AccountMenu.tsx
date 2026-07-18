@@ -154,6 +154,7 @@ export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenu
             {role === 'CUSTOMER' ? (
               <MenuLink href="/customer/bookings" label="Lịch sử đặt phòng" icon="calendar" onClick={handleNavigate} />
             ) : null}
+            <MenuLink href="/process" label="Quy trình lưu trú" icon="calendar" onClick={handleNavigate} />
             <MenuLink href="/customer/account-settings" label="Cài đặt tài khoản" icon="settings" onClick={handleNavigate} />
           </div>
 

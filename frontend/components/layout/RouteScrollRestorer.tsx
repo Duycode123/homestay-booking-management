@@ -2,12 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef } from 'react'
-import {
-  isForceHomepageTopPending,
-  restoreScrollPosition,
-  saveScrollPosition,
-  scrollToTopInstant,
-} from '@/lib/navigation/scroll-restoration'
+import { scrollToTopInstant } from '@/lib/navigation/scroll-restoration'
 
 export default function RouteScrollRestorer() {
   const pathname = usePathname()
@@ -22,21 +17,14 @@ export default function RouteScrollRestorer() {
 
     if (previousPathname.current === pathname) return
 
-    saveScrollPosition(previousPathname.current)
     previousPathname.current = pathname
 
-    // Homepage top is handled by useHomepageActiveSection when force flag is set.
-    if (pathname === '/' && isForceHomepageTopPending()) {
-      return
-    }
-
+    // Keep intentional anchor links working, but every normal route transition
+    // should begin at the top rather than restoring the previous page position.
     if (window.location.hash) return
 
     requestAnimationFrame(() => {
-      const restored = restoreScrollPosition(pathname)
-      if (!restored) {
-        scrollToTopInstant()
-      }
+      scrollToTopInstant()
     })
   }, [pathname])
 

@@ -8,7 +8,7 @@ const publicRoutes = [
   { path: '/rooms', changeFrequency: 'daily', priority: 0.9 },
   { path: '/amenities', changeFrequency: 'monthly', priority: 0.8 },
   { path: '/about', changeFrequency: 'monthly', priority: 0.7 },
-  { path: '/process', changeFrequency: 'monthly', priority: 0.7 },
+  { path: '/news', changeFrequency: 'daily', priority: 0.7 },
   { path: '/support', changeFrequency: 'monthly', priority: 0.7 },
   { path: '/booking-policy', changeFrequency: 'monthly', priority: 0.5 },
   { path: '/cancellation-policy', changeFrequency: 'monthly', priority: 0.5 },

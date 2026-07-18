@@ -9,7 +9,7 @@ export const publicNavItems: SiteNavItem[] = [
   { label: 'Phòng homestay', href: '/rooms' },
   { label: 'Tiện nghi', href: '/amenities' },
   { label: 'Về chúng tôi', href: '/about' },
-  { label: 'Quy trình', href: '/process' },
+  { label: 'Tin tức', href: '/news' },
   { label: 'Hỗ trợ', href: '/support' },
 ]
 
@@ -17,7 +17,7 @@ export const publicNavItems: SiteNavItem[] = [
 export const footerExploreLinks: SiteNavItem[] = [
   { label: 'Phòng homestay', href: '/rooms' },
   { label: 'Tiện nghi', href: '/amenities' },
-  { label: 'Quy trình', href: '/process' },
+  { label: 'Tin tức', href: '/news' },
   { label: 'Về chúng tôi', href: '/about' },
 ]
 
