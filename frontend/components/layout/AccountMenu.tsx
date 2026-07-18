@@ -16,7 +16,7 @@ type AccountMenuProps = {
   align?: 'right' | 'full'
 }
 
-type IconName = 'user' | 'calendar' | 'settings' | 'logout' | 'mail' | 'phone' | 'dashboard'
+type IconName = 'user' | 'calendar' | 'settings' | 'logout' | 'mail' | 'dashboard'
 
 const roleLabels: Record<UserRole, string> = {
   ADMIN: 'Quản trị viên',
@@ -33,7 +33,6 @@ export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenu
 
   const displayName = profile ? getCustomerDisplayName(profile) : getCustomerDisplayName(user)
   const email = profile?.email || user?.email || ''
-  const phone = profile?.phone || user?.phone || ''
   const avatarUrl = profile?.avatarUrl || user?.avatarUrl
   const avatarInitial = getInitials(profile?.fullName || user?.fullName || user?.name, email)
   const role = profile?.role || user?.role || 'CUSTOMER'
@@ -125,15 +124,16 @@ export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenu
           role="menu"
           aria-label="Tài khoản"
           className={[
-            'serene-dropdown-enter absolute z-[100] mt-3 w-[min(340px,calc(100vw-24px))] overflow-hidden rounded-[22px] border border-[#d8c9b5] bg-[#fffdfa] shadow-[0_26px_70px_rgba(20,47,38,.24)]',
+            'serene-dropdown-enter absolute z-[100] mt-3 w-[min(304px,calc(100vw-24px))] overflow-hidden rounded-[18px] border border-[#d8c9b5] bg-[#fffdfa] shadow-[0_22px_56px_rgba(20,47,38,.22)]',
             align === 'full' ? 'right-0' : 'right-0',
           ].join(' ')}
         >
-          <div className="relative border-b border-white/10 bg-[linear-gradient(145deg,#173f35,#254f43)] px-5 py-5 text-white">
-            <div className="pointer-events-none absolute -right-12 -top-16 h-40 w-40 rounded-full border border-white/10" aria-hidden />
+          <div className="relative border-b border-white/10 bg-[linear-gradient(145deg,#173f35,#254f43)] px-4 py-4 text-white">
+            <div className="pointer-events-none absolute -right-12 -top-16 h-32 w-32 rounded-full border border-white/10" aria-hidden />
             <div className="relative flex items-center gap-3">
               <span className="relative">
                 <AccountAvatar avatarUrl={avatarUrl} initial={avatarInitial} size="menu" />
+                <OnlineDot className="bottom-0 right-0" />
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-display text-[15px] font-bold text-white">{displayName}</p>
@@ -142,11 +142,8 @@ export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenu
             </div>
           </div>
 
-          <div className="space-y-2 border-b border-[#e8ddcf] px-5 py-4">
+          <div className="border-b border-[#e8ddcf] px-4 py-3">
             {email ? <ContactRow icon="mail" value={email} /> : null}
-            {phone ? <ContactRow icon="phone" value={phone} /> : (
-              <p className="text-xs leading-5 text-[#8b877e]">Bổ sung số điện thoại trong Thông tin cá nhân để được hỗ trợ nhanh hơn.</p>
-            )}
           </div>
 
           <div className="space-y-1.5 p-2.5">
@@ -202,7 +199,7 @@ function MenuLink({ href, label, icon, emphasized = false, onClick }: { href: st
   )
 }
 
-function ContactRow({ icon, value }: { icon: 'mail' | 'phone'; value: string }) {
+function ContactRow({ icon, value }: { icon: 'mail'; value: string }) {
   return (
     <p className="flex min-w-0 items-center gap-2.5 text-xs text-[#6e716b]">
       <span className="text-[#8a7356]"><Icon name={icon} /></span>
@@ -231,7 +228,6 @@ function Icon({ name }: { name: IconName }) {
     settings: <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z" /></>,
     logout: <><path d="M10 17 15 12l-5-5" /><path d="M15 12H3" /><path d="M21 5v14" /></>,
     mail: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m4 7 8 6 8-6" /></>,
-    phone: <path d="M6.6 3h3l1.5 4-2 1.5a15 15 0 0 0 6.4 6.4l1.5-2 4 1.5v3A2.6 2.6 0 0 1 18.4 20C10.5 20 4 13.5 4 5.6A2.6 2.6 0 0 1 6.6 3Z" />,
     dashboard: <><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></>,
   }
   return <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{paths[name]}</svg>

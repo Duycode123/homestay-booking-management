@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { AboutNearbyPlacesCarousel } from '@/components/public/AboutNearbyPlacesCarousel'
 import { createPublicPageMetadata } from '@/lib/seo'
 
 export const metadata = createPublicPageMetadata({
@@ -225,6 +226,8 @@ export default function AboutPage() {
         </div>
       </section>
 
+      <AboutNearbyPlacesCarousel />
+
       <section className="bg-[#EAE4D9] py-20 sm:py-28">
         <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
           <div className="max-w-3xl">
@@ -241,6 +244,85 @@ export default function AboutPage() {
               </li>
             ))}
           </ol>
+        </div>
+      </section>
+
+      <section className="border-t border-outline-variant bg-[#F7F3EC] py-20 sm:py-28">
+        <div className="mx-auto grid max-w-[1400px] gap-10 px-5 sm:px-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
+          <div className="max-w-xl lg:sticky lg:top-28">
+            <p className="eyebrow text-brand-orange">Trải nghiệm tại The Serene Villa</p>
+            <h2 className="font-editorial mt-4 text-4xl font-semibold leading-[1.08] text-secondary sm:text-5xl">
+              Một kỳ nghỉ được chuẩn bị để bạn chỉ việc tận hưởng.
+            </h2>
+            <p className="mt-6 text-base leading-8 text-on-surface-variant">
+              Từ không gian chung đến từng căn phòng, mọi trải nghiệm đều hướng đến sự riêng tư, thuận tiện và cảm giác được chăm sóc chu đáo.
+            </p>
+            <Link
+              href="/rooms"
+              className="mt-8 inline-flex min-h-12 items-center justify-center rounded-full bg-secondary px-6 font-display text-sm font-semibold text-white shadow-[0_14px_30px_rgba(23,58,49,0.18)] transition hover:-translate-y-0.5 hover:bg-secondary-container"
+            >
+              Khám phá các không gian lưu trú
+            </Link>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {[
+              {
+                title: 'Không gian chung',
+                description: 'Sân vườn, góc thư giãn và những khu vực được chuẩn bị để kết nối cùng người thân.',
+                icon: (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden className="h-6 w-6">
+                    <path d="M4 20h16M7 20v-5a5 5 0 0 1 10 0v5M12 3v6M8.5 6.5 12 3l3.5 3.5" />
+                  </svg>
+                ),
+              },
+              {
+                title: 'Tiện nghi chỉn chu',
+                description: 'Các hạng phòng được trang bị tiện nghi riêng để đáp ứng nhịp nghỉ ngơi của từng nhóm khách.',
+                icon: (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden className="h-6 w-6">
+                    <path d="M4 19V9h16v10M7 9V5h10v4M3 19h18M7 14h3m4 0h3" />
+                  </svg>
+                ),
+              },
+              {
+                title: 'Vận hành minh bạch',
+                description: 'Lịch phòng, trạng thái đặt chỗ và thông tin thanh toán được hiển thị rõ ràng trong từng bước.',
+                icon: (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden className="h-6 w-6">
+                    <path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5" />
+                  </svg>
+                ),
+              },
+              {
+                title: 'Hỗ trợ khi cần',
+                description: 'Khách có thể chủ động gửi yêu cầu trong hành trình lưu trú để đội ngũ tiếp nhận kịp thời.',
+                icon: (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden className="h-6 w-6">
+                    <path d="M20 15.5a4.5 4.5 0 0 1-4.5 4.5H12l-4 2v-2.8A4.5 4.5 0 0 1 4 15.5v-7A4.5 4.5 0 0 1 8.5 4h7A4.5 4.5 0 0 1 20 8.5zM8 10h8m-8 3h5" />
+                  </svg>
+                ),
+              },
+            ].map((experience) => (
+              <article
+                key={experience.title}
+                className="group rounded-[22px] border border-outline-variant bg-white p-6 shadow-[0_16px_46px_rgba(23,58,49,0.06)] transition duration-300 hover:-translate-y-1 hover:border-brand-orange/35 hover:shadow-[0_22px_54px_rgba(23,58,49,0.11)] sm:p-7"
+              >
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F0E5D4] text-secondary transition duration-300 group-hover:bg-secondary group-hover:text-white">
+                  {experience.icon}
+                </span>
+                <h3 className="font-editorial mt-7 text-2xl font-semibold text-secondary">{experience.title}</h3>
+                <p className="mt-3 text-sm leading-7 text-on-surface-variant">{experience.description}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+
+        <div className="mx-auto mt-10 max-w-[1400px] px-5 sm:px-8">
+          <div className="rounded-[20px] border border-brand-orange/20 bg-[#F4EBDD] px-5 py-4 text-sm leading-6 text-on-surface-variant sm:px-6">
+            <span className="font-semibold text-secondary">Lưu ý về mô hình:</span>{' '}
+            The Serene Villa là mô hình giả lập phục vụ mục tiêu nghiên cứu và phát triển hệ thống quản lý đặt phòng. Thông tin phòng, giá, tiện nghi và quy trình vận hành được xây dựng theo nghiệp vụ thực tế, không đại diện cho một cơ sở lưu trú đang hoạt động.
+          </div>
         </div>
       </section>
 

@@ -37,39 +37,57 @@ const stats = [
 const equipmentCategories = [
   {
     icon: 'wifi',
-    title: 'Wi-Fi tốc độ cao',
-    description: 'Kết nối ổn định trong toàn bộ phòng, phù hợp làm việc và giải trí.',
-    items: ['Wi-Fi riêng', 'Tốc độ cao', 'Phủ sóng tốt'],
+    eyebrow: 'Kết nối liền mạch',
+    title: 'Wi‑Fi tốc độ cao',
+    description: 'Kết nối ổn định trong từng không gian, phù hợp cho một buổi làm việc yên tĩnh hoặc giờ phút thư giãn riêng.',
+    items: ['Wi‑Fi riêng', 'Phủ sóng tốt', 'Làm việc thoải mái'],
+    featured: true,
+    layout: 'sm:col-span-2 lg:col-span-5',
   },
   {
     icon: 'air',
-    title: 'Điều hòa',
-    description: 'Điều hòa inverter được vệ sinh và kiểm tra định kỳ.',
-    items: ['Làm lạnh nhanh', 'Tiết kiệm điện', 'Điều khiển riêng'],
+    eyebrow: 'Nghỉ ngơi dễ chịu',
+    title: 'Điều hòa sạch, mát lành',
+    description: 'Điều hòa inverter được vệ sinh và kiểm tra định kỳ trước mỗi lượt đón khách.',
+    items: ['Làm lạnh nhanh', 'Điều khiển riêng', 'Tiết kiệm điện'],
+    featured: false,
+    layout: 'lg:col-span-4',
   },
   {
     icon: 'tv',
+    eyebrow: 'Giải trí tại phòng',
     title: 'Smart TV',
-    description: 'TV kết nối Internet với các ứng dụng giải trí phổ biến.',
+    description: 'Màn hình lớn kết nối Internet cho những giờ nghỉ ngơi trọn vẹn hơn.',
     items: ['YouTube', 'Trình chiếu', 'Màn hình lớn'],
+    featured: false,
+    layout: 'lg:col-span-3',
   },
   {
     icon: 'sliders',
-    title: 'Máy nước nóng',
-    description: 'Tiện nghi nước nóng riêng, có chế độ an toàn và được kiểm tra thường xuyên.',
-    items: ['Nước nóng ổn định', 'Chống giật', 'Phòng tắm riêng'],
+    eyebrow: 'Thư giãn riêng tư',
+    title: 'Nước nóng ổn định',
+    description: 'Hệ thống nước nóng riêng, vận hành an toàn và được kiểm tra thường xuyên.',
+    items: ['Nhiệt độ ổn định', 'Chống giật', 'Phòng tắm riêng'],
+    featured: false,
+    layout: 'lg:col-span-4',
   },
   {
     icon: 'amenities',
-    title: 'Tiện nghi bổ sung',
-    description: 'Tủ lạnh mini, ấm đun nước và vật dụng cá nhân cơ bản có sẵn trong phòng.',
-    items: ['Tủ lạnh mini', 'Ấm đun nước', 'Đồ dùng cá nhân'],
+    eyebrow: 'Những điều nhỏ bé',
+    title: 'Tiện nghi sẵn sàng',
+    description: 'Tủ lạnh mini, ấm đun nước và các vật dụng cơ bản được bố trí gọn gàng trong phòng.',
+    items: ['Tủ lạnh mini', 'Ấm đun nước', 'Vật dụng cơ bản'],
+    featured: false,
+    layout: 'lg:col-span-3',
   },
   {
     icon: 'shield',
-    title: 'Chuẩn bị trước check-in',
-    description: 'Nhân viên kiểm tra vệ sinh và tiện nghi trước khi khách nhận phòng.',
-    items: ['Check-in', 'Kiểm tra phòng', 'Hỗ trợ tại chỗ'],
+    eyebrow: 'Chỉn chu trước khi đến',
+    title: 'Sẵn sàng cho check‑in',
+    description: 'Phòng được kiểm tra vệ sinh, thiết bị và ghi chú yêu cầu trước giờ nhận phòng.',
+    items: ['Kiểm tra phòng', 'Đối chiếu booking', 'Hỗ trợ tại chỗ'],
+    featured: false,
+    layout: 'sm:col-span-2 lg:col-span-5',
   },
 ] as const
 
@@ -685,45 +703,79 @@ export default function HomePage() {
         <StaySearchBar />
       </div>
 
-      <section id="equipment" className="scroll-mt-20 bg-[#EFEAE1] pb-20 pt-12 sm:pb-24 sm:pt-16">
+      <section id="equipment" className="scroll-mt-20 bg-[#EFEAE1] pb-20 pt-14 sm:pb-24 sm:pt-20">
         <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
-          <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
-            <div className="max-w-2xl">
-              <p className="eyebrow text-brand-orange">
-                Tiện nghi homestay
-              </p>
-              <h2 className="font-editorial mt-3 text-4xl font-semibold leading-tight text-secondary sm:text-5xl">
-                Những tiện nghi làm nên một kỳ nghỉ dễ chịu.
+          <div className="grid gap-8 border-b border-outline-variant pb-9 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+            <div className="max-w-3xl">
+              <p className="eyebrow text-brand-orange">Tiện nghi homestay</p>
+              <h2 className="font-editorial mt-3 max-w-2xl text-4xl font-semibold leading-[1.08] text-secondary sm:text-5xl">
+                Những điều nhỏ bé làm nên một kỳ nghỉ dễ chịu.
               </h2>
-              <p className="mt-4 text-base leading-7 text-on-surface-variant">
-                Tiện nghi thiết yếu đi kèm khi đặt phòng. Ghi chú nhu cầu khi đặt để homestay chuẩn bị
-                trước giờ nhận phòng.
+              <p className="mt-4 max-w-2xl text-base leading-7 text-on-surface-variant">
+                Mỗi không gian được chuẩn bị cho nhịp nghỉ riêng của bạn — từ kết nối, thư giãn đến những chi tiết sẵn sàng trước giờ nhận phòng.
               </p>
             </div>
+
+            <div className="flex items-center gap-4 lg:justify-end">
+              <p className="hidden max-w-44 text-right text-xs leading-5 text-on-surface-variant sm:block">
+                Các tiện nghi cụ thể luôn được cập nhật tại từng trang phòng.
+              </p>
+              <span className="flex h-12 min-w-12 items-center justify-center rounded-full border border-outline bg-[#F7F3EC] px-3 font-display text-sm font-bold text-secondary" aria-label="6 nhóm tiện nghi chính">
+                06
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <p className="max-w-xl text-sm leading-6 text-on-surface-variant">
+              Khám phá các nhóm tiện nghi được đội ngũ The Serene Villa duy trì trong suốt quá trình vận hành.
+            </p>
             <Link
               href="/amenities"
-              className="inline-flex h-12 shrink-0 items-center rounded-full border border-outline bg-transparent px-6 font-display text-sm font-semibold text-secondary transition-colors hover:border-secondary hover:bg-secondary hover:text-white"
+              className="inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-outline bg-transparent px-5 font-display text-sm font-semibold text-secondary transition-[background-color,border-color,color,transform] duration-200 hover:-translate-y-0.5 hover:border-secondary hover:bg-secondary hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-secondary"
             >
-              Khám phá toàn bộ tiện nghi
+              Xem toàn bộ tiện nghi
             </Link>
           </div>
 
-          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-12 lg:gap-5">
             {equipmentCategories.map((category) => (
               <article
                 key={category.title}
-                className="group rounded-[18px] border border-outline-variant bg-white/88 p-6 shadow-[var(--shadow-card)] transition-colors duration-300 hover:border-brand-orange/45"
+                className={[
+                  'group relative overflow-hidden rounded-[20px] border p-6 sm:p-7',
+                  'transition-[transform,border-color,background-color,box-shadow] duration-200 ease-out',
+                  'focus-within:ring-2 focus-within:ring-secondary/35',
+                  category.layout,
+                  category.featured
+                    ? 'border-secondary bg-secondary text-white shadow-[0_22px_50px_rgba(20,57,47,0.18)] hover:-translate-y-0.5 hover:bg-[#123d31]'
+                    : 'border-outline-variant bg-white/90 shadow-[0_12px_30px_rgba(63,51,35,0.06)] hover:-translate-y-0.5 hover:border-brand-orange/50 hover:bg-[#FFFEFB] hover:shadow-[0_18px_36px_rgba(63,51,35,0.09)]',
+                ].join(' ')}
               >
-                <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-primary-container text-brand-orange transition-colors group-hover:bg-brand-orange group-hover:text-white">
+                {category.featured && (
+                  <div aria-hidden className="absolute -right-20 -top-20 h-56 w-56 rounded-full border border-white/10" />
+                )}
+                <div
+                  className={[
+                    'relative mb-6 flex h-11 w-11 items-center justify-center rounded-full',
+                    'transition-[background-color,color,transform] duration-200 group-hover:scale-105',
+                    category.featured ? 'bg-white/12 text-primary-fixed' : 'bg-primary-container text-brand-orange group-hover:bg-brand-orange group-hover:text-white',
+                  ].join(' ')}
+                >
                   <Icon name={category.icon} />
                 </div>
-                <h3 className="font-display text-lg font-bold text-on-surface">{category.title}</h3>
-                <p className="mt-3 text-sm leading-6 text-on-surface-variant">{category.description}</p>
-                <div className="mt-4 flex flex-wrap gap-2">
+                <p className={category.featured ? 'relative text-xs font-semibold uppercase tracking-[0.16em] text-primary-fixed' : 'text-xs font-semibold uppercase tracking-[0.16em] text-brand-orange'}>
+                  {category.eyebrow}
+                </p>
+                <h3 className={category.featured ? 'relative mt-3 font-editorial text-3xl font-semibold leading-tight text-white sm:text-[2rem]' : 'mt-3 font-editorial text-2xl font-semibold leading-tight text-secondary'}>
+                  {category.title}
+                </h3>
+                <p className={category.featured ? 'relative mt-3 max-w-lg text-sm leading-6 text-white/72' : 'mt-3 text-sm leading-6 text-on-surface-variant'}>{category.description}</p>
+                <div className={category.featured ? 'relative mt-6 flex flex-wrap gap-2 border-t border-white/15 pt-4' : 'mt-6 flex flex-wrap gap-2 border-t border-outline-variant pt-4'}>
                   {category.items.map((item) => (
                     <span
                       key={item}
-                      className="rounded-full border border-outline-variant bg-surface-container-low px-3 py-1 text-xs font-medium text-on-surface-variant"
+                      className={category.featured ? 'rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-medium text-white/88' : 'rounded-full border border-outline-variant bg-surface-container-low px-3 py-1.5 text-xs font-medium text-on-surface-variant'}
                     >
                       {item}
                     </span>
@@ -732,6 +784,10 @@ export default function HomePage() {
               </article>
             ))}
           </div>
+
+          <p className="mt-6 border-l-2 border-brand-orange/55 pl-4 text-xs leading-5 text-on-surface-variant sm:text-sm">
+            Tiện nghi riêng có thể khác theo từng hạng phòng. Vui lòng xem trang chi tiết phòng để kiểm tra danh sách chính xác trước khi đặt.
+          </p>
         </div>
       </section>
 
