@@ -2,13 +2,16 @@ package backend.homepage.adapter.out.persistence;
 
 import backend.entity.Booking;
 import backend.entity.BookingStatus;
+import backend.entity.PaymentTransactionStatus;
 import backend.homepage.application.port.out.LoadRecentHomepageBookingsPort;
 import backend.homepage.application.port.out.model.HomepageBookingState;
 import backend.homepage.application.port.out.model.RecentHomepageBooking;
 import backend.repository.BookingRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
@@ -19,20 +22,28 @@ public class HomepageBookingPersistenceAdapter implements LoadRecentHomepageBook
 
     @Override
     public List<RecentHomepageBooking> loadRecentBookings(int limit) {
-        return bookingRepository.findTop10ByStatusNotOrderByCreatedAtDesc(BookingStatus.CANCELLED)
+        return bookingRepository.findRecentPaidHomepageBookings(
+                        PaymentTransactionStatus.SUCCEEDED,
+                        List.of(
+                                BookingStatus.DEPOSIT_PAID,
+                                BookingStatus.PAID,
+                                BookingStatus.CHECKED_IN,
+                                BookingStatus.COMPLETED
+                        ),
+                        PageRequest.of(0, limit)
+                )
                 .stream()
-                .limit(limit)
-                .map(this::toSnapshot)
+                .map(projection -> toSnapshot(projection.getBooking(), projection.getOccurredAt()))
                 .toList();
     }
 
-    private RecentHomepageBooking toSnapshot(Booking booking) {
+    private RecentHomepageBooking toSnapshot(Booking booking, LocalDateTime occurredAt) {
         return new RecentHomepageBooking(
                 booking.getId(),
                 booking.getCustomer() == null ? "" : booking.getCustomer().getFullName(),
                 booking.getRoom() == null ? "" : booking.getRoom().getRoomName(),
                 toState(booking.getStatus()),
-                booking.getCreatedAt() == null ? booking.getStartTime() : booking.getCreatedAt()
+                occurredAt == null ? booking.getCreatedAt() : occurredAt
         );
     }
 

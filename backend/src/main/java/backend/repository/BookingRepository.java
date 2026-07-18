@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
@@ -29,7 +30,21 @@ public interface BookingRepository extends JpaRepository<Booking, Integer>, JpaS
     @Query("SELECT b FROM Booking b WHERE b.id = :bookingId")
     Optional<Booking> findByIdForUpdate(@Param("bookingId") Integer bookingId);
 
-    List<Booking> findTop10ByStatusNotOrderByCreatedAtDesc(BookingStatus status);
+    @Query("""
+            SELECT b AS booking,
+                   MAX(COALESCE(t.paidAt, t.updatedAt, t.createdAt)) AS occurredAt
+            FROM PaymentTransaction t
+            JOIN t.booking b
+            WHERE t.status = :paymentStatus
+              AND b.status IN :bookingStatuses
+            GROUP BY b
+            ORDER BY MAX(COALESCE(t.paidAt, t.updatedAt, t.createdAt)) DESC
+            """)
+    List<RecentPaidBookingProjection> findRecentPaidHomepageBookings(
+            @Param("paymentStatus") backend.entity.PaymentTransactionStatus paymentStatus,
+            @Param("bookingStatuses") List<BookingStatus> bookingStatuses,
+            Pageable pageable
+    );
 
     @Query("""
             SELECT b
@@ -99,5 +114,11 @@ public interface BookingRepository extends JpaRepository<Booking, Integer>, JpaS
         Long getUpcomingBookingCount();
 
         LocalDateTime getNextStartTime();
+    }
+
+    interface RecentPaidBookingProjection {
+        Booking getBooking();
+
+        LocalDateTime getOccurredAt();
     }
 }

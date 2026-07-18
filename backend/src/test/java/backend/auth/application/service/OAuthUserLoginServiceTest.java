@@ -111,6 +111,30 @@ class OAuthUserLoginServiceTest {
         assertThrows(AuthException.class, () -> service.authenticate(command));
     }
 
+    @Test
+    void acceptsVerifiedFacebookIdentityForCustomerAccount() {
+        User user = User.builder()
+                .id(8)
+                .email("facebook-guest@example.com")
+                .password("encoded")
+                .role(Role.CUSTOMER)
+                .emailVerified(true)
+                .enabled(true)
+                .build();
+        when(oauthIdentityPort.findAccountId("FACEBOOK", "facebook-456")).thenReturn(Optional.of(8));
+        when(authAccountPort.loadUserById(8)).thenReturn(Optional.of(user));
+        when(oauthSecurityPort.generateAccessToken(user)).thenReturn("access");
+        when(oauthSecurityPort.generateRefreshToken(user)).thenReturn("refresh");
+
+        AuthResponse response = service.authenticate(new OAuthUserCommand(
+                "facebook", "facebook-456", "facebook-guest@example.com", true,
+                "Facebook Guest", "https://example.com/facebook-avatar.jpg"
+        ));
+
+        verify(oauthIdentityPort).recordLogin("FACEBOOK", "facebook-456");
+        assertEquals("CUSTOMER", response.getRole());
+    }
+
     private OAuthUserCommand command() {
         return new OAuthUserCommand(
                 "google", "google-123", "guest@example.com", true,

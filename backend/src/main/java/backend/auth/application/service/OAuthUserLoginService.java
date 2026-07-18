@@ -22,6 +22,7 @@ import java.util.UUID;
 public class OAuthUserLoginService implements AuthenticateOAuthUserUseCase {
 
     private static final String GOOGLE = "GOOGLE";
+    private static final String FACEBOOK = "FACEBOOK";
 
     private final AuthAccountPort authAccountPort;
     private final OAuthIdentityPort oauthIdentityPort;
@@ -31,11 +32,12 @@ public class OAuthUserLoginService implements AuthenticateOAuthUserUseCase {
     @Transactional
     public AuthResponse authenticate(OAuthUserCommand command) {
         String provider = normalizeProvider(command.provider());
-        String subject = require(command.providerSubject(), "Google khong tra ve ma dinh danh");
-        String email = require(command.email(), "Google khong tra ve email").toLowerCase(Locale.ROOT);
+        String providerName = providerDisplayName(provider);
+        String subject = require(command.providerSubject(), providerName + " khong tra ve ma dinh danh");
+        String email = require(command.email(), providerName + " khong tra ve email").toLowerCase(Locale.ROOT);
 
         if (!command.emailVerified()) {
-            throw new AuthException("Email Google chua duoc xac minh");
+            throw new AuthException("Email " + providerName + " chua duoc xac minh");
         }
 
         User user = oauthIdentityPort.findAccountId(provider, subject)
@@ -46,7 +48,7 @@ public class OAuthUserLoginService implements AuthenticateOAuthUserUseCase {
             throw new AuthException("Tai khoan da bi khoa. Vui long lien he ho tro");
         }
         if (user.getRole() != Role.CUSTOMER) {
-            throw new AuthException("Tai khoan quan tri va nhan vien khong duoc dang nhap bang Google");
+            throw new AuthException("Tai khoan quan tri va nhan vien khong duoc dang nhap bang OAuth");
         }
 
         oauthIdentityPort.recordLogin(provider, subject);
@@ -104,10 +106,14 @@ public class OAuthUserLoginService implements AuthenticateOAuthUserUseCase {
 
     private String normalizeProvider(String provider) {
         String normalized = require(provider, "Nha cung cap dang nhap khong hop le").toUpperCase(Locale.ROOT);
-        if (!GOOGLE.equals(normalized)) {
+        if (!GOOGLE.equals(normalized) && !FACEBOOK.equals(normalized)) {
             throw new AuthException("Nha cung cap dang nhap chua duoc ho tro");
         }
         return normalized;
+    }
+
+    private String providerDisplayName(String provider) {
+        return FACEBOOK.equals(provider) ? "Facebook" : "Google";
     }
 
     private String resolveName(String fullName, String email) {

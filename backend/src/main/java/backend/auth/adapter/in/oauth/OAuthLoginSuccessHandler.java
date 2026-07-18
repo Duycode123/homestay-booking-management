@@ -20,6 +20,7 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -41,15 +42,7 @@ public class OAuthLoginSuccessHandler implements AuthenticationSuccessHandler {
         }
 
         try {
-            OAuth2User principal = oauthToken.getPrincipal();
-            AuthResponse authResponse = authenticateOAuthUserUseCase.authenticate(new OAuthUserCommand(
-                    oauthToken.getAuthorizedClientRegistrationId(),
-                    principal.getAttribute("sub"),
-                    principal.getAttribute("email"),
-                    Boolean.TRUE.equals(principal.<Boolean>getAttribute("email_verified")),
-                    principal.getAttribute("name"),
-                    principal.getAttribute("picture")
-            ));
+            AuthResponse authResponse = authenticateOAuthUserUseCase.authenticate(toOAuthUserCommand(oauthToken));
 
             authenticationSessionService.clear(request);
             authCookieService.clearAuthCookies().forEach(cookie ->
@@ -69,5 +62,49 @@ public class OAuthLoginSuccessHandler implements AuthenticationSuccessHandler {
                     )
             );
         }
+    }
+
+    private OAuthUserCommand toOAuthUserCommand(OAuth2AuthenticationToken oauthToken) {
+        OAuth2User principal = oauthToken.getPrincipal();
+        String provider = oauthToken.getAuthorizedClientRegistrationId();
+
+        if ("facebook".equalsIgnoreCase(provider)) {
+            String email = principal.getAttribute("email");
+            return new OAuthUserCommand(
+                    provider,
+                    principal.getAttribute("id"),
+                    email,
+                    email != null && !email.isBlank(),
+                    principal.getAttribute("name"),
+                    facebookPictureUrl(principal.getAttribute("picture"))
+            );
+        }
+
+        return new OAuthUserCommand(
+                provider,
+                principal.getAttribute("sub"),
+                principal.getAttribute("email"),
+                Boolean.TRUE.equals(principal.<Boolean>getAttribute("email_verified")),
+                principal.getAttribute("name"),
+                principal.getAttribute("picture")
+        );
+    }
+
+    private String facebookPictureUrl(Object picture) {
+        if (picture instanceof String pictureUrl) {
+            return pictureUrl;
+        }
+        if (!(picture instanceof Map<?, ?> pictureMap)) {
+            return null;
+        }
+
+        Object data = pictureMap.get("data");
+        if (data instanceof Map<?, ?> dataMap) {
+            Object url = dataMap.get("url");
+            return url instanceof String pictureUrl ? pictureUrl : null;
+        }
+
+        Object url = pictureMap.get("url");
+        return url instanceof String pictureUrl ? pictureUrl : null;
     }
 }

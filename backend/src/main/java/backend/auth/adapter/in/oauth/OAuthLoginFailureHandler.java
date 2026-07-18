@@ -32,7 +32,7 @@ public class OAuthLoginFailureHandler implements AuthenticationFailureHandler {
                 response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString())
         );
         String redirectUrl = UriComponentsBuilder.fromUriString(frontendUrlBuilder.linkTo("/login"))
-                .queryParam("oauthError", "google_login_failed")
+                .queryParam("oauthError", "oauth_login_failed")
                 .build()
                 .toUriString();
         response.sendRedirect(redirectUrl);

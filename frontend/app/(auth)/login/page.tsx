@@ -187,6 +187,24 @@ export default function LoginPage() {
           Tiếp tục với Google
         </button>
 
+        <button
+          type="button"
+          onClick={() => {
+            clearStoredAuthSession()
+            clearStoredCustomerProfile()
+            window.location.assign('/oauth2/authorization/facebook')
+          }}
+          className="mt-3 flex w-full items-center justify-center gap-3 rounded-full border border-outline-variant bg-white px-5 py-3.5 font-display text-sm font-semibold text-on-surface shadow-sm transition hover:border-[#1877f2]/50 hover:bg-[#f5f8ff] focus:outline-none focus:ring-2 focus:ring-[#1877f2]/25"
+        >
+          <span
+            className="flex h-5 w-5 items-center justify-center rounded-full bg-[#1877f2] font-sans text-base font-bold leading-none text-white"
+            aria-hidden="true"
+          >
+            f
+          </span>
+          Tiếp tục với Facebook
+        </button>
+
         <p className="mt-8 border-t border-outline-variant pt-6 text-center text-xs text-on-surface-variant">
           Chưa có tài khoản?{' '}
           <button

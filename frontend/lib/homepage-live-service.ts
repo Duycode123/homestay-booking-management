@@ -35,7 +35,7 @@ const businessHours: HomestayBusinessHours = {
   closeTime: '24:00',
 }
 
-const publicActivityActions = new Set<RecentActivity['action']>(['BOOKED', 'PAID', 'CHECKED_IN'])
+const publicActivityActions = new Set<RecentActivity['action']>(['PAID', 'CHECKED_IN'])
 
 function getTodayKey(now = new Date()) {
   const year = now.getFullYear()
@@ -150,7 +150,7 @@ export function formatRelativeTime(createdAt: string, now = new Date()) {
 export function getActivityActionLabel(action: RecentActivity['action']) {
   if (action === 'PAID') return 'đã thanh toán'
   if (action === 'CHECKED_IN') return 'đã check-in'
-  return 'đã đặt'
+  return 'đã xác nhận'
 }
 
 export function getRecentActivities(activities: RecentActivity[]) {
