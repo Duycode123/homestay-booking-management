@@ -92,14 +92,14 @@ public class PaymentWebhookServiceImpl implements PaymentWebhookService {
             if (transaction.getStatus() == PaymentTransactionStatus.SUCCEEDED
                     || transaction.getStatus() == PaymentTransactionStatus.FAILED
                     || (transaction.getStatus() == PaymentTransactionStatus.CANCELLED
-                        && !isReleasedAfterPaymentTimeout(transaction))) {
+                        && !isReleasedAfterPaymentHold(transaction))) {
                 return response(ORDER_ALREADY_CONFIRMED_CODE, "Order already confirmed");
             }
 
             boolean paymentSuccess = SUCCESS_CODE.equals(params.get("vnp_ResponseCode"))
                     && SUCCESS_CODE.equals(params.get("vnp_TransactionStatus"));
 
-            if (paymentSuccess && isReleasedAfterPaymentTimeout(transaction)) {
+            if (paymentSuccess && isReleasedAfterPaymentHold(transaction)) {
                 recordPaymentAfterRoomRelease(
                         transaction,
                         blankToNull(params.get("vnp_TransactionNo")),
@@ -119,7 +119,7 @@ public class PaymentWebhookServiceImpl implements PaymentWebhookService {
             Booking booking = transaction.getBooking();
             boolean initialPayment = booking.getStatus() == BookingStatus.PENDING_PAYMENT;
             if (booking.getStatus() == BookingStatus.PENDING_PAYMENT) {
-                booking.setStatus(paymentSuccess ? resolveSuccessfulBookingStatus(transaction) : BookingStatus.CANCELLED);
+                booking.setStatus(paymentSuccess ? resolveSuccessfulBookingStatus(transaction) : BookingStatus.EXPIRED);
             }
 
             if (paymentSuccess) {
@@ -200,9 +200,10 @@ public class PaymentWebhookServiceImpl implements PaymentWebhookService {
             return Map.of("success", true, "message", "Transaction already confirmed");
         }
 
-        boolean releasedAfterTimeout = isReleasedAfterPaymentTimeout(transaction);
+        boolean releasedAfterTimeout = isReleasedAfterPaymentHold(transaction);
         if (transaction.getStatus() == PaymentTransactionStatus.FAILED
-                || (transaction.getStatus() == PaymentTransactionStatus.CANCELLED && !releasedAfterTimeout)) {
+                || (transaction.getStatus() == PaymentTransactionStatus.CANCELLED && !releasedAfterTimeout)
+                || (transaction.getStatus() == PaymentTransactionStatus.EXPIRED && !releasedAfterTimeout)) {
             return Map.of("success", true, "message", "Transaction is already closed");
         }
 
@@ -307,9 +308,10 @@ public class PaymentWebhookServiceImpl implements PaymentWebhookService {
             return Map.of("success", true, "message", "Transaction already confirmed");
         }
 
-        boolean releasedAfterTimeout = isReleasedAfterPaymentTimeout(transaction);
+        boolean releasedAfterTimeout = isReleasedAfterPaymentHold(transaction);
         if (transaction.getStatus() == PaymentTransactionStatus.FAILED
-                || (transaction.getStatus() == PaymentTransactionStatus.CANCELLED && !releasedAfterTimeout)) {
+                || (transaction.getStatus() == PaymentTransactionStatus.CANCELLED && !releasedAfterTimeout)
+                || (transaction.getStatus() == PaymentTransactionStatus.EXPIRED && !releasedAfterTimeout)) {
             return Map.of("success", true, "message", "Transaction is already closed");
         }
 
@@ -388,15 +390,16 @@ public class PaymentWebhookServiceImpl implements PaymentWebhookService {
     private void closeTransactionAsCancelled(PaymentTransaction transaction, String responseCode) {
         if (transaction.getStatus() == PaymentTransactionStatus.SUCCEEDED
                 || transaction.getStatus() == PaymentTransactionStatus.FAILED
-                || transaction.getStatus() == PaymentTransactionStatus.CANCELLED) {
+                || transaction.getStatus() == PaymentTransactionStatus.CANCELLED
+                || transaction.getStatus() == PaymentTransactionStatus.EXPIRED) {
             return;
         }
 
         transaction.setResponseCode(responseCode);
-        transaction.setStatus(PaymentTransactionStatus.CANCELLED);
+        transaction.setStatus(PaymentTransactionStatus.EXPIRED);
         Booking booking = transaction.getBooking();
         if (booking != null && booking.getStatus() == BookingStatus.PENDING_PAYMENT) {
-            booking.setStatus(BookingStatus.CANCELLED);
+            booking.setStatus(BookingStatus.EXPIRED);
             addonUseCase.cancelUndeliveredAddons(booking.getId());
         }
     }
@@ -404,7 +407,8 @@ public class PaymentWebhookServiceImpl implements PaymentWebhookService {
     private void closeTransactionAsFailed(PaymentTransaction transaction, String responseCode) {
         if (transaction.getStatus() == PaymentTransactionStatus.SUCCEEDED
                 || transaction.getStatus() == PaymentTransactionStatus.FAILED
-                || transaction.getStatus() == PaymentTransactionStatus.CANCELLED) {
+                || transaction.getStatus() == PaymentTransactionStatus.CANCELLED
+                || transaction.getStatus() == PaymentTransactionStatus.EXPIRED) {
             return;
         }
 
@@ -412,14 +416,19 @@ public class PaymentWebhookServiceImpl implements PaymentWebhookService {
         transaction.setStatus(PaymentTransactionStatus.FAILED);
         Booking booking = transaction.getBooking();
         if (booking != null && booking.getStatus() == BookingStatus.PENDING_PAYMENT) {
-            booking.setStatus(BookingStatus.CANCELLED);
+            booking.setStatus(BookingStatus.EXPIRED);
             addonUseCase.cancelUndeliveredAddons(booking.getId());
         }
     }
 
-    private boolean isReleasedAfterPaymentTimeout(PaymentTransaction transaction) {
-        return transaction.getStatus() == PaymentTransactionStatus.CANCELLED
-                && "PAYMENT_TIMEOUT".equals(transaction.getResponseCode());
+    private boolean isReleasedAfterPaymentHold(PaymentTransaction transaction) {
+        if (transaction.getStatus() != PaymentTransactionStatus.EXPIRED) {
+            return false;
+        }
+        String responseCode = transaction.getResponseCode();
+        return "PAYMENT_TIMEOUT".equals(responseCode)
+                || "CUSTOMER_LEFT_PAYMENT_PAGE".equals(responseCode)
+                || (responseCode != null && responseCode.startsWith("SEPAY_ORDER_"));
     }
 
     private void recordPaymentAfterRoomRelease(
@@ -431,7 +440,7 @@ public class PaymentWebhookServiceImpl implements PaymentWebhookService {
         transaction.setStatus(PaymentTransactionStatus.SUCCEEDED);
         transaction.setResponseCode("PAYMENT_AFTER_RELEASE_REQUIRES_REFUND");
         transaction.setPaidAt(paidAt == null ? LocalDateTime.now() : paidAt);
-        // The booking deliberately remains CANCELLED: its room slot was already
+        // The booking deliberately remains EXPIRED: its room slot was already
         // released and may have been sold to another customer.
     }
 

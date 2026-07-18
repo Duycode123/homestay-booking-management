@@ -134,9 +134,9 @@ class PaymentWebhookServiceImplTest {
     @Test
     void sepayWebhookRecordsMoneyForRefundWhenExpiryAlreadyReleasedRoom() {
         PaymentTransaction transaction = pendingTransaction("PAY1", new BigDecimal("100000.00"));
-        transaction.setStatus(PaymentTransactionStatus.CANCELLED);
+        transaction.setStatus(PaymentTransactionStatus.EXPIRED);
         transaction.setResponseCode("PAYMENT_TIMEOUT");
-        transaction.getBooking().setStatus(BookingStatus.CANCELLED);
+        transaction.getBooking().setStatus(BookingStatus.EXPIRED);
         when(paymentTransactionRepository.findByProviderTransactionId("92704"))
                 .thenReturn(Optional.empty());
         when(paymentTransactionRepository.findByTransactionReference("PAY1"))
@@ -156,7 +156,7 @@ class PaymentWebhookServiceImplTest {
         assertEquals(true, result.get("success"));
         assertEquals(PaymentTransactionStatus.SUCCEEDED, transaction.getStatus());
         assertEquals("PAYMENT_AFTER_RELEASE_REQUIRES_REFUND", transaction.getResponseCode());
-        assertEquals(BookingStatus.CANCELLED, transaction.getBooking().getStatus());
+        assertEquals(BookingStatus.EXPIRED, transaction.getBooking().getStatus());
         verify(lockPaymentAggregatePort).lockAndRefresh(transaction);
         verify(couponUsageTrackingService, never()).recordPaidBookingUsage(any());
         verify(paymentTransactionRepository).save(transaction);
@@ -302,7 +302,7 @@ class PaymentWebhookServiceImplTest {
     }
 
     @Test
-    void gatewayVoidIpnCancelsPendingTransactionAndBooking() {
+    void gatewayVoidIpnExpiresPendingTransactionAndReleasesBookingHold() {
         PaymentTransaction transaction = pendingTransaction("PAY0123456789ABCDEF", new BigDecimal("50000.00"));
         when(paymentTransactionRepository.findByTransactionReference("PAY0123456789ABCDEF"))
                 .thenReturn(Optional.of(transaction));
@@ -317,9 +317,9 @@ class PaymentWebhookServiceImplTest {
 
         assertEquals(true, result.get("success"));
         assertEquals("Payment cancelled", result.get("message"));
-        assertEquals(PaymentTransactionStatus.CANCELLED, transaction.getStatus());
+        assertEquals(PaymentTransactionStatus.EXPIRED, transaction.getStatus());
         assertEquals("SEPAY_TRANSACTION_VOID", transaction.getResponseCode());
-        assertEquals(BookingStatus.CANCELLED, transaction.getBooking().getStatus());
+        assertEquals(BookingStatus.EXPIRED, transaction.getBooking().getStatus());
         verify(paymentTransactionRepository).save(transaction);
     }
 
@@ -391,7 +391,7 @@ class PaymentWebhookServiceImplTest {
     }
 
     @Test
-    void gatewayFailedIpnMarksTransactionFailedAndCancelsBooking() {
+    void gatewayFailedIpnMarksTransactionFailedAndReleasesBookingHold() {
         PaymentTransaction transaction = pendingTransaction("PAY0123456789ABCDEF", new BigDecimal("50000.00"));
         when(paymentTransactionRepository.findByTransactionReference("PAY0123456789ABCDEF"))
                 .thenReturn(Optional.of(transaction));
@@ -408,7 +408,7 @@ class PaymentWebhookServiceImplTest {
         assertEquals("Payment failed", result.get("message"));
         assertEquals(PaymentTransactionStatus.FAILED, transaction.getStatus());
         assertEquals("SEPAY_ORDER_FAILED", transaction.getResponseCode());
-        assertEquals(BookingStatus.CANCELLED, transaction.getBooking().getStatus());
+        assertEquals(BookingStatus.EXPIRED, transaction.getBooking().getStatus());
         verify(paymentTransactionRepository).save(transaction);
     }
 

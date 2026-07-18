@@ -149,7 +149,7 @@ class PaymentCheckoutUseCaseServiceTest {
         assertEquals(true, result.paymentUrl().startsWith("https://vietqr.app/img?"));
         assertEquals(true, result.paymentUrl().contains("des=" + savedTransaction.getTransactionReference()));
         assertEquals(
-                bookingCreatedAt.plusSeconds(300).atZone(ZoneId.systemDefault()).toOffsetDateTime(),
+                savedTransaction.getCreatedAt().plusSeconds(300).atZone(ZoneId.systemDefault()).toOffsetDateTime(),
                 result.expiresAt()
         );
     }
@@ -221,17 +221,20 @@ class PaymentCheckoutUseCaseServiceTest {
         verify(paymentTransactionRepository).saveAll(existingTransactionsCaptor.capture());
 
         PaymentTransaction closed = existingTransactionsCaptor.getValue().getFirst();
-        assertEquals(PaymentTransactionStatus.CANCELLED, closed.getStatus());
+        assertEquals(PaymentTransactionStatus.EXPIRED, closed.getStatus());
         assertEquals("PAYMENT_SESSION_REPLACED", closed.getResponseCode());
         assertEquals(BookingStatus.PENDING_PAYMENT, booking.getStatus());
+        ArgumentCaptor<PaymentTransaction> newTransactionCaptor = ArgumentCaptor.forClass(PaymentTransaction.class);
+        verify(paymentTransactionRepository).save(newTransactionCaptor.capture());
         assertEquals(
-                bookingCreatedAt.plusSeconds(300).atZone(ZoneId.systemDefault()).toOffsetDateTime(),
+                newTransactionCaptor.getValue().getCreatedAt().plusSeconds(300)
+                        .atZone(ZoneId.systemDefault()).toOffsetDateTime(),
                 result.expiresAt()
         );
     }
 
     @Test
-    void givesEachBookingItsOwnIndependentFiveMinuteDeadline() {
+    void givesEachQrSessionItsOwnIndependentFiveMinuteDeadline() {
         Booking firstBooking = booking(28, PaymentMethod.ONLINE);
         Booking secondBooking = booking(29, PaymentMethod.ONLINE);
         LocalDateTime firstCreatedAt = LocalDateTime.now().minusSeconds(90);
@@ -256,15 +259,19 @@ class PaymentCheckoutUseCaseServiceTest {
                 29, "bank_transfer", "full", "customer@example.com"
         );
 
+        ArgumentCaptor<PaymentTransaction> transactionCaptor = ArgumentCaptor.forClass(PaymentTransaction.class);
+        verify(paymentTransactionRepository, org.mockito.Mockito.times(2)).save(transactionCaptor.capture());
+        List<PaymentTransaction> createdTransactions = transactionCaptor.getAllValues();
         assertEquals(
-                firstCreatedAt.plusSeconds(300).atZone(ZoneId.systemDefault()).toOffsetDateTime(),
+                createdTransactions.get(0).getCreatedAt().plusSeconds(300)
+                        .atZone(ZoneId.systemDefault()).toOffsetDateTime(),
                 firstResult.expiresAt()
         );
         assertEquals(
-                secondCreatedAt.plusSeconds(300).atZone(ZoneId.systemDefault()).toOffsetDateTime(),
+                createdTransactions.get(1).getCreatedAt().plusSeconds(300)
+                        .atZone(ZoneId.systemDefault()).toOffsetDateTime(),
                 secondResult.expiresAt()
         );
-        assertEquals(75L, java.time.Duration.between(firstResult.expiresAt(), secondResult.expiresAt()).toSeconds());
     }
 
     @Test
@@ -288,7 +295,7 @@ class PaymentCheckoutUseCaseServiceTest {
                 "Thoi gian giu phong 5 phut da het. Vui long chon lai phong va tao don moi",
                 exception.getMessage()
         );
-        assertEquals(BookingStatus.CANCELLED, booking.getStatus());
+        assertEquals(BookingStatus.EXPIRED, booking.getStatus());
         verify(bookingRepository).save(booking);
         verify(paymentTransactionRepository, never()).save(any(PaymentTransaction.class));
     }
@@ -398,10 +405,10 @@ class PaymentCheckoutUseCaseServiceTest {
                 "customer@example.com"
         );
 
-        assertEquals("cancelled", detail.status());
-        assertEquals(PaymentTransactionStatus.CANCELLED, transaction.getStatus());
+        assertEquals("expired", detail.status());
+        assertEquals(PaymentTransactionStatus.EXPIRED, transaction.getStatus());
         assertEquals("PAYMENT_TIMEOUT", transaction.getResponseCode());
-        assertEquals(BookingStatus.CANCELLED, booking.getStatus());
+        assertEquals(BookingStatus.EXPIRED, booking.getStatus());
         verify(bookingRepository).save(booking);
         verify(paymentTransactionRepository).save(transaction);
         verify(couponUsageTrackingService, never()).recordPaidBookingUsage(booking);
@@ -521,13 +528,13 @@ class PaymentCheckoutUseCaseServiceTest {
     void pollingRetainsLateIncomingMoneyForRefundReconciliation() {
         Booking booking = booking(12, PaymentMethod.ONLINE);
         booking.setCreatedAt(LocalDateTime.now().minusSeconds(301));
-        booking.setStatus(BookingStatus.CANCELLED);
+        booking.setStatus(BookingStatus.EXPIRED);
         PaymentTransaction transaction = PaymentTransaction.builder()
                 .booking(booking)
                 .provider(PaymentProvider.SEPAY)
                 .transactionReference("PAYLATE1234567890")
                 .amount(new BigDecimal("50000.00"))
-                .status(PaymentTransactionStatus.CANCELLED)
+                .status(PaymentTransactionStatus.EXPIRED)
                 .responseCode("PAYMENT_TIMEOUT")
                 .createdAt(LocalDateTime.now().minusSeconds(301))
                 .build();
@@ -550,13 +557,77 @@ class PaymentCheckoutUseCaseServiceTest {
                 "customer@example.com"
         );
 
-        assertEquals("cancelled", detail.status());
+        assertEquals("expired", detail.status());
         assertEquals(PaymentTransactionStatus.SUCCEEDED, transaction.getStatus());
         assertEquals("PAYMENT_AFTER_RELEASE_REQUIRES_REFUND", transaction.getResponseCode());
-        assertEquals(BookingStatus.CANCELLED, booking.getStatus());
+        assertEquals(BookingStatus.EXPIRED, booking.getStatus());
         verify(bookingRepository, never()).save(booking);
         verify(paymentTransactionRepository).save(transaction);
         verify(couponUsageTrackingService, never()).recordPaidBookingUsage(booking);
+    }
+
+    @Test
+    void releasesPendingHoldWhenCustomerLeavesPaymentPage() {
+        Booking booking = booking(33, PaymentMethod.ONLINE);
+        PaymentTransaction transaction = PaymentTransaction.builder()
+                .booking(booking)
+                .provider(PaymentProvider.SEPAY)
+                .transactionReference("PAYLEAVEPAGE12345")
+                .amount(new BigDecimal("225000.00"))
+                .status(PaymentTransactionStatus.PENDING)
+                .createdAt(LocalDateTime.now())
+                .build();
+        when(paymentTransactionRepository
+                .findByTransactionReferenceAndBooking_Customer_Account_Email(
+                        "PAYLEAVEPAGE12345",
+                        "customer@example.com"
+                ))
+                .thenReturn(Optional.of(transaction));
+
+        paymentCheckoutUseCaseService.releasePaymentHold(
+                "PAYLEAVEPAGE12345",
+                "customer@example.com"
+        );
+
+        assertEquals(PaymentTransactionStatus.EXPIRED, transaction.getStatus());
+        assertEquals("CUSTOMER_LEFT_PAYMENT_PAGE", transaction.getResponseCode());
+        assertEquals(BookingStatus.EXPIRED, booking.getStatus());
+        verify(lockPaymentAggregatePort).lockAndRefresh(transaction);
+        verify(paymentTransactionRepository).save(transaction);
+        verify(bookingRepository).save(booking);
+        verify(addonUseCase).cancelUndeliveredAddons(booking.getId());
+    }
+
+    @Test
+    void leavingPaymentPageDoesNotUndoASuccessfulPayment() {
+        Booking booking = booking(34, PaymentMethod.ONLINE);
+        booking.setStatus(BookingStatus.PAID);
+        PaymentTransaction transaction = PaymentTransaction.builder()
+                .booking(booking)
+                .provider(PaymentProvider.SEPAY)
+                .transactionReference("PAYALREADYPAID123")
+                .amount(new BigDecimal("450000.00"))
+                .status(PaymentTransactionStatus.SUCCEEDED)
+                .createdAt(LocalDateTime.now())
+                .build();
+        when(paymentTransactionRepository
+                .findByTransactionReferenceAndBooking_Customer_Account_Email(
+                        "PAYALREADYPAID123",
+                        "customer@example.com"
+                ))
+                .thenReturn(Optional.of(transaction));
+
+        paymentCheckoutUseCaseService.releasePaymentHold(
+                "PAYALREADYPAID123",
+                "customer@example.com"
+        );
+
+        assertEquals(PaymentTransactionStatus.SUCCEEDED, transaction.getStatus());
+        assertEquals(BookingStatus.PAID, booking.getStatus());
+        verify(lockPaymentAggregatePort).lockAndRefresh(transaction);
+        verify(paymentTransactionRepository, never()).save(transaction);
+        verify(bookingRepository, never()).save(booking);
+        verify(addonUseCase, never()).cancelUndeliveredAddons(any());
     }
 
     @Test

@@ -1,0 +1,2 @@
+ALTER TYPE booking_status ADD VALUE IF NOT EXISTS 'EXPIRED';
+ALTER TYPE payment_transaction_status ADD VALUE IF NOT EXISTS 'EXPIRED';

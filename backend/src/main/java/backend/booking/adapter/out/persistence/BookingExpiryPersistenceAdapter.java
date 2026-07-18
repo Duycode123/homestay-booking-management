@@ -41,13 +41,13 @@ public class BookingExpiryPersistenceAdapter implements ExpireStalePendingBookin
                 continue;
             }
 
-            transaction.setStatus(PaymentTransactionStatus.CANCELLED);
+            transaction.setStatus(PaymentTransactionStatus.EXPIRED);
             transaction.setResponseCode("PAYMENT_TIMEOUT");
             expiredTransactions.add(transaction);
 
             Booking booking = transaction.getBooking();
             if (booking != null && booking.getStatus() == BookingStatus.PENDING_PAYMENT) {
-                booking.setStatus(BookingStatus.CANCELLED);
+                booking.setStatus(BookingStatus.EXPIRED);
                 bookingsFromTransactions.put(booking.getId(), booking);
             }
         }
@@ -71,7 +71,7 @@ public class BookingExpiryPersistenceAdapter implements ExpireStalePendingBookin
                     || !lockedBooking.getCreatedAt().isBefore(cutoff)) {
                 continue;
             }
-            lockedBooking.setStatus(BookingStatus.CANCELLED);
+            lockedBooking.setStatus(BookingStatus.EXPIRED);
             expiredBookingsWithoutTransaction.add(lockedBooking);
         }
         if (!expiredBookingsWithoutTransaction.isEmpty()) {

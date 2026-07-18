@@ -4,7 +4,7 @@ import api from '@/lib/api'
 export type PaymentMethod = 'bank_transfer'
 export type PaymentOption = 'deposit' | 'full' | 'balance'
 
-export type PaymentStatus = 'success' | 'failed' | 'pending' | 'cancelled'
+export type PaymentStatus = 'success' | 'failed' | 'pending' | 'cancelled' | 'expired'
 
 export type CreatePaymentSessionPayload = {
   bookingId: number
@@ -157,4 +157,24 @@ export async function getPaymentTransactionDetail(paymentId: string): Promise<Pa
   } catch (error) {
     throw new Error(getApiErrorMessage(error, 'Không thể kiểm tra giao dịch thanh toán.'))
   }
+}
+
+export async function releasePaymentHold(paymentId: string): Promise<void> {
+  try {
+    await api.post(`/api/payments/transactions/${encodeURIComponent(paymentId)}/release`)
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error, 'Không thể giải phóng phòng. Vui lòng thử lại.'))
+  }
+}
+
+export function releasePaymentHoldKeepalive(
+  paymentId: string,
+  csrfHeaders: Record<string, string>,
+) {
+  return fetch(`/api/payments/transactions/${encodeURIComponent(paymentId)}/release`, {
+    method: 'POST',
+    credentials: 'include',
+    keepalive: true,
+    headers: csrfHeaders,
+  })
 }

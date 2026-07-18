@@ -14,9 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 
 /**
- * Auto-cancels PENDING_PAYMENT bookings that stay unpaid past the configured grace period.
+ * Expires PENDING_PAYMENT holds that stay unpaid past the configured grace period.
  * Without this, an abandoned pending booking would block its room/time slot forever, because
- * both the overlap query and the DB exclusion constraint treat every non-CANCELLED booking as busy.
+ * both the overlap query and the DB exclusion constraint treat active booking states as busy.
  */
 @Service
 @RequiredArgsConstructor
@@ -43,7 +43,7 @@ public class BookingExpiryService {
 
         if (result.expiredBookingCount() > 0 || result.expiredTransactionCount() > 0) {
             log.info(
-                    "Auto-cancelled {} unpaid booking(s) and {} payment transaction(s) older than {} seconds",
+                    "Released {} expired booking hold(s) and {} payment transaction(s) older than {} seconds",
                     result.expiredBookingCount(),
                     result.expiredTransactionCount(),
                     paymentExpirationSeconds

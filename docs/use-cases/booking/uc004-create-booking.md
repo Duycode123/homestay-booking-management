@@ -14,6 +14,7 @@
 - `POST /api/bookings`
 - `POST /api/payments/sessions`
 - `GET /api/payments/transactions/{paymentId}`
+- `POST /api/payments/transactions/{paymentId}/release`
 - `POST /api/payments/sepay/webhook` (fallback SePay confirmation, authenticated by HMAC or API-key shared secret)
 - `GET /api/payments/vnpay/ipn` (VNPay confirmation, signature-verified)
 
@@ -40,11 +41,11 @@ Allow an authenticated customer to select a valid room/time range, see the expec
 8. At checkout, the customer may validate an optional coupon and chooses either a 50% deposit or 100% payment.
 9. When the customer clicks `Tạo mã QR`, frontend sends the booking request. Backend validates the request again, locks the room, checks availability under concurrency control, and creates the booking in `PENDING_PAYMENT`.
 10. Frontend immediately requests the online payment session for that booking. Backend validates and stores the optional coupon, calculates the payable amount, and creates a pending payment transaction using a `PAY...` transfer reference.
-11. The pending booking holds the room/time slot for at most five minutes and backend returns a VietQR image URL plus the exact expiry time.
-12. If payment-session creation fails after booking creation, the same pending booking remains reusable for retry only until its five-minute expiry; the expiry sweep then cancels it and releases the room.
-13. Frontend renders the QR code and polls `GET /api/payments/transactions/{paymentId}` about every 10 seconds.
+11. The pending booking holds the room/time slot for exactly five minutes from that payment transaction's creation time. Backend returns a VietQR image URL plus the exact expiry time.
+12. Frontend navigates to the dedicated `/customer/payment` page, renders the full order and static QR, and polls `GET /api/payments/transactions/{paymentId}` every three seconds.
+13. If the customer leaves that page before payment, frontend requests immediate release. The transaction and still-pending booking become `EXPIRED`; the expiry sweep is the fallback when the browser cannot deliver the request.
 14. On each poll, backend queries SePay Transactions API when `payment.sepay.api-access-token` is configured, matches an incoming transfer by amount plus `PAY...` reference in the SePay `code` or transaction content, then marks the transaction as succeeded and the booking as `DEPOSIT_PAID` for a partial deposit or `PAID` for full payment.
-15. If no matching SePay transaction is found before the configured payment expiry, the same poll endpoint marks the transaction and held booking as `CANCELLED`.
+15. If no matching SePay transaction is found before expiry, the poll endpoint marks the transaction and held booking as `EXPIRED`.
 
 ## Alternate and Error Flows
 
@@ -55,12 +56,13 @@ Allow an authenticated customer to select a valid room/time range, see the expec
 - Another user books the same slot concurrently: backend rejects the later request.
 - Invalid time range or booking in the past: backend rejects the request.
 - Invalid, expired, or ineligible coupon at checkout: backend rejects payment-session creation with the coupon validation reason and does not create a transaction.
-- Customer cancels on the SePay portal: backend accepts the SePay cancel/void notification, marks the pending transaction as `CANCELLED`, and marks the held booking as `CANCELLED` to release the slot.
-- Portal payment fails: backend marks the pending transaction as `FAILED` and marks the held booking as `CANCELLED`.
-- Payment timeout: the single deadline is `booking.created_at + app.booking.payment-expiration-seconds` (default `300`, or 5 minutes). Both the room hold and every initial-payment SePay QR use this exact deadline. Creating another QR for the same booking never extends the hold. At the deadline, the transaction and still-pending booking are marked `CANCELLED`, releasing availability.
+- Customer leaves the dedicated payment page: backend marks the pending transaction and booking as `EXPIRED` and releases the slot immediately.
+- Provider void/cancel before payment: backend releases the unpaid transaction and booking as `EXPIRED`.
+- Provider payment failure: backend marks the transaction as `FAILED` and the unpaid held booking as `EXPIRED`.
+- Payment timeout: each QR deadline is `payment_transaction.created_at + app.booking.payment-expiration-seconds` (default `300`, or 5 minutes). Replacing a QR expires the previous transaction and gives the new transaction its own five-minute deadline. At the deadline, the still-unpaid transaction and booking become `EXPIRED`.
 - Payment API responses serialize `expiresAt` with an explicit UTC offset. This prevents a Render UTC timestamp from being interpreted as Vietnam local time by the browser and expiring a newly created QR seven hours early.
 - SePay transaction timestamps are Vietnam local time. The SePay lookup and webhook adapters convert them to the backend system timeline before comparing them with the QR deadline or storing `paid_at`; otherwise a valid Render payment would be misclassified as seven hours late.
-- If SePay reports that money arrived after session expiry, the transaction is retained as `SUCCEEDED` with response code `LATE_PAYMENT_REQUIRES_REFUND`, while the booking stays cancelled to avoid reclaiming a room that may already have been released. The customer must contact support for reconciliation instead of paying again.
+- If SePay reports that money arrived after session expiry/release, the transaction is retained as `SUCCEEDED` with response code `PAYMENT_AFTER_RELEASE_REQUIRES_REFUND`, while the booking stays `EXPIRED` to avoid reclaiming a room that may already have been released. The customer must contact support for reconciliation instead of paying again.
 
 ## Business Rules
 
@@ -68,7 +70,7 @@ Allow an authenticated customer to select a valid room/time range, see the expec
 - Booking cannot be created in the past.
 - Every booking is a night stay. Check-in is fixed at `14:00`, checkout is fixed at `12:00` on a later date, and the minimum selection is one night (22 actual hours for the first night). Backend cost calculation and booking creation both enforce this rule.
 - Rooms in maintenance are not bookable.
-- Only bookings in `PENDING_PAYMENT`, `DEPOSIT_PAID`, `PAID`, or `CHECKED_IN` block availability. `COMPLETED` and `CANCELLED` bookings remain in history without holding the room.
+- Only bookings in `PENDING_PAYMENT`, `DEPOSIT_PAID`, `PAID`, or `CHECKED_IN` block availability. `COMPLETED`, `CANCELLED`, and `EXPIRED` do not hold the room. `EXPIRED` unpaid attempts are excluded from normal booking/cancellation history.
 - After today's check-in time has passed, the public catalog guides the customer to the next available date instead of applying an hourly cutoff or describing every room as genuinely booked.
 - Room cards keep the primary action `Đặt phòng` when today's 14:00 check-in was available but has merely passed; opening the picker starts from the next valid date. `Chọn ngày khác` is reserved for rooms that actually have a blocking booking today.
 - A new booking starts in `PENDING_PAYMENT` state.

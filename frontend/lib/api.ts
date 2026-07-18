@@ -155,6 +155,11 @@ async function getCsrfToken(forceRefresh = false) {
   return csrfPromise
 }
 
+export async function getCsrfRequestHeaders() {
+  const csrf = await getCsrfToken()
+  return { [csrf.headerName]: csrf.token }
+}
+
 api.interceptors.request.use(async (config) => {
   if (typeof window === 'undefined' || !requiresCsrf(config)) return config
 

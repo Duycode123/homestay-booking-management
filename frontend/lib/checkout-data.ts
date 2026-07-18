@@ -124,6 +124,14 @@ export function getReturnStatusContent(status?: string | null) {
       primaryLabel: 'Thử lại thanh toán',
       primaryHref: '/customer/checkout',
     },
+    expired: {
+      tone: 'cancelled',
+      icon: 'X',
+      title: 'Phiên giữ chỗ đã kết thúc',
+      message: 'Phòng đã được tự động nhả vì giao dịch chưa được thanh toán.',
+      primaryLabel: 'Chọn lại phòng',
+      primaryHref: '/rooms',
+    },
     unknown: {
       tone: 'unknown',
       icon: '?',
@@ -138,7 +146,7 @@ export function getReturnStatusContent(status?: string | null) {
 }
 
 export function normalizePaymentStatus(status?: string | null): PaymentStatus | 'unknown' {
-  if (status === 'success' || status === 'failed' || status === 'pending' || status === 'cancelled') {
+  if (status === 'success' || status === 'failed' || status === 'pending' || status === 'cancelled' || status === 'expired') {
     return status
   }
 

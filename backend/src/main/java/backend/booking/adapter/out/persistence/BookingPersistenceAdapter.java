@@ -159,6 +159,7 @@ public class BookingPersistenceAdapter implements
         Specification<Booking> historySpecification = (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(criteriaBuilder.equal(root.get("customer").get("id"), criteria.customerId()));
+            predicates.add(criteriaBuilder.notEqual(root.get("status"), BookingStatus.EXPIRED));
 
             if (criteria.status() != null) {
                 predicates.add(criteriaBuilder.equal(root.get("status"), criteria.status()));
@@ -226,6 +227,10 @@ public class BookingPersistenceAdapter implements
     private Specification<Booking> toManagementSpecification(BookingManagementSearchCriteria criteria) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
+
+            if (criteria.status() == null) {
+                predicates.add(criteriaBuilder.notEqual(root.get("status"), BookingStatus.EXPIRED));
+            }
 
             if (criteria.status() != null) {
                 predicates.add(criteriaBuilder.equal(root.get("status"), criteria.status()));

@@ -67,7 +67,7 @@ public interface BookingRepository extends JpaRepository<Booking, Integer>, JpaS
             FROM Booking b
             JOIN FETCH b.room
             JOIN FETCH b.customer
-            WHERE b.status <> :cancelledStatus
+            WHERE b.status NOT IN :excludedStatuses
               AND b.startTime < :endTime
               AND b.endTime > :startTime
             ORDER BY b.startTime ASC, b.endTime ASC, b.room.roomName ASC
@@ -75,7 +75,7 @@ public interface BookingRepository extends JpaRepository<Booking, Integer>, JpaS
     List<Booking> findBookingsOverlappingWindow(
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime,
-            @Param("cancelledStatus") BookingStatus cancelledStatus
+            @Param("excludedStatuses") List<BookingStatus> excludedStatuses
     );
 
     @Query("""

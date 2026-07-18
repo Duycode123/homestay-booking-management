@@ -35,7 +35,7 @@ public class BookingStatusTransitionPolicy {
             case DEPOSIT_PAID -> targetStatus == BookingStatus.CHECKED_IN;
             case PAID -> targetStatus == BookingStatus.CHECKED_IN;
             case CHECKED_IN -> targetStatus == BookingStatus.COMPLETED;
-            case COMPLETED, CANCELLED -> false;
+            case COMPLETED, CANCELLED, EXPIRED -> false;
         };
 
         if (!allowed) {
@@ -54,7 +54,7 @@ public class BookingStatusTransitionPolicy {
 
     public void validateManagementCancellation(Booking booking, String reason) {
         BookingStatus status = booking.getStatus();
-        if (status == BookingStatus.CANCELLED) {
+        if (status == BookingStatus.CANCELLED || status == BookingStatus.EXPIRED) {
             throw new IllegalStateException("Don dat phong da duoc huy truoc do");
         }
         if (status == BookingStatus.CHECKED_IN || status == BookingStatus.COMPLETED) {

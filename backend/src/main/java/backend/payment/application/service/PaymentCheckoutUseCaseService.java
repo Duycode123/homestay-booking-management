@@ -25,6 +25,7 @@ import backend.payment.application.port.in.CreatePaymentSessionUseCase;
 import backend.payment.application.port.in.CreateCheckoutBalancePaymentUseCase;
 import backend.payment.application.port.in.GetPaymentTransactionUseCase;
 import backend.payment.application.port.in.GetSePayCheckoutFormUseCase;
+import backend.payment.application.port.in.ReleasePaymentHoldUseCase;
 import backend.payment.application.port.out.BuildSePayCheckoutPort;
 import backend.payment.application.port.out.FindSePayIncomingPaymentPort;
 import backend.payment.application.port.out.LockPaymentAggregatePort;
@@ -58,7 +59,8 @@ public class PaymentCheckoutUseCaseService implements
         CreatePaymentSessionUseCase,
         CreateCheckoutBalancePaymentUseCase,
         GetPaymentTransactionUseCase,
-        GetSePayCheckoutFormUseCase {
+        GetSePayCheckoutFormUseCase,
+        ReleasePaymentHoldUseCase {
 
     private final BookingRepository bookingRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
@@ -174,7 +176,7 @@ public class PaymentCheckoutUseCaseService implements
             throw new ResourceNotFoundException("Khong tim thay don dat phong");
         }
 
-        if (booking.getStatus() == BookingStatus.CANCELLED) {
+        if (booking.getStatus() == BookingStatus.CANCELLED || booking.getStatus() == BookingStatus.EXPIRED) {
             throw new IllegalStateException("Khong the thanh toan don dat phong da bi huy");
         }
 
@@ -187,7 +189,7 @@ public class PaymentCheckoutUseCaseService implements
 
         LocalDateTime bookingPaymentExpiresAt = resolveBookingPaymentExpiresAt(booking, null);
         if (bookingPaymentExpiresAt != null && !LocalDateTime.now().isBefore(bookingPaymentExpiresAt)) {
-            booking.setStatus(BookingStatus.CANCELLED);
+            booking.setStatus(BookingStatus.EXPIRED);
             bookingRepository.save(booking);
             addonUseCase.cancelUndeliveredAddons(booking.getId());
             closeExistingOpenTransactions(booking.getId());
@@ -243,7 +245,7 @@ public class PaymentCheckoutUseCaseService implements
                 paymentTransaction.getAmount(),
                 buildSePayCheckoutPort.buildVietQrUrl(paymentId, paymentTransaction.getAmount()),
                 paymentTransaction.getCreatedAt(),
-                toApiDateTime(resolveBookingPaymentExpiresAt(booking, paymentTransaction.getCreatedAt())),
+                toApiDateTime(resolveExpiresAt(paymentTransaction.getCreatedAt())),
                 paymentTransaction.getPaidAt()
         );
     }
@@ -259,6 +261,37 @@ public class PaymentCheckoutUseCaseService implements
 
         syncSePayTransaction(paymentTransaction);
         return toPaymentTransactionDetail(paymentTransaction);
+    }
+
+    @Override
+    @Transactional
+    public void releasePaymentHold(String paymentId, String customerEmail) {
+        if (paymentId == null || paymentId.trim().isBlank()) {
+            throw new IllegalArgumentException("paymentId khong duoc de trong");
+        }
+
+        PaymentTransaction transaction = findAccessibleTransaction(paymentId.trim(), customerEmail);
+        lockPaymentAggregatePort.lockAndRefresh(transaction);
+
+        if (transaction.getStatus() == PaymentTransactionStatus.SUCCEEDED
+                || transaction.getStatus() == PaymentTransactionStatus.EXPIRED) {
+            return;
+        }
+        if (transaction.getStatus() != PaymentTransactionStatus.PENDING
+                && transaction.getStatus() != PaymentTransactionStatus.INITIALIZED) {
+            return;
+        }
+
+        transaction.setStatus(PaymentTransactionStatus.EXPIRED);
+        transaction.setResponseCode("CUSTOMER_LEFT_PAYMENT_PAGE");
+        paymentTransactionRepository.save(transaction);
+
+        Booking booking = transaction.getBooking();
+        if (booking != null && booking.getStatus() == BookingStatus.PENDING_PAYMENT) {
+            booking.setStatus(BookingStatus.EXPIRED);
+            bookingRepository.save(booking);
+            addonUseCase.cancelUndeliveredAddons(booking.getId());
+        }
     }
 
     @Override
@@ -388,7 +421,7 @@ public class PaymentCheckoutUseCaseService implements
                 .toList();
 
         transactionsToClose.forEach(transaction -> {
-            transaction.setStatus(PaymentTransactionStatus.CANCELLED);
+            transaction.setStatus(PaymentTransactionStatus.EXPIRED);
             transaction.setResponseCode("PAYMENT_SESSION_REPLACED");
         });
         if (!transactionsToClose.isEmpty()) {
@@ -452,10 +485,12 @@ public class PaymentCheckoutUseCaseService implements
         if (transaction.getStatus() == PaymentTransactionStatus.SUCCEEDED) {
             return;
         }
-        boolean timedOutBeforeConfirmation = transaction.getStatus() == PaymentTransactionStatus.CANCELLED
-                && "PAYMENT_TIMEOUT".equals(transaction.getResponseCode());
+        boolean timedOutBeforeConfirmation = transaction.getStatus() == PaymentTransactionStatus.EXPIRED
+                && ("PAYMENT_TIMEOUT".equals(transaction.getResponseCode())
+                    || "CUSTOMER_LEFT_PAYMENT_PAGE".equals(transaction.getResponseCode()));
         if ((transaction.getStatus() == PaymentTransactionStatus.FAILED
-                || transaction.getStatus() == PaymentTransactionStatus.CANCELLED)
+                || transaction.getStatus() == PaymentTransactionStatus.CANCELLED
+                || transaction.getStatus() == PaymentTransactionStatus.EXPIRED)
                 && !timedOutBeforeConfirmation) {
             return;
         }
@@ -481,13 +516,14 @@ public class PaymentCheckoutUseCaseService implements
         Booking booking = transaction.getBooking();
         boolean checkoutBalance = isCheckoutBalanceTransaction(transaction);
         boolean roomWasReleased = timedOutBeforeConfirmation
-                || (booking != null && booking.getStatus() == BookingStatus.CANCELLED);
+                || (booking != null && (booking.getStatus() == BookingStatus.CANCELLED
+                    || booking.getStatus() == BookingStatus.EXPIRED));
         if ((latePayment || roomWasReleased) && !checkoutBalance) {
             transaction.setResponseCode(roomWasReleased
                     ? "PAYMENT_AFTER_RELEASE_REQUIRES_REFUND"
                     : "LATE_PAYMENT_REQUIRES_REFUND");
             if (booking != null && booking.getStatus() == BookingStatus.PENDING_PAYMENT) {
-                booking.setStatus(BookingStatus.CANCELLED);
+                booking.setStatus(BookingStatus.EXPIRED);
                 bookingRepository.save(booking);
             }
             paymentTransactionRepository.save(transaction);
@@ -523,12 +559,12 @@ public class PaymentCheckoutUseCaseService implements
             return;
         }
 
-        transaction.setStatus(PaymentTransactionStatus.CANCELLED);
+        transaction.setStatus(PaymentTransactionStatus.EXPIRED);
         transaction.setResponseCode("PAYMENT_TIMEOUT");
 
         Booking booking = transaction.getBooking();
         if (booking != null && booking.getStatus() == BookingStatus.PENDING_PAYMENT) {
-            booking.setStatus(BookingStatus.CANCELLED);
+            booking.setStatus(BookingStatus.EXPIRED);
             bookingRepository.save(booking);
             addonUseCase.cancelUndeliveredAddons(booking.getId());
         }
@@ -602,11 +638,7 @@ public class PaymentCheckoutUseCaseService implements
     }
 
     private LocalDateTime resolveTransactionExpiresAt(PaymentTransaction transaction) {
-        if (isCheckoutBalanceTransaction(transaction)) {
-            return resolveExpiresAt(transaction.getCreatedAt());
-        }
-
-        return resolveBookingPaymentExpiresAt(transaction.getBooking(), transaction.getCreatedAt());
+        return resolveExpiresAt(transaction.getCreatedAt());
     }
 
     private OffsetDateTime toApiDateTime(LocalDateTime value) {
@@ -624,6 +656,12 @@ public class PaymentCheckoutUseCaseService implements
             return "cancelled";
         }
 
+        if (status == PaymentTransactionStatus.SUCCEEDED
+                && booking != null
+                && booking.getStatus() == BookingStatus.EXPIRED) {
+            return "expired";
+        }
+
         if ((status == PaymentTransactionStatus.PENDING || status == PaymentTransactionStatus.INITIALIZED)
                 && booking != null
                 && booking.getStatus() == BookingStatus.CANCELLED) {
@@ -634,6 +672,7 @@ public class PaymentCheckoutUseCaseService implements
             case SUCCEEDED -> "success";
             case PENDING, INITIALIZED -> "pending";
             case FAILED -> "failed";
+            case EXPIRED -> "expired";
             case CANCELLED -> "cancelled";
         };
     }

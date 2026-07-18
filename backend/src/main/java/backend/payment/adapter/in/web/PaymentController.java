@@ -10,6 +10,7 @@ import backend.payment.application.port.in.CreatePaymentSessionUseCase;
 import backend.payment.application.port.in.CreateCheckoutBalancePaymentUseCase;
 import backend.payment.application.port.in.GetPaymentTransactionUseCase;
 import backend.payment.application.port.in.GetSePayCheckoutFormUseCase;
+import backend.payment.application.port.in.ReleasePaymentHoldUseCase;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -28,6 +29,7 @@ public class PaymentController {
     private final CreateCheckoutBalancePaymentUseCase createCheckoutBalancePaymentUseCase;
     private final GetPaymentTransactionUseCase getPaymentTransactionUseCase;
     private final GetSePayCheckoutFormUseCase getSePayCheckoutFormUseCase;
+    private final ReleasePaymentHoldUseCase releasePaymentHoldUseCase;
 
     @PostMapping("/sessions")
     public ResponseEntity<ApiResponse<PaymentSessionResult>> createPaymentSession(
@@ -69,6 +71,15 @@ public class PaymentController {
         );
 
         return ResponseEntity.ok(success("Lay giao dich thanh toan thanh cong", data));
+    }
+
+    @PostMapping("/transactions/{paymentId}/release")
+    public ResponseEntity<ApiResponse<Void>> releasePaymentHold(
+            @PathVariable String paymentId,
+            Authentication authentication
+    ) {
+        releasePaymentHoldUseCase.releasePaymentHold(paymentId, authentication.getName());
+        return ResponseEntity.ok(success("Da giai phong phien giu cho", null));
     }
 
     @GetMapping(value = "/sepay/checkout/{paymentId}", produces = MediaType.TEXT_HTML_VALUE)

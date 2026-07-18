@@ -14,7 +14,7 @@ public class JdbcStaffBookingScopeAdapter implements LoadStaffBookingScopePort {
 
     private static final String STAFF_BOOKING_SCOPE = """
             FROM booking booking
-            WHERE CAST(booking.status AS text) <> 'CANCELLED'
+            WHERE CAST(booking.status AS text) NOT IN ('CANCELLED', 'EXPIRED')
               AND EXISTS (
                   SELECT 1
                   FROM shift assigned_shift

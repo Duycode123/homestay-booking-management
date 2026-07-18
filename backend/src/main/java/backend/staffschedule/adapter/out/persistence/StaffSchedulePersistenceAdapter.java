@@ -70,7 +70,7 @@ public class StaffSchedulePersistenceAdapter implements LoadStaffSchedulePort {
         List<Booking> bookings = bookingRepository.findBookingsOverlappingWindow(
                 shiftStart,
                 shiftEnd,
-                BookingStatus.CANCELLED
+                List.of(BookingStatus.CANCELLED, BookingStatus.EXPIRED)
         );
 
         return bookings.stream()
