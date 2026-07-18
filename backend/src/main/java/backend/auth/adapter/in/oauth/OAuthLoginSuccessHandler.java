@@ -49,6 +49,9 @@ public class OAuthLoginSuccessHandler implements AuthenticationSuccessHandler {
                     principal.getAttribute("picture")
             ));
 
+            authCookieService.clearAuthCookies().forEach(cookie ->
+                    response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString())
+            );
             response.addHeader(HttpHeaders.SET_COOKIE, authCookieService.accessCookie(authResponse.getAccessToken()).toString());
             response.addHeader(HttpHeaders.SET_COOKIE, authCookieService.refreshCookie(authResponse.getRefreshToken()).toString());
             if (request.getSession(false) != null) {

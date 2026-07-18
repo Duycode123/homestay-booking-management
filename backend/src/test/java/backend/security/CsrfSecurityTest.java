@@ -7,6 +7,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -14,7 +15,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -30,7 +30,7 @@ class CsrfSecurityTest {
     private JavaMailSender javaMailSender;
 
     @Test
-    void csrfEndpointIssuesTokenAndUnsafeRequestRequiresIt() throws Exception {
+    void csrfEndpointIssuesTokenWhileLogoutRemainsReliableAndOtherUnsafeRequestsRequireIt() throws Exception {
         mockMvc.perform(get("/api/auth/csrf"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.headerName").value("X-XSRF-TOKEN"))
@@ -40,19 +40,20 @@ class CsrfSecurityTest {
                         containsString("HOMESTAY-XSRF-TOKEN=")
                 ));
 
+        mockMvc.perform(post("/api/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"guest@example.com\"}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(CsrfAccessDeniedHandler.ERROR_CODE));
+
+        mockMvc.perform(post("/api/auth/forgot-password")
+                        .with(csrf().useInvalidToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"guest@example.com\"}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(CsrfAccessDeniedHandler.ERROR_CODE));
+
         mockMvc.perform(post("/api/auth/logout"))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value(CsrfAccessDeniedHandler.ERROR_CODE))
-                .andExpect(cookie().doesNotExist(AuthCookieService.ACCESS_COOKIE_NAME))
-                .andExpect(cookie().doesNotExist(AuthCookieService.REFRESH_COOKIE_NAME));
-
-        mockMvc.perform(post("/api/auth/logout").with(csrf().useInvalidToken()))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value(CsrfAccessDeniedHandler.ERROR_CODE))
-                .andExpect(cookie().doesNotExist(AuthCookieService.ACCESS_COOKIE_NAME))
-                .andExpect(cookie().doesNotExist(AuthCookieService.REFRESH_COOKIE_NAME));
-
-        mockMvc.perform(post("/api/auth/logout").with(csrf()))
                 .andExpect(status().isOk());
     }
 

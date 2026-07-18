@@ -40,19 +40,25 @@ export default function LoginPage() {
 
     try {
       const sessionUser = await loginSession(formData.identifier.trim(), formData.password)
+      // Login has already succeeded. A transient profile request must not be
+      // reported as an invalid email/password error.
+      login(sessionUser)
       clearStoredCustomerProfile()
-      const currentProfile = await fetchCurrentUser(sessionUser)
-
-      login({
-        ...sessionUser,
-        id: currentProfile.id ?? sessionUser.id,
-        role: currentProfile.role,
-        fullName: currentProfile.fullName,
-        name: currentProfile.fullName,
-        email: currentProfile.email,
-        phone: currentProfile.phone,
-        avatarUrl: currentProfile.avatarUrl,
-      })
+      try {
+        const currentProfile = await fetchCurrentUser(sessionUser)
+        login({
+          ...sessionUser,
+          id: currentProfile.id ?? sessionUser.id,
+          role: currentProfile.role,
+          fullName: currentProfile.fullName,
+          name: currentProfile.fullName,
+          email: currentProfile.email,
+          phone: currentProfile.phone,
+          avatarUrl: currentProfile.avatarUrl,
+        })
+      } catch {
+        // Account menus retry the profile request after navigation.
+      }
       router.replace(getRedirectPath(sessionUser.role))
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } }

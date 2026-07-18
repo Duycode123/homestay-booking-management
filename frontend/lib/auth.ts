@@ -90,8 +90,8 @@ export const logoutSession = async () => {
   await beginAuthTransition()
   try {
     await api.post('/api/auth/logout')
-    clearStoredAuthSession()
   } finally {
+    clearStoredAuthSession()
     endAuthTransition()
   }
 }

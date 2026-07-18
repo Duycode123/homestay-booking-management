@@ -91,7 +91,9 @@ public class AuthController {
                 request.getPassword()
         ));
 
-        return ResponseEntity.ok()
+        ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok();
+        addClearAuthCookieHeaders(responseBuilder);
+        return responseBuilder
                 .header(HttpHeaders.SET_COOKIE, authCookieService.accessCookie(response.getAccessToken()).toString())
                 .header(HttpHeaders.SET_COOKIE, authCookieService.refreshCookie(response.getRefreshToken()).toString())
                 .body(response);
@@ -116,10 +118,9 @@ public class AuthController {
     ) {
         logoutUseCase.logout(new LogoutCommand(accessToken, refreshToken));
 
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, authCookieService.clearAccessCookie().toString())
-                .header(HttpHeaders.SET_COOKIE, authCookieService.clearRefreshCookie().toString())
-                .body(Map.of("message", "\u0110\u0103ng xu\u1ea5t th\u00e0nh c\u00f4ng"));
+        ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok();
+        addClearAuthCookieHeaders(responseBuilder);
+        return responseBuilder.body(Map.of("message", "\u0110\u0103ng xu\u1ea5t th\u00e0nh c\u00f4ng"));
     }
 
     @GetMapping("/session")
@@ -181,5 +182,11 @@ public class AuthController {
         ));
 
         return ResponseEntity.ok(Map.of("message", "He thong da gui lai email xac thuc"));
+    }
+
+    private void addClearAuthCookieHeaders(ResponseEntity.BodyBuilder responseBuilder) {
+        authCookieService.clearAuthCookies().forEach(cookie ->
+                responseBuilder.header(HttpHeaders.SET_COOKIE, cookie.toString())
+        );
     }
 }

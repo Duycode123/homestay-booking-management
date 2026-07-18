@@ -33,12 +33,15 @@ Let a user sign in with email/password or Google and establish exactly one trust
 - OAuth failure clears auth cookies and redirects to `/login?oauthError=google_login_failed`.
 - A user with a valid session but the wrong role is redirected only after the verified backend session has loaded.
 - Login, refresh, and logout are serialized in one browser tab so an older refresh response cannot overwrite a new login.
+- Logout clears current cookies plus legacy `/api` and `/api/auth` cookie paths before removing all cached frontend identity data.
+- If login succeeds but the optional profile request is temporarily unavailable, the verified session remains signed in and the profile is retried by the account UI.
 
 ## Business and security rules
 
 - Local storage is only a refresh hint; it never proves authentication.
 - HttpOnly cookies use `SameSite=Lax` for the top-level Google redirect and `Secure` in production.
 - Browser API calls use the same frontend origin and are proxied to the backend.
+- Logout does not require a CSRF token: `SameSite=Lax` prevents cross-site POST cookies, and making logout idempotent avoids trapping a user in a stale session.
 - Session and current-profile responses use `Cache-Control: no-store`.
 - JWT payload decoding in Next.js middleware is not an authorization decision because it does not verify the signature.
 - The backend remains the final authority for every protected API.

@@ -94,6 +94,7 @@ public class SecurityConfig {
                         }
                     })
                     .ignoringRequestMatchers(
+                            "/api/auth/logout",
                             "/api/payments/vnpay/ipn",
                             "/api/payments/sepay/webhook"
                     ));

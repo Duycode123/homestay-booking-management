@@ -124,7 +124,7 @@ class BackendApplicationTests {
         String accessToken = jwtService.generateAccessToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
 
-        mockMvc.perform(post("/api/auth/logout")
+        var logoutResult = mockMvc.perform(post("/api/auth/logout")
                         .cookie(
                                 new Cookie(AuthCookieService.ACCESS_COOKIE_NAME, accessToken),
                                 new Cookie(AuthCookieService.REFRESH_COOKIE_NAME, refreshToken)
@@ -133,7 +133,12 @@ class BackendApplicationTests {
                 .andExpect(jsonPath("$.message").value("\u0110\u0103ng xu\u1ea5t th\u00e0nh c\u00f4ng"))
                 .andExpect(header().exists(HttpHeaders.SET_COOKIE))
                 .andExpect(cookie().maxAge(AuthCookieService.ACCESS_COOKIE_NAME, 0))
-                .andExpect(cookie().maxAge(AuthCookieService.REFRESH_COOKIE_NAME, 0));
+                .andExpect(cookie().maxAge(AuthCookieService.REFRESH_COOKIE_NAME, 0))
+                .andReturn();
+
+        var clearCookieHeaders = logoutResult.getResponse().getHeaders(HttpHeaders.SET_COOKIE);
+        assertTrue(clearCookieHeaders.stream().anyMatch(value -> value.contains("Path=/api;")));
+        assertTrue(clearCookieHeaders.stream().anyMatch(value -> value.contains("Path=/api/auth;")));
 
         assertTrue(tokenRevocationService.isRevoked(accessToken));
         assertTrue(tokenRevocationService.isRevoked(refreshToken));

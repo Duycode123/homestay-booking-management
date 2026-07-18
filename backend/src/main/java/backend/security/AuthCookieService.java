@@ -6,6 +6,7 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.util.List;
 
 @Component
 public class AuthCookieService {
@@ -33,11 +34,27 @@ public class AuthCookieService {
     }
 
     public ResponseCookie clearAccessCookie() {
-        return clearCookie(ACCESS_COOKIE_NAME);
+        return clearCookie(ACCESS_COOKIE_NAME, "/");
     }
 
     public ResponseCookie clearRefreshCookie() {
-        return clearCookie(REFRESH_COOKIE_NAME);
+        return clearCookie(REFRESH_COOKIE_NAME, "/");
+    }
+
+    /**
+     * Clear current and legacy cookie paths. Older deployments scoped auth
+     * cookies to /api or /api/auth, so clearing only Path=/ can leave a valid
+     * account cookie that becomes visible again after logout.
+     */
+    public List<ResponseCookie> clearAuthCookies() {
+        return List.of(
+                clearCookie(ACCESS_COOKIE_NAME, "/"),
+                clearCookie(REFRESH_COOKIE_NAME, "/"),
+                clearCookie(ACCESS_COOKIE_NAME, "/api"),
+                clearCookie(REFRESH_COOKIE_NAME, "/api"),
+                clearCookie(ACCESS_COOKIE_NAME, "/api/auth"),
+                clearCookie(REFRESH_COOKIE_NAME, "/api/auth")
+        );
     }
 
     private ResponseCookie cookie(String name, String value, Duration maxAge) {
@@ -52,12 +69,12 @@ public class AuthCookieService {
                 .build();
     }
 
-    private ResponseCookie clearCookie(String name) {
+    private ResponseCookie clearCookie(String name, String path) {
         return ResponseCookie.from(name, "")
                 .httpOnly(true)
                 .secure(secure)
                 .sameSite("Lax")
-                .path("/")
+                .path(path)
                 .maxAge(Duration.ZERO)
                 .build();
     }

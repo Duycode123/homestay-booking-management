@@ -28,8 +28,9 @@ public class OAuthLoginFailureHandler implements AuthenticationFailureHandler {
         if (request.getSession(false) != null) {
             request.getSession(false).invalidate();
         }
-        response.addHeader(HttpHeaders.SET_COOKIE, authCookieService.clearAccessCookie().toString());
-        response.addHeader(HttpHeaders.SET_COOKIE, authCookieService.clearRefreshCookie().toString());
+        authCookieService.clearAuthCookies().forEach(cookie ->
+                response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString())
+        );
         String redirectUrl = UriComponentsBuilder.fromUriString(frontendUrlBuilder.linkTo("/login"))
                 .queryParam("oauthError", "google_login_failed")
                 .build()

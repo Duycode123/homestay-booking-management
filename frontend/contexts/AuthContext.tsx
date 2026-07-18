@@ -85,12 +85,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false)
 
       if (redirectTo && typeof window !== 'undefined') {
-        window.location.assign(getSameOriginRedirectUrl(redirectTo))
+        window.location.replace(getSameOriginRedirectUrl(redirectTo))
         return
       }
 
       window.setTimeout(() => setIsLoggingOut(false), 500)
     } catch {
+      clearStoredCustomerProfile()
+      clearClientUserCaches()
+      setUser(null)
+      setIsLoading(false)
+
+      if (redirectTo && typeof window !== 'undefined') {
+        window.location.replace(getSameOriginRedirectUrl(redirectTo))
+        return
+      }
+
       setIsLoggingOut(false)
       if (typeof window !== 'undefined') {
         window.alert('Không thể đăng xuất an toàn lúc này. Vui lòng kiểm tra kết nối và thử lại.')
