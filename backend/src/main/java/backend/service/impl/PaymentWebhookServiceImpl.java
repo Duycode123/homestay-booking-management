@@ -1,6 +1,7 @@
 package backend.service.impl;
 
 import backend.addon.application.port.in.AddonUseCase;
+import backend.booking.application.service.BookingCustomerNotificationService;
 import backend.config.SePayProperties;
 import backend.config.VNPayProperties;
 import backend.dto.response.VNPayIpnResponse;
@@ -63,6 +64,7 @@ public class PaymentWebhookServiceImpl implements PaymentWebhookService {
     private final CouponUsageTrackingService couponUsageTrackingService;
     private final ObjectMapper objectMapper;
     private final AddonUseCase addonUseCase;
+    private final BookingCustomerNotificationService bookingCustomerNotificationService;
 
     @Override
     @Transactional
@@ -128,6 +130,9 @@ public class PaymentWebhookServiceImpl implements PaymentWebhookService {
             }
 
             paymentTransactionRepository.save(transaction);
+            if (paymentSuccess) {
+                bookingCustomerNotificationService.notifyPaymentConfirmed(booking, transaction.getAmount());
+            }
 
             return response(SUCCESS_CODE, "Confirm success");
         } catch (Exception exception) {
@@ -234,6 +239,7 @@ public class PaymentWebhookServiceImpl implements PaymentWebhookService {
         } catch (DataIntegrityViolationException exception) {
             return Map.of("success", true, "message", "Duplicate provider transaction");
         }
+        bookingCustomerNotificationService.notifyPaymentConfirmed(booking, transaction.getAmount());
 
         return Map.of("success", true, "message", "Confirm success");
     }
@@ -351,6 +357,7 @@ public class PaymentWebhookServiceImpl implements PaymentWebhookService {
         } catch (DataIntegrityViolationException exception) {
             return Map.of("success", true, "message", "Duplicate provider transaction");
         }
+        bookingCustomerNotificationService.notifyPaymentConfirmed(booking, transaction.getAmount());
 
         return Map.of("success", true, "message", "Confirm success");
     }

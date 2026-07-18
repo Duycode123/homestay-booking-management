@@ -61,9 +61,10 @@ export function applyTodayAvailability(
   const paymentHoldSlot = todaySlots.find((slot) => slot.blockType === 'PAYMENT_HOLD')
 
   if (paymentHoldSlot) {
-    const holdExpiresAt = typeof paymentHoldSlot.holdRemainingSeconds === 'number'
-      ? new Date(now.getTime() + (paymentHoldSlot.holdRemainingSeconds * 1_000)).toISOString()
-      : paymentHoldSlot.holdExpiresAt
+    const holdExpiresAt = paymentHoldSlot.holdExpiresAt
+      ?? (typeof paymentHoldSlot.holdRemainingSeconds === 'number'
+        ? new Date(now.getTime() + (paymentHoldSlot.holdRemainingSeconds * 1_000)).toISOString()
+        : undefined)
     return {
       ...room,
       availabilityStatus: 'ALMOST_FULL',

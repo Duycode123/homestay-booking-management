@@ -139,6 +139,7 @@ public class BookingUseCaseService implements
     private final SavePaymentTransactionPort savePaymentTransactionPort;
     private final CreatePendingRefundPort createPendingRefundPort;
     private final BookingCancellationNotificationService bookingCancellationNotificationService;
+    private final BookingCustomerNotificationService bookingCustomerNotificationService;
     private final ValidateCouponUseCase validateCouponUseCase;
     private final BookingStatusTransitionPolicy bookingStatusTransitionPolicy;
     private final AddonUseCase addonUseCase;
@@ -234,6 +235,7 @@ public class BookingUseCaseService implements
         }
 
         addonUseCase.attachInitialAddons(savedBooking.getId(), addonQuote);
+        bookingCustomerNotificationService.notifyPaymentHoldCreated(savedBooking);
 
         return toBookingResponse(savedBooking);
     }

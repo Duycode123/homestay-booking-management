@@ -506,7 +506,7 @@ export default function CheckoutPageClient() {
                 </section>
 
               {paymentSession && paymentSession.paymentUrl && (
-                <div className="mt-5 rounded-[24px] border border-[#DCC9B4] bg-[#FBF7F1] p-4 sm:p-5">
+                <div className="serene-qr-enter mt-5 rounded-[24px] border border-[#DCC9B4] bg-[#FBF7F1] p-4 sm:p-5">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="font-display text-lg font-bold text-[#242A27]">Quét mã để thanh toán</p>

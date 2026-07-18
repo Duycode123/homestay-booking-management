@@ -125,7 +125,7 @@ export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenu
           role="menu"
           aria-label="Tài khoản"
           className={[
-            'absolute z-[100] mt-3 w-[min(340px,calc(100vw-24px))] overflow-hidden rounded-[22px] border border-[#d8c9b5] bg-[#fffdfa] shadow-[0_26px_70px_rgba(20,47,38,.24)]',
+            'serene-dropdown-enter absolute z-[100] mt-3 w-[min(340px,calc(100vw-24px))] overflow-hidden rounded-[22px] border border-[#d8c9b5] bg-[#fffdfa] shadow-[0_26px_70px_rgba(20,47,38,.24)]',
             align === 'full' ? 'right-0' : 'right-0',
           ].join(' ')}
         >

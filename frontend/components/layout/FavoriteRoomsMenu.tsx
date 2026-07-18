@@ -76,7 +76,7 @@ export default function FavoriteRoomsMenu({ onNavigate }: FavoriteRoomsMenuProps
         <section
           role="dialog"
           aria-label="Danh sách phòng yêu thích"
-          className="absolute right-0 z-[95] mt-3 w-[min(390px,calc(100vw-24px))] overflow-hidden rounded-[24px] border border-[#dfd2bf] bg-[#fffdfa] shadow-[0_24px_70px_rgba(26,47,39,.22)]"
+          className="serene-dropdown-enter absolute right-0 z-[95] mt-3 w-[min(390px,calc(100vw-24px))] overflow-hidden rounded-[24px] border border-[#dfd2bf] bg-[#fffdfa] shadow-[0_24px_70px_rgba(26,47,39,.22)]"
         >
           <header className="bg-[linear-gradient(145deg,#123f34,#255e4e)] px-5 py-4 text-white">
             <div className="flex items-center justify-between gap-3">

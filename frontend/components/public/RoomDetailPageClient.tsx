@@ -322,7 +322,7 @@ function Gallery({ images, roomName }: { images: string[]; roomName: string }) {
 
       {selectedIndex !== null && images[selectedIndex] && (
         <div
-          className="fixed inset-0 z-[140] flex items-center justify-center bg-[#07130f]/88 p-4 backdrop-blur-md sm:p-8"
+          className="serene-lightbox-backdrop fixed inset-0 z-[140] flex items-center justify-center bg-[#07130f]/88 p-4 backdrop-blur-md sm:p-8"
           role="dialog"
           aria-modal="true"
           aria-label={`Ảnh phòng ${roomName}`}
@@ -340,7 +340,7 @@ function Gallery({ images, roomName }: { images: string[]; roomName: string }) {
             </>
           )}
 
-          <div className="relative h-[min(78vh,800px)] w-[min(88vw,1120px)] overflow-hidden rounded-[24px] border border-white/15 bg-black/20 shadow-[0_30px_100px_rgba(0,0,0,.55)]" onClick={(event) => event.stopPropagation()}>
+          <div className="serene-lightbox-panel relative h-[min(78vh,800px)] w-[min(88vw,1120px)] overflow-hidden rounded-[24px] border border-white/15 bg-black/20 shadow-[0_30px_100px_rgba(0,0,0,.55)]" onClick={(event) => event.stopPropagation()}>
             <Image src={images[selectedIndex]} alt={`${roomName} - ảnh ${selectedIndex + 1}`} fill quality={95} sizes="88vw" className="object-contain" />
           </div>
           <p className="absolute bottom-5 left-1/2 max-w-[75vw] -translate-x-1/2 truncate text-center text-sm font-medium text-white/80">{roomName}</p>
@@ -554,9 +554,9 @@ function ReviewPhotoGallery({ images, customerName }: { images: NonNullable<Book
         ))}
       </div>
       {selectedImage && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Ảnh đánh giá" onClick={() => setSelectedImage(null)}>
+        <div className="serene-lightbox-backdrop fixed inset-0 z-[120] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Ảnh đánh giá" onClick={() => setSelectedImage(null)}>
           <button type="button" onClick={() => setSelectedImage(null)} className="absolute right-5 top-5 flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-2xl text-white transition hover:bg-white/25" aria-label="Đóng ảnh">×</button>
-          <div className="relative h-[min(78vh,760px)] w-[min(92vw,1040px)] overflow-hidden rounded-[22px]" onClick={(event) => event.stopPropagation()}>
+          <div className="serene-lightbox-panel relative h-[min(78vh,760px)] w-[min(92vw,1040px)] overflow-hidden rounded-[22px]" onClick={(event) => event.stopPropagation()}>
             <Image src={selectedImage} alt={`Ảnh đánh giá của ${customerName}`} fill unoptimized sizes="92vw" className="object-contain" />
           </div>
         </div>

@@ -54,13 +54,13 @@ export default function AboutPage() {
       <section className="overflow-hidden bg-secondary text-white">
         <div className="mx-auto grid max-w-[1400px] lg:grid-cols-2">
           <div className="flex items-center px-5 py-20 sm:px-8 sm:py-28 lg:px-14 xl:px-20">
-            <div className="max-w-xl">
+            <div className="serene-about-hero-copy max-w-xl">
               <p className="eyebrow text-primary-fixed">Về The Serene Villa</p>
               <h1 className="font-editorial mt-5 text-5xl font-semibold leading-[1.02] tracking-[-0.035em] sm:text-6xl">Một khoảng lặng được chăm chút từ những điều nhỏ nhất.</h1>
               <p className="mt-7 text-base leading-8 text-white/74 sm:text-lg">The Serene Villa được tạo nên với mong muốn mỗi chuyến đi không chỉ là đổi một nơi để ngủ, mà là cơ hội để chậm lại, kết nối và trở về với cảm giác bình yên.</p>
             </div>
           </div>
-          <div className="relative min-h-[420px] lg:min-h-[680px]">
+          <div className="serene-about-hero-image relative min-h-[420px] overflow-hidden lg:min-h-[680px]">
             <Image
               src="/images/Banner.png?v=20260715-original"
               alt="Không gian lưu trú mang phong cách ấm áp và sang trọng"
@@ -109,7 +109,7 @@ export default function AboutPage() {
             </div>
           </div>
 
-          <div className="relative min-h-[460px] overflow-hidden rounded-[30px] border border-outline-variant bg-[#EEE6D9] shadow-[0_24px_70px_rgba(23,58,49,0.10)] sm:min-h-[560px]">
+          <div className="serene-image-lift group relative min-h-[460px] overflow-hidden rounded-[30px] border border-outline-variant bg-[#EEE6D9] shadow-[0_24px_70px_rgba(23,58,49,0.10)] sm:min-h-[560px]">
             {brandStoryImage ? (
               <Image
                 src={brandStoryImage}
@@ -117,7 +117,7 @@ export default function AboutPage() {
                 fill
                 unoptimized
                 sizes="(max-width: 1024px) 100vw, 45vw"
-                className="object-cover"
+                className="object-cover transition duration-700 ease-out group-hover:scale-[1.025]"
               />
             ) : (
               <div className="absolute inset-5 flex flex-col items-center justify-center rounded-[24px] border border-dashed border-secondary/30 bg-[radial-gradient(circle_at_top,#f8f3ea,#e8dfd1)] px-8 text-center">
@@ -186,7 +186,7 @@ export default function AboutPage() {
             {teamStories.map((story, index) => (
               <article
                 key={story.number}
-                className={`group overflow-hidden rounded-[26px] border border-outline-variant bg-white shadow-[0_22px_60px_rgba(23,58,49,0.08)] ${index === 1 ? 'lg:mt-16' : ''}`}
+                className={`serene-card-enter serene-stagger-${index + 1} serene-story-card group overflow-hidden rounded-[26px] border border-outline-variant bg-white shadow-[0_22px_60px_rgba(23,58,49,0.08)] ${index === 1 ? 'lg:mt-16' : ''}`}
               >
                 <div className="relative aspect-[4/3] overflow-hidden bg-surface-container">
                   <Image
@@ -196,7 +196,7 @@ export default function AboutPage() {
                     unoptimized
                     sizes="(max-width: 1024px) 100vw, 50vw"
                     style={{ objectPosition: story.objectPosition }}
-                    className="object-cover transition duration-700 ease-out group-hover:scale-[1.025]"
+                    className="object-cover transition duration-700 ease-out group-hover:scale-[1.035]"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-secondary/55 via-transparent to-transparent" />
                   <span className="absolute bottom-5 left-5 rounded-full border border-white/30 bg-secondary/75 px-4 py-2 font-display text-[11px] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur-md sm:bottom-6 sm:left-6">

@@ -363,6 +363,137 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: var(--homestay-shadow-card);
 }
 
+.serene-dropdown-enter {
+  transform-origin: top right;
+  animation: sereneDropdownEnter 180ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  will-change: transform, opacity;
+}
+
+.serene-dropdown-enter-left {
+  transform-origin: top left;
+}
+
+.serene-lightbox-backdrop {
+  animation: sereneBackdropEnter 180ms ease-out both;
+}
+
+.serene-lightbox-panel {
+  animation: sereneModalPanelEnter 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+}
+
+.serene-card-enter {
+  animation: sereneCardEnter 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  will-change: transform, opacity;
+}
+
+.serene-qr-enter {
+  animation: sereneQrEnter 200ms ease-out both;
+}
+
+.serene-about-hero-copy {
+  animation: sereneAboutCopyEnter 520ms ease-out both;
+}
+
+.serene-about-hero-image {
+  animation: sereneAboutImageEnter 640ms ease-out both;
+}
+
+.serene-image-lift,
+.serene-story-card {
+  transition:
+    transform 320ms ease,
+    box-shadow 320ms ease,
+    border-color 320ms ease,
+    filter 320ms ease;
+  will-change: transform;
+}
+
+.serene-image-lift:hover,
+.serene-story-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(185, 132, 76, 0.34);
+  box-shadow: 0 30px 80px rgba(23, 58, 49, 0.14);
+}
+
+.serene-story-card:hover {
+  filter: saturate(1.03);
+}
+
+.serene-stagger-1 { animation-delay: 0ms; }
+.serene-stagger-2 { animation-delay: 35ms; }
+.serene-stagger-3 { animation-delay: 70ms; }
+.serene-stagger-4 { animation-delay: 105ms; }
+.serene-stagger-5 { animation-delay: 140ms; }
+.serene-stagger-6 { animation-delay: 175ms; }
+.serene-stagger-7 { animation-delay: 210ms; }
+.serene-stagger-8 { animation-delay: 245ms; }
+
+@keyframes sereneDropdownEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes sereneBackdropEnter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes sereneModalPanelEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes sereneCardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sereneQrEnter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes sereneAboutCopyEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sereneAboutImageEnter {
+  from {
+    opacity: 0;
+    transform: scale(1.012);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* Preserve the source rendering for large editorial banners. */
 .banner-image-native {
   image-rendering: auto;
@@ -434,6 +565,28 @@ html.staff-reduced-motion *::after {
   animation-iteration-count: 1 !important;
   scroll-behavior: auto !important;
   transition-duration: 0.01ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .serene-dropdown-enter,
+  .serene-lightbox-backdrop,
+  .serene-lightbox-panel,
+  .serene-card-enter,
+  .serene-qr-enter,
+  .serene-about-hero-copy,
+  .serene-about-hero-image {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .serene-image-lift,
+  .serene-story-card,
+  .serene-image-lift:hover,
+  .serene-story-card:hover {
+    transform: none !important;
+    transition: none !important;
+  }
 }
 
 html.staff-density-compact .staff-settings-density-scope .input-field,

@@ -2,6 +2,7 @@ package backend.payment.application.service;
 
 import backend.addon.application.port.in.AddonUseCase;
 import backend.addon.domain.model.BookingAddonStatus;
+import backend.booking.application.service.BookingCustomerNotificationService;
 import backend.entity.Booking;
 import backend.entity.BookingStatus;
 import backend.entity.PaymentMethod;
@@ -69,6 +70,7 @@ public class PaymentCheckoutUseCaseService implements
     private final ValidateCouponUseCase validateCouponUseCase;
     private final LoadDiscountCodeForBookingPort loadDiscountCodeForBookingPort;
     private final AddonUseCase addonUseCase;
+    private final BookingCustomerNotificationService bookingCustomerNotificationService;
 
     @Value("${app.booking.payment-expiration-seconds:300}")
     private long paymentExpirationSeconds;
@@ -505,6 +507,7 @@ public class PaymentCheckoutUseCaseService implements
 
         couponUsageTrackingService.recordPaidBookingUsage(booking);
         paymentTransactionRepository.save(transaction);
+        bookingCustomerNotificationService.notifyPaymentConfirmed(booking, transaction.getAmount());
     }
 
     private void timeoutTransactionIfExpired(PaymentTransaction transaction, LocalDateTime expiresAt) {

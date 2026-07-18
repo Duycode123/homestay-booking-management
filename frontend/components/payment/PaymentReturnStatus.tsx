@@ -122,7 +122,7 @@ export default function PaymentReturnStatus() {
           </span>
         </header>
 
-        <section className="my-6 overflow-hidden rounded-[32px] border border-white/80 bg-white shadow-[0_28px_80px_rgba(42,45,39,0.12)] lg:my-10">
+        <section className="serene-lightbox-panel my-6 overflow-hidden rounded-[32px] border border-white/80 bg-white shadow-[0_28px_80px_rgba(42,45,39,0.12)] lg:my-10">
           <div className="grid lg:grid-cols-[1.08fr_0.92fr]">
             <div className={["relative flex min-h-[480px] flex-col justify-between overflow-hidden p-7 sm:p-10 lg:p-12", presentation.panelClass].join(' ')}>
               <div aria-hidden className="absolute -right-16 -top-16 h-64 w-64 rounded-full border border-white/20" />

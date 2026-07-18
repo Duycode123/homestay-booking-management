@@ -133,6 +133,12 @@ export default function RoomsPublicPage() {
 
     return sortPublicRooms(availableMatches, sortBy)
   }, [filters, isStayAvailabilityLoading, liveRooms, sortBy, stayAvailabilityByRoomId, stayCriteria])
+  const hasPlayedInitialRoomAnimationRef = useRef(false)
+  const shouldAnimateInitialRoomCards =
+    !hasPlayedInitialRoomAnimationRef.current &&
+    !isLoading &&
+    !isStayAvailabilityLoading &&
+    filteredRooms.length > 0
   const todayRoomSummary = useMemo(() => summarizeTodayRooms(liveRooms), [liveRooms])
   const isInitialScheduleLoading = isLoading || (isTodayScheduleLoading && scheduleUpdatedAt === null)
   const bookableRoomCount = todayRoomSummary.available
@@ -152,6 +158,16 @@ export default function RoomsPublicPage() {
     filters.availability !== 'all' ||
     filters.minNightlyPrice !== MIN_NIGHTLY_PRICE ||
     filters.maxNightlyPrice !== MAX_NIGHTLY_PRICE
+
+  useEffect(() => {
+    if (!shouldAnimateInitialRoomCards) return
+
+    const frameId = window.requestAnimationFrame(() => {
+      hasPlayedInitialRoomAnimationRef.current = true
+    })
+
+    return () => window.cancelAnimationFrame(frameId)
+  }, [shouldAnimateInitialRoomCards])
 
   useEffect(() => {
     let isMounted = true
@@ -598,11 +614,12 @@ export default function RoomsPublicPage() {
               <RoomCatalogSkeleton count={4} variant="list" />
             ) : filteredRooms.length > 0 ? (
               <div className="mt-5 space-y-5">
-                {filteredRooms.map((room) => (
+                {filteredRooms.map((room, index) => (
                   <RoomCard
                     key={room.id}
                     room={room}
                     todaySlots={todaySlotsByRoomId[room.id]}
+                    animationClassName={shouldAnimateInitialRoomCards && index < 8 ? `serene-card-enter serene-stagger-${index + 1}` : ''}
                     onBook={(selectedRoom) => setQuickBooking({
                       room: selectedRoom,
                       initialDate: stayCriteria?.checkIn,
@@ -645,11 +662,13 @@ export default function RoomsPublicPage() {
 function RoomCard({
   room,
   todaySlots,
+  animationClassName = '',
   onBook,
   onViewDetail,
 }: {
   room: Room
   todaySlots?: TimeSlot[]
+  animationClassName?: string
   onBook: (room: Room) => void
   onViewDetail: (room: Room) => void
 }) {
@@ -674,7 +693,7 @@ function RoomCard({
   const bookingBadge = isCheckingAvailability
     ? 'Đang kiểm tra'
     : isPaymentHeld
-      ? 'Chọn ngày khác'
+      ? 'Đang giữ chỗ'
     : canStartBooking
       ? 'Có thể đặt phòng'
       : isUnavailable
@@ -717,6 +736,7 @@ function RoomCard({
             : isCheckingAvailability
               ? 'border-outline-variant bg-surface-container-low opacity-90'
               : 'border-outline-variant bg-surface-container-low opacity-[0.86]',
+        animationClassName,
         ].join(' ')}
     >
       <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden bg-surface-container md:aspect-auto md:min-h-[310px] md:w-[36%] md:min-w-[285px] md:max-w-[390px]">
@@ -1537,7 +1557,6 @@ function formatHoldExpiry(holdExpiresAt?: string) {
   return ` đến ${new Intl.DateTimeFormat('vi-VN', {
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit',
   }).format(expiry)}`
 }
 
