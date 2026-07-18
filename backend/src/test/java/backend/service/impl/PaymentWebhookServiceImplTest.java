@@ -1,6 +1,7 @@
 package backend.service.impl;
 
 import backend.addon.application.port.in.AddonUseCase;
+import backend.booking.application.service.BookingCustomerNotificationService;
 import backend.config.SePayProperties;
 import backend.config.VNPayProperties;
 import backend.entity.Booking;
@@ -46,6 +47,9 @@ class PaymentWebhookServiceImplTest {
     @Mock
     private AddonUseCase addonUseCase;
 
+    @Mock
+    private BookingCustomerNotificationService bookingCustomerNotificationService;
+
     private final VNPayProperties vnPayProperties = new VNPayProperties();
     private final SePayProperties sePayProperties = new SePayProperties();
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -61,7 +65,8 @@ class PaymentWebhookServiceImplTest {
                 sePayProperties,
                 couponUsageTrackingService,
                 objectMapper,
-                addonUseCase
+                addonUseCase,
+                bookingCustomerNotificationService
         );
     }
 

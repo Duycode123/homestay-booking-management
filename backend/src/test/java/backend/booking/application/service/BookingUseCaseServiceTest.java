@@ -128,6 +128,9 @@ class BookingUseCaseServiceTest {
     private BookingCancellationNotificationService bookingCancellationNotificationService;
 
     @Mock
+    private BookingCustomerNotificationService bookingCustomerNotificationService;
+
+    @Mock
     private ValidateCouponUseCase validateCouponUseCase;
 
     @Mock
@@ -158,6 +161,7 @@ class BookingUseCaseServiceTest {
                 savePaymentTransactionPort,
                 createPendingRefundPort,
                 bookingCancellationNotificationService,
+                bookingCustomerNotificationService,
                 validateCouponUseCase,
                 new BookingStatusTransitionPolicy(),
                 addonUseCase,
