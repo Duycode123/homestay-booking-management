@@ -8,33 +8,62 @@ export type TravelNewsArticle = {
   source: string
   publishedAt: string
   url: string
-  imageUrl?: string
+  imageUrl: string
 }
 
 const GOOGLE_NEWS_RSS_URL =
   'https://news.google.com/rss/search?q=du+l%E1%BB%8Bch+ngh%E1%BB%89+d%C6%B0%E1%BB%A1ng+Vi%E1%BB%87t+Nam+OR+homestay+H%C3%A0+N%E1%BB%99i&hl=vi&gl=VN&ceid=VN:vi'
 
-function decodeHtml(value: string) {
+// Đổi một dòng này khi bạn muốn chọn ảnh banner riêng cho trang Tin tức.
+export const NEWS_HERO_IMAGE = '/images/New6.jpg'
+
+// Google News RSS không cung cấp ảnh đại diện ổn định cho mọi bài viết. Các ảnh
+// nội bộ này giữ trải nghiệm nhất quán, còn tiêu đề, ngày đăng và liên kết vẫn
+// được lấy trực tiếp từ nguồn Google News.
+const NEWS_CARD_IMAGES = [
+  '/images/New1.jpg',
+  '/images/new2.jpg',
+  '/images/new3.jpg',
+  '/images/new4.jpg',
+  '/images/new5.jpg',
+]
+
+function decodeEntities(value: string) {
   return value
     .replace(/<!\[CDATA\[|\]\]>/g, '')
-    .replace(/<[^>]*>/g, ' ')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
     .replace(/&amp;/g, '&')
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .replace(/&nbsp;/g, ' ')
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCodePoint(Number.parseInt(code, 16)))
+    .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number.parseInt(code, 10)))
+}
+
+function plainText(value: string) {
+  return decodeEntities(value)
+    .replace(/<[^>]*>/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
 }
 
 function readTag(xml: string, tag: string) {
   const match = xml.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'i'))
-  return match ? decodeHtml(match[1]) : ''
+  return match ? plainText(match[1]) : ''
 }
 
-function readImage(xml: string) {
-  const description = xml.match(/<description[^>]*>([\s\S]*?)<\/description>/i)?.[1] ?? ''
-  const fromDescription = description.match(/<img[^>]+src=["']([^"']+)["']/i)?.[1]
-  return fromDescription ? decodeHtml(fromDescription) : undefined
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function cleanTitle(title: string, source: string) {
+  const sourceAtEnd = new RegExp(`\\s[-–—]\\s${escapeRegExp(source)}$`, 'i')
+  return title.replace(sourceAtEnd, '').trim()
+}
+
+function createSummary(source: string) {
+  return `Bản tin được The Serene Villa tuyển chọn từ ${source}. Mở bài viết gốc để xem thông tin đầy đủ và bối cảnh liên quan.`
 }
 
 function makeSlug(url: string) {
@@ -44,22 +73,21 @@ function makeSlug(url: string) {
 function parseRss(xml: string): TravelNewsArticle[] {
   return [...xml.matchAll(/<item>([\s\S]*?)<\/item>/gi)]
     .slice(0, 18)
-    .map((match) => {
+    .map((match, index) => {
       const item = match[1]
-      const title = readTag(item, 'title')
       const url = readTag(item, 'link')
       const publishedAt = readTag(item, 'pubDate')
       const source = readTag(item, 'source') || 'Google News'
-      const summary = readTag(item, 'description') || 'Xem bài viết gốc để cập nhật thông tin đầy đủ.'
+      const title = cleanTitle(readTag(item, 'title'), source)
 
       return {
         slug: makeSlug(url),
         title,
-        summary,
+        summary: createSummary(source),
         source,
         publishedAt,
         url,
-        imageUrl: readImage(item),
+        imageUrl: NEWS_CARD_IMAGES[index % NEWS_CARD_IMAGES.length],
       }
     })
     .filter((article) => article.title && article.url)

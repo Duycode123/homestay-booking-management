@@ -1,25 +1,25 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { createPublicPageMetadata } from '@/lib/seo'
-import { formatNewsDate, getTravelNews } from '@/lib/travel-news'
+import { formatNewsDate, getTravelNews, NEWS_HERO_IMAGE } from '@/lib/travel-news'
 
 export const dynamic = 'force-dynamic'
 
 export const metadata = createPublicPageMetadata({
   title: 'Tin tức & cảm hứng du lịch',
-  description: 'Các tin tức và cảm hứng du lịch, nghỉ dưỡng được The Serene Villa tổng hợp từ nguồn báo công khai.',
-  path: '/news',
+  description: 'Các tin tức và cảm hứng du lịch, nghỉ dưỡng được The Serene Villa tuyển chọn từ nguồn báo công khai.',
+  path: '/images/New6.jpg',
 })
 
-function ArticleImage({ src, alt, large = false }: { src?: string; alt: string; large?: boolean }) {
-  if (!src) {
-    return (
-      <div className={`flex items-end bg-[#d9d0c2] p-5 ${large ? 'min-h-[300px] sm:min-h-[420px]' : 'min-h-[190px]'}`}>
-        <span className="font-editorial text-2xl font-semibold text-secondary/70">The Serene Journal</span>
-      </div>
-    )
-  }
-
-  return <img src={src} alt={alt} className={`h-full w-full object-cover ${large ? 'min-h-[300px] sm:min-h-[420px]' : 'min-h-[190px]'}`} loading={large ? 'eager' : 'lazy'} referrerPolicy="no-referrer" />
+function ArticleImage({ src, alt, large = false }: { src: string; alt: string; large?: boolean }) {
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={`h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03] motion-reduce:transform-none ${large ? 'min-h-[300px] sm:min-h-[420px]' : 'min-h-[190px]'}`}
+      loading={large ? 'eager' : 'lazy'}
+    />
+  )
 }
 
 export default async function NewsPage() {
@@ -29,18 +29,20 @@ export default async function NewsPage() {
 
   return (
     <main id="main-content" className="bg-[#f7f3ec] text-on-surface">
-      <section className="border-b border-[#e2d8c9] bg-[#143c32] text-white">
-        <div className="mx-auto max-w-[1400px] px-5 py-16 sm:px-8 sm:py-20">
-          <p className="eyebrow text-primary-fixed">The Serene Journal</p>
-          <h1 className="font-editorial mt-4 max-w-3xl text-5xl font-semibold leading-[1.04] sm:text-6xl">Tin tức &amp; cảm hứng cho những hành trình chậm lại.</h1>
-          <p className="mt-5 max-w-2xl text-base leading-8 text-white/72">Tổng hợp các câu chuyện du lịch và nghỉ dưỡng từ những nguồn báo công khai, để bạn có thêm cảm hứng trước kỳ lưu trú tiếp theo.</p>
+      <section className="relative isolate min-h-[330px] overflow-hidden border-b border-[#e2d8c9] text-white sm:min-h-[400px]">
+        <Image src={NEWS_HERO_IMAGE} alt="Không gian nghỉ dưỡng The Serene Villa" fill priority sizes="100vw" className="-z-20 object-cover object-center" />
+        <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(12,48,39,.9)_0%,rgba(12,48,39,.72)_48%,rgba(12,48,39,.32)_100%)]" />
+        <div className="mx-auto flex min-h-[330px] max-w-[1400px] flex-col justify-end px-5 py-14 sm:min-h-[400px] sm:px-8 sm:py-16">
+          <p className="eyebrow text-[#f3d9ad]">The Serene Journal</p>
+          <h1 className="font-editorial mt-4 max-w-3xl text-5xl font-semibold leading-[1.04] text-white sm:text-6xl">Tin tức &amp; cảm hứng cho những hành trình chậm lại.</h1>
+          <p className="mt-5 max-w-2xl text-base leading-8 text-white/85">Những câu chuyện du lịch và nghỉ dưỡng được tuyển chọn từ nguồn báo công khai, để bạn có thêm cảm hứng trước kỳ lưu trú tiếp theo.</p>
         </div>
       </section>
 
       <section className="mx-auto max-w-[1400px] px-5 py-12 sm:px-8 sm:py-16">
         {featured ? (
           <Link href={`/news/${featured.slug}`} className="group grid overflow-hidden rounded-[26px] border border-[#dfd5c6] bg-white shadow-[0_18px_48px_rgba(40,48,40,0.08)] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_24px_56px_rgba(40,48,40,0.12)] motion-reduce:transform-none lg:grid-cols-[1.08fr_.92fr]">
-            <div className="overflow-hidden"><ArticleImage src={featured.imageUrl} alt="" large /></div>
+            <div className="overflow-hidden"><ArticleImage src={featured.imageUrl} alt={`Ảnh minh họa cho ${featured.title}`} large /></div>
             <div className="flex flex-col justify-center p-7 sm:p-10 lg:p-12">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-orange">Góc cảm hứng</p>
               <h2 className="font-editorial mt-4 text-3xl font-semibold leading-tight text-secondary sm:text-4xl">{featured.title}</h2>
@@ -65,7 +67,7 @@ export default async function NewsPage() {
             <div className="mt-7 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {rest.map((article) => (
                 <Link key={article.slug} href={`/news/${article.slug}`} className="group overflow-hidden rounded-[20px] border border-[#dfd5c6] bg-white transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-[#c9a276] hover:shadow-[0_18px_42px_rgba(40,48,40,0.1)] motion-reduce:transform-none">
-                  <div className="overflow-hidden"><ArticleImage src={article.imageUrl} alt="" /></div>
+                  <div className="overflow-hidden"><ArticleImage src={article.imageUrl} alt={`Ảnh minh họa cho ${article.title}`} /></div>
                   <div className="p-5 sm:p-6"><p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-orange">{article.source}</p><h3 className="font-editorial mt-3 line-clamp-3 text-2xl font-semibold leading-tight text-secondary">{article.title}</h3><p className="mt-3 line-clamp-3 text-sm leading-6 text-on-surface-variant">{article.summary}</p><p className="mt-5 text-xs font-medium text-secondary/60">{formatNewsDate(article.publishedAt)}</p></div>
                 </Link>
               ))}
