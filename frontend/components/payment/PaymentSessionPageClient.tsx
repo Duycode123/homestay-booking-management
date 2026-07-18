@@ -36,7 +36,6 @@ export default function PaymentSessionPageClient() {
   const [expiresAt, setExpiresAt] = useState<string | null>(initialExpiry)
   const [now, setNow] = useState(() => Date.now())
   const [isLoading, setIsLoading] = useState(true)
-  const [isLeaving, setIsLeaving] = useState(false)
   const [error, setError] = useState('')
 
   const statusRef = useRef<PaymentStatus>('pending')
@@ -78,6 +77,8 @@ export default function PaymentSessionPageClient() {
   const releaseWithKeepalive = useCallback(() => {
     if (!paymentId || statusRef.current !== 'pending' || releaseStartedRef.current) return
     releaseStartedRef.current = true
+    clearPendingBooking()
+    clearCheckoutSession()
     void releasePaymentHoldKeepalive(paymentId, csrfHeadersRef.current).catch(() => undefined)
   }, [paymentId])
 
@@ -172,35 +173,47 @@ export default function PaymentSessionPageClient() {
   useEffect(() => {
     const generation = ++releaseEffectGenerationRef.current
     const handlePageHide = () => releaseWithKeepalive()
+    const handlePopState = () => releaseWithKeepalive()
+    const handleDocumentClick = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+
+      const target = event.target instanceof Element ? event.target.closest('a[href]') : null
+      if (!(target instanceof HTMLAnchorElement)) return
+      if (target.target && target.target !== '_self') return
+
+      const nextUrl = new URL(target.href, window.location.href)
+      const currentUrl = new URL(window.location.href)
+      const staysOnSamePaymentSession = nextUrl.origin === currentUrl.origin
+        && nextUrl.pathname === currentUrl.pathname
+        && nextUrl.search === currentUrl.search
+
+      if (!staysOnSamePaymentSession && paymentId && statusRef.current === 'pending' && !releaseStartedRef.current) {
+        event.preventDefault()
+        releaseStartedRef.current = true
+        clearPendingBooking()
+        clearCheckoutSession()
+        void releasePaymentHold(paymentId)
+          .catch(() => undefined)
+          .finally(() => {
+            window.location.assign(nextUrl.toString())
+          })
+      }
+    }
+
+    document.addEventListener('click', handleDocumentClick, { capture: true })
     window.addEventListener('pagehide', handlePageHide)
+    window.addEventListener('popstate', handlePopState)
 
     return () => {
+      document.removeEventListener('click', handleDocumentClick, { capture: true })
       window.removeEventListener('pagehide', handlePageHide)
+      window.removeEventListener('popstate', handlePopState)
       window.setTimeout(() => {
         // React Strict Mode immediately starts the next effect generation; real navigation does not.
         if (releaseEffectGenerationRef.current === generation) releaseWithKeepalive()
       }, 0)
     }
   }, [releaseWithKeepalive])
-
-  const leavePaymentPage = async () => {
-    if (isLeaving) return
-    setIsLeaving(true)
-    setError('')
-    releaseStartedRef.current = true
-
-    try {
-      if (statusRef.current === 'pending') await releasePaymentHold(paymentId)
-      statusRef.current = 'expired'
-      clearPendingBooking()
-      clearCheckoutSession()
-      router.replace(roomId ? `/rooms/${roomId}` : '/rooms')
-    } catch (leaveError) {
-      releaseStartedRef.current = false
-      setError(leaveError instanceof Error ? leaveError.message : 'Không thể nhả phòng ngay lúc này.')
-      setIsLeaving(false)
-    }
-  }
 
   if (isLoading) {
     return (
@@ -309,23 +322,16 @@ export default function PaymentSessionPageClient() {
               )}
 
               {status === 'pending' ? (
-                <div className="mt-6 grid gap-3 sm:grid-cols-[1fr_auto]">
+                <div className="mt-6">
                   <div className="flex min-h-14 items-center justify-center gap-2 rounded-full bg-[#173F35] px-6 font-bold text-white">
                     <span className="h-2 w-2 rounded-full bg-[#8CE0BE]" />
                     Đang chờ ngân hàng xác nhận · {formatCountdown(secondsRemaining ?? 0)}
                   </div>
-                  <button type="button" onClick={() => void leavePaymentPage()} disabled={isLeaving} className="min-h-14 rounded-full border border-[#D8C9B8] bg-white px-6 font-bold text-[#5F554B] transition hover:border-[#B88752] hover:bg-[#FBF7F1] disabled:opacity-60">
-                    {isLeaving ? 'Đang nhả phòng...' : 'Rời trang'}
-                  </button>
                 </div>
               ) : (
                 <Link href={roomId ? `/rooms/${roomId}` : '/rooms'} className="mt-6 flex min-h-14 items-center justify-center rounded-full bg-[#173F35] px-6 font-bold text-white">Chọn lại kỳ lưu trú</Link>
               )}
 
-              <div className="mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-[#74776F]">
-                <span className="inline-flex items-center gap-1.5"><ShieldIcon /> Thanh toán bảo mật</span>
-                <span className="inline-flex items-center gap-1.5"><ClockIcon /> Tự động nhả phòng sau 5 phút</span>
-              </div>
             </div>
           </section>
         </div>
