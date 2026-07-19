@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import AboutHero from './AboutHero'
 import { AboutNearbyPlacesCarousel } from '@/components/public/AboutNearbyPlacesCarousel'
 import { createPublicPageMetadata } from '@/lib/seo'
 
@@ -52,29 +53,7 @@ const teamStories = [
 export default function AboutPage() {
   return (
     <main id="main-content" className="bg-[#F7F3EC] text-on-surface">
-      <section className="overflow-hidden bg-secondary text-white">
-        <div className="mx-auto grid max-w-[1400px] lg:grid-cols-2">
-          <div className="flex items-center px-5 py-20 sm:px-8 sm:py-28 lg:px-14 xl:px-20">
-            <div className="serene-about-hero-copy max-w-xl">
-              <p className="eyebrow text-primary-fixed">Về The Serene Villa</p>
-              <h1 className="font-editorial mt-5 text-5xl font-semibold leading-[1.02] tracking-[-0.035em] sm:text-6xl">Một khoảng lặng được chăm chút từ những điều nhỏ nhất.</h1>
-              <p className="mt-7 text-base leading-8 text-white/74 sm:text-lg">The Serene Villa được tạo nên với mong muốn mỗi chuyến đi không chỉ là đổi một nơi để ngủ, mà là cơ hội để chậm lại, kết nối và trở về với cảm giác bình yên.</p>
-            </div>
-          </div>
-          <div className="serene-about-hero-image relative min-h-[420px] overflow-hidden lg:min-h-[680px]">
-            <Image
-              src="/images/Banner.png?v=20260715-original"
-              alt="Không gian lưu trú mang phong cách ấm áp và sang trọng"
-              fill
-              priority
-              unoptimized
-              sizes="(max-width: 1024px) 100vw, 50vw"
-              className="banner-image-native object-cover object-center"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-secondary/25 to-transparent" />
-          </div>
-        </div>
-      </section>
+      <AboutHero />
 
       <section className="border-b border-outline-variant bg-white py-20 sm:py-28">
         <div className="mx-auto grid max-w-[1400px] gap-12 px-5 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
