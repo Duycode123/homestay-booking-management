@@ -2,143 +2,180 @@ import Image from 'next/image'
 import Link from 'next/link'
 import CommonAmenitiesShowcase from '@/components/public/CommonAmenitiesShowcase'
 import { createPublicPageMetadata } from '@/lib/seo'
+import AmenitiesExplorer from './AmenitiesExplorer'
 
 export const metadata = createPublicPageMetadata({
-  title: 'Tiện nghi homestay',
+  title: "Tiện nghi homestay",
   description:
-    'Khám phá hệ tiện nghi, tiêu chuẩn chuẩn bị phòng và dịch vụ hỗ trợ tại The Serene Villa trước khi lựa chọn không gian lưu trú.',
-  path: '/amenities',
-})
-
-const amenityGroups = [
-  {
-    number: '01',
-    title: 'Kết nối & giải trí',
-    description: 'Duy trì nhịp làm việc, kết nối và thư giãn ngay trong không gian riêng.',
-    items: ['Wi-Fi tốc độ cao', 'Smart TV', 'Kết nối giải trí trong phòng'],
-  },
-  {
-    number: '02',
-    title: 'Không gian nghỉ ngơi',
-    description: 'Những tiện nghi thiết yếu được chuẩn bị để kỳ nghỉ luôn dễ chịu.',
-    items: ['Điều hòa', 'Giường và chăn gối', 'Không gian riêng tư'],
-  },
-  {
-    number: '03',
-    title: 'Phòng tắm',
-    description: 'Các vật dụng cơ bản sẵn sàng cho trải nghiệm lưu trú thuận tiện.',
-    items: ['Máy nước nóng', 'Khăn tắm', 'Đồ dùng cá nhân cơ bản'],
-  },
-  {
-    number: '04',
-    title: 'Tiện nghi trong phòng',
-    description: 'Từng chi tiết nhỏ giúp bạn chủ động hơn trong thời gian lưu trú.',
-    items: ['Tủ lạnh mini', 'Ấm đun nước', 'Khu vực để hành lý'],
-  },
-  {
-    number: '05',
-    title: 'An tâm lưu trú',
-    description: 'Phòng được kiểm tra theo quy trình trước thời điểm nhận phòng.',
-    items: ['Kiểm tra vệ sinh', 'Kiểm tra thiết bị', 'Hỗ trợ sự cố tại chỗ'],
-  },
-  {
-    number: '06',
-    title: 'Dịch vụ hỗ trợ',
-    description: 'Yêu cầu của bạn được kết nối với đội ngũ vận hành trên hệ thống.',
-    items: ['Hỗ trợ check-in', 'Theo dõi lịch đặt', 'Tiếp nhận yêu cầu hỗ trợ'],
-  },
-] as const
+    "Khám phá tiện nghi trong phòng, tiện ích chung, tiêu chuẩn chuẩn bị phòng và dịch vụ hỗ trợ tại The Serene Villa.",
+  path: "/amenities",
+});
 
 const preparationSteps = [
-  ['Trước khi đến', 'Đội ngũ kiểm tra vệ sinh, thiết bị và ghi chú trong đơn đặt phòng.'],
-  ['Khi nhận phòng', 'Thông tin đặt chỗ được đối chiếu để quá trình check-in rõ ràng, nhanh chóng.'],
-  ['Trong kỳ lưu trú', 'Bạn có thể gửi yêu cầu hỗ trợ hoặc báo cáo sự cố ngay trong tài khoản.'],
-] as const
+  {
+    number: "01",
+    title: "Trước khi bạn đến",
+    description:
+      "Không gian, vệ sinh, thiết bị và ghi chú trong đơn đặt phòng được kiểm tra trước giờ nhận phòng.",
+  },
+  {
+    number: "02",
+    title: "Khi nhận phòng",
+    description:
+      "Thông tin đặt chỗ được đối chiếu để quá trình check-in rõ ràng và thuận tiện hơn.",
+  },
+  {
+    number: "03",
+    title: "Trong kỳ lưu trú",
+    description:
+      "Yêu cầu hỗ trợ hoặc báo cáo sự cố được tiếp nhận trực tiếp trên hệ thống.",
+  },
+] as const;
 
 export default function AmenitiesPage() {
   return (
-    <main id="main-content" className="bg-[#F7F3EC] text-on-surface">
-      <section className="relative overflow-hidden bg-secondary text-white">
+    <main
+      id="main-content"
+      className="overflow-x-hidden bg-[#F7F3EC] text-on-surface"
+    >
+      <section className="relative isolate overflow-hidden bg-secondary text-white">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_15%,rgba(216,181,136,0.18),transparent_34%),linear-gradient(120deg,rgba(5,35,28,0.98),rgba(18,73,57,0.82))]" />
-        <div className="relative mx-auto grid max-w-[1400px] gap-12 px-5 py-20 sm:px-8 sm:py-28 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+        <div
+          aria-hidden="true"
+          className="absolute -left-28 -top-40 h-[30rem] w-[30rem] rounded-full border border-white/[0.06]"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute -bottom-52 right-[34%] h-[30rem] w-[30rem] rounded-full border border-primary-fixed/10"
+        />
+
+        <div className="relative mx-auto grid max-w-[1400px] gap-10 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-[0.92fr_1.08fr] lg:items-center lg:py-24">
           <div className="max-w-2xl">
-            <p className="eyebrow text-primary-fixed">Tiện nghi homestay</p>
-            <h1 className="font-editorial mt-5 text-5xl font-semibold leading-[1.02] tracking-[-0.035em] sm:text-6xl">
-              Tiện nghi vừa đủ.
-              <span className="mt-2 block text-primary-fixed">Trải nghiệm trọn vẹn.</span>
-            </h1>
-            <p className="mt-7 max-w-xl text-base leading-8 text-white/74 sm:text-lg">
-              Từ kết nối, nghỉ ngơi đến hỗ trợ tại chỗ, mỗi chi tiết được chuẩn bị để bạn cảm thấy thoải mái và chủ động trong suốt kỳ lưu trú.
+            <p className="eyebrow text-primary-fixed">
+              Tiện nghi The Serene Villa
             </p>
-            <div className="mt-9 flex flex-wrap gap-3">
-              <Link href="/rooms" className="rounded-full bg-white px-6 py-3.5 font-display text-sm font-semibold text-secondary transition hover:-translate-y-0.5">
-                Tìm phòng phù hợp
-              </Link>
-              <a href="#amenity-list" className="rounded-full border border-white/25 px-6 py-3.5 font-display text-sm font-semibold text-white transition hover:bg-white/10">
-                Xem danh sách tiện nghi
+
+            <h1 className="font-editorial mt-5 text-5xl font-semibold leading-[1.01] tracking-[-0.035em] sm:text-6xl lg:text-[4.25rem]">
+              Mọi thứ cần thiết,
+              <span className="mt-2 block text-primary-fixed">
+                được chuẩn bị vừa đủ.
+              </span>
+            </h1>
+
+            <p className="mt-6 max-w-xl text-base leading-8 text-white/72 sm:text-lg">
+              Từ tiện nghi trong phòng đến hồ bơi, sân vườn và những không gian
+              sinh hoạt chung, mỗi chi tiết đều hướng đến một kỳ nghỉ nhẹ nhàng,
+              chủ động và không cần bận tâm quá nhiều.
+            </p>
+
+            <div className="mt-8 flex flex-wrap gap-3">
+              <a
+                href="#amenity-list"
+                className="inline-flex h-12 items-center justify-center rounded-full bg-white px-6 font-display text-sm font-semibold text-secondary shadow-[0_14px_32px_rgba(0,0,0,0.2)] transition-[background-color,transform] duration-200 hover:-translate-y-0.5 hover:bg-primary-fixed"
+              >
+                Khám phá tiện nghi
+              </a>
+
+              <a
+                href="#common-amenities"
+                className="inline-flex h-12 items-center justify-center rounded-full border border-white/25 bg-white/[0.03] px-6 font-display text-sm font-semibold text-white transition-[background-color,border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-white/45 hover:bg-white/10"
+              >
+                Xem tiện ích chung
               </a>
             </div>
-          </div>
 
-          <div className="relative min-h-[390px] overflow-hidden rounded-[22px] border border-white/15 shadow-[0_32px_80px_rgba(0,0,0,0.28)] sm:min-h-[500px]">
-            <Image src="/images/Banner3-sharp.png?v=20260715-enhanced" alt="Khu homestay giữa thiên nhiên với hồ bơi và tiện nghi chung" fill priority unoptimized sizes="(max-width: 1024px) 100vw, 55vw" className="banner-image-native object-cover object-center" />
-            <div className="absolute inset-0 bg-gradient-to-t from-secondary/80 via-transparent to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
-              <p className="font-display text-xs font-semibold uppercase tracking-[0.2em] text-primary-fixed">Chuẩn bị trước check-in</p>
-              <p className="mt-2 max-w-md font-editorial text-2xl leading-snug">Phòng sạch, thiết bị được kiểm tra và nhu cầu lưu trú được ghi nhận.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <CommonAmenitiesShowcase />
-
-      <section id="amenity-list" className="scroll-mt-24 py-20 sm:py-24">
-        <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
-          <div className="grid gap-8 border-b border-outline-variant pb-12 lg:grid-cols-[0.8fr_1.2fr]">
-            <p className="eyebrow text-brand-orange">Danh mục tiện nghi</p>
-            <div>
-              <h2 className="font-editorial text-4xl font-semibold leading-tight text-secondary sm:text-5xl">Mọi điều cần thiết cho một khoảng nghỉ dễ chịu.</h2>
-              <p className="mt-5 max-w-2xl leading-8 text-on-surface-variant">Tiện nghi thực tế có thể khác nhau theo từng hạng phòng. Trang chi tiết phòng luôn là nguồn thông tin chính xác trước khi bạn xác nhận đặt chỗ.</p>
-            </div>
-          </div>
-
-          <div className="mt-10 grid gap-px overflow-hidden rounded-[20px] border border-outline-variant bg-outline-variant md:grid-cols-2 lg:grid-cols-3">
-            {amenityGroups.map((group) => (
-              <article key={group.number} className="group bg-white p-7 transition-colors hover:bg-[#FCFAF6] sm:p-8">
-                <div className="flex items-center justify-between">
-                  <span className="font-editorial text-3xl text-brand-orange">{group.number}</span>
-                  <span aria-hidden className="h-px w-10 bg-outline transition-all group-hover:w-16 group-hover:bg-brand-orange" />
+            <div className="mt-8 grid max-w-2xl gap-3 sm:grid-cols-3">
+              {[
+                "Kiểm tra trước check-in",
+                "Thông tin rõ theo từng phòng",
+                "Hỗ trợ khi có phát sinh",
+              ].map((item) => (
+                <div
+                  key={item}
+                  className="flex items-center gap-2.5 border-l border-white/16 pl-3 first:border-l-0 first:pl-0"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-fixed/14 text-primary-fixed"
+                  >
+                    ✓
+                  </span>
+                  <span className="text-xs leading-5 text-white/62">
+                    {item}
+                  </span>
                 </div>
-                <h3 className="mt-8 font-editorial text-2xl font-semibold text-secondary">{group.title}</h3>
-                <p className="mt-3 min-h-14 text-sm leading-7 text-on-surface-variant">{group.description}</p>
-                <ul className="mt-6 space-y-3 border-t border-outline-variant pt-5">
-                  {group.items.map((item) => (
-                    <li key={item} className="flex items-center gap-3 text-sm text-on-surface">
-                      <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-brand-orange" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </article>
-            ))}
+              ))}
+            </div>
+          </div>
+
+          <div className="relative min-h-[350px] overflow-hidden rounded-[24px] border border-white/15 shadow-[0_32px_80px_rgba(0,0,0,0.28)] sm:min-h-[470px]">
+            <Image
+              src="/images/Banner3-sharp.png?v=20260715-enhanced"
+              alt="Khu homestay giữa thiên nhiên với hồ bơi và không gian sinh hoạt chung"
+              fill
+              priority
+              unoptimized
+              sizes="(max-width: 1024px) 100vw, 55vw"
+              className="banner-image-native object-cover object-center"
+            />
+
+            <div className="absolute inset-0 bg-gradient-to-t from-secondary/88 via-secondary/5 to-black/5" />
+
+            <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8">
+              <p className="font-display text-[10px] font-semibold uppercase tracking-[0.2em] text-primary-fixed">
+                Trong phòng &amp; khu vực chung
+              </p>
+              <p className="font-editorial mt-2 max-w-lg text-2xl font-semibold leading-snug sm:text-3xl">
+                Tiện nghi không chỉ để sử dụng, mà để kỳ nghỉ diễn ra tự nhiên
+                và dễ chịu hơn.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="bg-[#EAE4D9] py-20 sm:py-24">
+      <AmenitiesExplorer />
+
+      <div
+        id="common-amenities"
+        className="scroll-mt-24 [&>section]:!py-14 sm:[&>section]:!py-16"
+      >
+        <CommonAmenitiesShowcase />
+      </div>
+
+      <section className="bg-[#EAE4D9] py-14 sm:py-16 lg:py-20">
         <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
-          <div className="grid gap-12 lg:grid-cols-[0.75fr_1.25fr]">
-            <div>
-              <p className="eyebrow text-brand-orange">Tiêu chuẩn phục vụ</p>
-              <h2 className="font-editorial mt-4 text-4xl font-semibold leading-tight text-secondary">Chỉn chu trước khi bạn mở cửa phòng.</h2>
+          <div className="grid gap-8 lg:grid-cols-[0.72fr_1.28fr] lg:items-start">
+            <div className="max-w-xl">
+              <p className="eyebrow text-brand-orange">Tiêu chuẩn chuẩn bị</p>
+
+              <h2 className="font-editorial mt-4 text-4xl font-semibold leading-[1.08] text-secondary sm:text-5xl">
+                Chỉn chu trước khi bạn mở cửa phòng.
+              </h2>
+
+              <p className="mt-4 text-sm leading-7 text-on-surface-variant sm:text-base">
+                Một quy trình ngắn gọn nhưng rõ ràng giúp không gian và các tiện
+                nghi thiết yếu luôn sẵn sàng đúng thời điểm.
+              </p>
             </div>
-            <ol className="divide-y divide-outline">
-              {preparationSteps.map(([title, description], index) => (
-                <li key={title} className="grid gap-3 py-7 first:pt-0 sm:grid-cols-[64px_180px_1fr] sm:items-start">
-                  <span className="font-editorial text-2xl text-brand-orange">0{index + 1}</span>
-                  <h3 className="font-display font-semibold text-secondary">{title}</h3>
-                  <p className="text-sm leading-7 text-on-surface-variant">{description}</p>
+
+            <ol className="overflow-hidden rounded-[22px] border border-outline-variant bg-white/75 shadow-[0_14px_34px_rgba(63,51,35,0.06)]">
+              {preparationSteps.map((step, index) => (
+                <li
+                  key={step.number}
+                  className="grid gap-3 border-b border-outline-variant px-5 py-5 last:border-b-0 sm:grid-cols-[58px_180px_1fr] sm:items-start sm:px-6"
+                >
+                  <span className="font-editorial text-2xl text-brand-orange">
+                    {step.number}
+                  </span>
+
+                  <h3 className="font-display text-sm font-semibold text-secondary">
+                    {step.title}
+                  </h3>
+
+                  <p className="text-sm leading-6 text-on-surface-variant">
+                    {step.description}
+                  </p>
                 </li>
               ))}
             </ol>
@@ -146,11 +183,41 @@ export default function AmenitiesPage() {
         </div>
       </section>
 
-      <section className="bg-secondary px-5 py-16 text-center text-white sm:px-8 sm:py-20">
-        <p className="eyebrow text-primary-fixed">Sẵn sàng cho kỳ nghỉ</p>
-        <h2 className="font-editorial mx-auto mt-4 max-w-2xl text-4xl font-semibold">Chọn không gian phù hợp với nhịp nghỉ của bạn.</h2>
-        <Link href="/rooms" className="mt-8 inline-flex rounded-full border border-white/20 bg-[#0f2f27] px-7 py-3.5 font-display text-sm font-semibold text-white shadow-[0_14px_30px_rgba(0,0,0,.22)] transition hover:-translate-y-0.5 hover:bg-secondary-container">Khám phá phòng homestay</Link>
+      <section className="relative overflow-hidden bg-secondary px-5 py-14 text-white sm:px-8 sm:py-16">
+        <div
+          aria-hidden="true"
+          className="absolute -right-28 -top-32 h-72 w-72 rounded-full border border-white/[0.06]"
+        />
+
+        <div className="relative mx-auto flex max-w-[1100px] flex-col items-center text-center">
+          <p className="eyebrow text-primary-fixed">Sẵn sàng cho kỳ nghỉ</p>
+
+          <h2 className="font-editorial mt-4 max-w-3xl text-4xl font-semibold leading-tight sm:text-5xl">
+            Chọn không gian phù hợp với nhịp nghỉ của bạn.
+          </h2>
+
+          <p className="mt-4 max-w-xl text-sm leading-7 text-white/65 sm:text-base">
+            Xem tiện nghi chính xác của từng hạng phòng, so sánh lựa chọn và
+            kiểm tra lịch trống trước khi đặt.
+          </p>
+
+          <div className="mt-7 flex flex-wrap justify-center gap-3">
+            <Link
+              href="/rooms"
+              className="inline-flex h-12 items-center justify-center rounded-full bg-white px-7 font-display text-sm font-semibold text-secondary shadow-[0_14px_30px_rgba(0,0,0,.2)] transition-[background-color,transform] duration-200 hover:-translate-y-0.5 hover:bg-primary-fixed"
+            >
+              Khám phá phòng homestay
+            </Link>
+
+            <Link
+              href="/support"
+              className="inline-flex h-12 items-center justify-center rounded-full border border-white/22 px-7 font-display text-sm font-semibold text-white transition-[background-color,border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-white/40 hover:bg-white/10"
+            >
+              Cần tư vấn
+            </Link>
+          </div>
+        </div>
       </section>
     </main>
-  )
+  );
 }
