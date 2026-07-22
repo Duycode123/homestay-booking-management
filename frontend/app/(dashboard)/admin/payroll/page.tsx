@@ -29,6 +29,7 @@ export default function AdminPayrollPage() {
   const [period, setPeriod] = useState(currentPeriod)
   const [report, setReport] = useState<PayrollReport | null>(null)
   const [rateDrafts, setRateDrafts] = useState<Record<number, string>>({})
+  const [editingStaffId, setEditingStaffId] = useState<number | null>(null)
   const [savingStaffId, setSavingStaffId] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isActionLoading, setIsActionLoading] = useState(false)
@@ -69,12 +70,20 @@ export default function AdminPayrollPage() {
     setError('')
     try {
       syncReport(await updateHourlyRate(staffId, hourlyRate, report.year, report.month))
+      setEditingStaffId(null)
       setMessage('Đã cập nhật lương theo giờ.')
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Không thể cập nhật lương theo giờ.')
     } finally {
       setSavingStaffId(null)
     }
+  }
+
+  const startEditingRate = (staffId: number, hourlyRate: number) => {
+    setRateDrafts((current) => ({ ...current, [staffId]: String(hourlyRate) }))
+    setEditingStaffId(staffId)
+    setMessage('')
+    setError('')
   }
 
   const runPeriodAction = async (action: 'finalize' | 'paid') => {
@@ -133,6 +142,15 @@ export default function AdminPayrollPage() {
         {message && <div className="rounded-xl border border-primary/20 bg-primary-container/40 px-4 py-3 text-sm text-on-primary-container">{message}</div>}
         {error && <div className="rounded-xl border border-error/25 bg-error-container/30 px-4 py-3 text-sm text-error">{error}</div>}
 
+        {report?.status === 'DRAFT' && Number(report.totalHours) === 0 && (
+          <div className="flex items-start gap-3 rounded-xl border border-secondary-container/50 bg-secondary-container/15 px-4 py-3 text-sm text-on-surface-variant">
+            <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white font-display text-xs font-bold text-secondary">i</span>
+            <p>
+              Tháng này chưa có ca nào hoàn thành check-in và check-out, nên thành tiền đang là 0đ. Mức lương theo giờ vẫn được lưu để tự động tính khi có chấm công hợp lệ.
+            </p>
+          </div>
+        )}
+
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <AdminStatCard label="Tổng nhân viên" value={report?.staff.length ?? 0} icon={<IconStaff className="h-5 w-5" />} />
           <AdminStatCard label="Có giờ làm" value={paidStaff} accent="secondary" icon={<IconClock className="h-5 w-5" />} />
@@ -143,8 +161,10 @@ export default function AdminPayrollPage() {
         <section className="overflow-hidden rounded-2xl border border-outline-variant bg-white shadow-[var(--shadow-card)]">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-outline-variant px-5 py-4">
             <div>
-              <h2 className="font-display text-lg font-bold text-on-surface">Chi tiết bảng lương</h2>
-              <p className="mt-1 text-xs text-on-surface-variant">Chỉ chấm công có đủ giờ vào và giờ ra mới được cộng lương.</p>
+              <h2 className="font-display text-lg font-bold text-on-surface">
+                Chi tiết lương tháng {String(report?.month ?? 0).padStart(2, '0')}/{report?.year ?? ''}
+              </h2>
+              <p className="mt-1 text-xs text-on-surface-variant">Bấm “Chỉnh” tại từng nhân viên để thay đổi đơn giá giờ.</p>
             </div>
             {report && <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${STATUS_META[report.status].className}`}>{STATUS_META[report.status].label}</span>}
           </div>
@@ -163,17 +183,37 @@ export default function AdminPayrollPage() {
                       <td className="px-5 py-4"><p className="font-display text-sm font-bold text-on-surface">{item.fullName}</p><p className="mt-0.5 text-xs text-on-surface-variant">ST-{item.staffId} · {item.email}</p></td>
                       <td className="px-5 py-4"><p className="font-display text-base font-bold text-on-surface">{Number(item.workHours).toFixed(2)} giờ</p>{item.workHours === 0 && <p className="mt-0.5 text-xs text-on-surface-variant">Không có chấm công hợp lệ</p>}</td>
                       <td className="px-5 py-4">
-                        {report.status === 'DRAFT' ? (
+                        {report.status === 'DRAFT' && editingStaffId === item.staffId ? (
                           <div className="flex items-center gap-2">
-                            <input type="number" min="0" step="1000" value={rateDrafts[item.staffId] ?? ''}
-                              onChange={(event) => setRateDrafts((current) => ({ ...current, [item.staffId]: event.target.value }))}
-                              className="h-10 w-36 rounded-lg border border-outline-variant px-3 text-sm font-semibold outline-none focus:border-brand-orange" />
+                            <div className="relative">
+                              <input type="number" min="0" step="1000" value={rateDrafts[item.staffId] ?? ''}
+                                aria-label={`Lương một giờ của ${item.fullName}`}
+                                onChange={(event) => setRateDrafts((current) => ({ ...current, [item.staffId]: event.target.value }))}
+                                className="h-10 w-40 rounded-lg border border-brand-orange bg-white pl-3 pr-12 text-sm font-semibold outline-none ring-2 ring-brand-orange/10" />
+                              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-on-surface-variant">đ/giờ</span>
+                            </div>
                             <button type="button" onClick={() => void saveRate(item.staffId)} disabled={savingStaffId === item.staffId}
-                              className="h-10 rounded-lg border border-brand-orange/40 px-3 text-xs font-bold text-brand-orange hover:bg-brand-orange/5 disabled:opacity-50">
+                              className="h-10 rounded-lg bg-brand-greenDark px-3 text-xs font-bold text-white hover:bg-brand-greenLight disabled:opacity-50">
                               {savingStaffId === item.staffId ? 'Đang lưu' : 'Lưu'}
                             </button>
+                            <button type="button" onClick={() => setEditingStaffId(null)} disabled={savingStaffId === item.staffId}
+                              className="h-10 rounded-lg px-2 text-xs font-semibold text-on-surface-variant hover:bg-surface-container-low disabled:opacity-50">
+                              Hủy
+                            </button>
                           </div>
-                        ) : <span className="text-sm font-semibold text-on-surface">{formatMoney(item.hourlyRate)}/giờ</span>}
+                        ) : (
+                          <div className="flex items-center gap-3">
+                            <span className="inline-flex min-w-32 items-center rounded-lg bg-surface-container-low px-3 py-2 font-display text-sm font-bold text-on-surface">
+                              {formatMoney(item.hourlyRate)}/giờ
+                            </span>
+                            {report.status === 'DRAFT' && (
+                              <button type="button" onClick={() => startEditingRate(item.staffId, item.hourlyRate)}
+                                className="rounded-lg border border-outline-variant px-3 py-2 text-xs font-bold text-on-surface-variant hover:border-brand-orange/50 hover:text-brand-orange">
+                                Chỉnh
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </td>
                       <td className="px-5 py-4 text-right font-display text-base font-bold text-brand-orange">{formatMoney(item.totalSalary)}</td>
                     </tr>

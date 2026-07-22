@@ -192,9 +192,6 @@ export default function StaffNotificationsPage() {
           <div>
             <p className="font-display text-sm font-bold uppercase tracking-wide text-brand-orange">Trung tâm vận hành</p>
             <h1 className="mt-2 font-display text-[32px] font-bold leading-10 text-on-surface">Thông báo</h1>
-            <p className="mt-2 max-w-2xl text-base leading-6 text-on-surface-variant">
-              Theo dõi các cập nhật quan trọng trong ca làm.
-            </p>
           </div>
           <button type="button" onClick={markAllRead} className="btn-warm">
             Đánh dấu tất cả đã đọc

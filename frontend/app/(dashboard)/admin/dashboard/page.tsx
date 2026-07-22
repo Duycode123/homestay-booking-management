@@ -64,9 +64,6 @@ export default function AdminDashboardPage() {
                 <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
                   Bảng điều khiển quản trị
                 </h1>
-                <p className="mt-3 text-sm leading-relaxed text-inverse-on-surface/85 sm:text-base">
-                  Quản lý đơn đặt, phòng homestay, tiện nghi và lịch nhân viên từ một nơi.
-                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-3 sm:gap-4">

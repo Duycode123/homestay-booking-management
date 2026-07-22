@@ -351,9 +351,6 @@ export default function StaffCheckInPage() {
                 <h1 className="mt-2 font-display text-[32px] font-bold leading-10 text-on-surface">
                   Check-in ca làm
                 </h1>
-                <p className="mt-2 max-w-2xl text-base leading-6 text-on-surface-variant">
-                  Xác nhận giờ vào, giờ ra và theo dõi thời lượng ca làm của bạn.
-                </p>
               </div>
 
               <div className="rounded-2xl border border-outline-variant bg-white px-4 py-3 text-right shadow-[var(--homestay-shadow-card)]">

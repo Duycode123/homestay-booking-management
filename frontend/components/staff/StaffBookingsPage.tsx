@@ -182,9 +182,6 @@ export default function StaffBookingsPage() {
             <div>
               <p className="font-display text-sm font-bold uppercase tracking-wide text-brand-orange">Vận hành đặt phòng</p>
               <h1 className="mt-2 font-display text-[32px] font-bold leading-10 text-on-surface">Quản lý booking</h1>
-              <p className="mt-2 max-w-2xl text-base leading-6 text-on-surface-variant">
-                Dữ liệu đặt phòng được đồng bộ trực tiếp từ hệ thống quản lý.
-              </p>
             </div>
             <button type="button" onClick={() => void loadBookings()} className="btn-secondary self-start">
               <IconRefresh />

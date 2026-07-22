@@ -15,7 +15,6 @@ type AdminPageHeaderProps = {
 export default function AdminPageHeader({
   eyebrow = 'Admin',
   title,
-  description,
   breadcrumbs,
   actions,
 }: AdminPageHeaderProps) {
@@ -45,9 +44,6 @@ export default function AdminPageHeader({
           <h1 className="mt-1.5 font-editorial text-3xl font-normal leading-tight text-on-surface sm:text-4xl">
             {title}
           </h1>
-          {description && (
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-on-surface-variant">{description}</p>
-          )}
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
       </div>

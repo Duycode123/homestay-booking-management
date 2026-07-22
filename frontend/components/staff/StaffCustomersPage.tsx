@@ -228,9 +228,6 @@ export default function StaffCustomersPage() {
               <div>
                 <p className="font-display text-sm font-bold uppercase tracking-wide text-brand-orange">Chăm sóc khách hàng</p>
                 <h1 className="mt-2 font-display text-[32px] font-bold leading-10 text-on-surface">Khách hàng</h1>
-                <p className="mt-2 max-w-2xl text-base leading-6 text-on-surface-variant">
-                  Tra cứu thông tin khách hàng, lịch sử đặt phòng và ghi chú hỗ trợ.
-                </p>
               </div>
               <button type="button" onClick={() => setNoteTargetId(customers[0]?.id ?? null)} className="btn-warm self-start">
                 <IconPlus />
