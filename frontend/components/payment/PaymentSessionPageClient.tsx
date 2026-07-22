@@ -314,21 +314,21 @@ export default function PaymentSessionPageClient() {
                   </div>
                   <ShieldIcon />
                 </div>
-                <div className="mt-4"><CheckoutSummary booking={booking} appliedDiscount={discount} /></div>
+                <div className="mt-4">
+                  <CheckoutSummary
+                    booking={booking}
+                    appliedDiscount={discount}
+                    paymentAmount={paymentAmount}
+                    paymentOption={paymentOption}
+                  />
+                </div>
               </div>
 
               {error && (
                 <div role="alert" className="mt-5 rounded-2xl border border-[#E8C7CB] bg-[#FCEEEF] px-4 py-3 text-sm leading-6 text-[#A3293A]">{error}</div>
               )}
 
-              {status === 'pending' ? (
-                <div className="mt-6">
-                  <div className="flex min-h-14 items-center justify-center gap-2 rounded-full bg-[#173F35] px-6 font-bold text-white">
-                    <span className="h-2 w-2 rounded-full bg-[#8CE0BE]" />
-                    Đang chờ ngân hàng xác nhận · {formatCountdown(secondsRemaining ?? 0)}
-                  </div>
-                </div>
-              ) : (
+              {status !== 'pending' && (
                 <Link href={roomId ? `/rooms/${roomId}` : '/rooms'} className="mt-6 flex min-h-14 items-center justify-center rounded-full bg-[#173F35] px-6 font-bold text-white">Chọn lại kỳ lưu trú</Link>
               )}
 

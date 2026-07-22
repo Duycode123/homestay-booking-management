@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useI18n } from '@/components/i18n/LocaleProvider'
 import type { UserRole } from '@/lib/auth'
 import {
   fetchCurrentUser,
@@ -18,14 +19,9 @@ type AccountMenuProps = {
 
 type IconName = 'user' | 'calendar' | 'settings' | 'logout' | 'mail' | 'dashboard'
 
-const roleLabels: Record<UserRole, string> = {
-  ADMIN: 'Quản trị viên',
-  STAFF: 'Nhân viên',
-  CUSTOMER: 'Khách hàng',
-}
-
 export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenuProps) {
   const { user, logout } = useAuth()
+  const { locale, localizedHref } = useI18n()
   const [open, setOpen] = useState(false)
   const [profile, setProfile] = useState<CustomerProfile | null>(null)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
@@ -36,6 +32,33 @@ export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenu
   const avatarUrl = profile?.avatarUrl || user?.avatarUrl
   const avatarInitial = getInitials(profile?.fullName || user?.fullName || user?.name, email)
   const role = profile?.role || user?.role || 'CUSTOMER'
+  const copy = locale === 'en' ? {
+    roles: { ADMIN: 'Administrator', STAFF: 'Staff', CUSTOMER: 'Guest' } as Record<UserRole, string>,
+    admin: 'Admin dashboard',
+    staff: 'Staff dashboard',
+    profile: 'Personal information',
+    bookings: 'Booking history',
+    process: 'Stay process',
+    settings: 'Account settings',
+    logout: 'Sign out',
+    loggingOut: 'Signing out...',
+    account: 'Account',
+    openMenu: `Open account menu for ${displayName}`,
+    avatar: 'Profile photo',
+  } : {
+    roles: { ADMIN: 'Quản trị viên', STAFF: 'Nhân viên', CUSTOMER: 'Khách hàng' } as Record<UserRole, string>,
+    admin: 'Trang quản trị',
+    staff: 'Trang nhân viên',
+    profile: 'Thông tin cá nhân',
+    bookings: 'Lịch sử đặt phòng',
+    process: 'Quy trình lưu trú',
+    settings: 'Cài đặt tài khoản',
+    logout: 'Đăng xuất',
+    loggingOut: 'Đang đăng xuất...',
+    account: 'Tài khoản',
+    openMenu: `Mở menu tài khoản của ${displayName}`,
+    avatar: 'Ảnh đại diện',
+  }
 
   useEffect(() => {
     let mounted = true
@@ -98,9 +121,9 @@ export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenu
   }
 
   const workspaceLink = role === 'ADMIN'
-    ? { href: '/admin/dashboard', label: 'Trang quản trị' }
+    ? { href: '/admin/dashboard', label: copy.admin }
     : role === 'STAFF'
-      ? { href: '/staff/dashboard', label: 'Trang nhân viên' }
+      ? { href: '/staff/dashboard', label: copy.staff }
       : null
 
   return (
@@ -110,7 +133,7 @@ export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenu
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
         aria-haspopup="menu"
-        aria-label={`Mở menu tài khoản của ${displayName}`}
+        aria-label={copy.openMenu}
         className="group flex h-11 w-11 items-center justify-center rounded-full border border-[#ddccb4] bg-[#fffdfa] p-1 shadow-[0_7px_20px_rgba(32,57,48,.08)] transition duration-300 hover:-translate-y-0.5 hover:border-[#b98853]/55 hover:shadow-[0_11px_26px_rgba(32,57,48,.13)] focus:outline-none focus:ring-2 focus:ring-[#b98853]/25"
       >
         <span className="relative">
@@ -122,7 +145,7 @@ export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenu
       {open ? (
         <div
           role="menu"
-          aria-label="Tài khoản"
+          aria-label={copy.account}
           className={[
             'serene-dropdown-enter absolute z-[100] mt-3 w-[min(304px,calc(100vw-24px))] overflow-hidden rounded-[18px] border border-[#d8c9b5] bg-[#fffdfa] shadow-[0_22px_56px_rgba(20,47,38,.22)]',
             align === 'full' ? 'right-0' : 'right-0',
@@ -132,12 +155,12 @@ export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenu
             <div className="pointer-events-none absolute -right-12 -top-16 h-32 w-32 rounded-full border border-white/10" aria-hidden />
             <div className="relative flex items-center gap-3">
               <span className="relative">
-                <AccountAvatar avatarUrl={avatarUrl} initial={avatarInitial} size="menu" />
+                <AccountAvatar avatarUrl={avatarUrl} initial={avatarInitial} size="menu" alt={copy.avatar} />
                 <OnlineDot className="bottom-0 right-0" />
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-display text-[15px] font-bold text-white">{displayName}</p>
-                <p className="mt-0.5 text-xs text-white/65">{roleLabels[role]}</p>
+                <p className="mt-0.5 text-xs text-white/65">{copy.roles[role]}</p>
               </div>
             </div>
           </div>
@@ -148,14 +171,14 @@ export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenu
 
           <div className="space-y-1.5 p-2.5">
             {workspaceLink ? (
-              <MenuLink href={workspaceLink.href} label={workspaceLink.label} icon="dashboard" onClick={handleNavigate} />
+              <MenuLink href={localizedHref(workspaceLink.href)} label={workspaceLink.label} icon="dashboard" onClick={handleNavigate} />
             ) : null}
-            <MenuLink href="/customer/profile" label="Thông tin cá nhân" icon="user" emphasized onClick={handleNavigate} />
+            <MenuLink href={localizedHref('/customer/profile')} label={copy.profile} icon="user" emphasized onClick={handleNavigate} />
             {role === 'CUSTOMER' ? (
-              <MenuLink href="/customer/bookings" label="Lịch sử đặt phòng" icon="calendar" onClick={handleNavigate} />
+              <MenuLink href={localizedHref('/customer/bookings')} label={copy.bookings} icon="calendar" onClick={handleNavigate} />
             ) : null}
-            <MenuLink href="/process" label="Quy trình lưu trú" icon="calendar" onClick={handleNavigate} />
-            <MenuLink href="/customer/account-settings" label="Cài đặt tài khoản" icon="settings" onClick={handleNavigate} />
+            <MenuLink href={localizedHref('/process')} label={copy.process} icon="calendar" onClick={handleNavigate} />
+            <MenuLink href={localizedHref('/customer/account-settings')} label={copy.settings} icon="settings" onClick={handleNavigate} />
           </div>
 
           <div className="border-t border-[#e8ddcf] bg-[#fbf7f1] p-2">
@@ -167,7 +190,7 @@ export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenu
               className="flex w-full items-center gap-3 rounded-[10px] px-3 py-2.5 text-left text-[#bd3535] transition hover:bg-[#fff0f0] focus:outline-none focus:ring-2 focus:ring-[#bd3535]/20 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Icon name="logout" />
-              <span className="font-display text-sm font-semibold">{isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}</span>
+              <span className="font-display text-sm font-semibold">{isLoggingOut ? copy.loggingOut : copy.logout}</span>
             </button>
           </div>
         </div>
@@ -209,11 +232,11 @@ function ContactRow({ icon, value }: { icon: 'mail'; value: string }) {
   )
 }
 
-function AccountAvatar({ avatarUrl, initial, size }: { avatarUrl?: string; initial: string; size: 'trigger' | 'menu' }) {
+function AccountAvatar({ avatarUrl, initial, size, alt = 'Ảnh đại diện' }: { avatarUrl?: string; initial: string; size: 'trigger' | 'menu'; alt?: string }) {
   const classes = size === 'menu' ? 'h-11 w-11 border border-[#d8b98e] text-base' : 'h-9 w-9 text-sm'
   return (
     <span className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#173f35] font-display font-bold text-white ${classes}`}>
-      {avatarUrl ? <img src={avatarUrl} alt="Ảnh đại diện" width={size === 'menu' ? 44 : 36} height={size === 'menu' ? 44 : 36} decoding="async" className="h-full w-full object-cover" /> : initial}
+      {avatarUrl ? <img src={avatarUrl} alt={alt} width={size === 'menu' ? 44 : 36} height={size === 'menu' ? 44 : 36} decoding="async" className="h-full w-full object-cover" /> : initial}
     </span>
   )
 }

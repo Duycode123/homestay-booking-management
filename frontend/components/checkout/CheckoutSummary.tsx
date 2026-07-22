@@ -6,11 +6,18 @@ import type { AppliedDiscount } from '@/lib/discount-service'
 export default function CheckoutSummary({
   booking,
   appliedDiscount,
+  paymentAmount,
+  paymentOption,
 }: {
   booking: CheckoutBooking
   appliedDiscount: AppliedDiscount | null
+  paymentAmount?: number
+  paymentOption?: string
 }) {
   const summary = calculateCheckoutSummary(booking, appliedDiscount)
+  const isDeposit = paymentOption === 'deposit'
+  const depositedAmount = isDeposit ? Math.min(Math.max(paymentAmount ?? 0, 0), summary.total) : 0
+  const remainingAmount = Math.max(summary.total - depositedAmount, 0)
 
   return (
     <div className="rounded-2xl border border-[#E9E3D9] bg-white px-4 py-3">
@@ -33,6 +40,18 @@ export default function CheckoutSummary({
           {formatCurrency(summary.total)}
         </span>
       </div>
+
+      {isDeposit && (
+        <div className="mt-2 space-y-1 border-t border-[#E4DED3] pt-2">
+          <PaymentRow label="Đã cọc (50%)" value={formatCurrency(depositedAmount)} green />
+          <div className="flex items-center justify-between gap-3 py-1.5">
+            <span className="font-display text-sm font-bold text-[#242A27]">Số tiền còn lại</span>
+            <span className="shrink-0 text-nowrap font-display text-lg font-bold text-[#A8662E]">
+              {formatCurrency(remainingAmount)}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
