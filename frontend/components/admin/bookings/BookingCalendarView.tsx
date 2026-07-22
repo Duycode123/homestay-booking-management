@@ -23,8 +23,9 @@ type CalendarRoom = {
   roomType: string
 }
 
-const DAY_COLUMN_WIDTH = 64
-const ROOM_COLUMN_WIDTH = 224
+const DAY_COLUMN_WIDTH = 138
+const ROOM_COLUMN_WIDTH = 230
+const DAYS_PER_WEEK = 7
 const DAY_MS = 24 * 60 * 60 * 1000
 
 const statusStyles: Record<BookingStatus, string> = {
@@ -53,28 +54,27 @@ export default function BookingCalendarView({
   showOnlyMatchingRooms = false,
   onSelect,
 }: BookingCalendarViewProps) {
-  const [visibleMonth, setVisibleMonth] = useState(() => startOfMonth(parseFilterDate(filterDate) ?? new Date()))
+  const [visibleWeekStart, setVisibleWeekStart] = useState(() => startOfWeek(parseFilterDate(filterDate) ?? new Date()))
 
   useEffect(() => {
     const selectedDate = parseFilterDate(filterDate)
-    if (selectedDate) setVisibleMonth(startOfMonth(selectedDate))
+    if (selectedDate) setVisibleWeekStart(startOfWeek(selectedDate))
   }, [filterDate])
 
-  const monthStart = startOfMonth(visibleMonth)
-  const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1)
-  const dayCount = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0).getDate()
+  const weekStart = startOfWeek(visibleWeekStart)
+  const weekEnd = addDays(weekStart, DAYS_PER_WEEK)
   const days = useMemo(
-    () => Array.from({ length: dayCount }, (_, index) => new Date(monthStart.getFullYear(), monthStart.getMonth(), index + 1)),
-    [dayCount, monthStart.getFullYear(), monthStart.getMonth()],
+    () => Array.from({ length: DAYS_PER_WEEK }, (_, index) => addDays(weekStart, index)),
+    [weekStart.getTime()],
   )
 
   const activeBookings = useMemo(
     () => bookings.filter((booking) => (
       booking.bookingStatus !== 'CANCELLED'
-      && new Date(booking.startTime) < monthEnd
-      && new Date(booking.endTime) > monthStart
+      && new Date(booking.startTime) < weekEnd
+      && new Date(booking.endTime) > weekStart
     )),
-    [bookings, monthEnd.getTime(), monthStart.getTime()],
+    [bookings, weekEnd.getTime(), weekStart.getTime()],
   )
 
   const calendarRooms = useMemo(() => buildCalendarRooms(rooms, bookings)
@@ -82,7 +82,7 @@ export default function BookingCalendarView({
   [activeBookings, bookings, rooms, showOnlyMatchingRooms])
 
   const todayKey = toDateKey(new Date())
-  const gridWidth = ROOM_COLUMN_WIDTH + dayCount * DAY_COLUMN_WIDTH
+  const gridWidth = ROOM_COLUMN_WIDTH + DAYS_PER_WEEK * DAY_COLUMN_WIDTH
 
   if (isLoading) {
     return <CalendarSkeleton />
@@ -93,33 +93,33 @@ export default function BookingCalendarView({
       <header className="flex flex-col gap-4 border-b border-outline-variant px-4 py-4 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h2 className="font-display text-xl font-bold text-on-surface">
-            Lịch phòng tháng {visibleMonth.toLocaleDateString('vi-VN', { month: '2-digit', year: 'numeric' })}
+            Lịch phòng tuần {formatWeekRange(weekStart, weekEnd)}
           </h2>
           <p className="mt-1 text-sm text-on-surface-variant">
-            {activeBookings.length} booking trên {calendarRooms.length} phòng trong tháng đang xem
+            {activeBookings.length} booking trên {calendarRooms.length} phòng trong 7 ngày đang xem
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setVisibleMonth((current) => addMonths(current, -1))}
-            aria-label="Xem tháng trước"
+            onClick={() => setVisibleWeekStart((current) => addDays(current, -DAYS_PER_WEEK))}
+            aria-label="Xem tuần trước"
             className="flex h-10 w-10 items-center justify-center rounded-xl border border-outline-variant bg-white text-on-surface transition hover:border-brand-orange/50 hover:text-brand-orange active:scale-[0.98]"
           >
             <IconChevronLeft className="h-4 w-4" />
           </button>
           <button
             type="button"
-            onClick={() => setVisibleMonth(startOfMonth(new Date()))}
+            onClick={() => setVisibleWeekStart(startOfWeek(new Date()))}
             className="h-10 rounded-xl border border-outline-variant bg-surface-container-low px-4 text-sm font-bold text-secondary transition hover:border-secondary/35 hover:bg-secondary-container/30 active:scale-[0.98]"
           >
-            Tháng này
+            Tuần này
           </button>
           <button
             type="button"
-            onClick={() => setVisibleMonth((current) => addMonths(current, 1))}
-            aria-label="Xem tháng sau"
+            onClick={() => setVisibleWeekStart((current) => addDays(current, DAYS_PER_WEEK))}
+            aria-label="Xem tuần sau"
             className="flex h-10 w-10 items-center justify-center rounded-xl border border-outline-variant bg-white text-on-surface transition hover:border-brand-orange/50 hover:text-brand-orange active:scale-[0.98]"
           >
             <IconChevronRight className="h-4 w-4" />
@@ -139,16 +139,16 @@ export default function BookingCalendarView({
       {calendarRooms.length === 0 ? (
         <div className="px-5 py-16 text-center">
           <h3 className="font-display text-lg font-bold text-on-surface">Không có booking phù hợp</h3>
-          <p className="mt-2 text-sm text-on-surface-variant">Hãy đổi bộ lọc hoặc chuyển sang tháng khác.</p>
+          <p className="mt-2 text-sm text-on-surface-variant">Hãy đổi bộ lọc hoặc chuyển sang tuần khác.</p>
         </div>
       ) : (
-        <div className="panel-scroll overflow-x-auto" aria-label="Lịch booking theo từng phòng">
+        <div className="overflow-x-auto" aria-label="Lịch booking theo từng phòng trong tuần">
           <div style={{ minWidth: gridWidth }}>
             <div
               className="grid border-b border-outline-variant bg-[#faf8f4]"
-              style={{ gridTemplateColumns: `${ROOM_COLUMN_WIDTH}px repeat(${dayCount}, ${DAY_COLUMN_WIDTH}px)` }}
+              style={{ gridTemplateColumns: `${ROOM_COLUMN_WIDTH}px repeat(${DAYS_PER_WEEK}, ${DAY_COLUMN_WIDTH}px)` }}
             >
-              <div className="sticky left-0 z-20 flex h-14 items-center border-r border-outline-variant bg-[#faf8f4] px-4 font-display text-[11px] font-bold uppercase tracking-[0.12em] text-on-surface-variant">
+              <div className="flex h-[68px] items-center border-r border-outline-variant bg-[#faf8f4] px-5 font-display text-[11px] font-bold uppercase tracking-[0.12em] text-on-surface-variant">
                 Phòng
               </div>
               {days.map((day) => {
@@ -158,12 +158,12 @@ export default function BookingCalendarView({
                   <div
                     key={day.toISOString()}
                     className={[
-                      'flex h-14 flex-col items-center justify-center border-r border-outline-variant/70 text-center',
-                      isToday ? 'bg-[#ead8bf] text-[#704b24]' : isWeekend ? 'bg-[#f3efe8] text-on-surface' : 'text-on-surface',
+                      'flex h-[68px] flex-col items-center justify-center border-r border-outline-variant/70 text-center',
+                      isToday ? 'bg-[#e3eee9] text-secondary' : isWeekend ? 'bg-[#f3efe8] text-on-surface' : 'text-on-surface',
                     ].join(' ')}
                   >
-                    <span className="text-[10px] font-bold uppercase text-on-surface-variant">{weekdayLabel(day)}</span>
-                    <span className="mt-0.5 font-display text-sm font-bold">{day.getDate()}</span>
+                    <span className="text-[11px] font-bold text-on-surface-variant">{weekdayLabel(day)}</span>
+                    <span className="mt-1 font-display text-base font-bold">{formatDayMonth(day)}</span>
                   </div>
                 )
               })}
@@ -175,32 +175,32 @@ export default function BookingCalendarView({
                 .sort((left, right) => new Date(left.startTime).getTime() - new Date(right.startTime).getTime())
 
               return (
-                <div key={room.id} className="relative h-[76px] border-b border-outline-variant/80 last:border-b-0">
+                <div key={room.id} className="relative h-[96px] border-b border-outline-variant/80 last:border-b-0">
                   <div
                     className="grid h-full"
-                    style={{ gridTemplateColumns: `${ROOM_COLUMN_WIDTH}px repeat(${dayCount}, ${DAY_COLUMN_WIDTH}px)` }}
+                    style={{ gridTemplateColumns: `${ROOM_COLUMN_WIDTH}px repeat(${DAYS_PER_WEEK}, ${DAY_COLUMN_WIDTH}px)` }}
                   >
-                    <div className="sticky left-0 z-20 flex min-w-0 flex-col justify-center border-r border-outline-variant bg-white px-4 shadow-[5px_0_12px_rgba(24,58,49,.04)]">
-                      <span className="truncate font-display text-sm font-bold text-on-surface">{room.code} - {room.name}</span>
-                      <span className="mt-1 truncate text-xs text-on-surface-variant">{room.roomType}</span>
+                    <div className="flex min-w-0 flex-col justify-center border-r border-outline-variant bg-white px-5">
+                      <span className="line-clamp-2 font-display text-sm font-bold leading-5 text-on-surface">{room.code} - {room.name}</span>
+                      <span className="mt-1.5 truncate text-xs text-on-surface-variant">{room.roomType}</span>
                     </div>
                     {days.map((day) => (
                       <div
                         key={day.toISOString()}
                         className={[
                           'border-r border-outline-variant/55',
-                          toDateKey(day) === todayKey ? 'bg-[#f8eee0]' : day.getDay() === 0 || day.getDay() === 6 ? 'bg-[#fbfaf7]' : 'bg-white',
+                          toDateKey(day) === todayKey ? 'bg-[#f1f8f5]' : day.getDay() === 0 || day.getDay() === 6 ? 'bg-[#fbfaf7]' : 'bg-white',
                         ].join(' ')}
                       />
                     ))}
                   </div>
 
                   <div
-                    className="pointer-events-none absolute bottom-0 top-0"
-                    style={{ left: ROOM_COLUMN_WIDTH, width: dayCount * DAY_COLUMN_WIDTH }}
+                    className="pointer-events-none absolute bottom-0 top-0 overflow-hidden"
+                    style={{ left: ROOM_COLUMN_WIDTH, width: DAYS_PER_WEEK * DAY_COLUMN_WIDTH }}
                   >
                     {roomBookings.map((booking) => {
-                      const position = getBookingPosition(booking, monthStart, monthEnd, dayCount)
+                      const position = getBookingPosition(booking, weekStart, weekEnd)
                       if (!position) return null
                       const isSelected = selectedId === booking.bookingId
 
@@ -211,15 +211,16 @@ export default function BookingCalendarView({
                           onClick={() => onSelect(booking)}
                           title={`${booking.bookingCode} - ${booking.customerName} - ${BOOKING_STATUS_LABELS[booking.bookingStatus]}`}
                           className={[
-                            'pointer-events-auto absolute top-[14px] h-12 overflow-hidden rounded-xl border px-2.5 text-left shadow-[0_5px_14px_rgba(24,58,49,.14)] transition',
+                            'pointer-events-auto absolute top-3 h-[72px] overflow-hidden rounded-xl border px-3 py-2 text-left shadow-[0_5px_14px_rgba(24,58,49,.14)] transition',
                             'hover:-translate-y-0.5 hover:shadow-[0_8px_18px_rgba(24,58,49,.2)] active:translate-y-0',
                             statusStyles[booking.bookingStatus],
                             isSelected ? 'ring-2 ring-[#b28455] ring-offset-2' : '',
                           ].join(' ')}
-                          style={{ left: position.left, width: position.width, minWidth: 42 }}
+                          style={{ left: position.left, width: position.width, minWidth: 78 }}
                         >
-                          <span className="block truncate text-[10px] font-bold leading-4">{booking.bookingCode}</span>
-                          <span className="block truncate text-[10px] leading-4 opacity-90">{booking.customerName}</span>
+                          <span className="block truncate text-[11px] font-bold leading-4">{booking.bookingCode}</span>
+                          <span className="block truncate text-[11px] font-semibold leading-4 opacity-95">{booking.customerName}</span>
+                          <span className="mt-0.5 block truncate text-[10px] leading-4 opacity-80">{formatBookingHours(booking)}</span>
                         </button>
                       )
                     })}
@@ -239,7 +240,7 @@ function CalendarSkeleton() {
     <section className="overflow-hidden rounded-2xl border border-outline-variant bg-white shadow-[var(--shadow-card)]">
       <div className="h-24 animate-pulse border-b border-outline-variant bg-surface-container-low" />
       {Array.from({ length: 6 }, (_, index) => (
-        <div key={index} className="grid h-[76px] grid-cols-[224px_1fr] border-b border-outline-variant last:border-b-0">
+        <div key={index} className="grid h-[96px] grid-cols-[230px_1fr] border-b border-outline-variant last:border-b-0">
           <div className="border-r border-outline-variant p-4"><div className="h-4 w-32 rounded bg-[#e9e4dc]" /></div>
           <div className="m-4 animate-pulse rounded-xl bg-[#efeae2]" />
         </div>
@@ -278,30 +279,36 @@ function buildCalendarRooms(rooms: AdminRoom[], bookings: AdminBooking[]): Calen
   ))
 }
 
-function getBookingPosition(booking: AdminBooking, monthStart: Date, monthEnd: Date, dayCount: number) {
+function getBookingPosition(booking: AdminBooking, weekStart: Date, weekEnd: Date) {
   const rawStart = new Date(booking.startTime).getTime()
   const rawEnd = new Date(booking.endTime).getTime()
   if (!Number.isFinite(rawStart) || !Number.isFinite(rawEnd) || rawEnd <= rawStart) return null
 
-  const start = Math.max(rawStart, monthStart.getTime())
-  const end = Math.min(rawEnd, monthEnd.getTime())
+  const start = Math.max(rawStart, weekStart.getTime())
+  const end = Math.min(rawEnd, weekEnd.getTime())
   if (end <= start) return null
 
-  const left = ((start - monthStart.getTime()) / DAY_MS) * DAY_COLUMN_WIDTH
+  const left = ((start - weekStart.getTime()) / DAY_MS) * DAY_COLUMN_WIDTH
   const width = Math.min(
-    dayCount * DAY_COLUMN_WIDTH - left,
+    DAYS_PER_WEEK * DAY_COLUMN_WIDTH - left,
     ((end - start) / DAY_MS) * DAY_COLUMN_WIDTH,
   )
 
   return { left, width }
 }
 
-function startOfMonth(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), 1)
+function startOfWeek(date: Date) {
+  const start = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const daysFromMonday = (start.getDay() + 6) % 7
+  start.setDate(start.getDate() - daysFromMonday)
+  start.setHours(0, 0, 0, 0)
+  return start
 }
 
-function addMonths(date: Date, amount: number) {
-  return new Date(date.getFullYear(), date.getMonth() + amount, 1)
+function addDays(date: Date, amount: number) {
+  const next = new Date(date)
+  next.setDate(next.getDate() + amount)
+  return next
 }
 
 function parseFilterDate(value?: string) {
@@ -318,5 +325,23 @@ function toDateKey(date: Date) {
 }
 
 function weekdayLabel(date: Date) {
-  return ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][date.getDay()]
+  return ['Chủ nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'][date.getDay()]
+}
+
+function formatDayMonth(date: Date) {
+  return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })
+}
+
+function formatWeekRange(start: Date, endExclusive: Date) {
+  const end = addDays(endExclusive, -1)
+  return `${formatDayMonth(start)} - ${end.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}`
+}
+
+function formatBookingHours(booking: AdminBooking) {
+  const format = (value: string) => new Date(value).toLocaleTimeString('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+  return `${format(booking.startTime)} - ${format(booking.endTime)}`
 }
