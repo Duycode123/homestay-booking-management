@@ -16,7 +16,7 @@ function ArticleImage({ src, alt, large = false }: { src: string; alt: string; l
     <img
       src={src}
       alt={alt}
-      className={`h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03] motion-reduce:transform-none ${large ? 'min-h-[300px] sm:min-h-[420px]' : 'min-h-[190px]'}`}
+      className="block h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03] motion-reduce:transform-none"
       loading={large ? 'eager' : 'lazy'}
     />
   )
@@ -42,7 +42,7 @@ export default async function NewsPage() {
       <section className="mx-auto max-w-[1400px] px-5 py-12 sm:px-8 sm:py-16">
         {featured ? (
           <Link href={`/news/${featured.slug}`} className="group grid overflow-hidden rounded-[26px] border border-[#dfd5c6] bg-white shadow-[0_18px_48px_rgba(40,48,40,0.08)] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_24px_56px_rgba(40,48,40,0.12)] motion-reduce:transform-none lg:grid-cols-[1.08fr_.92fr]">
-            <div className="overflow-hidden"><ArticleImage src={featured.imageUrl} alt={`Ảnh minh họa cho ${featured.title}`} large /></div>
+            <div className="aspect-[16/10] overflow-hidden lg:aspect-auto lg:min-h-[420px]"><ArticleImage src={featured.imageUrl} alt={`Ảnh minh họa cho ${featured.title}`} large /></div>
             <div className="flex flex-col justify-center p-7 sm:p-10 lg:p-12">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-orange">Góc cảm hứng</p>
               <h2 className="font-editorial mt-4 text-3xl font-semibold leading-tight text-secondary sm:text-4xl">{featured.title}</h2>
@@ -66,9 +66,9 @@ export default async function NewsPage() {
             </div>
             <div className="mt-7 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {rest.map((article) => (
-                <Link key={article.slug} href={`/news/${article.slug}`} className="group overflow-hidden rounded-[20px] border border-[#dfd5c6] bg-white transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-[#c9a276] hover:shadow-[0_18px_42px_rgba(40,48,40,0.1)] motion-reduce:transform-none">
-                  <div className="overflow-hidden"><ArticleImage src={article.imageUrl} alt={`Ảnh minh họa cho ${article.title}`} /></div>
-                  <div className="p-5 sm:p-6"><p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-orange">{article.source}</p><h3 className="font-editorial mt-3 line-clamp-3 text-2xl font-semibold leading-tight text-secondary">{article.title}</h3><p className="mt-3 line-clamp-3 text-sm leading-6 text-on-surface-variant">{article.summary}</p><p className="mt-5 text-xs font-medium text-secondary/60">{formatNewsDate(article.publishedAt)}</p></div>
+                <Link key={article.slug} href={`/news/${article.slug}`} className="group flex h-full flex-col overflow-hidden rounded-[20px] border border-[#dfd5c6] bg-white transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-[#c9a276] hover:shadow-[0_18px_42px_rgba(40,48,40,0.1)] motion-reduce:transform-none">
+                  <div className="aspect-[4/3] shrink-0 overflow-hidden"><ArticleImage src={article.imageUrl} alt={`Ảnh minh họa cho ${article.title}`} /></div>
+                  <div className="flex flex-1 flex-col p-5 sm:p-6"><p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-orange">{article.source}</p><h3 className="font-editorial mt-3 line-clamp-3 text-2xl font-semibold leading-tight text-secondary">{article.title}</h3><p className="mt-3 line-clamp-3 text-sm leading-6 text-on-surface-variant">{article.summary}</p><p className="mt-auto pt-5 text-xs font-medium text-secondary/60">{formatNewsDate(article.publishedAt)}</p></div>
                 </Link>
               ))}
             </div>

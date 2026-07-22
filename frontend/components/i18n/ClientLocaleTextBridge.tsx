@@ -1130,6 +1130,7 @@ const supplementalTextPairs: TextPair[] = [
   ['Phương Oanh đưa cặp song sinh đi nghỉ dưỡng ở Đà Nẵng', 'Phuong Oanh takes her twins on a retreat in Da Nang'],
   ['Lý do Phú Quốc vào top 10 hòn đảo nghỉ dưỡng nổi bật năm 2026', 'Why Phu Quoc entered the top 10 standout resort islands of 2026'],
   ['Từ du lịch đến đầu tư, thị trường bất động sản Phan Thiết liên tục đón tin vui', 'From tourism to investment, Phan Thiet real estate continues to receive good news'],
+  ['Agoda: Lượng tìm kiếm du lịch Việt Nam từ thị trường Trung Quốc tăng 164% trong nửa đầu năm 2026', 'Agoda: Searches for Vietnam travel from China rose 164% in the first half of 2026'],
   ['Phát triển du lịch nghỉ dưỡng từ lợi thế nguồn khoáng nóng ở Ngọc Chiến', 'Developing resort tourism around Ngoc Chien hot springs'],
   ['Phú Quốc lọt Top 10 hòn đảo nổi tiếng năm 2026', 'Phu Quoc enters the top 10 famous islands of 2026'],
   ['Phú Thọ: Từ điểm hẹn cội nguồn đến trải nghiệm 4 mùa', 'Phu Tho: From heritage destination to a four-season experience'],
@@ -1818,6 +1819,9 @@ function translateValue(value: string, dictionary: Map<string, string>) {
     // abbreviations such as the weekday "Thu". Only use them as exact matches
     // above; partial replacement is reserved for meaningful phrases.
     if (normalizeText(source).length < 5) continue
+    // Keep branded room names such as "Standard Garden 101" in English on
+    // Vietnamese pages, while still translating the standalone amenity label.
+    if (dictionary === byLocale.vi && source === 'Garden') continue
     if (next.includes(source)) {
       next = next.split(source).join(target)
     }
