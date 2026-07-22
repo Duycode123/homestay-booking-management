@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import BookingQuickModal from '@/components/booking/BookingQuickModal'
 import AddonServiceImage from '@/components/addons/AddonServiceImage'
+import { useI18n } from '@/components/i18n/LocaleProvider'
 import { formatCurrency, getNightlyDisplayPrice, type BookingRoom } from '@/components/booking/booking-data'
 import { HeartIcon } from '@/components/layout/FavoriteRoomsMenu'
 import { useAuth } from '@/contexts/AuthContext'
@@ -385,34 +386,57 @@ function Gallery({ images, roomName }: { images: string[]; roomName: string }) {
 }
 
 function AddonServicesSection({ items }: { items: AddonCatalogItem[] }) {
+  const { locale } = useI18n()
   if (items.length === 0) return null
 
   return (
-    <section className="overflow-hidden rounded-[26px] border border-outline-variant bg-white shadow-[var(--shadow-card)]">
-      <div className="flex flex-col gap-2 border-b border-outline-variant px-6 py-6 sm:px-8">
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-orange">Nâng tầm kỳ nghỉ</p>
-        <h2 className="font-editorial text-3xl font-semibold text-secondary">Dịch vụ thuê thêm</h2>
-        <p className="max-w-2xl leading-7 text-on-surface-variant">
-          Có thể chọn khi đặt phòng hoặc gọi thêm sau khi check-in. Chi phí chỉ được cộng theo số lượng thực tế.
-        </p>
+    <section className="overflow-hidden rounded-[26px] border border-[#ddd1c0] bg-white shadow-[0_16px_44px_rgba(35,54,45,.06)]" aria-labelledby="addon-services-title">
+      <div className="flex flex-col gap-4 border-b border-[#e5dacb] bg-[#fffdf9] px-5 py-6 sm:flex-row sm:items-end sm:justify-between sm:px-8 sm:py-7">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-orange">Nâng tầm kỳ nghỉ</p>
+          <h2 id="addon-services-title" className="font-editorial mt-1.5 text-3xl font-semibold text-secondary">Dịch vụ thuê thêm</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-on-surface-variant sm:text-base">
+            Có thể chọn khi đặt phòng hoặc gọi thêm sau khi check-in. Chi phí chỉ được cộng theo số lượng thực tế.
+          </p>
+        </div>
+        <span className="inline-flex w-fit shrink-0 items-center gap-2 rounded-full border border-[#d9cbb8] bg-white px-3.5 py-2 text-xs font-bold text-secondary shadow-sm">
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#e9f1ec] text-[11px]" aria-hidden>✓</span>
+          Chọn khi đặt phòng
+        </span>
       </div>
-      <div className="grid gap-4 p-5 sm:grid-cols-2 sm:p-6 xl:grid-cols-3">
+      <div className="grid px-4 sm:px-6 xl:grid-cols-2 xl:px-8">
         {items.map((item) => (
-          <article key={item.id} className="group overflow-hidden rounded-[22px] border border-outline-variant bg-[#fcfaf6] transition hover:-translate-y-0.5 hover:border-brand-orange/35 hover:shadow-[0_16px_38px_rgba(35,54,45,.10)]">
-            <AddonServiceImage imageUrl={item.imageUrl} name={item.name} />
-            <div className="p-4">
-              <h3 className="font-display text-lg font-bold text-secondary">{item.name}</h3>
-              <p className="mt-1 line-clamp-2 min-h-12 text-sm leading-6 text-on-surface-variant">{item.description}</p>
-              <div className="mt-4 flex items-center justify-between gap-3 border-t border-outline-variant pt-3">
-                <span className="font-display font-bold text-brand-orange">{formatCurrency(item.price)}</span>
-                <span className="rounded-full bg-primary-container/55 px-3 py-1 text-xs font-semibold text-secondary">mỗi {item.unit}</span>
+          <article key={item.id} className="group flex min-w-0 gap-3 border-b border-[#e5dacb] py-4 transition hover:bg-[#fcfaf6] sm:gap-4 sm:py-5 xl:odd:border-r xl:odd:pr-6 xl:even:pl-6">
+            <AddonServiceImage imageUrl={item.imageUrl} name={item.name} className="aspect-[4/3] w-24 rounded-[12px] sm:w-32" />
+            <div className="flex min-w-0 flex-1 flex-col py-0.5 pr-1">
+              <h3 className="line-clamp-1 font-display text-base font-bold text-secondary sm:text-lg">{item.name}</h3>
+              <p className="mt-1 line-clamp-2 text-xs leading-5 text-on-surface-variant sm:text-sm">{item.description}</p>
+              <div className="mt-auto flex flex-wrap items-end justify-between gap-x-3 gap-y-1 pt-3">
+                <span className="font-editorial text-xl font-semibold leading-none text-brand-orange">{formatCurrency(item.price)}</span>
+                <span className="text-[11px] font-semibold text-on-surface-variant">/ {formatAddonUnit(item.unit, locale)}</span>
               </div>
             </div>
           </article>
         ))}
       </div>
+      <div className="border-t border-[#e5dacb] bg-[#faf6ef] px-5 py-3 text-xs leading-5 text-on-surface-variant sm:px-8">
+        Giá được tính theo số lượng sử dụng thực tế và hiển thị trong tổng đơn trước khi xác nhận.
+      </div>
     </section>
   )
+}
+
+function formatAddonUnit(unit: string, locale: 'vi' | 'en') {
+  const normalized = unit.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase()
+
+  if (/guest|person|khach|nguoi/.test(normalized)) return locale === 'en' ? 'guest' : 'khách'
+  if (/bed|giuong/.test(normalized)) return locale === 'en' ? 'bed/night' : 'giường/đêm'
+  if (/bag|tui/.test(normalized)) return locale === 'en' ? 'bag' : 'túi'
+  if (/night|dem/.test(normalized)) return locale === 'en' ? 'night' : 'đêm'
+  if (/service|time|lan/.test(normalized)) return locale === 'en' ? 'service' : 'lần'
+  if (/set|bo/.test(normalized)) return 'set'
+
+  return unit
 }
 
 type AmenityDisplayItem = {

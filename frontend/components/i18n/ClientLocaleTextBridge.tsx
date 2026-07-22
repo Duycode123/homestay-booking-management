@@ -1493,6 +1493,8 @@ const supplementalTextPairs: TextPair[] = [
   ['View all 13 tiện nghi', 'View all 13 amenities'],
   ['Guests tại phòng được sử dụng các khu vực chung dưới đây.', 'Room guests may use the shared areas below.'],
   ['Nâng tầm kỳ nghỉ', 'Enhance your stay'],
+  ['Chọn khi đặt phòng', 'Choose during booking'],
+  ['Giá được tính theo số lượng sử dụng thực tế và hiển thị trong tổng đơn trước khi xác nhận.', 'Charges are based on actual usage and shown in the order total before confirmation.'],
   ['Có thể chọn khi đặt phòng hoặc gọi thêm sau khi check-in. Chi phí chỉ được cộng theo số lượng thực tế.', 'Choose these during booking or request them after check-in. Charges are based only on the actual quantity used.'],
   ['Chính sách lưu trú', 'Stay policy'],
   ['Information cần biết', 'Important information'],

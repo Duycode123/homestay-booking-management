@@ -9,6 +9,20 @@ type AddonServiceImageProps = {
   eager?: boolean
 }
 
+const defaultAddonImages = [
+  { keywords: ['bua sang', 'breakfast'], path: '/images/addons/breakfast-in-room.png' },
+  { keywords: ['giuong phu', 'extra bed'], path: '/images/addons/extra-bed.png' },
+  { keywords: ['than nuong', 'charcoal'], path: '/images/addons/charcoal-refill.png' },
+  { keywords: ['bbq'], path: '/images/addons/outdoor-bbq-set.png' },
+  { keywords: ['may chieu', 'projector'], path: '/images/addons/projector-rental.png' },
+  { keywords: ['sinh nhat', 'birthday'], path: '/images/addons/birthday-decoration.png' },
+] as const
+
+function getDefaultAddonImage(name: string) {
+  const normalizedName = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  return defaultAddonImages.find((item) => item.keywords.some((keyword) => normalizedName.includes(keyword)))?.path
+}
+
 export default function AddonServiceImage({
   imageUrl,
   name,
@@ -16,7 +30,7 @@ export default function AddonServiceImage({
   eager = false,
 }: AddonServiceImageProps) {
   const [failed, setFailed] = useState(false)
-  const trimmedUrl = imageUrl?.trim()
+  const trimmedUrl = imageUrl?.trim() || getDefaultAddonImage(name)
   const resolvedUrl = trimmedUrl?.startsWith('images/') ? `/${trimmedUrl}` : trimmedUrl
 
   useEffect(() => {
