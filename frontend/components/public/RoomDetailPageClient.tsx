@@ -132,7 +132,30 @@ export default function RoomDetailPageClient({ roomId }: { roomId: string }) {
             <ReviewSection reviews={reviews} />
           </div>
 
-          <aside className="lg:sticky lg:top-28 lg:self-start"><div className="rounded-[26px] border border-[#dbc6a9] bg-white p-6 shadow-[0_24px_70px_rgba(29,49,41,.13)]"><p className="text-sm text-on-surface-variant">Giá tham khảo mỗi đêm</p><p className="mt-1 font-editorial text-4xl font-semibold text-secondary">{formatCurrency(getNightlyDisplayPrice(room.pricePerHour))}<span className="font-display text-sm font-medium text-on-surface-variant"> / đêm</span></p><div className="my-5 h-px bg-outline-variant" /><p className="rounded-2xl bg-primary-container/50 px-4 py-3 text-sm leading-6 text-on-primary-container">Nhận phòng 14:00 · Trả phòng 12:00 · Giá chính xác được tính theo toàn bộ thời gian lưu trú.</p><button type="button" onClick={() => setBookingOpen(true)} className="mt-5 h-14 w-full rounded-2xl bg-brand-orange font-bold text-white shadow-lg transition hover:bg-brand-orangeHover">Chọn ngày lưu trú</button><p className="mt-3 text-center text-xs text-on-surface-variant">Chưa tính phí phát sinh hoặc mã giảm giá</p></div></aside>
+          <aside className="lg:sticky lg:top-28 lg:self-start">
+            <div className="rounded-[26px] border border-[#dbc6a9] bg-white p-6 shadow-[0_24px_70px_rgba(29,49,41,.13)]">
+              <p className="text-sm text-on-surface-variant">Giá tham khảo mỗi đêm</p>
+              <p className="mt-1 font-editorial text-4xl font-semibold text-secondary">
+                {formatCurrency(getNightlyDisplayPrice(room.pricePerHour))}
+                <span className="font-display text-sm font-medium text-on-surface-variant"> / đêm</span>
+              </p>
+              <div className="my-5 h-px bg-outline-variant" />
+              <p className="rounded-2xl bg-primary-container/50 px-4 py-3 text-sm leading-6 text-on-primary-container">
+                Nhận phòng 14:00 · Trả phòng 12:00 · Giá chính xác được tính theo toàn bộ thời gian lưu trú.
+              </p>
+
+              <div className="mt-5 space-y-3 border-y border-outline-variant py-5">
+                <BookingBenefit text="Kiểm tra lịch trống theo thời gian thực" />
+                <BookingBenefit text="Xem tổng chi phí trước khi xác nhận" />
+                <BookingBenefit text="Theo dõi booking trong tài khoản" />
+              </div>
+
+              <button type="button" onClick={() => setBookingOpen(true)} className="mt-5 h-14 w-full rounded-2xl bg-brand-orange font-bold text-white shadow-lg transition hover:bg-brand-orangeHover">
+                Chọn ngày lưu trú
+              </button>
+              <p className="mt-3 text-center text-xs text-on-surface-variant">Chưa tính phí ở bước chọn ngày</p>
+            </div>
+          </aside>
         </div>
 
         <SimilarStaysSection rooms={similarRooms} />
@@ -147,6 +170,15 @@ export default function RoomDetailPageClient({ roomId }: { roomId: string }) {
         onClose={() => setBookingOpen(false)}
       />
     </main>
+  )
+}
+
+function BookingBenefit({ text }: { text: string }) {
+  return (
+    <p className="flex items-center gap-3 text-sm font-medium text-secondary">
+      <span aria-hidden="true" className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#e8f2ed] text-xs font-bold text-secondary">✓</span>
+      {text}
+    </p>
   )
 }
 

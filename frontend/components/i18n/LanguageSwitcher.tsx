@@ -27,12 +27,31 @@ export default function LanguageSwitcher({ compact = false }: { compact?: boolea
       type="button"
       onClick={switchLanguage}
       className={compact
-        ? 'inline-flex h-9 items-center rounded-full border border-outline-variant bg-white px-3 text-[11px] font-bold uppercase tracking-[0.12em] text-secondary transition-colors hover:border-brand-orange hover:bg-surface-container-low'
-        : 'inline-flex h-10 items-center rounded-full border border-outline-variant bg-white px-3.5 text-xs font-bold uppercase tracking-[0.12em] text-secondary shadow-sm transition-colors hover:border-brand-orange hover:bg-surface-container-low'}
+        ? 'group inline-grid h-9 grid-cols-2 items-center gap-0.5 rounded-full border border-outline-variant bg-surface-container-low p-1 text-[10px] font-bold uppercase tracking-[0.08em] text-on-surface-variant shadow-sm transition-all hover:border-brand-orange/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange/35 focus-visible:ring-offset-2'
+        : 'group inline-grid h-11 grid-cols-2 items-center gap-0.5 rounded-full border border-outline-variant bg-surface-container-low p-1 text-[11px] font-bold uppercase tracking-[0.08em] text-on-surface-variant shadow-[0_7px_20px_rgba(23,58,49,0.08)] transition-all hover:border-brand-orange/70 hover:shadow-[0_9px_24px_rgba(23,58,49,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange/35 focus-visible:ring-offset-2'}
       aria-label={nextLocale === 'vi' ? t('language.switchToVietnamese') : t('language.switchToEnglish')}
       title={t('language.current')}
     >
-      {locale === 'vi' ? 'EN' : 'VI'}
+      <span
+        className={`${compact ? 'h-7 min-w-8' : 'h-9 min-w-9'} inline-flex items-center justify-center rounded-full transition-all ${
+          locale === 'vi'
+            ? 'bg-secondary text-white shadow-[0_3px_10px_rgba(23,58,49,0.22)]'
+            : 'group-hover:text-secondary'
+        }`}
+        aria-hidden="true"
+      >
+        VI
+      </span>
+      <span
+        className={`${compact ? 'h-7 min-w-8' : 'h-9 min-w-9'} inline-flex items-center justify-center rounded-full transition-all ${
+          locale === 'en'
+            ? 'bg-secondary text-white shadow-[0_3px_10px_rgba(23,58,49,0.22)]'
+            : 'group-hover:text-secondary'
+        }`}
+        aria-hidden="true"
+      >
+        EN
+      </span>
     </button>
   )
 }

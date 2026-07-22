@@ -873,26 +873,33 @@ function RoomCard({
   const isFullToday = availabilityState.hasBookingToday || room.todayAvailabilityReason === 'BOOKED'
   const isUnavailable = availabilityState.isUnavailable
   const nextAvailableSlotToday = getNextAvailableSlotToday(room, now, todaySlots)
-  const bookingBadge = isCheckingAvailability
-    ? cardCopy.checking
-    : isPaymentHeld
-      ? cardCopy.paymentHeld
-    : canStartBooking
-      ? cardCopy.bookNow
-    : isUnavailable
-        ? cardCopy.paused
-        : cardCopy.chooseAnotherDate
   const bookingHint = canBookNow
-    ? cardCopy.todayAt(nextAvailableSlotToday)
+    ? locale === 'en'
+      ? nextAvailableSlotToday
+        ? `Available today from ${nextAvailableSlotToday}`
+        : 'Available today — choose dates to confirm'
+      : nextAvailableSlotToday
+        ? `Còn phòng hôm nay từ ${nextAvailableSlotToday}`
+        : 'Còn phòng hôm nay — chọn ngày để kiểm tra'
     : isPaymentHeld
-      ? cardCopy.awaitingPaymentUntil(formatHoldExpiry(room.holdExpiresAt, locale))
+      ? locale === 'en'
+        ? `Temporarily held for payment${formatHoldExpiry(room.holdExpiresAt, locale)}`
+        : `Đang giữ chỗ chờ thanh toán${formatHoldExpiry(room.holdExpiresAt, locale)}`
     : canBookFutureDate
-      ? cardCopy.chooseStayDates
+      ? locale === 'en'
+        ? 'Unavailable today — other dates can be selected'
+        : 'Hôm nay đã kín — bạn vẫn có thể chọn ngày khác'
     : isUnavailable
-      ? cardCopy.bookingsPaused
+      ? locale === 'en'
+        ? 'This room is temporarily unavailable for booking'
+        : 'Phòng đang tạm ngừng nhận đặt chỗ'
       : isCheckingAvailability
-        ? cardCopy.syncingSchedule
-        : cardCopy.bookedToday(room.nextAvailableSlot)
+        ? locale === 'en'
+          ? 'Checking the latest availability'
+          : 'Đang kiểm tra lịch trống mới nhất'
+        : locale === 'en'
+          ? `Booked today${room.nextAvailableSlot ? ` — next available ${room.nextAvailableSlot}` : ''}`
+          : `Hôm nay đã kín${room.nextAvailableSlot ? ` — lịch gần nhất ${room.nextAvailableSlot}` : ''}`
 
   const handleFavorite = async () => {
     if (!isAuthenticated) {
@@ -953,16 +960,6 @@ function RoomCard({
           ].join(' ')}
         >
           {isUnavailable ? cardCopy.paused : isCheckingAvailability ? cardCopy.availabilityUpdating : getLocalizedAvailabilityLabel(availabilityStatus, room, locale)}
-        </span>
-        <span
-          className={[
-            'absolute bottom-4 left-4 rounded-full border px-3 py-1 font-display text-[11px] font-bold',
-            canStartBooking
-              ? 'border-brand-orange/40 bg-primary-container text-on-primary-container'
-              : 'border-white/20 bg-white/90 text-on-surface-variant',
-          ].join(' ')}
-        >
-          {bookingBadge}
         </span>
         </button>
         <button
