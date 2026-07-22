@@ -127,13 +127,18 @@ export default function BookingCalendarView({
         </div>
       </header>
 
-      <div className="flex flex-wrap gap-x-5 gap-y-2 border-b border-outline-variant bg-surface-container-low/50 px-4 py-3 sm:px-5">
-        {legendStatuses.map((status) => (
-          <span key={status} className="inline-flex items-center gap-2 text-xs font-medium text-on-surface-variant">
-            <span className={`h-2.5 w-2.5 rounded-[3px] border ${statusStyles[status]}`} aria-hidden />
-            {BOOKING_STATUS_LABELS[status]}
-          </span>
-        ))}
+      <div className="border-b border-outline-variant bg-surface-container-low/50 px-4 py-3 sm:px-5">
+        <div className="flex flex-wrap gap-x-5 gap-y-2">
+          {legendStatuses.map((status) => (
+            <span key={status} className="inline-flex items-center gap-2 text-xs font-medium text-on-surface-variant">
+              <span className={`h-2.5 w-2.5 rounded-[3px] border ${statusStyles[status]}`} aria-hidden />
+              {BOOKING_STATUS_LABELS[status]}
+            </span>
+          ))}
+        </div>
+        <p className="mt-2 text-xs leading-5 text-on-surface-variant">
+          Mỗi thẻ là một đơn đặt phòng; vị trí và độ dài thẻ thể hiện thời gian nhận - trả phòng. Bấm vào thẻ để xem chi tiết.
+        </p>
       </div>
 
       {calendarRooms.length === 0 ? (
@@ -211,12 +216,12 @@ export default function BookingCalendarView({
                           onClick={() => onSelect(booking)}
                           title={`${booking.bookingCode} - ${booking.customerName} - ${BOOKING_STATUS_LABELS[booking.bookingStatus]}`}
                           className={[
-                            'pointer-events-auto absolute top-3 h-[72px] overflow-hidden rounded-xl border px-3 py-2 text-left shadow-[0_5px_14px_rgba(24,58,49,.14)] transition',
-                            'hover:-translate-y-0.5 hover:shadow-[0_8px_18px_rgba(24,58,49,.2)] active:translate-y-0',
+                            'pointer-events-auto absolute top-3 h-[72px] overflow-hidden rounded-xl border px-3 py-2 text-left shadow-[0_1px_3px_rgba(24,58,49,.08)] transition-[filter,border-color,box-shadow]',
+                            'hover:brightness-[0.97] hover:shadow-[0_2px_5px_rgba(24,58,49,.1)] active:brightness-[0.94]',
                             statusStyles[booking.bookingStatus],
                             isSelected ? 'ring-2 ring-[#b28455] ring-offset-2' : '',
                           ].join(' ')}
-                          style={{ left: position.left, width: position.width, minWidth: 78 }}
+                          style={{ left: position.left, width: position.width }}
                         >
                           <span className="block truncate text-[11px] font-bold leading-4">{booking.bookingCode}</span>
                           <span className="block truncate text-[11px] font-semibold leading-4 opacity-95">{booking.customerName}</span>
