@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import BookingQuickModal from '@/components/booking/BookingQuickModal'
 import AddonServiceImage from '@/components/addons/AddonServiceImage'
 import { formatCurrency, getNightlyDisplayPrice, type BookingRoom } from '@/components/booking/booking-data'
@@ -123,8 +123,10 @@ export default function RoomDetailPageClient({ roomId }: { roomId: string }) {
               </div>
             </section>
 
-            <AmenitySection title="Tiện ích riêng của phòng" subtitle="Các thiết bị và tiện nghi được bố trí riêng trong phòng này." items={room.includedEquipments.map((name) => ({ name, description: 'Sẵn sàng phục vụ trong phòng.', iconName: 'private' }))} compact initialVisibleCount={8} />
-            <AmenitySection title="Tiện ích chung của homestay" subtitle="Khách lưu trú tại phòng được sử dụng các khu vực chung dưới đây." items={commonAmenities} />
+            <AmenitiesTabs
+              privateItems={room.includedEquipments.map((name) => ({ name, description: 'Sẵn sàng phục vụ trong phòng.', iconName: 'private' }))}
+              commonItems={commonAmenities}
+            />
             <AddonServicesSection items={addonServices} />
 
             <section className="rounded-[26px] border border-outline-variant bg-white p-6 sm:p-8"><h2 className="font-editorial text-3xl font-semibold text-secondary">Chính sách lưu trú</h2><div className="mt-5 grid gap-4 sm:grid-cols-2"><Policy title="Khung lưu trú" text="Nhận phòng từ 14:00 và trả phòng trước 12:00 ngày cuối cùng; thời gian tối thiểu 1 đêm." /><Policy title="Nhận phòng" text="Khách có thể check-in sớm tối đa 5 phút khi phòng đã sẵn sàng." /><Policy title="Hủy phòng" text="Gửi yêu cầu trước ít nhất 24 giờ để được admin xem xét hoàn tiền." /><Policy title="Sử dụng tiện ích chung" text="Giữ gìn vệ sinh, tuân thủ giờ hoạt động và hướng dẫn an toàn tại từng khu vực." /></div></section>
@@ -413,48 +415,110 @@ function AddonServicesSection({ items }: { items: AddonCatalogItem[] }) {
   )
 }
 
-function AmenitySection({ title, subtitle, items, compact = false, initialVisibleCount = 8 }: { title: string; subtitle: string; items: Array<{ name: string; description: string; iconName?: string; imageUrl?: string | null }>; compact?: boolean; initialVisibleCount?: number }) {
-  const [expanded, setExpanded] = useState(false)
-  const hasMore = compact && items.length > initialVisibleCount
-  const visibleItems = hasMore && !expanded ? items.slice(0, initialVisibleCount) : items
+type AmenityDisplayItem = {
+  name: string
+  description: string
+  iconName?: string
+  imageUrl?: string | null
+}
+
+function AmenitiesTabs({ privateItems, commonItems }: { privateItems: AmenityDisplayItem[]; commonItems: AmenityDisplayItem[] }) {
+  const [activeTab, setActiveTab] = useState<'private' | 'common'>('private')
+  const activeItems = activeTab === 'private' ? privateItems : commonItems
+  const panelId = `room-amenities-${activeTab}`
 
   return (
-    <section className="rounded-[26px] border border-outline-variant bg-white p-6 sm:p-8">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="font-editorial text-3xl font-semibold text-secondary">{title}</h2>
-          <p className="mt-2 text-on-surface-variant">{subtitle}</p>
+    <section className="overflow-hidden rounded-[26px] border border-[#ddd1c0] bg-[#fffdf8] shadow-[0_16px_44px_rgba(35,54,45,.06)]" aria-label="Tiện ích lưu trú">
+      <div className="overflow-x-auto px-5 pt-5 sm:px-8 sm:pt-7">
+        <div className="flex min-w-max gap-2 border-b border-[#ddd1c0]" role="tablist" aria-label="Loại tiện ích">
+          <AmenityTab
+            active={activeTab === 'private'}
+            id="private-amenities-tab"
+            controls="room-amenities-private"
+            onClick={() => setActiveTab('private')}
+          >
+            Tiện ích riêng
+          </AmenityTab>
+          <AmenityTab
+            active={activeTab === 'common'}
+            id="common-amenities-tab"
+            controls="room-amenities-common"
+            onClick={() => setActiveTab('common')}
+          >
+            Tiện ích chung
+          </AmenityTab>
         </div>
-        {compact && items.length > 0 && (
-          <span className="rounded-full bg-[#edf4f1] px-3 py-1.5 text-xs font-bold text-secondary">{items.length} tiện nghi</span>
+      </div>
+
+      <div
+        id={panelId}
+        role="tabpanel"
+        aria-labelledby={`${activeTab}-amenities-tab`}
+        className="px-5 pb-6 pt-5 sm:px-8 sm:pb-8 sm:pt-6"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#8a7458] sm:text-sm">
+            {activeItems.length} {activeTab === 'private' ? 'tiện nghi trong phòng' : 'tiện ích toàn khu'}
+          </p>
+          {activeTab === 'common' && activeItems.length > 0 && (
+            <p className="text-xs text-on-surface-variant">Dùng chung miễn phí trong thời gian lưu trú</p>
+          )}
+        </div>
+
+        {activeItems.length > 0 ? (
+          activeTab === 'private' ? (
+            <ul className="mt-4 flex flex-wrap gap-2.5 sm:gap-3" aria-label="Danh sách tiện ích riêng">
+              {activeItems.map((item) => (
+                <li key={item.name} className="inline-flex min-h-11 items-center gap-2.5 rounded-full border border-[#dfd2bf] bg-white px-4 py-2 text-sm font-medium text-secondary shadow-[0_3px_10px_rgba(35,54,45,.03)] sm:text-base">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center text-[#637b58] [&_svg]:h-5 [&_svg]:w-5">
+                    <AmenityIcon name={item.name} iconName={item.iconName} />
+                  </span>
+                  <span>{item.name}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {activeItems.map((item) => (
+                <article key={item.name} className="flex min-w-0 items-start gap-3 rounded-2xl border border-[#e2d7c7] bg-white p-3.5 shadow-[0_4px_14px_rgba(35,54,45,.035)]">
+                  <span className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#f1eadc] text-secondary [&_svg]:h-5 [&_svg]:w-5">
+                    {item.imageUrl ? <Image src={item.imageUrl} alt="" fill unoptimized sizes="44px" className="object-cover" /> : <AmenityIcon name={item.name} iconName={item.iconName} />}
+                  </span>
+                  <span className="min-w-0 pt-0.5">
+                    <span className="block font-display text-sm font-bold text-secondary sm:text-base">{item.name}</span>
+                    <span className="mt-1 line-clamp-2 block text-xs leading-5 text-on-surface-variant">{item.description}</span>
+                  </span>
+                </article>
+              ))}
+            </div>
+          )
+        ) : (
+          <p className="mt-4 rounded-2xl border border-dashed border-[#ddd1c0] bg-white/70 px-4 py-5 text-sm text-on-surface-variant">
+            Chưa có dữ liệu tiện ích.
+          </p>
         )}
       </div>
-      {items.length ? (
-        <>
-          <div className={compact ? 'mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3' : 'mt-7 grid gap-x-8 gap-y-6 sm:grid-cols-2'}>
-            {visibleItems.map((item) => (
-              <article key={item.name} className={compact ? 'flex min-w-0 items-center gap-3 rounded-2xl border border-outline-variant bg-[#fcfaf6] p-3' : 'flex gap-4'}>
-                <div className={compact ? 'relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#eee3d3] text-secondary [&_svg]:h-6 [&_svg]:w-6' : 'relative flex h-20 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#eee3d3] text-secondary'}>
-                  {item.imageUrl ? <Image src={item.imageUrl} alt="" fill unoptimized sizes={compact ? '48px' : '96px'} className="object-cover" /> : <AmenityIcon name={item.name} iconName={item.iconName} />}
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-display truncate text-sm font-bold text-secondary sm:text-base">{item.name}</h3>
-                  {!compact && <p className="mt-1 text-sm leading-6 text-on-surface-variant">{item.description}</p>}
-                </div>
-              </article>
-            ))}
-          </div>
-          {hasMore && (
-            <div className="mt-6 flex justify-center border-t border-outline-variant pt-5">
-              <button type="button" onClick={() => setExpanded((current) => !current)} className="inline-flex items-center gap-2 rounded-full border border-secondary/25 bg-white px-5 py-2.5 text-sm font-bold text-secondary shadow-sm transition hover:-translate-y-0.5 hover:bg-[#f5f0e8]" aria-expanded={expanded}>
-                {expanded ? 'Thu gọn tiện nghi' : `Xem tất cả ${items.length} tiện nghi`}
-                <svg viewBox="0 0 20 20" className={['h-4 w-4 transition-transform', expanded ? 'rotate-180' : ''].join(' ')} fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden><path d="m5 7.5 5 5 5-5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-              </button>
-            </div>
-          )}
-        </>
-      ) : <p className="mt-6 rounded-2xl bg-surface-container px-4 py-3 text-sm text-on-surface-variant">Chưa có dữ liệu tiện ích.</p>}
     </section>
+  )
+}
+
+function AmenityTab({ active, id, controls, onClick, children }: { active: boolean; id: string; controls: string; onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      id={id}
+      aria-selected={active}
+      aria-controls={controls}
+      tabIndex={active ? 0 : -1}
+      onClick={onClick}
+      className={[
+        'relative min-h-12 rounded-t-xl px-5 pb-3 pt-2 font-editorial text-lg font-semibold transition-colors sm:px-6 sm:text-xl',
+        active ? 'text-secondary after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:rounded-full after:bg-secondary' : 'text-[#9a8163] hover:text-secondary',
+      ].join(' ')}
+    >
+      {children}
+    </button>
   )
 }
 
