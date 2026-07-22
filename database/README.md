@@ -441,6 +441,18 @@ The current admin revenue report still queries raw `booking` rows because the HT
 - Migration:
   - `database/migrations/20260703_create_staff_attendance.sql`
 
+## Simple Staff Payroll Tables
+
+Staff payroll is intentionally hourly-only for the current project scope.
+
+- `staff.hourly_rate` stores the administrator-configured salary for one completed work hour.
+- Draft salary is calculated as `SUM(staff_attendance.work_duration_hours) * staff.hourly_rate` for the selected month.
+- Only attendance rows with status `DONE` and a non-null `check_out_time` are included. A missed check-in creates no attendance row, while `WORKING` and `MISSING_CHECKOUT` rows contribute zero salary.
+- `payroll_period` stores one monthly period with status `DRAFT`, `FINALIZED`, or `PAID`.
+- `payroll_item` stores the finalized snapshot of each staff member's hours, hourly rate, and total salary so later rate changes do not alter old payrolls.
+- Migration:
+  - `database/migrations/20260723_add_simple_staff_payroll.sql`
+
 ## Facility Condition Report Table
 
 `facility_condition_report` is the audit log for staff facility checks.

@@ -1,6 +1,7 @@
 package backend.entity;
 
 import java.time.LocalDate;
+import java.math.BigDecimal;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -32,4 +33,8 @@ public class Staff {
 
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
+
+    @Column(name = "hourly_rate", nullable = false, precision = 12, scale = 2)
+    @Builder.Default
+    private BigDecimal hourlyRate = BigDecimal.ZERO;
 }

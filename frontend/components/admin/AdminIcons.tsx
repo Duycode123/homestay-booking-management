@@ -52,6 +52,15 @@ export function IconCoupons({ className = 'h-5 w-5' }: IconProps) {
   )
 }
 
+export function IconPayroll({ className = 'h-5 w-5' }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M7 8h10M7 12h4M7 16h3M15 13v6M18 14.5c-.5-.5-1.2-.7-1.8-.5-.7.2-1.2.7-1.2 1.3 0 .8.7 1 1.8 1.2 1 .2 1.7.5 1.7 1.2 0 .8-.7 1.3-1.7 1.3-.8 0-1.5-.3-2-.8" />
+    </svg>
+  )
+}
+
 export function IconRefund({ className = 'h-5 w-5' }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">

@@ -110,6 +110,7 @@ Table customer {
   phone_number    varchar
   email           varchar
   date_of_birth   date
+  hourly_rate     decimal   [not null, default: 0, note: 'Salary paid for each completed attendance hour']
 }
 
 Table staff {
@@ -412,6 +413,33 @@ Table facility_condition_report {
     (equipment_id, created_at)
     (staff_id, created_at)
     (maintenance_suggested, created_at)
+  }
+}
+
+Table payroll_period {
+  id            bigint    [pk, increment]
+  pay_year      int       [not null]
+  pay_month     int       [not null]
+  status        varchar   [not null, default: 'DRAFT', note: 'DRAFT, FINALIZED, or PAID']
+  finalized_at  timestamp
+  paid_at       timestamp
+  created_at    timestamp [not null, default: `now()`]
+
+  indexes {
+    (pay_year, pay_month) [unique]
+  }
+}
+
+Table payroll_item {
+  id                  bigint  [pk, increment]
+  payroll_period_id   bigint  [not null, ref: > payroll_period.id]
+  staff_id             int     [not null, ref: > staff.id]
+  work_hours           decimal [not null, default: 0]
+  hourly_rate          decimal [not null, default: 0]
+  total_salary         decimal [not null, default: 0]
+
+  indexes {
+    (payroll_period_id, staff_id) [unique]
   }
 }
 
