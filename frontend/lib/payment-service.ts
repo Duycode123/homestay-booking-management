@@ -167,27 +167,20 @@ export async function releasePaymentHold(paymentId: string): Promise<void> {
   }
 }
 
-export function releasePaymentHoldKeepalive(
-  paymentId: string,
-  csrfHeaders: Record<string, string>,
-) {
-  const releaseUrl = `/api/payments/transactions/${encodeURIComponent(paymentId)}/release`
+export function releasePaymentHoldKeepalive(paymentId: string) {
+  const releaseUrl = `/api/payments/transactions/${encodeURIComponent(paymentId)}/release-on-exit`
 
-  // A normal fetch can be cancelled while the browser is closing the page.
-  // Beacon is deliberately sent as a second, idempotent release request so
-  // the backend still receives it during unload/navigation.
+  // Page-exit requests cannot reliably depend on an auth/CSRF header because
+  // the browser may tear down the page or replace the login cookie first.
+  // The payment reference is random, and the backend only expires a still-
+  // pending transaction, so duplicate beacon/fetch delivery is idempotent.
   if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
-    const csrfToken = Object.values(csrfHeaders).find((value) => value.trim().length > 0)
-    if (csrfToken) {
-      const beaconBody = new URLSearchParams({ _csrf: csrfToken })
-      navigator.sendBeacon(releaseUrl, beaconBody)
-    }
+    navigator.sendBeacon(releaseUrl)
   }
 
   return fetch(releaseUrl, {
     method: 'POST',
     credentials: 'include',
     keepalive: true,
-    headers: csrfHeaders,
   })
 }

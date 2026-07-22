@@ -8,7 +8,6 @@ import CheckoutSummary from '@/components/checkout/CheckoutSummary'
 import { formatCurrency, getCheckoutBookingFromParams, type CheckoutBooking } from '@/lib/checkout-data'
 import { clearCheckoutSession, getCheckoutSession } from '@/lib/checkout-session'
 import type { AppliedDiscount } from '@/lib/discount-service'
-import { getCsrfRequestHeaders } from '@/lib/api'
 import { clearPendingBooking } from '@/lib/pending-booking'
 import {
   getPaymentTransactionDetail,
@@ -40,7 +39,6 @@ export default function PaymentSessionPageClient() {
 
   const statusRef = useRef<PaymentStatus>('pending')
   const releaseStartedRef = useRef(false)
-  const csrfHeadersRef = useRef<Record<string, string>>({})
   const releaseEffectGenerationRef = useRef(0)
 
   const secondsRemaining = useMemo(
@@ -79,7 +77,7 @@ export default function PaymentSessionPageClient() {
     releaseStartedRef.current = true
     clearPendingBooking()
     clearCheckoutSession()
-    void releasePaymentHoldKeepalive(paymentId, csrfHeadersRef.current).catch(() => undefined)
+    void releasePaymentHoldKeepalive(paymentId).catch(() => undefined)
   }, [paymentId])
 
   useEffect(() => {
@@ -93,17 +91,15 @@ export default function PaymentSessionPageClient() {
       }
 
       try {
-        const [loadedBooking, detail, csrfHeaders] = await Promise.all([
+        const [loadedBooking, detail] = await Promise.all([
           getCheckoutBookingFromParams(new URLSearchParams(query)),
           getPaymentTransactionDetail(paymentId),
-          getCsrfRequestHeaders().catch(() => ({})),
         ])
         if (!active) return
 
         setBooking(loadedBooking)
         setTransaction(detail)
         setExpiresAt(detail.expiresAt ?? initialExpiry)
-        csrfHeadersRef.current = csrfHeaders
         if (loadedBooking) {
           setDiscount(getCheckoutSession(loadedBooking.bookingId)?.appliedCoupon ?? null)
         }

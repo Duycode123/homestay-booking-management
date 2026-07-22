@@ -599,6 +599,31 @@ class PaymentCheckoutUseCaseServiceTest {
     }
 
     @Test
+    void releasesPendingHoldOnPageExitWithoutDependingOnCustomerSession() {
+        Booking booking = booking(35, PaymentMethod.ONLINE);
+        PaymentTransaction transaction = PaymentTransaction.builder()
+                .booking(booking)
+                .provider(PaymentProvider.SEPAY)
+                .transactionReference("PAYEXITBEACON1234")
+                .amount(new BigDecimal("225000.00"))
+                .status(PaymentTransactionStatus.PENDING)
+                .createdAt(LocalDateTime.now())
+                .build();
+        when(paymentTransactionRepository.findByTransactionReference("PAYEXITBEACON1234"))
+                .thenReturn(Optional.of(transaction));
+
+        paymentCheckoutUseCaseService.releasePaymentHoldOnPageExit("PAYEXITBEACON1234");
+
+        assertEquals(PaymentTransactionStatus.EXPIRED, transaction.getStatus());
+        assertEquals("CUSTOMER_LEFT_PAYMENT_PAGE", transaction.getResponseCode());
+        assertEquals(BookingStatus.EXPIRED, booking.getStatus());
+        verify(lockPaymentAggregatePort).lockAndRefresh(transaction);
+        verify(paymentTransactionRepository).save(transaction);
+        verify(bookingRepository).save(booking);
+        verify(addonUseCase).cancelUndeliveredAddons(booking.getId());
+    }
+
+    @Test
     void leavingPaymentPageDoesNotUndoASuccessfulPayment() {
         Booking booking = booking(34, PaymentMethod.ONLINE);
         booking.setStatus(BookingStatus.PAID);

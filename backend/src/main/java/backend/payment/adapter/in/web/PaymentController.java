@@ -82,6 +82,14 @@ public class PaymentController {
         return ResponseEntity.ok(success("Da giai phong phien giu cho", null));
     }
 
+    @PostMapping("/transactions/{paymentId}/release-on-exit")
+    public ResponseEntity<ApiResponse<Void>> releasePaymentHoldOnPageExit(
+            @PathVariable String paymentId
+    ) {
+        releasePaymentHoldUseCase.releasePaymentHoldOnPageExit(paymentId);
+        return ResponseEntity.ok(success("Da giai phong phien giu cho khi roi trang thanh toan", null));
+    }
+
     @GetMapping(value = "/sepay/checkout/{paymentId}", produces = MediaType.TEXT_HTML_VALUE)
     public ResponseEntity<String> redirectToSePayPortal(
             @PathVariable String paymentId,

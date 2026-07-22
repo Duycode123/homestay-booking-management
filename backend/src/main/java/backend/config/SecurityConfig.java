@@ -97,7 +97,8 @@ public class SecurityConfig {
                     .ignoringRequestMatchers(
                             "/api/auth/logout",
                             "/api/payments/vnpay/ipn",
-                            "/api/payments/sepay/webhook"
+                            "/api/payments/sepay/webhook",
+                            "/api/payments/transactions/*/release-on-exit"
                     ));
         } else {
             http.csrf(AbstractHttpConfigurer::disable);
@@ -148,6 +149,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/rooms/**", "/api/room-types/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/bookings/calculate-cost").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/coupons/validate").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/payments/transactions/*/release-on-exit").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/coupons/new-customer-offer").permitAll()
                         .requestMatchers("/api/auth/session").authenticated()
                         .requestMatchers("/api/staff/attendance/**").hasRole("STAFF")

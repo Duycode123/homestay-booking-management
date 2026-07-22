@@ -1,6 +1,7 @@
 package backend.security;
 
 import jakarta.servlet.http.Cookie;
+import backend.payment.application.service.PaymentCheckoutUseCaseService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -18,6 +19,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.Mockito.verify;
 
 @SpringBootTest(properties = "app.security.csrf.enabled=true")
 @AutoConfigureMockMvc
@@ -28,6 +30,9 @@ class CsrfSecurityTest {
 
     @MockBean
     private JavaMailSender javaMailSender;
+
+    @MockBean
+    private PaymentCheckoutUseCaseService paymentCheckoutUseCaseService;
 
     @Test
     void csrfEndpointIssuesTokenWhileLogoutRemainsReliableAndOtherUnsafeRequestsRequireIt() throws Exception {
@@ -63,6 +68,14 @@ class CsrfSecurityTest {
                         .cookie(new Cookie(AuthCookieService.ACCESS_COOKIE_NAME, "stale-token")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").isNotEmpty());
+    }
+
+    @Test
+    void pageExitReleaseWorksWithoutAuthenticationOrCsrfToken() throws Exception {
+        mockMvc.perform(post("/api/payments/transactions/PAYEXITBEACON1234/release-on-exit"))
+                .andExpect(status().isOk());
+
+        verify(paymentCheckoutUseCaseService).releasePaymentHoldOnPageExit("PAYEXITBEACON1234");
     }
 
     @Test

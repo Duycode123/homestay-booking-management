@@ -271,6 +271,23 @@ public class PaymentCheckoutUseCaseService implements
         }
 
         PaymentTransaction transaction = findAccessibleTransaction(paymentId.trim(), customerEmail);
+        expirePendingPaymentHold(transaction);
+    }
+
+    @Override
+    @Transactional
+    public void releasePaymentHoldOnPageExit(String paymentId) {
+        if (paymentId == null || paymentId.trim().isBlank()) {
+            throw new IllegalArgumentException("paymentId khong duoc de trong");
+        }
+
+        PaymentTransaction transaction = paymentTransactionRepository
+                .findByTransactionReference(paymentId.trim())
+                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay giao dich thanh toan"));
+        expirePendingPaymentHold(transaction);
+    }
+
+    private void expirePendingPaymentHold(PaymentTransaction transaction) {
         lockPaymentAggregatePort.lockAndRefresh(transaction);
 
         if (transaction.getStatus() == PaymentTransactionStatus.SUCCEEDED
