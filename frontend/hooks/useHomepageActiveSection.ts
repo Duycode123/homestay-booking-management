@@ -9,13 +9,15 @@ import {
   scrollToHomeSection,
   type HomepageAnchorSectionId,
 } from '@/lib/site-nav'
+import { stripLocalePrefix } from '@/i18n/config'
 
 export function useHomepageActiveSection() {
   const pathname = usePathname()
+  const publicPathname = stripLocalePrefix(pathname)
   const [activeSection, setActiveSection] = useState<HomepageAnchorSectionId | null>(null)
 
   useEffect(() => {
-    if (pathname !== '/') {
+    if (publicPathname !== '/') {
       setActiveSection(null)
       return
     }
@@ -42,7 +44,7 @@ export function useHomepageActiveSection() {
     // Logo click asks for homepage top — never re-apply leftover #equipment / #process.
     if (consumeForceHomepageTop()) {
       if (window.location.hash) {
-        window.history.replaceState(window.history.state, '', '/')
+        window.history.replaceState(window.history.state, '', window.location.pathname)
       }
       window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
       setActiveSection(null)
@@ -70,7 +72,7 @@ export function useHomepageActiveSection() {
       window.removeEventListener('scroll', onScroll)
       window.removeEventListener('hashchange', onHashChange)
     }
-  }, [pathname])
+  }, [publicPathname])
 
   return activeSection
 }

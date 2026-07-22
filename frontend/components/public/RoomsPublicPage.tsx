@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useI18n } from '@/components/i18n/LocaleProvider'
 import BookingQuickModal from '@/components/booking/BookingQuickModal'
 import {
   buildStaySearchParams,
@@ -49,6 +50,7 @@ import {
   isRoomTemporarilyUnavailable,
   isSlotInFuture,
 } from '@/lib/public/today-room-availability'
+import type { Locale } from '@/i18n/config'
 
 const MIN_NIGHTLY_PRICE = 1_000_000
 const MAX_NIGHTLY_PRICE = 5_000_000
@@ -56,12 +58,185 @@ const NIGHTLY_PRICE_STEP = 100_000
 
 type RoomSortOption = 'recommended' | 'rating_desc' | 'price_asc' | 'price_desc' | 'capacity_desc'
 
-const capacityOptions: Array<{ value: RoomCapacityFilter; label: string }> = [
-  { value: 'all', label: 'Mọi sức chứa' },
-  { value: 'small', label: '1-4 người' },
-  { value: 'medium', label: '5-8 người' },
-  { value: 'large', label: '9+ người' },
-]
+function getRoomsCopy(locale: Locale) {
+  if (locale === 'en') {
+    return {
+      heroEyebrow: 'STAY COLLECTION',
+      heroTitle: 'Find the stay that feels right for you',
+      heroDescription: 'Compare room capacity, amenities, nightly price and live availability before you decide.',
+      heroImageAlt: 'Premium homestay room with a large bed, timber furnishings and a garden view',
+      scheduleTitle: 'Today\'s room availability',
+      scheduleDescription: `Live booking data · 1 night = ${FIRST_NIGHT_STAY_HOURS} hours`,
+      refreshSchedule: 'Refresh room availability',
+      available: 'Available',
+      onHold: 'On hold',
+      fullyBooked: 'Booked',
+      paused: 'Paused',
+      checkingSchedule: 'Checking availability…',
+      availableRooms: (available: number, total: number) => `${available}/${total} rooms available`,
+      scheduleSyncFailed: (count: number) => `${count} room${count === 1 ? '' : 's'} could not be synchronized`,
+      scheduleUpdated: (time: string) => `Updated ${time} · refreshes every 60 seconds`,
+      connectingSchedule: 'Connecting to live availability',
+      filterEyebrow: 'DETAILED FILTERS',
+      filterTitle: 'Refine your stay',
+      filterDescription: 'Filter by room tier, size, guest rating, budget and amenities.',
+      roomType: 'Room type',
+      allRoomTypes: 'All room types',
+      bedrooms: 'Bedrooms',
+      capacity: 'Capacity',
+      rating: 'Guest rating',
+      nightlyBudget: 'Nightly budget',
+      requiredAmenities: 'Required amenities',
+      resetFilters: 'Reset detailed filters',
+      collectionEyebrow: 'STAY COLLECTION',
+      loadingRooms: 'Loading rooms…',
+      checkingStay: 'Checking availability…',
+      matchingRooms: (count: number) => `${count} matching ${count === 1 ? 'room' : 'rooms'}`,
+      checkingDateRange: (checkIn: string, checkOut: string) => `Checking availability from ${checkIn} to ${checkOut}.`,
+      roomsUnavailableToCheck: (count: number) => `${count} room${count === 1 ? '' : 's'} could not be checked.`,
+      refreshingCatalog: 'Refreshing the latest information…',
+      catalogSynchronized: 'Room and review data are synchronized from the system.',
+      catalogUnavailable: 'Unable to load room information from the system.',
+      guests: (adults: number, children: number) => `${adults} adult${adults === 1 ? '' : 's'}${children ? ` · ${children} child${children === 1 ? '' : 'ren'}` : ''}`,
+      bedroomsFrom: (count: number) => `${count}+ bedroom${count === 1 ? '' : 's'}`,
+      starsFrom: (rating: number) => `${rating.toFixed(1)}+ stars`,
+      amenitiesMore: (count: number) => `+${count} amenities`,
+      filtersHint: 'Use the filters to refine the list',
+      noRooms: 'No suitable rooms found',
+      noRoomsDescription: 'Try changing your stay dates, removing required amenities, or widening your budget to see more options.',
+      viewAllRooms: 'View all rooms',
+    }
+  }
+
+  return {
+    heroEyebrow: 'DANH MỤC LƯU TRÚ',
+    heroTitle: 'Tìm căn phòng của bạn',
+    heroDescription: 'So sánh sức chứa, tiện nghi, mức giá và lịch trống để chọn không gian phù hợp.',
+    heroImageAlt: 'Phòng homestay cao cấp với giường lớn, nội thất gỗ và cửa nhìn ra vườn',
+    scheduleTitle: 'Lịch phòng hôm nay',
+    scheduleDescription: `Dữ liệu booking thật · 1 đêm = ${FIRST_NIGHT_STAY_HOURS} giờ`,
+    refreshSchedule: 'Cập nhật lại lịch phòng',
+    available: 'Còn trống',
+    onHold: 'Đang giữ',
+    fullyBooked: 'Kín lịch',
+    paused: 'Tạm ngưng',
+    checkingSchedule: 'Đang đối chiếu lịch…',
+    availableRooms: (available: number, total: number) => `${available}/${total} phòng có thể đặt`,
+    scheduleSyncFailed: (count: number) => `${count} phòng chưa đồng bộ được lịch`,
+    scheduleUpdated: (time: string) => `Cập nhật ${time} · tự động mỗi 60 giây`,
+    connectingSchedule: 'Đang kết nối dữ liệu lịch phòng',
+    filterEyebrow: 'BỘ LỌC CHI TIẾT',
+    filterTitle: 'Tinh chỉnh lựa chọn',
+    filterDescription: 'Lọc thêm theo loại phòng, quy mô, đánh giá, ngân sách và tiện nghi.',
+    roomType: 'Loại phòng',
+    allRoomTypes: 'Tất cả loại phòng',
+    bedrooms: 'Số phòng ngủ',
+    capacity: 'Sức chứa',
+    rating: 'Điểm đánh giá',
+    nightlyBudget: 'Ngân sách mỗi đêm',
+    requiredAmenities: 'Tiện nghi cần có',
+    resetFilters: 'Đặt lại bộ lọc chi tiết',
+    collectionEyebrow: 'DANH SÁCH LƯU TRÚ',
+    loadingRooms: 'Đang tải phòng…',
+    checkingStay: 'Đang kiểm tra lịch…',
+    matchingRooms: (count: number) => `${count} phòng phù hợp`,
+    checkingDateRange: (checkIn: string, checkOut: string) => `Đang đối chiếu từ ${checkIn} đến ${checkOut}.`,
+    roomsUnavailableToCheck: (count: number) => `${count} phòng chưa thể đối chiếu lịch.`,
+    refreshingCatalog: 'Đang cập nhật dữ liệu mới nhất…',
+    catalogSynchronized: 'Dữ liệu phòng và đánh giá được đồng bộ từ hệ thống.',
+    catalogUnavailable: 'Không thể tải dữ liệu phòng từ hệ thống.',
+    guests: (adults: number, children: number) => `${adults} người lớn${children ? ` · ${children} trẻ em` : ''}`,
+    bedroomsFrom: (count: number) => `Từ ${count} phòng ngủ`,
+    starsFrom: (rating: number) => `Từ ${rating.toFixed(1)} sao`,
+    amenitiesMore: (count: number) => `+${count} tiện nghi`,
+    filtersHint: 'Chọn bộ lọc để tinh chỉnh danh sách',
+    noRooms: 'Chưa tìm thấy căn phù hợp',
+    noRoomsDescription: 'Hãy thay đổi ngày lưu trú, giảm số tiện nghi bắt buộc hoặc nới rộng ngân sách để xem thêm lựa chọn.',
+    viewAllRooms: 'Xem lại tất cả phòng',
+  }
+}
+
+function getCapacityOptions(locale: Locale): Array<{ value: RoomCapacityFilter; label: string }> {
+  const isEnglish = locale === 'en'
+
+  return [
+    { value: 'all', label: isEnglish ? 'Any capacity' : 'Mọi sức chứa' },
+    { value: 'small', label: isEnglish ? '1–4 guests' : '1–4 người' },
+    { value: 'medium', label: isEnglish ? '5–8 guests' : '5–8 người' },
+    { value: 'large', label: isEnglish ? '9+ guests' : '9+ người' },
+  ]
+}
+
+function getRoomCardCopy(locale: Locale) {
+  if (locale === 'en') {
+    return {
+      checking: 'Checking',
+      paymentHeld: 'On hold',
+      bookNow: 'Book now',
+      paused: 'Paused',
+      chooseAnotherDate: 'Choose another date',
+      todayAt: (time?: string) => time ? `Today, ${time}` : 'Available today',
+      awaitingPaymentUntil: (time: string) => `Awaiting payment${time}`,
+      chooseStayDates: 'Choose suitable stay dates',
+      bookingsPaused: 'Bookings are temporarily paused for this room',
+      syncingSchedule: 'Synchronizing room availability',
+      bookedToday: (time?: string) => `Booked today${time ? ` · ${time}` : ''}`,
+      viewDetail: (roomName: string) => `View details for ${roomName}`,
+      availabilityUpdating: 'Updating availability',
+      removeFavorite: (roomName: string) => `Remove ${roomName} from favourites`,
+      addFavorite: (roomName: string) => `Add ${roomName} to favourites`,
+      removeFavoriteShort: 'Remove from favourites',
+      addFavoriteShort: 'Add to favourites',
+      reviews: (count: number) => `(${count} review${count === 1 ? '' : 's'})`,
+      noReviews: 'No reviews yet',
+      liveAvailability: 'Live availability verified',
+      bedrooms: (count: number) => `${count} bedroom${count === 1 ? '' : 's'}`,
+      beds: (count: number) => `${count} bed${count === 1 ? '' : 's'}`,
+      amenitiesMore: (count: number) => `+${count} amenities`,
+      nightlyPrice: 'Nightly price',
+      stayHours: `includes ${FIRST_NIGHT_STAY_HOURS} stay hours`,
+      status: 'Availability',
+      viewDetails: 'View details',
+    }
+  }
+
+  return {
+    checking: 'Đang kiểm tra',
+    paymentHeld: 'Đang giữ chỗ',
+    bookNow: 'Đặt phòng',
+    paused: 'Tạm ngưng',
+    chooseAnotherDate: 'Chọn ngày khác',
+    todayAt: (time?: string) => time ? `Hôm nay, ${time}` : 'Còn trống hôm nay',
+    awaitingPaymentUntil: (time: string) => `Đang giữ chỗ chờ thanh toán${time}`,
+    chooseStayDates: 'Chọn ngày lưu trú phù hợp',
+    bookingsPaused: 'Phòng đang tạm ngưng nhận lịch',
+    syncingSchedule: 'Đang đồng bộ lịch phòng',
+    bookedToday: (time?: string) => `Hôm nay đã có lịch${time ? ` · ${time}` : ''}`,
+    viewDetail: (roomName: string) => `Xem chi tiết ${roomName}`,
+    availabilityUpdating: 'Đang cập nhật lịch',
+    removeFavorite: (roomName: string) => `Bỏ ${roomName} khỏi danh sách yêu thích`,
+    addFavorite: (roomName: string) => `Thêm ${roomName} vào danh sách yêu thích`,
+    removeFavoriteShort: 'Bỏ khỏi yêu thích',
+    addFavoriteShort: 'Thêm vào yêu thích',
+    reviews: (count: number) => `(${count} đánh giá)`,
+    noReviews: 'Chưa có đánh giá',
+    liveAvailability: 'Xác nhận lịch theo thời gian thực',
+    bedrooms: (count: number) => `${count} phòng ngủ`,
+    beds: (count: number) => `${count} giường`,
+    amenitiesMore: (count: number) => `+${count} tiện nghi`,
+    nightlyPrice: 'Giá cho một đêm',
+    stayHours: `đã gồm trọn ${FIRST_NIGHT_STAY_HOURS} giờ lưu trú`,
+    status: 'Tình trạng',
+    viewDetails: 'Xem chi tiết',
+  }
+}
+
+function getLocalizedAvailabilityLabel(status: RoomAvailabilityStatus, room: Room, locale: Locale) {
+  if (locale !== 'en') return getAvailabilityLabel(status, room)
+  if (status === 'FULL_TODAY') return 'Booked today'
+  if (status === 'ALMOST_FULL') return 'Limited availability'
+  return 'Available today'
+}
 
 const defaultFilters: RoomFilters = {
   search: '',
@@ -99,6 +274,9 @@ type QuickBookingState = {
 
 export default function RoomsPublicPage() {
   const router = useRouter()
+  const { locale, localizedHref } = useI18n()
+  const copy = getRoomsCopy(locale)
+  const capacityOptions = useMemo(() => getCapacityOptions(locale), [locale])
   const [filters, setFilters] = useState<RoomFilters>(defaultFilters)
   const [sortBy, setSortBy] = useState<RoomSortOption>('recommended')
   const [stayCriteria, setStayCriteria] = useState<StaySearchCriteria | null>(null)
@@ -124,7 +302,7 @@ export default function RoomsPublicPage() {
     [rooms, todaySlotsByRoomId, tomorrowSlotsByRoomId],
   )
   const availableAmenities = useMemo(() => Array.from(new Set(liveRooms.flatMap((room) => room.equipments).filter(Boolean)))
-    .sort((left, right) => left.localeCompare(right, 'vi')), [liveRooms])
+    .sort((left, right) => left.localeCompare(right, locale === 'en' ? 'en' : 'vi')), [liveRooms, locale])
   const filteredRooms = useMemo(() => {
     const matchesDetailFilters = filterRooms(liveRooms, filters)
     const availableMatches = !stayCriteria || isStayAvailabilityLoading
@@ -315,7 +493,7 @@ export default function RoomsPublicPage() {
 
     const draft = readQuickBookingDraft()
     if (!draft) {
-      window.history.replaceState(window.history.state, '', '/rooms')
+      window.history.replaceState(window.history.state, '', localizedHref('/rooms'))
       return
     }
 
@@ -336,9 +514,9 @@ export default function RoomsPublicPage() {
     } catch {
       clearQuickBookingDraft()
     } finally {
-      window.history.replaceState(window.history.state, '', '/rooms')
+      window.history.replaceState(window.history.state, '', localizedHref('/rooms'))
     }
-  }, [liveRooms])
+  }, [liveRooms, localizedHref])
 
   useEffect(() => {
     if (isLoading || liveRooms.length === 0) return
@@ -359,8 +537,8 @@ export default function RoomsPublicPage() {
       initialStartTime: params.get('startTime') ?? undefined,
       initialDuration: durationParam ? Number(durationParam) : undefined,
     })
-    window.history.replaceState(window.history.state, '', '/rooms')
-  }, [isLoading, liveRooms])
+    window.history.replaceState(window.history.state, '', localizedHref('/rooms'))
+  }, [isLoading, liveRooms, localizedHref])
 
   useEffect(() => {
     const openFavoriteRoomBooking = (event: Event) => {
@@ -401,7 +579,7 @@ export default function RoomsPublicPage() {
       <section className="relative min-h-[460px] overflow-hidden border-b border-outline-variant bg-secondary text-white">
         <Image
           src="/images/homestay-luxury-hero.webp"
-          alt="Phòng homestay cao cấp với giường lớn, nội thất gỗ và cửa nhìn ra vườn"
+          alt={copy.heroImageAlt}
           fill
           priority
           sizes="100vw"
@@ -410,10 +588,10 @@ export default function RoomsPublicPage() {
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(17,42,35,0.96)_0%,rgba(17,42,35,0.78)_44%,rgba(17,42,35,0.2)_100%)]" />
         <div className="relative mx-auto grid min-h-[460px] max-w-[1400px] gap-8 px-5 py-20 sm:px-8 lg:grid-cols-[1fr_390px] lg:items-end">
           <div>
-            <p className="eyebrow text-primary-fixed">Danh mục lưu trú</p>
-            <h1 className="font-editorial mt-4 text-5xl font-semibold tracking-[-0.03em] sm:text-6xl">Tìm căn phòng của bạn</h1>
+            <p className="eyebrow text-primary-fixed">{copy.heroEyebrow}</p>
+            <h1 className="font-editorial mt-4 text-5xl font-semibold tracking-[-0.03em] sm:text-6xl">{copy.heroTitle}</h1>
             <p className="mt-5 max-w-2xl text-lg leading-8 text-white/72">
-              So sánh sức chứa, tiện nghi, mức giá và lịch trống để chọn không gian phù hợp.
+              {copy.heroDescription}
             </p>
           </div>
           <div className="w-full max-w-[390px] justify-self-end rounded-[20px] border border-white/16 bg-[#173a31]/88 p-4 shadow-[0_22px_64px_rgba(0,0,0,0.26)] backdrop-blur-2xl sm:p-5">
@@ -424,17 +602,17 @@ export default function RoomsPublicPage() {
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#8dd7b4] opacity-50" />
                     <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#8dd7b4]" />
                   </span>
-                  <p className="font-display text-sm font-bold text-white">Lịch phòng hôm nay</p>
+                  <p className="font-display text-sm font-bold text-white">{copy.scheduleTitle}</p>
                 </div>
-                <p className="mt-1 text-[11px] text-white/50">Dữ liệu booking thật · 1 đêm = {FIRST_NIGHT_STAY_HOURS} giờ</p>
+                <p className="mt-1 text-[11px] text-white/50">{copy.scheduleDescription}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setScheduleRefreshKey((current) => current + 1)}
                 disabled={isTodayScheduleLoading}
                 className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/12 bg-white/[0.06] text-white/72 transition hover:border-white/25 hover:bg-white/[0.12] hover:text-white disabled:cursor-wait disabled:opacity-45"
-                aria-label="Cập nhật lại lịch phòng"
-                title="Cập nhật lại lịch phòng"
+                aria-label={copy.refreshSchedule}
+                title={copy.refreshSchedule}
               >
                 <RefreshIcon className={isTodayScheduleLoading ? 'h-3.5 w-3.5 animate-spin' : 'h-3.5 w-3.5'} />
               </button>
@@ -443,25 +621,25 @@ export default function RoomsPublicPage() {
             <div className="mt-3.5 grid grid-cols-4 gap-2">
                 <AvailabilityMetric
                   value={isInitialScheduleLoading ? '--' : String(todayRoomSummary.available)}
-                  label="Còn trống"
+                  label={copy.available}
                   tone="available"
                   onClick={() => showRoomsByAvailability('AVAILABLE')}
                 />
                 <AvailabilityMetric
                   value={isInitialScheduleLoading ? '--' : String(todayRoomSummary.almostFull)}
-                  label="Đang giữ"
+                  label={copy.onHold}
                   tone="limited"
                   onClick={() => showRoomsByAvailability('ALMOST_FULL')}
                 />
                 <AvailabilityMetric
                   value={isInitialScheduleLoading ? '--' : String(todayRoomSummary.full)}
-                  label="Kín lịch"
+                  label={copy.fullyBooked}
                   tone="full"
                   onClick={() => showRoomsByAvailability('FULL_TODAY')}
                 />
                 <AvailabilityMetric
                   value={isInitialScheduleLoading ? '--' : String(todayRoomSummary.unavailable)}
-                  label="Tạm ngưng"
+                  label={copy.paused}
                   tone="paused"
                 />
             </div>
@@ -469,8 +647,8 @@ export default function RoomsPublicPage() {
             <div className="mt-3.5 flex items-center justify-between gap-3 text-[11px]">
               <span className="font-medium text-white/72">
                 {isInitialScheduleLoading
-                  ? 'Đang đối chiếu lịch...'
-                  : `${bookableRoomCount}/${liveRooms.length} phòng có thể đặt`}
+                  ? copy.checkingSchedule
+                  : copy.availableRooms(bookableRoomCount, liveRooms.length)}
               </span>
               <span className="font-display font-bold text-[#f1d2a9]">
                 {isInitialScheduleLoading ? '--' : `${scheduleCoverage}%`}
@@ -485,10 +663,10 @@ export default function RoomsPublicPage() {
 
             <p className="mt-3 text-[10px] text-white/42">
               {scheduleErrorCount > 0
-                ? `${scheduleErrorCount} phòng chưa đồng bộ được lịch`
+                ? copy.scheduleSyncFailed(scheduleErrorCount)
                 : scheduleUpdatedAt
-                  ? `Cập nhật ${formatScheduleUpdateTime(scheduleUpdatedAt)} · tự động mỗi 60 giây`
-                  : 'Đang kết nối dữ liệu lịch phòng'}
+                  ? copy.scheduleUpdated(formatScheduleUpdateTime(scheduleUpdatedAt, locale))
+                  : copy.connectingSchedule}
             </p>
           </div>
         </div>
@@ -502,11 +680,11 @@ export default function RoomsPublicPage() {
                 <div className="flex items-center gap-3">
                   <FilterControlIcon name="tune" prominent />
                   <div>
-                    <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#e3bc8e]">Bộ lọc chi tiết</p>
-                    <h2 className="mt-1 font-display text-lg font-bold">Tinh chỉnh lựa chọn</h2>
+                    <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#e3bc8e]">{copy.filterEyebrow}</p>
+                    <h2 className="mt-1 font-display text-lg font-bold">{copy.filterTitle}</h2>
                   </div>
                 </div>
-                <p className="mt-2.5 text-xs leading-5 text-white/65">Lọc thêm theo loại phòng, quy mô, đánh giá, ngân sách và tiện nghi.</p>
+                <p className="mt-2.5 text-xs leading-5 text-white/65">{copy.filterDescription}</p>
               </div>
 
               <div className="space-y-5 p-4">
@@ -515,12 +693,12 @@ export default function RoomsPublicPage() {
                   onChange={(value) => updateFilter('roomName', value)}
                 />
 
-                <FilterDivider title="Loại phòng" />
+                <FilterDivider title={copy.roomType} />
                 <SidebarSingleChoiceFilter
                   value={filters.roomTierId}
                   onChange={(value) => updateFilter('roomTierId', value)}
                   options={[
-                    { value: 'all', label: 'Tất cả loại phòng' },
+                    { value: 'all', label: copy.allRoomTypes },
                     ...roomTiers.map((tier) => ({
                       value: String(tier.id),
                       label: getPublicRoomTierLabel(tier.typeName, {
@@ -531,25 +709,25 @@ export default function RoomsPublicPage() {
                   ]}
                 />
 
-                <FilterDivider title="Số phòng ngủ" />
+                <FilterDivider title={copy.bedrooms} />
                 <SidebarSingleChoiceFilter
                   value={String(filters.minBedrooms)}
                   onChange={(value) => updateFilter('minBedrooms', Number(value))}
-                  options={buildCountOptions('phòng ngủ', 6)}
+                  options={buildCountOptions(locale === 'en' ? 'bedrooms' : 'phòng ngủ', 6, locale)}
                   collapsedAfter={4}
                 />
 
-                <FilterDivider title="Sức chứa" />
+                <FilterDivider title={copy.capacity} />
                 <SidebarSingleChoiceFilter
                   value={filters.capacity}
                   onChange={(value) => updateFilter('capacity', value as RoomCapacityFilter)}
                   options={capacityOptions}
                 />
 
-                <FilterDivider title="Điểm đánh giá" />
+                <FilterDivider title={copy.rating} />
                 <RatingFilter value={filters.minRating} onChange={(value) => updateFilter('minRating', value)} />
 
-                <FilterDivider title="Ngân sách mỗi đêm" />
+                <FilterDivider title={copy.nightlyBudget} />
                 <SidebarPriceFilter
                   min={filters.minNightlyPrice}
                   max={filters.maxNightlyPrice}
@@ -557,7 +735,7 @@ export default function RoomsPublicPage() {
                   onMaxChange={(value) => updateFilter('maxNightlyPrice', value)}
                 />
 
-                <FilterDivider title="Tiện nghi cần có" />
+                <FilterDivider title={copy.requiredAmenities} />
                 <SidebarAmenitiesFilter
                   options={availableAmenities}
                   selected={filters.amenities}
@@ -572,7 +750,7 @@ export default function RoomsPublicPage() {
                   disabled={!hasActiveFilters && sortBy === 'recommended'}
                   className="h-10 w-full rounded-xl border border-[#cfbfaa] bg-white font-display text-sm font-bold text-secondary transition hover:border-[#aa7949] hover:bg-[#faf4eb] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#b28455]/15 disabled:cursor-default disabled:opacity-40"
                 >
-                  Đặt lại bộ lọc chi tiết
+                  {copy.resetFilters}
                 </button>
               </div>
             </div>
@@ -582,31 +760,34 @@ export default function RoomsPublicPage() {
             <div className="rounded-[22px] border border-[#ded4c6] bg-white/90 px-5 py-5 shadow-[0_14px_40px_rgba(29,49,41,.07)] sm:px-6">
               <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.17em] text-brand-orange">Danh sách lưu trú</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.17em] text-brand-orange">{copy.collectionEyebrow}</p>
                   <h2 className="mt-1 font-editorial text-3xl font-semibold text-secondary">
-                    {isLoading ? 'Đang tải phòng...' : isStayAvailabilityLoading ? 'Đang kiểm tra lịch...' : `${filteredRooms.length} phòng phù hợp`}
+                    {isLoading ? copy.loadingRooms : isStayAvailabilityLoading ? copy.checkingStay : copy.matchingRooms(filteredRooms.length)}
                   </h2>
                   <p className="mt-1 text-xs leading-5 text-on-surface-variant">
                     {isStayAvailabilityLoading
-                      ? `Đang đối chiếu từ ${formatShortStayDate(stayCriteria?.checkIn)} đến ${formatShortStayDate(stayCriteria?.checkOut)}.`
+                      ? copy.checkingDateRange(
+                          formatShortStayDate(stayCriteria?.checkIn, locale),
+                          formatShortStayDate(stayCriteria?.checkOut, locale),
+                        )
                       : stayAvailabilityErrorCount > 0
-                        ? `${stayAvailabilityErrorCount} phòng chưa thể đối chiếu lịch.`
-                        : catalogSource === 'backend'
-                          ? isRefreshing ? 'Đang cập nhật dữ liệu mới nhất...' : 'Dữ liệu phòng và đánh giá được đồng bộ từ hệ thống.'
-                          : catalogError || 'Không thể tải dữ liệu phòng từ hệ thống.'}
+                        ? copy.roomsUnavailableToCheck(stayAvailabilityErrorCount)
+                      : catalogSource === 'backend'
+                          ? isRefreshing ? copy.refreshingCatalog : copy.catalogSynchronized
+                          : catalogError || copy.catalogUnavailable}
                   </p>
                 </div>
                 <SortSelect value={sortBy} onChange={setSortBy} />
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2 border-t border-[#ece4da] pt-4">
-                {stayCriteria ? <FilterSummaryChip label={`${formatShortStayDate(stayCriteria.checkIn)} → ${formatShortStayDate(stayCriteria.checkOut)}`} /> : null}
-                {stayCriteria ? <FilterSummaryChip label={`${stayCriteria.adults} người lớn${stayCriteria.children ? ` · ${stayCriteria.children} trẻ em` : ''}`} /> : null}
-                {filters.minBedrooms > 0 ? <FilterSummaryChip label={`Từ ${filters.minBedrooms} phòng ngủ`} /> : null}
-                {filters.minRating > 0 ? <FilterSummaryChip label={`Từ ${filters.minRating.toFixed(1)} sao`} /> : null}
+                {stayCriteria ? <FilterSummaryChip label={`${formatShortStayDate(stayCriteria.checkIn, locale)} → ${formatShortStayDate(stayCriteria.checkOut, locale)}`} /> : null}
+                {stayCriteria ? <FilterSummaryChip label={copy.guests(stayCriteria.adults, stayCriteria.children)} /> : null}
+                {filters.minBedrooms > 0 ? <FilterSummaryChip label={copy.bedroomsFrom(filters.minBedrooms)} /> : null}
+                {filters.minRating > 0 ? <FilterSummaryChip label={copy.starsFrom(filters.minRating)} /> : null}
                 {filters.amenities.slice(0, 2).map((amenity) => <FilterSummaryChip key={amenity} label={amenity} />)}
-                {filters.amenities.length > 2 ? <FilterSummaryChip label={`+${filters.amenities.length - 2} tiện nghi`} /> : null}
-                {!stayCriteria && !hasActiveFilters ? <span className="inline-flex items-center gap-2 text-xs text-[#777b75]"><span className="h-1.5 w-1.5 rounded-full bg-[#b28455]" />Chọn bộ lọc để tinh chỉnh danh sách</span> : null}
+                {filters.amenities.length > 2 ? <FilterSummaryChip label={copy.amenitiesMore(filters.amenities.length - 2)} /> : null}
+                {!stayCriteria && !hasActiveFilters ? <span className="inline-flex items-center gap-2 text-xs text-[#777b75]"><span className="h-1.5 w-1.5 rounded-full bg-[#b28455]" />{copy.filtersHint}</span> : null}
               </div>
             </div>
 
@@ -625,16 +806,16 @@ export default function RoomsPublicPage() {
                       initialDate: stayCriteria?.checkIn,
                       initialEndDate: stayCriteria?.checkOut,
                     })}
-                    onViewDetail={(selectedRoom) => router.push(`/rooms/${selectedRoom.id}${stayCriteria ? `?${buildStaySearchParams(stayCriteria).toString()}` : ''}`)}
+                    onViewDetail={(selectedRoom) => router.push(localizedHref(`/rooms/${selectedRoom.id}${stayCriteria ? `?${buildStaySearchParams(stayCriteria).toString()}` : ''}`))}
                   />
                 ))}
               </div>
             ) : (
               <div className="mt-5 rounded-[22px] border border-dashed border-[#cfc2b1] bg-white px-6 py-16 text-center shadow-[var(--shadow-card)]">
                 <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#f2e7d8] text-[#8d6339]"><FilterControlIcon name="tune" /></span>
-                <p className="mt-5 font-editorial text-3xl font-semibold text-secondary">Chưa tìm thấy căn phù hợp</p>
-                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-on-surface-variant">Hãy thay đổi ngày lưu trú, giảm số tiện nghi bắt buộc hoặc nới rộng ngân sách để xem thêm lựa chọn.</p>
-                <button type="button" onClick={resetDetailFilters} className="mt-6 rounded-full bg-secondary px-6 py-3 font-display text-sm font-bold text-white transition hover:bg-[#245545]">Xem lại tất cả phòng</button>
+                <p className="mt-5 font-editorial text-3xl font-semibold text-secondary">{copy.noRooms}</p>
+                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-on-surface-variant">{copy.noRoomsDescription}</p>
+                <button type="button" onClick={resetDetailFilters} className="mt-6 rounded-full bg-secondary px-6 py-3 font-display text-sm font-bold text-white transition hover:bg-[#245545]">{copy.viewAllRooms}</button>
               </div>
             )}
           </div>
@@ -651,7 +832,7 @@ export default function RoomsPublicPage() {
           initialDuration={quickBooking.initialDuration}
           initialNote={quickBooking.initialNote}
           sourceRoute="/rooms"
-          returnPath={stayCriteria ? `/rooms?${buildStaySearchParams(stayCriteria).toString()}` : '/rooms'}
+          returnPath={localizedHref(stayCriteria ? `/rooms?${buildStaySearchParams(stayCriteria).toString()}` : '/rooms')}
           onClose={() => setQuickBooking(null)}
         />
       )}
@@ -673,6 +854,8 @@ function RoomCard({
   onViewDetail: (room: Room) => void
 }) {
   const router = useRouter()
+  const { locale, localizedHref } = useI18n()
+  const cardCopy = getRoomCardCopy(locale)
   const { isAuthenticated } = useAuth()
   const { favoriteIds, toggleFavorite } = useFavorites()
   const availabilityStatus = room.availabilityStatus ?? 'AVAILABLE'
@@ -691,29 +874,29 @@ function RoomCard({
   const isUnavailable = availabilityState.isUnavailable
   const nextAvailableSlotToday = getNextAvailableSlotToday(room, now, todaySlots)
   const bookingBadge = isCheckingAvailability
-    ? 'Đang kiểm tra'
+    ? cardCopy.checking
     : isPaymentHeld
-      ? 'Đang giữ chỗ'
+      ? cardCopy.paymentHeld
     : canStartBooking
-      ? 'Có thể đặt phòng'
-      : isUnavailable
-        ? 'Tạm ngưng'
-        : 'Chọn ngày khác'
-  const bookingHint = canBookNow
-    ? `Hôm nay, ${nextAvailableSlotToday}`
-    : isPaymentHeld
-      ? `Đang giữ chỗ chờ thanh toán${formatHoldExpiry(room.holdExpiresAt)}`
-    : canBookFutureDate
-      ? 'Chọn ngày lưu trú phù hợp'
+      ? cardCopy.bookNow
     : isUnavailable
-      ? 'Phòng đang tạm ngưng nhận lịch'
+        ? cardCopy.paused
+        : cardCopy.chooseAnotherDate
+  const bookingHint = canBookNow
+    ? cardCopy.todayAt(nextAvailableSlotToday)
+    : isPaymentHeld
+      ? cardCopy.awaitingPaymentUntil(formatHoldExpiry(room.holdExpiresAt, locale))
+    : canBookFutureDate
+      ? cardCopy.chooseStayDates
+    : isUnavailable
+      ? cardCopy.bookingsPaused
       : isCheckingAvailability
-        ? 'Đang đồng bộ lịch phòng'
-        : `Hôm nay đã có lịch${room.nextAvailableSlot ? ` · ${room.nextAvailableSlot}` : ''}`
+        ? cardCopy.syncingSchedule
+        : cardCopy.bookedToday(room.nextAvailableSlot)
 
   const handleFavorite = async () => {
     if (!isAuthenticated) {
-      router.push(`/login?redirect=${encodeURIComponent('/rooms')}`)
+      router.push(`${localizedHref('/login')}?redirect=${encodeURIComponent(localizedHref('/rooms'))}`)
       return
     }
     if (!canFavorite) return
@@ -744,7 +927,7 @@ function RoomCard({
           type="button"
           onClick={() => onViewDetail(room)}
           className="absolute inset-0 block h-full w-full overflow-hidden text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-brand-orange/60"
-          aria-label={`Xem chi tiết ${room.name}`}
+          aria-label={cardCopy.viewDetail(room.name)}
         >
         <Image
           src={imageSrc}
@@ -769,7 +952,7 @@ function RoomCard({
               : getAvailabilityClassName(availabilityStatus, isUnavailable),
           ].join(' ')}
         >
-          {isUnavailable ? 'Tạm ngưng' : isCheckingAvailability ? 'Đang cập nhật lịch' : getAvailabilityLabel(availabilityStatus, room)}
+          {isUnavailable ? cardCopy.paused : isCheckingAvailability ? cardCopy.availabilityUpdating : getLocalizedAvailabilityLabel(availabilityStatus, room, locale)}
         </span>
         <span
           className={[
@@ -786,9 +969,9 @@ function RoomCard({
           type="button"
           onClick={() => void handleFavorite()}
           disabled={!canFavorite}
-          aria-label={isFavorite ? `Bỏ ${room.name} khỏi danh sách yêu thích` : `Thêm ${room.name} vào danh sách yêu thích`}
+          aria-label={isFavorite ? cardCopy.removeFavorite(room.name) : cardCopy.addFavorite(room.name)}
           aria-pressed={isFavorite}
-          title={isFavorite ? 'Bỏ khỏi yêu thích' : 'Thêm vào yêu thích'}
+          title={isFavorite ? cardCopy.removeFavoriteShort : cardCopy.addFavoriteShort}
           className={[
             'absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full border shadow-[0_8px_24px_rgba(20,35,29,.16)] backdrop-blur-md transition-all duration-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-white/75 disabled:cursor-not-allowed disabled:opacity-50',
             isFavorite
@@ -814,42 +997,42 @@ function RoomCard({
           <div className="mt-3 flex flex-wrap items-center gap-3">
             {typeof room.rating === 'number' && (room.reviews ?? 0) > 0 ? (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fff4df] px-2.5 py-1 text-xs font-bold text-[#9b641c]">
-                <span aria-hidden>★</span>{room.rating.toFixed(1)} <span className="font-medium text-[#8b8176]">({room.reviews} đánh giá)</span>
+                <span aria-hidden>★</span>{room.rating.toFixed(1)} <span className="font-medium text-[#8b8176]">{cardCopy.reviews(room.reviews ?? 0)}</span>
               </span>
             ) : (
-              <span className="rounded-full border border-[#dfd6ca] bg-[#faf8f4] px-2.5 py-1 text-xs font-medium text-[#777b75]">Chưa có đánh giá</span>
+              <span className="rounded-full border border-[#dfd6ca] bg-[#faf8f4] px-2.5 py-1 text-xs font-medium text-[#777b75]">{cardCopy.noReviews}</span>
             )}
-            <span className="text-xs font-semibold text-[#39775f]">✓ Xác nhận lịch theo thời gian thực</span>
+            <span className="text-xs font-semibold text-[#39775f]">✓ {cardCopy.liveAvailability}</span>
           </div>
 
           <p className="mt-3 line-clamp-2 text-sm leading-6 text-on-surface-variant">{room.description}</p>
 
           <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-y border-[#eee6dc] py-3 text-xs font-semibold text-[#56625c]">
             <span className="inline-flex items-center gap-1.5"><GuestsMiniIcon />{room.capacity}</span>
-            <span className="inline-flex items-center gap-1.5"><BedroomIcon />{room.bedroomCount} phòng ngủ</span>
-            <span className="inline-flex items-center gap-1.5"><BedIcon />{room.bedCount} giường</span>
+            <span className="inline-flex items-center gap-1.5"><BedroomIcon />{cardCopy.bedrooms(room.bedroomCount)}</span>
+            <span className="inline-flex items-center gap-1.5"><BedIcon />{cardCopy.beds(room.bedCount)}</span>
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
             {room.equipments.slice(0, 4).map((equipment) => (
               <span key={equipment} className="rounded-full border border-outline-variant bg-surface-container-low px-3 py-1 text-[11px] font-medium text-on-surface-variant">{equipment}</span>
             ))}
-            {room.equipments.length > 4 ? <span className="rounded-full border border-[#d7c5ad] bg-[#f7eee2] px-3 py-1 text-[11px] font-bold text-[#805a34]">+{room.equipments.length - 4} tiện nghi</span> : null}
+            {room.equipments.length > 4 ? <span className="rounded-full border border-[#d7c5ad] bg-[#f7eee2] px-3 py-1 text-[11px] font-bold text-[#805a34]">{cardCopy.amenitiesMore(room.equipments.length - 4)}</span> : null}
           </div>
         </div>
 
         <div className="flex flex-col border-t border-[#e9dfd2] bg-[linear-gradient(160deg,#fcfaf6,#f7f1e8)] p-5 md:border-l md:border-t-0">
-          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#888177]">Giá cho một đêm</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#888177]">{cardCopy.nightlyPrice}</p>
           <p className="mt-2 font-editorial text-[26px] font-semibold leading-none text-[#a66f38]">{formatCurrency(getNightlyDisplayPrice(room.pricePerHour))}</p>
-          <p className="mt-1 text-xs text-[#817a70]">đã gồm trọn {FIRST_NIGHT_STAY_HOURS} giờ lưu trú</p>
+          <p className="mt-1 text-xs text-[#817a70]">{cardCopy.stayHours}</p>
 
           <div className="mt-5 rounded-xl border border-[#e1d5c5] bg-white/80 p-3">
-            <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#8a8176]">Tình trạng</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#8a8176]">{cardCopy.status}</p>
             <p className="mt-1 text-xs font-bold leading-5 text-secondary">{bookingHint}</p>
           </div>
 
           <div className="mt-auto space-y-2 pt-5" onClick={(event) => event.stopPropagation()}>
-            <button type="button" onClick={() => onViewDetail(room)} className="h-11 w-full rounded-full border border-[#cdbda8] bg-white font-display text-sm font-bold text-secondary transition hover:border-[#a77442] hover:bg-[#fbf5ec]">Xem chi tiết</button>
+            <button type="button" onClick={() => onViewDetail(room)} className="h-11 w-full rounded-full border border-[#cdbda8] bg-white font-display text-sm font-bold text-secondary transition hover:border-[#a77442] hover:bg-[#fbf5ec]">{cardCopy.viewDetails}</button>
             <button
               type="button"
               onClick={(event) => { event.stopPropagation(); onBook(room) }}
@@ -859,7 +1042,7 @@ function RoomCard({
                 'h-11 w-full rounded-full font-display text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-55',
               ].join(' ')}
             >
-              {isCheckingAvailability ? 'Đang kiểm tra' : canStartBooking ? 'Đặt phòng' : isUnavailable ? 'Tạm ngưng' : 'Chọn ngày khác'}
+              {isCheckingAvailability ? cardCopy.checking : canStartBooking ? cardCopy.bookNow : isUnavailable ? cardCopy.paused : cardCopy.chooseAnotherDate}
             </button>
           </div>
         </div>
@@ -894,10 +1077,13 @@ function FilterControlIcon({ name, prominent = false }: { name: FilterControlIco
 }
 
 function SidebarRoomNameSearch({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const { locale } = useI18n()
+  const isEnglish = locale === 'en'
+
   return (
     <label className="block">
       <span className="mb-2 block font-display text-[10px] font-bold uppercase tracking-[0.15em] text-[#765b3e]">
-        Tìm tên phòng
+        {isEnglish ? 'Search by room name' : 'Tìm tên phòng'}
       </span>
       <span className="flex min-h-12 items-center gap-3 rounded-[16px] border border-[#ded2c3] bg-white px-3.5 shadow-[0_5px_18px_rgba(37,57,48,.04)] transition focus-within:border-[#a9794b] focus-within:ring-4 focus-within:ring-[#b28455]/10">
         <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5 shrink-0 text-[#a56f3e]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
@@ -907,10 +1093,10 @@ function SidebarRoomNameSearch({ value, onChange }: { value: string; onChange: (
         <input
           type="text"
           role="searchbox"
-          aria-label="Tìm theo tên phòng"
+          aria-label={isEnglish ? 'Search by room name' : 'Tìm theo tên phòng'}
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          placeholder="Ví dụ: Deluxe Garden"
+          placeholder={isEnglish ? 'Example: Deluxe Garden' : 'Ví dụ: Deluxe Garden'}
           autoComplete="off"
           className="min-w-0 flex-1 border-0 bg-transparent py-3 text-sm font-medium text-secondary outline-none placeholder:text-[#aaa399]"
         />
@@ -918,7 +1104,7 @@ function SidebarRoomNameSearch({ value, onChange }: { value: string; onChange: (
           <button
             type="button"
             onClick={() => onChange('')}
-            aria-label="Xóa tên phòng đang tìm"
+            aria-label={isEnglish ? 'Clear room name search' : 'Xóa tên phòng đang tìm'}
             className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#8c867d] transition hover:bg-[#f3e9dc] hover:text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b28455]/25"
           >
             <span aria-hidden>×</span>
@@ -939,13 +1125,15 @@ function FilterDivider({ title }: { title: string }) {
 }
 
 function RatingFilter({ value, onChange }: { value: number; onChange: (value: number) => void }) {
+  const { locale } = useI18n()
+  const isEnglish = locale === 'en'
   const options = [
-    { value: 0, label: 'Tất cả đánh giá' },
-    { value: 5, label: '5 sao', description: 'Xuất sắc' },
-    { value: 4, label: '4 sao trở lên', description: 'Rất tốt' },
-    { value: 3, label: '3 sao trở lên', description: 'Tốt' },
-    { value: 2, label: '2 sao trở lên' },
-    { value: 1, label: '1 sao trở lên' },
+    { value: 0, label: isEnglish ? 'Any rating' : 'Tất cả đánh giá' },
+    { value: 5, label: isEnglish ? '5 stars' : '5 sao', description: isEnglish ? 'Excellent' : 'Xuất sắc' },
+    { value: 4, label: isEnglish ? '4 stars and above' : '4 sao trở lên', description: isEnglish ? 'Very good' : 'Rất tốt' },
+    { value: 3, label: isEnglish ? '3 stars and above' : '3 sao trở lên', description: isEnglish ? 'Good' : 'Tốt' },
+    { value: 2, label: isEnglish ? '2 stars and above' : '2 sao trở lên' },
+    { value: 1, label: isEnglish ? '1 star and above' : '1 sao trở lên' },
   ]
 
   return (
@@ -982,6 +1170,8 @@ function SidebarSingleChoiceFilter<T extends SidebarChoiceValue>({
   collapsedAfter?: number
   renderLeading?: (option: SidebarChoiceOption<T>) => ReactNode
 }) {
+  const { locale } = useI18n()
+  const isEnglish = locale === 'en'
   const [expanded, setExpanded] = useState(false)
   const visibleOptions = collapsedAfter && !expanded ? options.slice(0, collapsedAfter) : options
   const hiddenCount = Math.max(0, options.length - visibleOptions.length)
@@ -1017,7 +1207,9 @@ function SidebarSingleChoiceFilter<T extends SidebarChoiceValue>({
           onClick={() => setExpanded((current) => !current)}
           className="mt-2 text-xs font-bold text-[#966438] transition hover:text-secondary hover:underline"
         >
-          {expanded ? 'Thu gọn' : `Xem thêm ${hiddenCount} lựa chọn`}
+          {expanded
+            ? (isEnglish ? 'Show less' : 'Thu gọn')
+            : (isEnglish ? `Show ${hiddenCount} more options` : `Xem thêm ${hiddenCount} lựa chọn`)}
         </button>
       ) : null}
     </div>
@@ -1025,6 +1217,8 @@ function SidebarSingleChoiceFilter<T extends SidebarChoiceValue>({
 }
 
 function SidebarPriceFilter({ min, max, onMinChange, onMaxChange }: { min: number; max: number; onMinChange: (value: number) => void; onMaxChange: (value: number) => void }) {
+  const { locale } = useI18n()
+  const isEnglish = locale === 'en'
   const range = MAX_NIGHTLY_PRICE - MIN_NIGHTLY_PRICE
   const minPosition = ((min - MIN_NIGHTLY_PRICE) / range) * 100
   const maxPosition = ((max - MIN_NIGHTLY_PRICE) / range) * 100
@@ -1033,23 +1227,25 @@ function SidebarPriceFilter({ min, max, onMinChange, onMaxChange }: { min: numbe
   return (
     <div className="rounded-[16px] border border-[#e5dbcf] bg-[#fbf8f3] p-4">
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-        <PriceBadge label="Từ" value={min} />
+        <PriceBadge label={isEnglish ? 'From' : 'Từ'} value={min} locale={locale} />
         <span className="text-[#b4a99b]">–</span>
-        <PriceBadge label="Đến" value={max} />
+        <PriceBadge label={isEnglish ? 'To' : 'Đến'} value={max} locale={locale} />
       </div>
       <div className="mt-7 px-1">
         <div className="relative h-2 rounded-full bg-[#e3dbd0]">
           <div className="absolute h-2 rounded-full bg-[linear-gradient(90deg,#b28455,#173a31)]" style={{ left: `${minPosition}%`, right: `${100 - maxPosition}%` }} />
-          <input type="range" min={MIN_NIGHTLY_PRICE} max={MAX_NIGHTLY_PRICE} step={NIGHTLY_PRICE_STEP} value={min} onChange={(event) => onMinChange(Math.min(Number(event.target.value), max - NIGHTLY_PRICE_STEP))} aria-label="Giá thấp nhất mỗi đêm" className={`${sliderClassName} z-20`} />
-          <input type="range" min={MIN_NIGHTLY_PRICE} max={MAX_NIGHTLY_PRICE} step={NIGHTLY_PRICE_STEP} value={max} onChange={(event) => onMaxChange(Math.max(Number(event.target.value), min + NIGHTLY_PRICE_STEP))} aria-label="Giá cao nhất mỗi đêm" className={`${sliderClassName} z-30`} />
+          <input type="range" min={MIN_NIGHTLY_PRICE} max={MAX_NIGHTLY_PRICE} step={NIGHTLY_PRICE_STEP} value={min} onChange={(event) => onMinChange(Math.min(Number(event.target.value), max - NIGHTLY_PRICE_STEP))} aria-label={isEnglish ? 'Lowest nightly price' : 'Giá thấp nhất mỗi đêm'} className={`${sliderClassName} z-20`} />
+          <input type="range" min={MIN_NIGHTLY_PRICE} max={MAX_NIGHTLY_PRICE} step={NIGHTLY_PRICE_STEP} value={max} onChange={(event) => onMaxChange(Math.max(Number(event.target.value), min + NIGHTLY_PRICE_STEP))} aria-label={isEnglish ? 'Highest nightly price' : 'Giá cao nhất mỗi đêm'} className={`${sliderClassName} z-30`} />
         </div>
-        <div className="mt-3 flex justify-between text-[9px] font-semibold text-[#8a847b]"><span>1 triệu</span><span>3 triệu</span><span>5 triệu</span></div>
+        <div className="mt-3 flex justify-between text-[9px] font-semibold text-[#8a847b]"><span>{formatPriceInMillions(1_000_000, locale)}</span><span>{formatPriceInMillions(3_000_000, locale)}</span><span>{formatPriceInMillions(5_000_000, locale)}</span></div>
       </div>
     </div>
   )
 }
 
 function SidebarAmenitiesFilter({ options, selected, onChange }: { options: string[]; selected: string[]; onChange: (values: string[]) => void }) {
+  const { locale } = useI18n()
+  const isEnglish = locale === 'en'
   const [expanded, setExpanded] = useState(false)
   const visibleOptions = expanded ? options : options.slice(0, 6)
   const toggle = (amenity: string) => onChange(selected.includes(amenity) ? selected.filter((value) => value !== amenity) : [...selected, amenity])
@@ -1066,26 +1262,28 @@ function SidebarAmenitiesFilter({ options, selected, onChange }: { options: stri
             </button>
           )
         })}
-        {options.length === 0 ? <p className="py-3 text-center text-xs text-on-surface-variant">Chưa có dữ liệu tiện nghi.</p> : null}
+        {options.length === 0 ? <p className="py-3 text-center text-xs text-on-surface-variant">{isEnglish ? 'No amenity data yet.' : 'Chưa có dữ liệu tiện nghi.'}</p> : null}
       </div>
-      {options.length > 6 ? <button type="button" onClick={() => setExpanded((current) => !current)} className="mt-2 text-xs font-bold text-[#966438] hover:underline">{expanded ? 'Thu gọn' : `Xem thêm ${options.length - 6} tiện nghi`}</button> : null}
+      {options.length > 6 ? <button type="button" onClick={() => setExpanded((current) => !current)} className="mt-2 text-xs font-bold text-[#966438] hover:underline">{expanded ? (isEnglish ? 'Show less' : 'Thu gọn') : (isEnglish ? `Show ${options.length - 6} more amenities` : `Xem thêm ${options.length - 6} tiện nghi`)}</button> : null}
     </div>
   )
 }
 
 function SortSelect({ value, onChange }: { value: RoomSortOption; onChange: (value: RoomSortOption) => void }) {
+  const { locale } = useI18n()
+  const isEnglish = locale === 'en'
   return (
     <div className="w-full sm:w-[260px]">
       <CompactFilterSelect
-        label="Sắp xếp kết quả"
+        label={isEnglish ? 'Sort results' : 'Sắp xếp kết quả'}
         value={value}
         onChange={(nextValue) => onChange(nextValue as RoomSortOption)}
         options={[
-          { value: 'recommended', label: 'Phù hợp nhất' },
-          { value: 'rating_desc', label: 'Đánh giá cao nhất' },
-          { value: 'price_asc', label: 'Giá thấp đến cao' },
-          { value: 'price_desc', label: 'Giá cao đến thấp' },
-          { value: 'capacity_desc', label: 'Sức chứa lớn nhất' },
+          { value: 'recommended', label: isEnglish ? 'Best match' : 'Phù hợp nhất' },
+          { value: 'rating_desc', label: isEnglish ? 'Highest rated' : 'Đánh giá cao nhất' },
+          { value: 'price_asc', label: isEnglish ? 'Price: low to high' : 'Giá thấp đến cao' },
+          { value: 'price_desc', label: isEnglish ? 'Price: high to low' : 'Giá cao đến thấp' },
+          { value: 'capacity_desc', label: isEnglish ? 'Largest capacity' : 'Sức chứa lớn nhất' },
         ]}
       />
     </div>
@@ -1093,6 +1291,8 @@ function SortSelect({ value, onChange }: { value: RoomSortOption; onChange: (val
 }
 
 function AmenitiesFilter({ options, selected, onChange }: { options: string[]; selected: string[]; onChange: (values: string[]) => void }) {
+  const { locale } = useI18n()
+  const isEnglish = locale === 'en'
   const [isOpen, setIsOpen] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
 
@@ -1124,16 +1324,20 @@ function AmenitiesFilter({ options, selected, onChange }: { options: string[]; s
       >
         <FilterControlIcon name="amenities" />
         <span className="min-w-0 flex-1">
-          <span className="block font-display text-[10px] font-bold uppercase tracking-[0.12em] text-[#817970]">Tiện nghi</span>
-          <span className="mt-1 block truncate text-sm font-semibold text-on-surface">{selected.length > 0 ? `${selected.length} tiện nghi đã chọn` : 'Chọn tiện nghi'}</span>
+          <span className="block font-display text-[10px] font-bold uppercase tracking-[0.12em] text-[#817970]">{isEnglish ? 'Amenities' : 'Tiện nghi'}</span>
+          <span className="mt-1 block truncate text-sm font-semibold text-on-surface">
+            {selected.length > 0
+              ? (isEnglish ? `${selected.length} selected` : `${selected.length} tiện nghi đã chọn`)
+              : (isEnglish ? 'Choose amenities' : 'Chọn tiện nghi')}
+          </span>
         </span>
         <ChevronDownIcon className={['ml-3 h-4 w-4 shrink-0 text-[#8b8278] transition-transform', isOpen ? 'rotate-180' : ''].join(' ')} />
       </button>
       {isOpen && (
         <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-40 min-w-[270px] rounded-2xl border border-[#ded3c5] bg-white p-3 shadow-[0_20px_55px_rgba(29,49,41,0.17)]">
           <div className="flex items-center justify-between border-b border-[#eee7de] pb-2">
-            <p className="font-display text-xs font-bold text-secondary">Tiện nghi cần có</p>
-            {selected.length > 0 && <button type="button" onClick={() => onChange([])} className="text-[11px] font-bold text-[#9a6739]">Bỏ chọn</button>}
+            <p className="font-display text-xs font-bold text-secondary">{isEnglish ? 'Required amenities' : 'Tiện nghi cần có'}</p>
+            {selected.length > 0 && <button type="button" onClick={() => onChange([])} className="text-[11px] font-bold text-[#9a6739]">{isEnglish ? 'Clear' : 'Bỏ chọn'}</button>}
           </div>
           <div className="mt-2 max-h-64 space-y-1 overflow-y-auto pr-1">
             {options.length > 0 ? options.map((amenity) => {
@@ -1144,7 +1348,7 @@ function AmenitiesFilter({ options, selected, onChange }: { options: string[]; s
                   <span className="line-clamp-2">{amenity}</span>
                 </button>
               )
-            }) : <p className="px-2 py-4 text-center text-xs text-on-surface-variant">Chưa có dữ liệu tiện nghi.</p>}
+            }) : <p className="px-2 py-4 text-center text-xs text-on-surface-variant">{isEnglish ? 'No amenity data yet.' : 'Chưa có dữ liệu tiện nghi.'}</p>}
           </div>
         </div>
       )}
@@ -1262,6 +1466,8 @@ function NightlyPriceFilter({
   onMaxChange: (value: number) => void
   onReset: () => void
 }) {
+  const { locale } = useI18n()
+  const isEnglish = locale === 'en'
   const [isOpen, setIsOpen] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const range = MAX_NIGHTLY_PRICE - MIN_NIGHTLY_PRICE
@@ -1296,9 +1502,9 @@ function NightlyPriceFilter({
       >
         <FilterControlIcon name="price" />
         <span className="min-w-0 flex-1">
-          <span className="block font-display text-[10px] font-bold uppercase tracking-[0.12em] text-[#817970]">Giá mỗi đêm</span>
+          <span className="block font-display text-[10px] font-bold uppercase tracking-[0.12em] text-[#817970]">{isEnglish ? 'Nightly price' : 'Giá mỗi đêm'}</span>
           <span className="mt-1 block text-sm font-semibold text-on-surface">
-            {formatCompactPrice(min)} – {formatCompactPrice(max)}
+            {formatCompactPrice(min, locale)} – {formatCompactPrice(max, locale)}
           </span>
         </span>
         <ChevronDownIcon className={['h-4 w-4 shrink-0 text-[#8b8278] transition', isOpen ? 'rotate-180' : ''].join(' ')} />
@@ -1308,22 +1514,22 @@ function NightlyPriceFilter({
         <div className="absolute left-0 top-[calc(100%+10px)] z-30 w-[min(420px,calc(100vw-2.5rem))] rounded-[20px] border border-[#ded3c5] bg-white p-5 shadow-[0_24px_70px_rgba(29,49,41,0.18)] xl:left-auto xl:right-0">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="font-display text-sm font-bold text-secondary">Ngân sách mỗi đêm</p>
-              <p className="mt-1 text-xs text-on-surface-variant">Kéo hai đầu để chọn khoảng giá.</p>
+              <p className="font-display text-sm font-bold text-secondary">{isEnglish ? 'Nightly budget' : 'Ngân sách mỗi đêm'}</p>
+              <p className="mt-1 text-xs text-on-surface-variant">{isEnglish ? 'Drag both handles to choose your preferred range.' : 'Kéo hai đầu để chọn khoảng giá.'}</p>
             </div>
             <button
               type="button"
               onClick={onReset}
               className="text-xs font-semibold text-[#9a6739] hover:underline"
             >
-              Đặt lại
+              {isEnglish ? 'Reset' : 'Đặt lại'}
             </button>
           </div>
 
           <div className="mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-            <PriceBadge label="Tối thiểu" value={min} />
+            <PriceBadge label={isEnglish ? 'Minimum' : 'Tối thiểu'} value={min} locale={locale} />
             <span className="text-[#b5aa9c]">–</span>
-            <PriceBadge label="Tối đa" value={max} />
+            <PriceBadge label={isEnglish ? 'Maximum' : 'Tối đa'} value={max} locale={locale} />
           </div>
 
           <div className="mt-7 px-1">
@@ -1339,7 +1545,7 @@ function NightlyPriceFilter({
                 step={NIGHTLY_PRICE_STEP}
                 value={min}
                 onChange={(event) => onMinChange(Math.min(Number(event.target.value), max - NIGHTLY_PRICE_STEP))}
-                aria-label="Giá thấp nhất mỗi đêm"
+                aria-label={isEnglish ? 'Lowest nightly price' : 'Giá thấp nhất mỗi đêm'}
                 className={`${sliderClassName} z-20`}
               />
               <input
@@ -1349,14 +1555,14 @@ function NightlyPriceFilter({
                 step={NIGHTLY_PRICE_STEP}
                 value={max}
                 onChange={(event) => onMaxChange(Math.max(Number(event.target.value), min + NIGHTLY_PRICE_STEP))}
-                aria-label="Giá cao nhất mỗi đêm"
+                aria-label={isEnglish ? 'Highest nightly price' : 'Giá cao nhất mỗi đêm'}
                 className={`${sliderClassName} z-30`}
               />
             </div>
             <div className="mt-3 flex justify-between text-[11px] font-semibold text-[#8a847b]">
-              <span>1 triệu</span>
-              <span>3 triệu</span>
-              <span>5 triệu</span>
+              <span>{formatPriceInMillions(1_000_000, locale)}</span>
+              <span>{formatPriceInMillions(3_000_000, locale)}</span>
+              <span>{formatPriceInMillions(5_000_000, locale)}</span>
             </div>
           </div>
 
@@ -1365,7 +1571,7 @@ function NightlyPriceFilter({
             onClick={() => setIsOpen(false)}
             className="mt-5 w-full rounded-xl bg-secondary px-4 py-3 font-display text-sm font-bold text-white shadow-[0_10px_24px_rgba(23,58,49,0.18)] transition hover:bg-[#204b40]"
           >
-            Áp dụng khoảng giá
+            {isEnglish ? 'Apply price range' : 'Áp dụng khoảng giá'}
           </button>
         </div>
       )}
@@ -1373,22 +1579,23 @@ function NightlyPriceFilter({
   )
 }
 
-function PriceBadge({ label, value }: { label: string; value: number }) {
+function PriceBadge({ label, value, locale = 'vi' }: { label: string; value: number; locale?: Locale }) {
   return (
     <div className="min-w-0 rounded-xl border border-[#e4dbd0] bg-[#fcfaf7] px-3 py-2.5">
       <span className="block text-[9px] font-bold uppercase tracking-[0.12em] text-[#8a847b]">{label}</span>
-      <span className="mt-0.5 block font-display text-sm font-bold text-[#173a31]">{formatPriceInMillions(value)}</span>
+      <span className="mt-0.5 block font-display text-sm font-bold text-[#173a31]">{formatPriceInMillions(value, locale)}</span>
     </div>
   )
 }
 
-function formatCompactPrice(value: number) {
-  return formatPriceInMillions(value)
+function formatCompactPrice(value: number, locale: Locale = 'vi') {
+  return formatPriceInMillions(value, locale)
 }
 
-function formatPriceInMillions(value: number) {
+function formatPriceInMillions(value: number, locale: Locale = 'vi') {
   const millions = value / 1_000_000
-  return `${Number.isInteger(millions) ? millions : millions.toFixed(1)} triệu`
+  const formatted = Number.isInteger(millions) ? millions : millions.toFixed(1)
+  return locale === 'en' ? `${formatted} million VND` : `${formatted} triệu`
 }
 
 function SelectedIcon() {
@@ -1420,6 +1627,7 @@ function AvailabilityMetric({
   tone: 'available' | 'limited' | 'full' | 'paused'
   onClick?: () => void
 }) {
+  const { locale } = useI18n()
   const toneClasses = {
     available: 'border-[#8dd7b4]/24 bg-[#8dd7b4]/10 text-[#a9e4c7]',
     limited: 'border-[#f1d2a9]/24 bg-[#f1d2a9]/10 text-[#f1d2a9]',
@@ -1443,7 +1651,7 @@ function AvailabilityMetric({
         type="button"
         onClick={onClick}
         className={`min-w-0 rounded-[13px] border px-2.5 py-2.5 text-left transition hover:-translate-y-0.5 hover:border-white/28 hover:bg-white/[0.12] ${toneClasses}`}
-        aria-label={`Xem phòng: ${label}`}
+        aria-label={locale === 'en' ? `View rooms: ${label}` : `Xem phòng: ${label}`}
       >
         {content}
       </button>
@@ -1500,20 +1708,25 @@ function sortPublicRooms(rooms: Room[], sortBy: RoomSortOption) {
   })
 }
 
-function buildCountOptions(unit: string, max: number) {
+function buildCountOptions(unit: string, max: number, locale: Locale = 'vi') {
+  const isEnglish = locale === 'en'
   return [
-    { value: '0', label: `Tất cả ${unit}` },
+    { value: '0', label: isEnglish ? `Any ${unit}` : `Tất cả ${unit}` },
     ...Array.from({ length: max }, (_, index) => ({
       value: String(index + 1),
-      label: `Từ ${index + 1} ${unit}`,
+      label: isEnglish ? `${index + 1}+ ${unit}` : `Từ ${index + 1} ${unit}`,
     })),
   ]
 }
 
-function formatShortStayDate(value?: string) {
+function formatShortStayDate(value?: string, locale: Locale = 'vi') {
   if (!value) return '--/--/----'
   const [year, month, day] = value.split('-').map(Number)
-  return new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(year, month - 1, day))
+  return new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(new Date(year, month - 1, day))
 }
 
 function summarizeTodayRooms(rooms: Room[]): TodayRoomSummary {
@@ -1549,19 +1762,19 @@ function summarizeTodayRooms(rooms: Room[]): TodayRoomSummary {
   }, { available: 0, almostFull: 0, full: 0, unavailable: 0, unknown: 0 })
 }
 
-function formatHoldExpiry(holdExpiresAt?: string) {
+function formatHoldExpiry(holdExpiresAt?: string, locale: Locale = 'vi') {
   if (!holdExpiresAt) return ''
   const expiry = new Date(holdExpiresAt)
   if (Number.isNaN(expiry.getTime())) return ''
 
-  return ` đến ${new Intl.DateTimeFormat('vi-VN', {
+  return `${locale === 'en' ? ' until ' : ' đến '}${new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'vi-VN', {
     hour: '2-digit',
     minute: '2-digit',
   }).format(expiry)}`
 }
 
-function formatScheduleUpdateTime(value: Date) {
-  return new Intl.DateTimeFormat('vi-VN', {
+function formatScheduleUpdateTime(value: Date, locale: Locale = 'vi') {
+  return new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'vi-VN', {
     hour: '2-digit',
     minute: '2-digit',
   }).format(value)
@@ -1577,7 +1790,7 @@ function getNextAvailableSlotToday(room: Room, now: Date, todaySlots?: TimeSlot[
     return slotFromTime
   }
 
-  const slotFromLabel = room.nextAvailableSlot?.match(/^Hôm nay,\s*(\d{2}:\d{2})$/)?.[1]
+  const slotFromLabel = room.nextAvailableSlot?.match(/^(?:Hôm nay|Today),\s*(\d{2}:\d{2})$/)?.[1]
   if (slotFromLabel && isSlotInFuture(slotFromLabel, now)) {
     return slotFromLabel
   }

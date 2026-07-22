@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import BookingQuickModal from "@/components/booking/BookingQuickModal";
 import StaySearchBar from "@/components/public/StaySearchBar";
 import NewCustomerOfferModal from "@/components/public/NewCustomerOfferModal";
+import { useI18n } from "@/components/i18n/LocaleProvider";
 import {
   formatCurrency,
   getNightlyDisplayPrice,
@@ -32,6 +33,169 @@ import {
   getRoomCardAvailabilityState,
   isRoomTemporarilyUnavailable,
 } from "@/lib/public/today-room-availability";
+
+const homeCopy = {
+  vi: {
+    heroAlt:
+      "Phòng ngủ homestay cao cấp với nội thất gỗ, chăn ga linen và cửa nhìn ra khu vườn",
+    loadingAvailability: "Đang cập nhật lịch phòng...",
+    closedHint: "Bạn vẫn có thể đặt lịch cho ngày tiếp theo.",
+    heroEyebrow: "Boutique nature stay",
+    heroTitleLine1: "Một kỳ nghỉ",
+    heroTitleLine2: "vừa vặn với bạn.",
+    heroDescription:
+      "Không gian riêng tư, tiện nghi được chuẩn bị kỹ và lịch trống minh bạch. Chọn căn phòng phù hợp, đặt theo khung giờ linh hoạt và nhận hỗ trợ ngay khi cần.",
+    checkAvailability: "Kiểm tra phòng trống",
+    process: "Xem quy trình lưu trú",
+    recentBookings: "Đặt phòng gần đây",
+    liveFromSystem: "Cập nhật trực tiếp từ hệ thống",
+    activityCount: "hoạt động",
+    updatingActivities: "Đang cập nhật hoạt động...",
+    noRecentBookings: "Chưa có lượt đặt phòng mới.",
+    showingLatestData: "Đang hiển thị dữ liệu gần nhất.",
+    stats: [
+      { value: "Rõ ràng", label: "Lịch trống & giá" },
+      { value: "Linh hoạt", label: "Khung giờ lưu trú" },
+      { value: "Chu đáo", label: "Hỗ trợ tại chỗ" },
+    ],
+    topRatedEyebrow: "Gợi ý từ khách hàng",
+    topRatedTitle: "Phòng được đánh giá cao",
+    topRatedDescription:
+      "Những phòng homestay được khách hàng yêu thích và đánh giá tốt nhất.",
+    viewAll: "Xem tất cả",
+    previousRooms: "Xem nhóm phòng trước",
+    nextRooms: "Xem nhóm phòng tiếp theo",
+    noRatedRooms: "Chưa có dữ liệu đánh giá phòng.",
+    suspended: "Tạm ngưng",
+    checkingSchedule: "Đang cập nhật lịch",
+    checkSchedule: "Kiểm tra lịch",
+    chooseAnotherDate: "Chọn ngày khác",
+    bookNow: "Đặt phòng",
+    capacity: "Sức chứa",
+    pricePerNight: "Giá/đêm",
+    bedrooms: "phòng ngủ",
+    beds: "giường",
+    reviews: "đánh giá",
+    noReviews: "Chưa có lượt đánh giá",
+    detail: "Chi tiết",
+    whyEyebrow: "Vì sao chọn The Serene Villa",
+    whyTitle: "Một kỳ nghỉ an tâm bắt đầu từ những điều được chuẩn bị kỹ.",
+    whyDescription:
+      "Chúng tôi biến những băn khoăn trước chuyến đi thành một hành trình rõ ràng: chọn đúng căn, biết chính xác chi phí và luôn có người đồng hành khi bạn cần.",
+    exploreRooms: "Khám phá không gian lưu trú",
+    whyFootnote:
+      "The Serene Villa ưu tiên thông tin rõ ràng và trải nghiệm vừa yên bình vừa đáng tin cậy.",
+    promises: [
+      {
+        icon: "calendar",
+        title: "Lịch trống được đối chiếu thực tế",
+        description:
+          "Chỉ gợi ý những căn còn phù hợp với khoảng ngày bạn đã chọn.",
+      },
+      {
+        icon: "shield",
+        title: "Chi phí rõ ràng trước khi xác nhận",
+        description:
+          "Giá lưu trú, ưu đãi và khoản cần thanh toán luôn được hiển thị trước bước tiếp theo.",
+      },
+      {
+        icon: "amenities",
+        title: "Đón tiếp chu đáo theo từng kỳ lưu trú",
+        description:
+          "Đội ngũ chuẩn bị phòng, tiện nghi và hỗ trợ đúng vào thời điểm bạn cần.",
+      },
+    ],
+    amenitiesEyebrow: "Tiện nghi homestay",
+    amenitiesTitle: "Những điều nhỏ bé làm nên một kỳ nghỉ dễ chịu.",
+    amenitiesDescription:
+      "Mỗi không gian được chuẩn bị cho nhịp nghỉ riêng của bạn — từ kết nối, thư giãn đến những chi tiết sẵn sàng trước giờ nhận phòng.",
+    amenitiesNote: "Các tiện nghi cụ thể luôn được cập nhật tại từng trang phòng.",
+    amenitiesSummary:
+      "Khám phá các nhóm tiện nghi được đội ngũ The Serene Villa duy trì trong suốt quá trình vận hành.",
+    viewAmenities: "Xem toàn bộ tiện nghi",
+  },
+  en: {
+    heroAlt:
+      "Premium homestay bedroom with wooden furniture, linen bedding and a garden view",
+    loadingAvailability: "Updating room availability...",
+    closedHint: "You can still book for the next available date.",
+    heroEyebrow: "Boutique nature stay",
+    heroTitleLine1: "A stay that",
+    heroTitleLine2: "fits your rhythm.",
+    heroDescription:
+      "Private spaces, carefully prepared amenities and transparent availability. Choose the right room, book a flexible stay and get support whenever you need it.",
+    checkAvailability: "Check availability",
+    process: "View stay process",
+    recentBookings: "Recent bookings",
+    liveFromSystem: "Live updates from the system",
+    activityCount: "activities",
+    updatingActivities: "Updating activities...",
+    noRecentBookings: "No new paid bookings yet.",
+    showingLatestData: "Showing the latest available data.",
+    stats: [
+      { value: "Clear", label: "Availability & price" },
+      { value: "Flexible", label: "Stay schedule" },
+      { value: "Thoughtful", label: "On-site support" },
+    ],
+    topRatedEyebrow: "Guest favourites",
+    topRatedTitle: "Top-rated rooms",
+    topRatedDescription:
+      "Handpicked stays loved by guests for comfort, service and a calmer rhythm.",
+    viewAll: "View all",
+    previousRooms: "View previous rooms",
+    nextRooms: "View next rooms",
+    noRatedRooms: "No room ratings are available yet.",
+    suspended: "Unavailable",
+    checkingSchedule: "Updating schedule",
+    checkSchedule: "Check schedule",
+    chooseAnotherDate: "Choose another date",
+    bookNow: "Book now",
+    capacity: "Capacity",
+    pricePerNight: "Price/night",
+    bedrooms: "bedrooms",
+    beds: "beds",
+    reviews: "reviews",
+    noReviews: "No reviews yet",
+    detail: "Details",
+    whyEyebrow: "Why choose The Serene Villa",
+    whyTitle: "A calm stay begins with the details prepared in advance.",
+    whyDescription:
+      "We turn pre-trip uncertainty into a clear journey: choose the right room, understand the cost and always have someone ready to help.",
+    exploreRooms: "Explore stays",
+    whyFootnote:
+      "The Serene Villa keeps the experience transparent, serene and reliable from search to checkout.",
+    promises: [
+      {
+        icon: "calendar",
+        title: "Real-time availability",
+        description:
+          "We only suggest rooms that match the dates you have selected.",
+      },
+      {
+        icon: "shield",
+        title: "Clear costs before confirmation",
+        description:
+          "Room rate, discounts and required payment are shown before the next step.",
+      },
+      {
+        icon: "amenities",
+        title: "Thoughtful preparation for every stay",
+        description:
+          "Our team prepares the room, amenities and support at the right moment.",
+      },
+    ],
+    amenitiesEyebrow: "Homestay amenities",
+    amenitiesTitle: "Small details that make a stay feel effortless.",
+    amenitiesDescription:
+      "Every space is prepared for your own pace — from connection and relaxation to essentials ready before check-in.",
+    amenitiesNote: "Specific amenities are kept up to date on each room page.",
+    amenitiesSummary:
+      "Explore amenity groups maintained by The Serene Villa team throughout daily operations.",
+    viewAmenities: "View all amenities",
+  },
+} as const;
+
+type HomeCopy = (typeof homeCopy)[keyof typeof homeCopy];
 
 const stats = [
   { value: "Rõ ràng", label: "Lịch trống & giá" },
@@ -291,6 +455,8 @@ function TopRatedRoomsSection({
   onOpenDetail: (room: BookingRoom) => void;
   onBook: (room: BookingRoom) => void;
 }) {
+  const { locale, localizedHref } = useI18n();
+  const copy = homeCopy[locale];
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const [canScrollPrevious, setCanScrollPrevious] = useState(false);
   const [canScrollNext, setCanScrollNext] = useState(false);
@@ -330,22 +496,21 @@ function TopRatedRoomsSection({
       <div className="relative mx-auto max-w-[1400px] px-5 sm:px-8">
         <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
           <div className="max-w-2xl">
-            <p className="eyebrow text-brand-orange">Gợi ý từ khách hàng</p>
+            <p className="eyebrow text-brand-orange">{copy.topRatedEyebrow}</p>
             <h2 className="font-editorial mt-3 text-4xl font-semibold leading-tight text-secondary sm:text-5xl">
-              Phòng được đánh giá cao
+              {copy.topRatedTitle}
             </h2>
             <p className="mt-4 text-base leading-7 text-on-surface-variant">
-              Những phòng homestay được khách hàng yêu thích và đánh giá tốt
-              nhất.
+              {copy.topRatedDescription}
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             <Link
-              href="/rooms?sort=rating"
+              href={localizedHref("/rooms?sort=rating")}
               className="inline-flex h-11 items-center rounded-full bg-secondary px-5 font-display text-sm font-semibold text-white shadow-[0_12px_28px_rgba(23,58,49,0.16)] transition-all hover:-translate-y-0.5 hover:bg-secondary-container"
             >
-              Xem tất cả
+              {copy.viewAll}
             </Link>
           </div>
         </div>
@@ -366,7 +531,7 @@ function TopRatedRoomsSection({
                 type="button"
                 onClick={() => scrollCards("previous")}
                 className="group absolute left-1 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-outline-variant bg-white text-secondary shadow-[var(--shadow-card)] transition hover:-translate-y-[54%] hover:bg-secondary hover:text-white sm:left-2"
-                aria-label="Xem nhóm phòng trước"
+                aria-label={copy.previousRooms}
               >
                 <ChevronIcon className="h-5 w-5 rotate-180 stroke-[2.4] transition-transform duration-300 ease-out group-hover:-translate-x-0.5" />
               </button>
@@ -377,7 +542,7 @@ function TopRatedRoomsSection({
                 type="button"
                 onClick={() => scrollCards("next")}
                 className="group absolute right-1 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-outline-variant bg-white text-secondary shadow-[var(--shadow-card)] transition hover:-translate-y-[54%] hover:bg-secondary hover:text-white sm:right-2"
-                aria-label="Xem nhóm phòng tiếp theo"
+                aria-label={copy.nextRooms}
               >
                 <ChevronIcon className="h-5 w-5 stroke-[2.4] transition-transform duration-300 ease-out group-hover:translate-x-0.5" />
               </button>
@@ -393,6 +558,7 @@ function TopRatedRoomsSection({
                   room={room}
                   onOpenDetail={onOpenDetail}
                   onBook={onBook}
+                  copy={copy}
                 />
               ))}
             </div>
@@ -400,7 +566,7 @@ function TopRatedRoomsSection({
         ) : (
           <div className="mt-10 rounded-[28px] border border-dashed border-outline-variant bg-white px-6 py-12 text-center shadow-[var(--shadow-card)]">
             <p className="font-display text-lg font-bold text-on-surface">
-              Chưa có dữ liệu đánh giá phòng.
+              {copy.noRatedRooms}
             </p>
           </div>
         )}
@@ -413,28 +579,30 @@ function TopRatedRoomCard({
   room,
   onOpenDetail,
   onBook,
+  copy,
 }: {
   room: BookingRoom;
   onOpenDetail: (room: BookingRoom) => void;
   onBook: (room: BookingRoom) => void;
+  copy: HomeCopy;
 }) {
   const imageSrc = room.image ?? "/images/homestay-luxury-hero.webp";
   const availabilityState = getRoomCardAvailabilityState(room);
   const availabilityStatus = room.availabilityStatus ?? "AVAILABLE";
   const availabilityLabel = availabilityState.isUnavailable
-    ? "Tạm ngưng"
+    ? copy.suspended
     : availabilityState.isChecking
-      ? "Đang cập nhật lịch"
+      ? copy.checkingSchedule
       : getAvailabilityLabel(availabilityStatus, room);
   const bookingLabel = availabilityState.isChecking
-    ? "Kiểm tra lịch"
+    ? copy.checkSchedule
     : availabilityState.isUnavailable
-      ? "Tạm ngưng"
+      ? copy.suspended
       : availabilityState.isPaymentHeld
-        ? "Chọn ngày khác"
+        ? copy.chooseAnotherDate
         : availabilityState.canStartBooking
-          ? "Đặt phòng"
-          : "Chọn ngày khác";
+          ? copy.bookNow
+          : copy.chooseAnotherDate;
 
   return (
     <article className="group flex w-[82vw] shrink-0 snap-start flex-col overflow-hidden rounded-[18px] border border-outline-variant bg-white shadow-[var(--shadow-card)] transition-all duration-300 hover:border-brand-orange/45 hover:shadow-[var(--shadow-elevated)] sm:w-[calc((100vw-5rem-1.25rem)/2)] xl:w-[calc((100vw-12rem-3.75rem)/4)] xl:max-w-[310px]">
@@ -480,13 +648,13 @@ function TopRatedRoomCard({
         <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
           <div className="rounded-2xl border border-[#E4DED3] bg-[#FBF9F5] px-3 py-3">
             <p className="font-display text-[10px] font-bold uppercase text-[#6A6C66]">
-              Sức chứa
+              {copy.capacity}
             </p>
             <p className="mt-1 font-semibold text-[#242A27]">{room.capacity}</p>
           </div>
           <div className="rounded-2xl border border-[#E4DED3] bg-[#FBF9F5] px-3 py-3">
             <p className="font-display text-[10px] font-bold uppercase text-[#6A6C66]">
-              Giá/đêm
+              {copy.pricePerNight}
             </p>
             <p className="mt-1 font-semibold text-brand-orange">
               {formatCurrency(getNightlyDisplayPrice(room.pricePerHour))}
@@ -497,17 +665,17 @@ function TopRatedRoomCard({
         <div className="mt-3 flex items-center gap-4 text-xs font-semibold text-[#646b65]">
           <span className="inline-flex items-center gap-1.5">
             <BedroomIcon />
-            {room.bedroomCount} phòng ngủ
+            {room.bedroomCount} {copy.bedrooms}
           </span>
           <span className="h-1 w-1 rounded-full bg-[#c5b7a6]" />
           <span className="inline-flex items-center gap-1.5">
             <BedIcon />
-            {room.bedCount} giường
+            {room.bedCount} {copy.beds}
           </span>
         </div>
 
         <p className="mt-4 text-sm font-medium text-on-surface-variant">
-          {room.reviews ? `${room.reviews} đánh giá` : "Chưa có lượt đánh giá"}
+          {room.reviews ? `${room.reviews} ${copy.reviews}` : copy.noReviews}
         </p>
 
         <div className="mt-3 flex flex-wrap gap-2">
@@ -527,7 +695,7 @@ function TopRatedRoomCard({
             onClick={() => onOpenDetail(room)}
             className="rounded-xl border border-[#E4DED3] bg-white px-4 py-2.5 font-display text-sm font-semibold text-[#6A6C66] transition-colors hover:border-brand-orange/40 hover:text-brand-orange"
           >
-            Chi tiết
+            {copy.detail}
           </button>
           <button
             type="button"
@@ -597,26 +765,9 @@ function BedIcon() {
 }
 
 function TrustSpotlight() {
-  const promises = [
-    {
-      icon: "calendar" as IconName,
-      title: "Lịch trống được đối chiếu thực tế",
-      description:
-        "Chỉ gợi ý những căn còn phù hợp với khoảng ngày bạn đã chọn.",
-    },
-    {
-      icon: "shield" as IconName,
-      title: "Chi phí rõ ràng trước khi xác nhận",
-      description:
-        "Giá lưu trú, ưu đãi và khoản cần thanh toán luôn được hiển thị trước bước tiếp theo.",
-    },
-    {
-      icon: "amenities" as IconName,
-      title: "Đón tiếp chu đáo theo từng kỳ lưu trú",
-      description:
-        "Đội ngũ chuẩn bị phòng, tiện nghi và hỗ trợ đúng vào thời điểm bạn cần.",
-    },
-  ];
+  const { locale, localizedHref } = useI18n();
+  const copy = homeCopy[locale];
+  const promises = copy.promises;
 
   return (
     <section
@@ -642,30 +793,28 @@ function TrustSpotlight() {
             <div className="flex flex-col justify-between">
               <div>
                 <p className="eyebrow text-primary-fixed">
-                  Vì sao chọn The Serene Villa
+                  {copy.whyEyebrow}
                 </p>
                 <h2 className="font-editorial mt-4 max-w-xl text-4xl font-semibold leading-[1.06] text-white sm:text-5xl lg:text-[3.5rem]">
-                  Một kỳ nghỉ an tâm bắt đầu từ những điều được chuẩn bị kỹ.
+                  {copy.whyTitle}
                 </h2>
                 <p className="mt-5 max-w-xl text-base leading-8 text-white/72 sm:text-[1.05rem]">
-                  Chúng tôi biến những băn khoăn trước chuyến đi thành một hành
-                  trình rõ ràng: chọn đúng căn, biết chính xác chi phí và luôn
-                  có người đồng hành khi bạn cần.
+                  {copy.whyDescription}
                 </p>
               </div>
 
               <div className="mt-9 flex flex-wrap gap-3">
                 <Link
-                  href="/rooms"
+                  href={localizedHref("/rooms")}
                   className="inline-flex h-12 items-center justify-center rounded-full bg-white px-6 font-display text-sm font-semibold text-secondary transition-[background-color,color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:bg-primary-fixed hover:shadow-[0_14px_28px_rgba(0,0,0,0.18)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white motion-reduce:transform-none"
                 >
-                  Khám phá không gian lưu trú
+                  {copy.exploreRooms}
                 </Link>
                 <Link
-                  href="/process"
+                  href={localizedHref("/process")}
                   className="inline-flex h-12 items-center justify-center rounded-full border border-white/25 bg-white/[0.03] px-6 font-display text-sm font-semibold text-white transition-[background-color,border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-white/45 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white motion-reduce:transform-none"
                 >
-                  Xem quy trình lưu trú
+                  {copy.process}
                 </Link>
               </div>
             </div>
@@ -682,7 +831,7 @@ function TrustSpotlight() {
                   />
                   <div className="relative flex gap-4">
                     <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/10 text-primary-fixed transition-transform duration-200 group-hover:scale-105 motion-reduce:transform-none">
-                      <Icon name={promise.icon} className="h-5 w-5" />
+                      <Icon name={promise.icon as IconName} className="h-5 w-5" />
                     </span>
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-fixed">
@@ -699,8 +848,7 @@ function TrustSpotlight() {
                 </article>
               ))}
               <p className="pt-2 text-xs leading-5 text-white/52">
-                The Serene Villa ưu tiên thông tin rõ ràng và trải nghiệm vừa
-                vặn hơn những lời hứa quá mức.
+                {copy.whyFootnote}
               </p>
             </div>
           </div>
@@ -1409,6 +1557,9 @@ function GuestStoriesSection() {
 }
 
 function EquipmentShowcase() {
+  const { locale, localizedHref } = useI18n();
+  const copy = homeCopy[locale];
+
   return (
     <section
       id="equipment"
@@ -1417,19 +1568,18 @@ function EquipmentShowcase() {
       <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
         <div className="grid gap-8 border-b border-outline-variant pb-9 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
           <div className="max-w-3xl">
-            <p className="eyebrow text-brand-orange">Tiện nghi homestay</p>
+            <p className="eyebrow text-brand-orange">{copy.amenitiesEyebrow}</p>
             <h2 className="font-editorial mt-3 max-w-2xl text-4xl font-semibold leading-[1.08] text-secondary sm:text-5xl">
-              Những điều nhỏ bé làm nên một kỳ nghỉ dễ chịu.
+              {copy.amenitiesTitle}
             </h2>
             <p className="mt-4 max-w-2xl text-base leading-7 text-on-surface-variant">
-              Mỗi không gian được chuẩn bị cho nhịp nghỉ riêng của bạn — từ kết
-              nối, thư giãn đến những chi tiết sẵn sàng trước giờ nhận phòng.
+              {copy.amenitiesDescription}
             </p>
           </div>
 
           <div className="flex items-center gap-4 lg:justify-end">
             <p className="hidden max-w-44 text-right text-xs leading-5 text-on-surface-variant sm:block">
-              Các tiện nghi cụ thể luôn được cập nhật tại từng trang phòng.
+              {copy.amenitiesNote}
             </p>
             <span
               className="flex h-12 min-w-12 items-center justify-center rounded-full border border-outline bg-[#F7F3EC] px-3 font-display text-sm font-bold text-secondary"
@@ -1442,14 +1592,13 @@ function EquipmentShowcase() {
 
         <div className="mt-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <p className="max-w-xl text-sm leading-6 text-on-surface-variant">
-            Khám phá các nhóm tiện nghi được đội ngũ The Serene Villa duy trì
-            trong suốt quá trình vận hành.
+            {copy.amenitiesSummary}
           </p>
           <Link
-            href="/amenities"
+            href={localizedHref("/amenities")}
             className="inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-outline bg-transparent px-5 font-display text-sm font-semibold text-secondary transition-[background-color,border-color,color,transform] duration-200 hover:-translate-y-0.5 hover:border-secondary hover:bg-secondary hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-secondary motion-reduce:transform-none"
           >
-            Xem toàn bộ tiện nghi
+            {copy.viewAmenities}
           </Link>
         </div>
 
@@ -1555,6 +1704,8 @@ type QuickBookingState = {
 
 export default function HomePage() {
   const router = useRouter();
+  const { locale, localizedHref } = useI18n();
+  const copy = homeCopy[locale];
   const {
     availabilityStatus,
     recentActivities,
@@ -1575,7 +1726,7 @@ export default function HomePage() {
 
     const draft = readQuickBookingDraft();
     if (!draft) {
-      window.history.replaceState(window.history.state, "", "/");
+      window.history.replaceState(window.history.state, "", localizedHref("/"));
       return;
     }
 
@@ -1597,11 +1748,11 @@ export default function HomePage() {
       });
     }
 
-    window.history.replaceState(window.history.state, "", "/");
-  }, [rooms]);
+    window.history.replaceState(window.history.state, "", localizedHref("/"));
+  }, [localizedHref, rooms]);
 
   const goToRooms = () => {
-    router.push("/rooms");
+    router.push(localizedHref("/rooms"));
   };
 
   const handleAvailabilityBadgeClick = () => {
@@ -1623,7 +1774,7 @@ export default function HomePage() {
       <section className="relative flex min-h-[540px] items-center overflow-hidden bg-secondary text-white sm:min-h-[570px] lg:min-h-[610px]">
         <Image
           src="/images/homestay-luxury-hero.webp"
-          alt="Phòng ngủ homestay cao cấp với nội thất gỗ, chăn ga linen và cửa nhìn ra khu vườn"
+          alt={copy.heroAlt}
           fill
           priority
           sizes="100vw"
@@ -1645,7 +1796,7 @@ export default function HomePage() {
               />
               <span>
                 {isLiveDataLoading
-                  ? "Đang cập nhật lịch phòng..."
+                  ? copy.loadingAvailability
                   : availabilityStatus.label}
               </span>
             </button>
@@ -1653,43 +1804,41 @@ export default function HomePage() {
             {availabilityHintVisible &&
               availabilityStatus.status === "CLOSED" && (
                 <p className="-mt-5 mb-8 max-w-md text-sm text-white/55">
-                  Bạn vẫn có thể đặt lịch cho ngày tiếp theo.
+                  {copy.closedHint}
                 </p>
               )}
 
             <p className="eyebrow mb-4 text-primary-fixed">
-              Boutique nature stay
+              {copy.heroEyebrow}
             </p>
             <h1 className="font-editorial text-5xl font-semibold leading-[0.98] tracking-[-0.035em] text-white sm:text-[3.65rem] lg:text-[4.45rem]">
-              Một kỳ nghỉ
+              {copy.heroTitleLine1}
               <span className="mt-2 block text-primary-fixed">
-                vừa vặn với bạn.
+                {copy.heroTitleLine2}
               </span>
             </h1>
 
             <p className="mt-5 max-w-xl text-base leading-7 text-white/74 sm:text-[17px]">
-              Không gian riêng tư, tiện nghi được chuẩn bị kỹ và lịch trống minh
-              bạch. Chọn căn phòng phù hợp, đặt theo khung giờ linh hoạt và nhận
-              hỗ trợ ngay khi cần.
+              {copy.heroDescription}
             </p>
 
             <div className="mt-7 flex flex-wrap items-center gap-4">
               <Link
-                href="/rooms"
+                href={localizedHref("/rooms")}
                 className="rounded-full bg-white px-6 py-3.5 font-display text-sm font-semibold text-secondary shadow-[0_16px_38px_rgba(0,0,0,0.18)] transition-all hover:-translate-y-0.5"
               >
-                Kiểm tra phòng trống
+                {copy.checkAvailability}
               </Link>
               <Link
-                href="/process"
+                href={localizedHref("/process")}
                 className="rounded-full border border-white/25 bg-black/10 px-6 py-3.5 font-display text-sm font-semibold text-white backdrop-blur-sm transition-all hover:bg-white/10"
               >
-                Xem quy trình lưu trú
+                {copy.process}
               </Link>
             </div>
 
             <div className="mt-8 grid max-w-2xl grid-cols-3 gap-4">
-              {stats.map((item) => (
+              {copy.stats.map((item) => (
                 <div
                   key={item.label}
                   className="border-l border-white/18 px-4 py-2 first:border-l-0 first:pl-0"
@@ -1715,15 +1864,15 @@ export default function HomePage() {
                       <span className="relative inline-flex h-2 w-2 rounded-full bg-[#8dd7b4]" />
                     </span>
                     <p className="font-display text-sm font-bold text-white">
-                      Đặt phòng gần đây
+                      {copy.recentBookings}
                     </p>
                   </div>
                   <p className="mt-1 text-[11px] text-white/45">
-                    Cập nhật trực tiếp từ hệ thống
+                    {copy.liveFromSystem}
                   </p>
                 </div>
                 <span className="rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-1 text-[10px] font-semibold text-white/55">
-                  {recentActivities.length} hoạt động
+                  {recentActivities.length} {copy.activityCount}
                 </span>
               </div>
 
@@ -1763,15 +1912,15 @@ export default function HomePage() {
                 ) : (
                   <p className="px-3 py-4 text-xs text-white/45">
                     {isLiveDataLoading
-                      ? "Đang cập nhật hoạt động..."
-                      : "Chưa có lượt đặt phòng mới."}
+                      ? copy.updatingActivities
+                      : copy.noRecentBookings}
                   </p>
                 )}
               </div>
 
               {liveDataError && (
                 <p className="mt-2 text-[10px] text-[#f1d2a9]/70">
-                  Đang hiển thị dữ liệu gần nhất.
+                  {copy.showingLatestData}
                 </p>
               )}
             </div>
@@ -1788,7 +1937,7 @@ export default function HomePage() {
       <TopRatedRoomsSection
         rooms={topRatedRooms}
         isLoading={isRoomCatalogLoading || isTopRatedAvailabilityLoading}
-        onOpenDetail={(room) => router.push(`/rooms/${room.id}`)}
+        onOpenDetail={(room) => router.push(localizedHref(`/rooms/${room.id}`))}
         onBook={(room) => setQuickBooking({ room })}
       />
 
@@ -1862,7 +2011,7 @@ export default function HomePage() {
                 </p>
 
                 <Link
-                  href="/amenities"
+                  href={localizedHref("/amenities")}
                   className="group mt-6 inline-flex items-center gap-2 font-display text-sm font-semibold text-white transition-colors hover:text-primary-fixed"
                 >
                   Khám phá trải nghiệm
@@ -1947,14 +2096,14 @@ export default function HomePage() {
 
             <div className="flex flex-wrap gap-3">
               <Link
-                href="/amenities"
+                href={localizedHref("/amenities")}
                 className="inline-flex h-11 items-center justify-center rounded-full border border-outline bg-transparent px-5 font-display text-sm font-semibold text-secondary transition-[background-color,border-color,color,transform] duration-200 hover:-translate-y-0.5 hover:border-secondary hover:bg-secondary hover:text-white"
               >
                 Xem toàn bộ tiện nghi
               </Link>
 
               <Link
-                href="/about"
+                href={localizedHref("/about")}
                 className="inline-flex h-11 items-center justify-center rounded-full bg-secondary px-5 font-display text-sm font-semibold text-white shadow-[0_12px_26px_rgba(23,58,49,0.15)] transition-[background-color,transform] duration-200 hover:-translate-y-0.5 hover:bg-secondary-container"
               >
                 Tìm hiểu về chúng tôi
@@ -1990,14 +2139,14 @@ export default function HomePage() {
 
           <div className="flex w-full flex-wrap gap-3 sm:w-auto">
             <Link
-              href="/rooms"
+              href={localizedHref("/rooms")}
               className="inline-flex h-12 flex-1 items-center justify-center rounded-full bg-secondary px-6 font-display text-sm font-semibold text-white shadow-[0_14px_32px_rgba(23,58,49,0.16)] transition-all hover:-translate-y-0.5 hover:bg-secondary-container sm:flex-none"
             >
               Kiểm tra phòng trống
             </Link>
 
             <Link
-              href="/support"
+              href={localizedHref("/support")}
               className="inline-flex h-12 flex-1 items-center justify-center rounded-full border border-outline bg-transparent px-6 font-display text-sm font-semibold text-secondary transition-[border-color,color,transform] duration-200 hover:-translate-y-0.5 hover:border-brand-orange hover:text-brand-orange sm:flex-none"
             >
               Nhận tư vấn

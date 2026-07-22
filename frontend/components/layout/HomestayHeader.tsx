@@ -1,18 +1,28 @@
 'use client'
 
+import type { MouseEvent } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { useI18n } from '@/components/i18n/LocaleProvider'
+import LanguageSwitcher from '@/components/i18n/LanguageSwitcher'
 import AccountMenu from '@/components/layout/AccountMenu'
 import FavoriteRoomsMenu from '@/components/layout/FavoriteRoomsMenu'
 import NotificationMenu from '@/components/layout/NotificationMenu'
 import { useAuth } from '@/contexts/AuthContext'
 import { useHomepageActiveSection } from '@/hooks/useHomepageActiveSection'
+import { stripLocalePrefix } from '@/i18n/config'
+import { clearForceHomepageTop, markForceHomepageTop } from '@/lib/navigation/scroll-restoration'
 import {
-  clearForceHomepageTop,
-  markForceHomepageTop,
-} from '@/lib/navigation/scroll-restoration'
-import { isPublicNavItemActive, publicNavItems, scrollToHomeSection, scrollToPageTop, shouldScrollToTop, getHomeSectionIdFromHref, isHomepageAnchorHref, goToHomepageTop } from '@/lib/site-nav'
+  getHomeSectionIdFromHref,
+  goToHomepageTop,
+  isHomepageAnchorHref,
+  isPublicNavItemActive,
+  publicNavItems,
+  scrollToHomeSection,
+  scrollToPageTop,
+  shouldScrollToTop,
+} from '@/lib/site-nav'
 
 function BrandMark({ className = 'h-6 w-6' }: { className?: string }) {
   return (
@@ -26,66 +36,55 @@ function BrandMark({ className = 'h-6 w-6' }: { className?: string }) {
 
 export default function HomestayHeader() {
   const pathname = usePathname()
+  const publicPathname = stripLocalePrefix(pathname)
   const router = useRouter()
   const { user, isAuthenticated } = useAuth()
+  const { t, localizedHref } = useI18n()
   const [menuOpen, setMenuOpen] = useState(false)
   const activeHomeSection = useHomepageActiveSection()
 
-  useEffect(() => {
-    setMenuOpen(false)
-  }, [pathname])
+  useEffect(() => setMenuOpen(false), [pathname])
 
-  const navLinkClassName = (isActive: boolean) =>
-    [
-      'relative inline-flex items-center gap-1.5 px-0.5 py-2 font-display text-[13px] font-semibold whitespace-nowrap transition-colors after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:origin-left after:bg-brand-orange after:transition-transform 2xl:text-sm',
-      isActive
-        ? 'text-secondary after:scale-x-100'
-        : 'text-on-surface-variant after:scale-x-0 hover:text-secondary hover:after:scale-x-100',
-    ].join(' ')
+  const navLinkClassName = (isActive: boolean) => [
+    'relative inline-flex items-center gap-1.5 px-0.5 py-2 font-display text-[13px] font-semibold whitespace-nowrap transition-colors after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:origin-left after:bg-brand-orange after:transition-transform 2xl:text-sm',
+    isActive ? 'text-secondary after:scale-x-100' : 'text-on-surface-variant after:scale-x-0 hover:text-secondary hover:after:scale-x-100',
+  ].join(' ')
 
-  const mobileNavLinkClassName = (isActive: boolean) =>
-    [
-      'flex items-center justify-between border-b border-outline-variant py-4 font-display text-sm font-semibold',
-      isActive ? 'text-secondary' : 'text-on-surface-variant',
-    ].join(' ')
+  const mobileNavLinkClassName = (isActive: boolean) => [
+    'flex items-center justify-between border-b border-outline-variant py-4 font-display text-sm font-semibold',
+    isActive ? 'text-secondary' : 'text-on-surface-variant',
+  ].join(' ')
 
   const handleBookClick = () => {
     setMenuOpen(false)
-    router.push('/rooms')
+    router.push(localizedHref('/rooms'))
   }
 
-  const navItemsForPage =
-    pathname === '/'
-      ? publicNavItems.map((item) => (item.href.startsWith('/#') ? { ...item, href: item.href.slice(1) } : item))
-      : publicNavItems
-
-  const handleLogoClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+  const handleLogoClick = (event: MouseEvent<HTMLAnchorElement>) => {
     setMenuOpen(false)
     event.preventDefault()
 
-    // Always land on homepage top — never keep leftover #equipment / #process hash.
-    if (pathname === '/') {
+    if (publicPathname === '/') {
       clearForceHomepageTop()
-      goToHomepageTop()
+      goToHomepageTop(localizedHref('/'))
       return
     }
 
     markForceHomepageTop()
-    router.push('/')
+    router.push(localizedHref('/'))
   }
 
-  const handleNavLinkClick = (event: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+  const handleNavLinkClick = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
     setMenuOpen(false)
 
-    if (pathname === '/' && isHomepageAnchorHref(href)) {
+    if (publicPathname === '/' && isHomepageAnchorHref(href)) {
       event.preventDefault()
       const sectionId = getHomeSectionIdFromHref(href)
       if (sectionId) scrollToHomeSection(sectionId)
       return
     }
 
-    if (!shouldScrollToTop(pathname, href)) return
-
+    if (!shouldScrollToTop(publicPathname, href)) return
     event.preventDefault()
     scrollToPageTop()
   }
@@ -95,146 +94,65 @@ export default function HomestayHeader() {
       <header className="fixed inset-x-0 top-0 z-50 border-b border-outline-variant/80 bg-[#FBF9F5]/92 shadow-[0_8px_32px_rgba(23,58,49,0.06)] backdrop-blur-xl">
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-orange/70 to-transparent" aria-hidden />
         <div className="mx-auto flex h-20 max-w-[1400px] items-center gap-4 px-5 sm:px-8 xl:px-6 2xl:gap-5 2xl:px-8">
-          <Link
-            href="/"
-            onClick={handleLogoClick}
-            className="group flex shrink-0 items-center gap-3"
-            aria-label="Trang chủ The Serene Villa"
-          >
+          <Link href={localizedHref('/')} onClick={handleLogoClick} className="group flex shrink-0 items-center gap-3" aria-label={`${t('nav.home')} The Serene Villa`}>
             <span className="flex h-11 w-11 items-center justify-center rounded-full border border-brand-orange/45 bg-secondary text-primary-fixed shadow-[0_10px_28px_rgba(23,58,49,0.16)] transition-transform group-hover:-translate-y-0.5">
               <BrandMark />
             </span>
             <span>
-              <span className="font-editorial block text-[1.28rem] font-semibold leading-none tracking-[-0.02em] text-secondary">
-                The Serene Villa
-              </span>
-              <span className="mt-1 block text-[9px] font-semibold uppercase tracking-[0.22em] text-on-surface-variant">
-                Stay in serenity
-              </span>
+              <span className="font-editorial block text-[1.28rem] font-semibold leading-none tracking-[-0.02em] text-secondary">The Serene Villa</span>
+              <span className="mt-1 block text-[9px] font-semibold uppercase tracking-[0.22em] text-on-surface-variant">{t('brand.tagline')}</span>
             </span>
           </Link>
 
-          <nav className="mx-auto hidden items-center gap-5 xl:flex 2xl:gap-7" aria-label="Điều hướng chính">
-            {navItemsForPage.map((item) => {
-              const isActive = isPublicNavItemActive(pathname, item.href, activeHomeSection)
-
+          <nav className="mx-auto hidden items-center gap-5 xl:flex 2xl:gap-7" aria-label={t('nav.main')}>
+            {publicNavItems.map((item) => {
+              const isActive = isPublicNavItemActive(publicPathname, item.href, activeHomeSection)
               return (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  onClick={(event) => handleNavLinkClick(event, item.href)}
-                  className={navLinkClassName(isActive)}
-                  aria-current={isActive ? 'page' : undefined}
-                >
-                  {item.href === '/' && (
-                    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
-                      <path d="m4 10.5 8-6.5 8 6.5" strokeLinecap="round" strokeLinejoin="round" />
-                      <path d="M6.5 9.5V20h11V9.5M10 20v-6h4v6" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  )}
-                  {item.label}
+                <Link key={item.href} href={localizedHref(item.href)} onClick={(event) => handleNavLinkClick(event, item.href)} className={navLinkClassName(isActive)} aria-current={isActive ? 'page' : undefined}>
+                  {item.href === '/' && <HomeIcon />}
+                  {t(item.translationKey ?? item.label)}
                 </Link>
               )
             })}
           </nav>
 
           <div className="hidden min-h-[44px] shrink-0 items-center justify-end gap-3 xl:flex">
+            <LanguageSwitcher />
             {isAuthenticated && user ? (
-              <>
-                <FavoriteRoomsMenu />
-                <NotificationMenu />
-                <AccountMenu />
-              </>
+              <><FavoriteRoomsMenu /><NotificationMenu /><AccountMenu /></>
             ) : (
               <>
-                <Link
-                  href="/login"
-                  className="px-3 py-2 font-display text-sm font-semibold text-on-surface-variant transition-colors hover:text-secondary"
-                >
-                  Đăng nhập
-                </Link>
-                <button
-                  type="button"
-                  onClick={handleBookClick}
-                  className="rounded-full bg-secondary px-5 py-2.5 font-display text-sm font-semibold text-white shadow-[0_12px_30px_rgba(23,58,49,0.17)] transition-all hover:-translate-y-0.5 hover:bg-secondary-container active:translate-y-0"
-                >
-                  Tìm phòng
-                </button>
+                <Link href={localizedHref('/login')} className="px-3 py-2 font-display text-sm font-semibold text-on-surface-variant transition-colors hover:text-secondary">{t('auth.login')}</Link>
+                <button type="button" onClick={handleBookClick} className="rounded-full bg-secondary px-5 py-2.5 font-display text-sm font-semibold text-white shadow-[0_12px_30px_rgba(23,58,49,0.17)] transition-all hover:-translate-y-0.5 hover:bg-secondary-container active:translate-y-0">{t('auth.findRoom')}</button>
               </>
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={() => setMenuOpen((open) => !open)}
-            className="ml-auto flex h-11 w-11 items-center justify-center rounded-full border border-outline-variant bg-white text-secondary shadow-sm xl:hidden"
-            aria-expanded={menuOpen}
-            aria-controls="homestay-mobile-menu"
-            aria-label={menuOpen ? 'Đóng menu' : 'Mở menu'}
-          >
-            <span className="sr-only">{menuOpen ? 'Đóng menu' : 'Mở menu'}</span>
-            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
-              {menuOpen ? <path d="m6 6 12 12M18 6 6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
-            </svg>
+          <button type="button" onClick={() => setMenuOpen((open) => !open)} className="ml-auto flex h-11 w-11 items-center justify-center rounded-full border border-outline-variant bg-white text-secondary shadow-sm xl:hidden" aria-expanded={menuOpen} aria-controls="homestay-mobile-menu" aria-label={menuOpen ? t('menu.close') : t('menu.open')}>
+            <span className="sr-only">{menuOpen ? t('menu.close') : t('menu.open')}</span>
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>{menuOpen ? <path d="m6 6 12 12M18 6 6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}</svg>
           </button>
         </div>
 
         {menuOpen && (
-          <div
-            id="homestay-mobile-menu"
-            className="border-t border-outline-variant bg-[#FBF9F5]/98 px-5 pb-6 shadow-[0_24px_44px_rgba(23,58,49,0.12)] backdrop-blur-xl xl:hidden"
-          >
-            <nav className="grid py-2">
-              {navItemsForPage.map((item) => {
-                const isActive = isPublicNavItemActive(pathname, item.href, activeHomeSection)
-
+          <div id="homestay-mobile-menu" className="border-t border-outline-variant bg-[#FBF9F5]/98 px-5 pb-6 shadow-[0_24px_44px_rgba(23,58,49,0.12)] backdrop-blur-xl xl:hidden">
+            <div className="flex justify-end pt-3"><LanguageSwitcher compact /></div>
+            <nav className="grid py-2" aria-label={t('nav.main')}>
+              {publicNavItems.map((item) => {
+                const isActive = isPublicNavItemActive(publicPathname, item.href, activeHomeSection)
                 return (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    onClick={(event) => {
-                      setMenuOpen(false)
-                      handleNavLinkClick(event, item.href)
-                    }}
-                    className={mobileNavLinkClassName(isActive)}
-                    aria-current={isActive ? 'page' : undefined}
-                  >
-                    <span className="inline-flex items-center gap-2.5">
-                      {item.href === '/' && (
-                        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
-                          <path d="m4 10.5 8-6.5 8 6.5" strokeLinecap="round" strokeLinejoin="round" />
-                          <path d="M6.5 9.5V20h11V9.5M10 20v-6h4v6" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      )}
-                      {item.label}
-                    </span>
-                    <span aria-hidden>↗</span>
+                  <Link key={item.href} href={localizedHref(item.href)} onClick={(event) => handleNavLinkClick(event, item.href)} className={mobileNavLinkClassName(isActive)} aria-current={isActive ? 'page' : undefined}>
+                    <span className="inline-flex items-center gap-2.5">{item.href === '/' && <HomeIcon className="h-4 w-4" />}{t(item.translationKey ?? item.label)}</span><span aria-hidden>→</span>
                   </Link>
                 )
               })}
             </nav>
             {isAuthenticated && user ? (
-              <div className="mt-4 flex items-center justify-end gap-3">
-                <FavoriteRoomsMenu onNavigate={() => setMenuOpen(false)} />
-                <NotificationMenu onNavigate={() => setMenuOpen(false)} />
-                <AccountMenu align="full" onNavigate={() => setMenuOpen(false)} />
-              </div>
+              <div className="mt-4 flex items-center justify-end gap-3"><FavoriteRoomsMenu onNavigate={() => setMenuOpen(false)} /><NotificationMenu onNavigate={() => setMenuOpen(false)} /><AccountMenu align="full" onNavigate={() => setMenuOpen(false)} /></div>
             ) : (
               <div className="mt-4 grid grid-cols-2 gap-3">
-                <Link
-                  href="/login"
-                  onClick={() => setMenuOpen(false)}
-                  className="rounded-full border border-outline px-4 py-3 text-center font-display text-sm font-semibold text-secondary"
-                >
-                  Đăng nhập
-                </Link>
-                <button
-                  type="button"
-                  onClick={handleBookClick}
-                  className="rounded-full bg-secondary px-4 py-3 font-display text-sm font-semibold text-white"
-                >
-                  Tìm phòng
-                </button>
+                <Link href={localizedHref('/login')} onClick={() => setMenuOpen(false)} className="rounded-full border border-outline px-4 py-3 text-center font-display text-sm font-semibold text-secondary">{t('auth.login')}</Link>
+                <button type="button" onClick={handleBookClick} className="rounded-full bg-secondary px-4 py-3 font-display text-sm font-semibold text-white">{t('auth.findRoom')}</button>
               </div>
             )}
           </div>
@@ -243,4 +161,8 @@ export default function HomestayHeader() {
       <div className="h-20 shrink-0" aria-hidden />
     </>
   )
+}
+
+function HomeIcon({ className = 'h-3.5 w-3.5' }: { className?: string }) {
+  return <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden><path d="m4 10.5 8-6.5 8 6.5" strokeLinecap="round" strokeLinejoin="round" /><path d="M6.5 9.5V20h11V9.5M10 20v-6h4v6" strokeLinecap="round" strokeLinejoin="round" /></svg>
 }

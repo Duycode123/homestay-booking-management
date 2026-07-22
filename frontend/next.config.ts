@@ -39,6 +39,14 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
+        source: '/:locale(en|vi)',
+        destination: '/',
+      },
+      {
+        source: '/:locale(en|vi)/:path*',
+        destination: '/:path*',
+      },
+      {
         source: '/oauth2/:path*',
         destination: `${backendApiUrl}/oauth2/:path*`,
       },

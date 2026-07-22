@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+import { useI18n } from '@/components/i18n/LocaleProvider'
+import type { Locale } from '@/i18n/config'
+
 export type StaySearchCriteria = {
   keyword: string
   checkIn: string
@@ -19,12 +22,94 @@ type StaySearchBarProps = {
 
 type ActiveDateField = 'checkIn' | 'checkOut' | null
 
+const searchCopy: Record<Locale, {
+  ariaLabel: string
+  keywordLabel: string
+  keywordPlaceholder: string
+  checkIn: string
+  checkOut: string
+  guests: string
+  adultSuffix: string
+  childSuffix: string
+  adults: string
+  adultsNote: string
+  children: string
+  childrenNote: string
+  done: string
+  search: string
+  checkInPast: string
+  invalidStay: string
+  previousMonth: string
+  nextMonth: string
+  selectCheckIn: string
+  selectCheckOut: string
+  stayHours: string
+  decrease: string
+  increase: string
+  weekdays: readonly string[]
+}> = {
+  vi: {
+    ariaLabel: 'Tìm phòng theo kỳ lưu trú',
+    keywordLabel: 'Tên hoặc nhu cầu',
+    keywordPlaceholder: 'Tên phòng, tiện nghi...',
+    checkIn: 'Nhận phòng',
+    checkOut: 'Trả phòng',
+    guests: 'Khách lưu trú',
+    adultSuffix: 'người lớn',
+    childSuffix: 'trẻ em',
+    adults: 'Người lớn',
+    adultsNote: 'Từ 13 tuổi',
+    children: 'Trẻ em',
+    childrenNote: 'Từ 0–12 tuổi',
+    done: 'Xong',
+    search: 'Tìm phòng',
+    checkInPast: 'Ngày nhận phòng không thể ở trong quá khứ.',
+    invalidStay: 'Ngày trả phòng phải sau ngày nhận phòng ít nhất 1 đêm.',
+    previousMonth: 'Tháng trước',
+    nextMonth: 'Tháng sau',
+    selectCheckIn: 'Chọn ngày nhận phòng',
+    selectCheckOut: 'Chọn ngày trả phòng',
+    stayHours: 'Nhận phòng 14:00 · Trả phòng 12:00',
+    decrease: 'Giảm',
+    increase: 'Tăng',
+    weekdays: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'],
+  },
+  en: {
+    ariaLabel: 'Search rooms by stay dates',
+    keywordLabel: 'Room or preference',
+    keywordPlaceholder: 'Room name, amenity...',
+    checkIn: 'Check-in',
+    checkOut: 'Check-out',
+    guests: 'Guests',
+    adultSuffix: 'adults',
+    childSuffix: 'children',
+    adults: 'Adults',
+    adultsNote: 'Ages 13+',
+    children: 'Children',
+    childrenNote: 'Ages 0–12',
+    done: 'Done',
+    search: 'Find rooms',
+    checkInPast: 'Check-in cannot be in the past.',
+    invalidStay: 'Check-out must be at least one night after check-in.',
+    previousMonth: 'Previous month',
+    nextMonth: 'Next month',
+    selectCheckIn: 'Select check-in date',
+    selectCheckOut: 'Select check-out date',
+    stayHours: 'Check-in 14:00 · Check-out 12:00',
+    decrease: 'Decrease',
+    increase: 'Increase',
+    weekdays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+  },
+}
+
 export default function StaySearchBar({
   variant = 'hero',
   initialValues,
   onSearch,
 }: StaySearchBarProps) {
   const router = useRouter()
+  const { locale, localizedHref } = useI18n()
+  const copy = searchCopy[locale]
   const earliestCheckIn = useMemo(getEarliestCheckIn, [])
   const defaultCheckIn = normalizeDate(initialValues?.checkIn, earliestCheckIn)
   const defaultCheckOutCandidate = normalizeDate(initialValues?.checkOut, addDays(defaultCheckIn, 1))
@@ -86,11 +171,11 @@ export default function StaySearchBar({
 
   const submit = () => {
     if (checkIn < earliestCheckIn) {
-      setError('Ngày nhận phòng không thể ở trong quá khứ.')
+      setError(copy.checkInPast)
       return
     }
     if (checkOut <= checkIn) {
-      setError('Ngày trả phòng phải sau ngày nhận phòng ít nhất 1 đêm.')
+      setError(copy.invalidStay)
       return
     }
 
@@ -105,7 +190,7 @@ export default function StaySearchBar({
       onSearch(criteria)
       return
     }
-    router.push(`/rooms?${buildStaySearchParams(criteria).toString()}`)
+    router.push(localizedHref(`/rooms?${buildStaySearchParams(criteria).toString()}`))
   }
 
   const isCatalog = variant === 'catalog'
@@ -117,7 +202,7 @@ export default function StaySearchBar({
 
   return (
     <section
-      aria-label="Tìm phòng theo kỳ lưu trú"
+      aria-label={copy.ariaLabel}
       className={[
         'relative rounded-[26px] border border-[#dfd4c6] bg-[#fffdf9] shadow-[0_24px_70px_rgba(26,47,39,.14)]',
         isSidebar ? 'border-0 bg-transparent p-0 shadow-none' : 'p-3 sm:p-4',
@@ -127,14 +212,14 @@ export default function StaySearchBar({
         <label className={fieldClassName}>
           <SearchIcon />
           <span className="min-w-0 flex-1">
-            <span className="block text-[10px] font-bold uppercase tracking-[0.13em] text-[#89877f]">Tên hoặc nhu cầu</span>
+            <span className="block text-[10px] font-bold uppercase tracking-[0.13em] text-[#89877f]">{copy.keywordLabel}</span>
             <input
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === 'Enter') submit()
               }}
-              placeholder="Tên phòng, tiện nghi..."
+              placeholder={copy.keywordPlaceholder}
               className="mt-1 w-full border-0 bg-transparent p-0 font-display text-sm font-semibold text-[#26352f] outline-none placeholder:font-normal placeholder:text-[#a5a39c] focus:ring-0"
             />
           </span>
@@ -143,8 +228,9 @@ export default function StaySearchBar({
         <div ref={datePanelRef} className="relative">
           <DateButton
             className={fieldClassName}
-            label="Nhận phòng"
+            label={copy.checkIn}
             value={checkIn}
+            locale={locale}
             active={activeDateField === 'checkIn'}
             onClick={() => openDateField('checkIn')}
           />
@@ -160,14 +246,17 @@ export default function StaySearchBar({
               onPrevious={() => setVisibleMonth((month) => addMonths(month, -1))}
               onNext={() => setVisibleMonth((month) => addMonths(month, 1))}
               onSelect={selectDate}
+              locale={locale}
+              copy={copy}
             />
           )}
         </div>
 
         <DateButton
           className={fieldClassName}
-          label="Trả phòng"
+          label={copy.checkOut}
           value={checkOut}
+          locale={locale}
           active={activeDateField === 'checkOut'}
           onClick={() => openDateField('checkOut')}
         />
@@ -184,19 +273,19 @@ export default function StaySearchBar({
           >
             <GuestsIcon />
             <span className="min-w-0 flex-1">
-              <span className="block text-[10px] font-bold uppercase tracking-[0.13em] text-[#89877f]">Khách lưu trú</span>
+              <span className="block text-[10px] font-bold uppercase tracking-[0.13em] text-[#89877f]">{copy.guests}</span>
               <span className="mt-1 block truncate font-display text-sm font-semibold text-[#26352f]">
-                {adults} người lớn{children > 0 ? ` · ${children} trẻ em` : ''}
+                {adults} {copy.adultSuffix}{children > 0 ? ` · ${children} ${copy.childSuffix}` : ''}
               </span>
             </span>
             <ChevronIcon open={guestPanelOpen} />
           </button>
           {guestPanelOpen && (
             <div className={`serene-dropdown-enter absolute right-0 z-40 mt-2 w-full rounded-[22px] border border-[#ded2c3] bg-white p-4 shadow-[0_24px_60px_rgba(30,48,40,.18)] ${isSidebar ? 'min-w-0' : 'min-w-[300px]'}`}>
-              <GuestCounter label="Người lớn" note="Từ 13 tuổi" value={adults} min={1} max={20} onChange={setAdults} />
+              <GuestCounter label={copy.adults} note={copy.adultsNote} value={adults} min={1} max={20} onChange={setAdults} decreaseLabel={copy.decrease} increaseLabel={copy.increase} />
               <div className="my-3 h-px bg-[#eee7de]" />
-              <GuestCounter label="Trẻ em" note="Từ 0–12 tuổi" value={children} min={0} max={12} onChange={setChildren} />
-              <button type="button" onClick={() => setGuestPanelOpen(false)} className="mt-4 w-full rounded-full bg-secondary px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#225145]">Xong</button>
+              <GuestCounter label={copy.children} note={copy.childrenNote} value={children} min={0} max={12} onChange={setChildren} decreaseLabel={copy.decrease} increaseLabel={copy.increase} />
+              <button type="button" onClick={() => setGuestPanelOpen(false)} className="mt-4 w-full rounded-full bg-secondary px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#225145]">{copy.done}</button>
             </div>
           )}
         </div>
@@ -207,7 +296,7 @@ export default function StaySearchBar({
           className={`inline-flex items-center justify-center gap-2 rounded-[18px] bg-secondary px-6 font-display text-sm font-bold text-white shadow-[0_16px_34px_rgba(23,58,49,.2)] transition hover:-translate-y-0.5 hover:bg-[#225145] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#173a31]/20 ${isSidebar ? 'h-12' : 'h-[68px] xl:h-[72px]'}`}
         >
           <SearchIcon className="text-white" />
-          Tìm phòng
+          {copy.search}
         </button>
       </div>
       {error && <p role="alert" className="px-2 pt-2 text-xs font-semibold text-[#b45148]">{error}</p>}
@@ -239,33 +328,33 @@ export function readStaySearchCriteria(search: string): StaySearchCriteria | nul
   }
 }
 
-function DateButton({ className, label, value, active, onClick }: { className: string; label: string; value: string; active: boolean; onClick: () => void }) {
+function DateButton({ className, label, value, active, onClick, locale }: { className: string; label: string; value: string; active: boolean; onClick: () => void; locale: Locale }) {
   return (
     <button type="button" onClick={onClick} className={`${className} w-full ${active ? '!border-[#b28455] ring-4 ring-[#b28455]/12' : ''}`} aria-expanded={active}>
       <CalendarIcon />
       <span className="min-w-0 flex-1">
         <span className="block text-[10px] font-bold uppercase tracking-[0.13em] text-[#89877f]">{label}</span>
-        <span className="mt-1 block truncate font-display text-sm font-semibold text-[#26352f]">{formatDate(value)}</span>
+        <span suppressHydrationWarning className="mt-1 block truncate font-display text-sm font-semibold text-[#26352f]">{formatDate(value, locale)}</span>
       </span>
       <ChevronIcon open={active} />
     </button>
   )
 }
 
-function CompactCalendar({ sidebar, activeField, visibleMonth, checkIn, checkOut, minDate, maxDate, onPrevious, onNext, onSelect }: { sidebar?: boolean; activeField: Exclude<ActiveDateField, null>; visibleMonth: string; checkIn: string; checkOut: string; minDate: string; maxDate: string; onPrevious: () => void; onNext: () => void; onSelect: (date: string) => void }) {
+function CompactCalendar({ sidebar, activeField, visibleMonth, checkIn, checkOut, minDate, maxDate, onPrevious, onNext, onSelect, locale, copy }: { sidebar?: boolean; activeField: Exclude<ActiveDateField, null>; visibleMonth: string; checkIn: string; checkOut: string; minDate: string; maxDate: string; onPrevious: () => void; onNext: () => void; onSelect: (date: string) => void; locale: Locale; copy: (typeof searchCopy)[Locale] }) {
   const cells = getCalendarCells(visibleMonth)
   return (
     <div className={`serene-dropdown-enter serene-dropdown-enter-left absolute left-0 z-50 mt-2 rounded-[22px] border border-[#ded2c3] bg-white p-4 shadow-[0_26px_66px_rgba(30,48,40,.2)] ${sidebar ? 'w-full' : 'w-[320px] sm:w-[350px]'}`}>
       <div className="flex items-center justify-between">
-        <button type="button" onClick={onPrevious} className="flex h-9 w-9 items-center justify-center rounded-full border border-[#e2d8ca] text-lg text-secondary hover:border-[#b28455]" aria-label="Tháng trước">‹</button>
+        <button type="button" onClick={onPrevious} className="flex h-9 w-9 items-center justify-center rounded-full border border-[#e2d8ca] text-lg text-secondary hover:border-[#b28455]" aria-label={copy.previousMonth}>‹</button>
         <div className="text-center">
-          <p className="font-display text-sm font-bold capitalize text-secondary">{formatMonthYear(visibleMonth)}</p>
-          <p className="mt-0.5 text-[10px] text-[#8a8b84]">{activeField === 'checkIn' ? 'Chọn ngày nhận phòng' : 'Chọn ngày trả phòng'}</p>
+          <p suppressHydrationWarning className="font-display text-sm font-bold capitalize text-secondary">{formatMonthYear(visibleMonth, locale)}</p>
+          <p className="mt-0.5 text-[10px] text-[#8a8b84]">{activeField === 'checkIn' ? copy.selectCheckIn : copy.selectCheckOut}</p>
         </div>
-        <button type="button" onClick={onNext} className="flex h-9 w-9 items-center justify-center rounded-full border border-[#e2d8ca] text-lg text-secondary hover:border-[#b28455]" aria-label="Tháng sau">›</button>
+        <button type="button" onClick={onNext} className="flex h-9 w-9 items-center justify-center rounded-full border border-[#e2d8ca] text-lg text-secondary hover:border-[#b28455]" aria-label={copy.nextMonth}>›</button>
       </div>
       <div className="mt-4 grid grid-cols-7 text-center text-[10px] font-bold uppercase text-[#999991]">
-        {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((day) => <span key={day} className="py-1">{day}</span>)}
+        {copy.weekdays.map((day) => <span key={day} className="py-1">{day}</span>)}
       </div>
       <div className="mt-1 grid grid-cols-7 gap-y-1">
         {cells.map((date, index) => {
@@ -279,7 +368,7 @@ function CompactCalendar({ sidebar, activeField, visibleMonth, checkIn, checkOut
               type="button"
               disabled={disabled}
               onClick={() => onSelect(date)}
-              aria-label={formatDate(date)}
+              aria-label={formatDate(date, locale)}
               className={[
                 'flex h-10 items-center justify-center text-sm font-semibold transition',
                 endpoint ? 'rounded-full bg-secondary text-white shadow-[0_7px_18px_rgba(23,58,49,.24)]' : inRange ? 'bg-[#f0e3d2] text-[#654b31]' : 'rounded-full text-[#34413c] hover:bg-[#f5eee5]',
@@ -291,19 +380,19 @@ function CompactCalendar({ sidebar, activeField, visibleMonth, checkIn, checkOut
           )
         })}
       </div>
-      <p className="mt-3 border-t border-[#eee7de] pt-3 text-center text-[10px] font-medium text-[#85877f]">Nhận phòng 14:00 · Trả phòng 12:00</p>
+      <p className="mt-3 border-t border-[#eee7de] pt-3 text-center text-[10px] font-medium text-[#85877f]">{copy.stayHours}</p>
     </div>
   )
 }
 
-function GuestCounter({ label, note, value, min, max, onChange }: { label: string; note: string; value: number; min: number; max: number; onChange: (value: number) => void }) {
+function GuestCounter({ label, note, value, min, max, onChange, decreaseLabel, increaseLabel }: { label: string; note: string; value: number; min: number; max: number; onChange: (value: number) => void; decreaseLabel: string; increaseLabel: string }) {
   return (
     <div className="flex items-center justify-between gap-4">
       <div><p className="font-display text-sm font-bold text-secondary">{label}</p><p className="mt-0.5 text-xs text-[#888a84]">{note}</p></div>
       <div className="flex items-center gap-3">
-        <button type="button" disabled={value <= min} onClick={() => onChange(value - 1)} className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ddd2c3] text-lg text-secondary disabled:opacity-30" aria-label={`Giảm ${label.toLowerCase()}`}>−</button>
+        <button type="button" disabled={value <= min} onClick={() => onChange(value - 1)} className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ddd2c3] text-lg text-secondary disabled:opacity-30" aria-label={`${decreaseLabel} ${label.toLowerCase()}`}>−</button>
         <span className="w-5 text-center font-display text-sm font-bold text-secondary">{value}</span>
-        <button type="button" disabled={value >= max} onClick={() => onChange(value + 1)} className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ddd2c3] text-lg text-secondary disabled:opacity-30" aria-label={`Tăng ${label.toLowerCase()}`}>+</button>
+        <button type="button" disabled={value >= max} onClick={() => onChange(value + 1)} className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ddd2c3] text-lg text-secondary disabled:opacity-30" aria-label={`${increaseLabel} ${label.toLowerCase()}`}>+</button>
       </div>
     </div>
   )
@@ -324,5 +413,21 @@ function addMonths(date: string, months: number) { const value = parseDate(start
 function getEarliestCheckIn() { const value = new Date(); if (value.getHours() >= 14) value.setDate(value.getDate() + 1); return toDateKey(value) }
 function normalizeDate(value: string | undefined, fallback: string) { return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : fallback }
 function getCalendarCells(month: string) { const first = parseDate(startOfMonth(month)); const offset = (first.getDay() + 6) % 7; const days = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate(); return [...Array.from({ length: offset }, () => null), ...Array.from({ length: days }, (_, index) => toDateKey(new Date(first.getFullYear(), first.getMonth(), index + 1)))] }
-function formatDate(date: string) { return new Intl.DateTimeFormat('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' }).format(parseDate(date)) }
-function formatMonthYear(date: string) { return new Intl.DateTimeFormat('vi-VN', { month: 'long', year: 'numeric' }).format(parseDate(date)) }
+function formatDate(date: string, locale: Locale) {
+  const value = parseDate(date)
+  const weekdayIndex = (value.getDay() + 6) % 7
+  const weekday = locale === 'en'
+    ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][weekdayIndex]
+    : ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'][weekdayIndex]
+  const day = String(value.getDate()).padStart(2, '0')
+  const month = String(value.getMonth() + 1).padStart(2, '0')
+  return locale === 'en' ? `${weekday}, ${month}/${day}/${value.getFullYear()}` : `${weekday}, ${day}/${month}/${value.getFullYear()}`
+}
+
+function formatMonthYear(date: string, locale: Locale) {
+  const value = parseDate(date)
+  if (locale === 'en') {
+    return `${['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][value.getMonth()]} ${value.getFullYear()}`
+  }
+  return `Tháng ${value.getMonth() + 1}, ${value.getFullYear()}`
+}

@@ -1,4 +1,12 @@
 import { NextResponse, type NextRequest } from 'next/server'
+import {
+  defaultLocale,
+  getLocaleFromPathname,
+  localeCookieName,
+  localeHeaderName,
+  stripLocalePrefix,
+  type Locale,
+} from './i18n/config'
 
 const LOGIN_PATH = '/login'
 const ACCESS_COOKIE_NAME = 'access_token'
@@ -36,51 +44,83 @@ function isExpired(payload: { exp?: number } | null) {
   return payload.exp <= Math.floor(Date.now() / 1000) + TOKEN_EXPIRY_SKEW_SECONDS
 }
 
-function redirectToLogin(request: NextRequest) {
+function resolveLocale(request: NextRequest): Locale {
+  const localeFromPath = getLocaleFromPathname(request.nextUrl.pathname)
+  if (localeFromPath) return localeFromPath
+
+  const localeFromCookie = request.cookies.get(localeCookieName)?.value
+  return localeFromCookie === 'en' ? 'en' : defaultLocale
+}
+
+function createRequestHeaders(request: NextRequest, locale: Locale) {
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set(localeHeaderName, locale)
+  return requestHeaders
+}
+
+function redirectToLogin(request: NextRequest, locale: Locale) {
   const loginUrl = request.nextUrl.clone()
-  loginUrl.pathname = LOGIN_PATH
-  loginUrl.searchParams.set('redirect', request.nextUrl.pathname)
+  loginUrl.pathname = locale === defaultLocale ? LOGIN_PATH : `/${locale}${LOGIN_PATH}`
+  loginUrl.searchParams.set('redirect', request.nextUrl.pathname + request.nextUrl.search)
   return NextResponse.redirect(loginUrl)
 }
 
+function isProtectedPath(pathname: string) {
+  return [
+    '/admin',
+    '/staff',
+    '/customer/checkout',
+    '/customer/profile',
+    '/customer/account-settings',
+    '/customer/security',
+    '/customer/bookings',
+    '/customer/support',
+    '/customer/report-issue',
+    '/customer/accessibility',
+  ].some((protectedPath) => pathname === protectedPath || pathname.startsWith(`${protectedPath}/`))
+}
+
+function applyLocaleCookie(response: NextResponse, locale: Locale) {
+  response.cookies.set(localeCookieName, locale, {
+    path: '/',
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 24 * 365,
+  })
+  return response
+}
+
 export function proxy(request: NextRequest) {
-  if (!hasAuthCookie(request)) {
-    return redirectToLogin(request)
-  }
+  const { pathname, search } = request.nextUrl
+  const locale = resolveLocale(request)
+  const rawPathname = stripLocalePrefix(pathname)
 
-  const accessTokenPayload = getAccessTokenPayload(request)
-  if (isExpired(accessTokenPayload)) {
-    if (hasRefreshCookie(request)) {
-      return NextResponse.next()
+  if (isProtectedPath(rawPathname)) {
+    if (!hasAuthCookie(request)) return redirectToLogin(request, locale)
+
+    const accessTokenPayload = getAccessTokenPayload(request)
+    if (isExpired(accessTokenPayload) && !hasRefreshCookie(request)) {
+      return redirectToLogin(request, locale)
     }
-
-    return redirectToLogin(request)
   }
 
-  // Role authorization is based on the backend-verified session and protected
-  // APIs. An unsigned JWT payload decoded at the edge is only an expiry hint.
-  return NextResponse.next()
+  const requestHeaders = createRequestHeaders(request, locale)
+  const localeInPath = getLocaleFromPathname(pathname)
+
+  if (localeInPath) {
+    const destination = request.nextUrl.clone()
+    destination.pathname = rawPathname
+    destination.search = search
+    return applyLocaleCookie(
+      NextResponse.redirect(destination),
+      locale,
+    )
+  }
+
+  return applyLocaleCookie(NextResponse.next({ request: { headers: requestHeaders } }), locale)
 }
 
 export const config = {
   matcher: [
-    '/admin/:path*',
-    '/staff/:path*',
-    '/customer/checkout',
-    '/customer/checkout/:path*',
-    '/customer/profile',
-    '/customer/profile/:path*',
-    '/customer/account-settings',
-    '/customer/account-settings/:path*',
-    '/customer/security',
-    '/customer/security/:path*',
-    '/customer/bookings',
-    '/customer/bookings/:path*',
-    '/customer/support',
-    '/customer/support/:path*',
-    '/customer/report-issue',
-    '/customer/report-issue/:path*',
-    '/customer/accessibility',
-    '/customer/accessibility/:path*',
+    '/((?!api|_next/static|_next/image|favicon.ico|manifest.webmanifest|robots.txt|sitemap.xml|.*\\..*).*)',
   ],
 }

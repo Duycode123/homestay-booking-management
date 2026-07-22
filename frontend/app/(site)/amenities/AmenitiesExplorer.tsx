@@ -2,11 +2,24 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useState, type ReactNode } from "react";
+import { useI18n } from "@/components/i18n/LocaleProvider";
 
 type AmenityIcon =
     "rest" | "climate" | "bathroom" | "connection" | "daily" | "arrival";
 
-const amenityGroups = [
+type AmenityGroup = {
+    id: string;
+    number: string;
+    label: string;
+    title: string;
+    description: string;
+    items: readonly string[];
+    note: string;
+    icon: AmenityIcon;
+};
+
+const amenityGroupsByLocale: Record<"vi" | "en", readonly AmenityGroup[]> = {
+    vi: [
     {
         id: "rest",
         number: "01",
@@ -103,7 +116,127 @@ const amenityGroups = [
         note: "Các yêu cầu riêng cần được xác nhận trước để đội ngũ chuẩn bị.",
         icon: "arrival" as AmenityIcon,
     },
-] as const;
+    ],
+    en: [
+        {
+            id: "rest",
+            number: "01",
+            label: "Rest & sleep",
+            title: "A space where your body can genuinely rest",
+            description:
+                "Each room is arranged for quiet and privacy, with fewer distractions during the time you set aside to slow down.",
+            items: [
+                "Bed, linen, and pillows prepared before every stay",
+                "Private space shaped by each room tier",
+                "Convenient outlets around the sleeping area",
+                "A tidy place for luggage",
+            ],
+            note: "Bed configuration and room size vary by room tier.",
+            icon: "rest",
+        },
+        {
+            id: "climate",
+            number: "02",
+            label: "Room climate",
+            title: "Comfortable temperatures throughout your stay",
+            description:
+                "Cooling and ventilation are checked so the room feels comfortable whenever you come back to rest.",
+            items: [
+                "Individually controlled air conditioning",
+                "Cooling capacity suitable for the room size",
+                "Operation checked before check-in",
+                "Cleaning and maintenance follow a routine",
+            ],
+            note: "Instructions for room equipment are available whenever needed.",
+            icon: "climate",
+        },
+        {
+            id: "bathroom",
+            number: "03",
+            label: "Bathroom",
+            title: "A private reset after a long day",
+            description:
+                "Bathrooms are kept clean, considered, and stocked with the essentials for a comfortable stay.",
+            items: [
+                "Hot-water system",
+                "Bath towels",
+                "Essential personal-care items",
+                "Equipment and electrical-safety checks",
+            ],
+            note: "The exact list of room items is shown on each room detail page.",
+            icon: "bathroom",
+        },
+        {
+            id: "connection",
+            number: "04",
+            label: "Connection",
+            title: "Stay connected when you need to, unplug when you want",
+            description:
+                "Work lightly, enjoy in-room entertainment, or simply reserve more time for yourself.",
+            items: [
+                "High-speed Wi-Fi",
+                "Smart TV",
+                "In-room entertainment connection",
+                "A corner suited to light work",
+            ],
+            note: "Actual connection speed can vary by time of use.",
+            icon: "connection",
+        },
+        {
+            id: "daily",
+            number: "05",
+            label: "Everyday comfort",
+            title: "Small comforts that make the stay feel lighter",
+            description:
+                "Useful everyday items are arranged with care, so you do not have to prepare too much before your trip.",
+            items: [
+                "Mini refrigerator",
+                "Electric kettle",
+                "A luggage area",
+                "Essential daily items",
+            ],
+            note: "Some amenities are available only in selected room tiers.",
+            icon: "daily",
+        },
+        {
+            id: "arrival",
+            number: "06",
+            label: "Arrival",
+            title: "Everything ready before you open the door",
+            description:
+                "Our team reviews the room, essential equipment, and reservation details before guests arrive.",
+            items: [
+                "Room-cleanliness check",
+                "Essential-equipment check",
+                "Reservation details confirmed",
+                "Support requests received during the stay",
+            ],
+            note: "Special requests should be confirmed in advance so the team can prepare.",
+            icon: "arrival",
+        },
+    ],
+};
+
+const explorerCopy = {
+    vi: {
+        eyebrow: "Tiện nghi trong phòng",
+        count: "06 nhóm thiết yếu",
+        title: "Tìm theo nhu cầu, không cần đọc một danh sách quá dài.",
+        description:
+            "Chọn từng nhóm để xem lợi ích, tiện nghi đi kèm và những lưu ý quan trọng trước khi đặt phòng.",
+        navigationLabel: "Nhóm tiện nghi trong phòng",
+        note: "Lưu ý:",
+    },
+    en: {
+        eyebrow: "In-room amenities",
+        count: "06 essential groups",
+        title: "Explore by need, without reading through a long list.",
+        description:
+            "Choose a group to see its benefits, included amenities, and key details before reserving.",
+        navigationLabel: "In-room amenity groups",
+        note: "Please note:",
+    },
+} as const;
 
 function AmenityIcon({
     name,
@@ -168,9 +301,12 @@ function AmenityIcon({
 }
 
 export default function AmenitiesExplorer() {
+    const { locale } = useI18n();
+    const amenityGroups = amenityGroupsByLocale[locale];
+    const copy = explorerCopy[locale];
     const [activeIndex, setActiveIndex] = useState(0);
     const reduceMotion = useReducedMotion();
-    const activeGroup = amenityGroups[activeIndex];
+    const activeGroup = amenityGroups[activeIndex] ?? amenityGroups[0];
 
     return (
         <section
@@ -180,26 +316,25 @@ export default function AmenitiesExplorer() {
             <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
                 <div className="grid gap-6 border-b border-outline-variant pb-8 lg:grid-cols-[0.72fr_1.28fr] lg:items-end">
                     <div>
-                        <p className="eyebrow text-brand-orange">Tiện nghi trong phòng</p>
+                        <p className="eyebrow text-brand-orange">{copy.eyebrow}</p>
                         <p className="mt-3 font-editorial text-3xl font-semibold text-secondary">
-                            06 nhóm thiết yếu
+                            {copy.count}
                         </p>
                     </div>
 
                     <div>
                         <h2 className="font-editorial max-w-3xl text-4xl font-semibold leading-[1.08] text-secondary sm:text-5xl">
-                            Tìm theo nhu cầu, không cần đọc một danh sách quá dài.
+                            {copy.title}
                         </h2>
                         <p className="mt-4 max-w-2xl text-sm leading-7 text-on-surface-variant sm:text-base">
-                            Chọn từng nhóm để xem lợi ích, tiện nghi đi kèm và những lưu ý
-                            quan trọng trước khi đặt phòng.
+                            {copy.description}
                         </p>
                     </div>
                 </div>
 
                 <div className="mt-8 grid gap-5 lg:grid-cols-[310px_minmax(0,1fr)]">
                     <nav
-                        aria-label="Nhóm tiện nghi trong phòng"
+                        aria-label={copy.navigationLabel}
                         className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:-mx-8 sm:px-8 lg:mx-0 lg:block lg:overflow-visible lg:rounded-[22px] lg:border lg:border-outline-variant lg:bg-white/70 lg:p-2"
                     >
                         {amenityGroups.map((group, index) => {
@@ -356,7 +491,7 @@ export default function AmenitiesExplorer() {
                                 </motion.ul>
 
                                 <p className="mt-auto border-t border-outline-variant pt-5 text-xs leading-5 text-on-surface-variant">
-                                    <span className="font-semibold text-secondary">Lưu ý:</span>{" "}
+                                    <span className="font-semibold text-secondary">{copy.note}</span>{" "}
                                     {activeGroup.note}
                                 </p>
                             </motion.article>

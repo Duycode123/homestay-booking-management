@@ -2,10 +2,26 @@
 
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
+import { useI18n } from '@/components/i18n/LocaleProvider'
 import { fetchCommonAmenities, type CommonAmenity } from '@/lib/common-amenity-service'
+
+const copy = {
+  vi: {
+    eyebrow: 'Dành cho toàn khu homestay',
+    title: 'Tiện ích chung quy mô lớn, miễn phí cho khách lưu trú.',
+    description: 'Các tiện ích nhỏ trong phòng vẫn được giữ nguyên. Đây là những không gian chung khách có thể sử dụng trong thời gian lưu trú.',
+  },
+  en: {
+    eyebrow: 'Shared across the villa grounds',
+    title: 'Thoughtful shared spaces, included with every stay.',
+    description: 'Your in-room amenities remain exactly as listed. These are the shared spaces guests can enjoy throughout their stay.',
+  },
+} as const
 
 export default function CommonAmenitiesShowcase() {
   const [items, setItems] = useState<CommonAmenity[]>([])
+  const { locale } = useI18n()
+  const content = copy[locale]
 
   useEffect(() => {
     void fetchCommonAmenities().then(setItems).catch(() => setItems([]))
@@ -16,10 +32,10 @@ export default function CommonAmenitiesShowcase() {
   return (
     <section className="bg-white py-20 sm:py-24">
       <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
-        <p className="eyebrow text-brand-orange">Dành cho toàn khu homestay</p>
+        <p className="eyebrow text-brand-orange">{content.eyebrow}</p>
         <div className="mt-4 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
-          <h2 className="font-editorial max-w-3xl text-4xl font-semibold text-secondary sm:text-5xl">Tiện ích chung quy mô lớn, miễn phí cho khách lưu trú.</h2>
-          <p className="max-w-md leading-7 text-on-surface-variant">Các tiện ích nhỏ trong phòng vẫn được giữ nguyên. Đây là những không gian chung khách có thể sử dụng trong thời gian lưu trú.</p>
+          <h2 className="font-editorial max-w-3xl text-4xl font-semibold text-secondary sm:text-5xl">{content.title}</h2>
+          <p className="max-w-md leading-7 text-on-surface-variant">{content.description}</p>
         </div>
         <div className="mt-10 grid gap-x-10 gap-y-7 md:grid-cols-2">
           {items.map((item) => (
