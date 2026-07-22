@@ -184,7 +184,7 @@ export default function AdminAddonsPage() {
             <div><h2 className="font-display text-lg font-bold text-on-surface">Dịch vụ đang quản lý</h2><p className="mt-1 text-sm text-on-surface-variant">Tạm ngưng thay vì xóa để giữ nguyên lịch sử booking.</p></div>
             <label className="flex h-11 min-w-[17rem] items-center gap-3 rounded-2xl border border-outline-variant bg-surface-container-low px-4 transition focus-within:border-brand-orange focus-within:ring-2 focus-within:ring-brand-orange/15">
               <IconSearch className="h-4 w-4 text-brand-orange" />
-              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm tên hoặc hạng phòng" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-on-surface-variant/65" />
+              <input data-search-input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm tên hoặc hạng phòng" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-on-surface-variant/65" />
             </label>
           </div>
 

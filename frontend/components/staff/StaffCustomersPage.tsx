@@ -437,7 +437,7 @@ function KpiCard({ label, value, helper, icon, className }: { label: string; val
 }
 
 function SearchInput({ value, onChange }: { value: string; onChange: (value: string) => void }) {
-  return <label className="relative block"><span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant"><IconSearch /></span><input value={value} onChange={(event) => onChange(event.target.value)} placeholder="Tìm tên khách hàng, email, số điện thoại..." className="h-12 w-full rounded-2xl border border-outline-variant bg-surface-container-low pl-11 pr-4 text-sm text-on-surface outline-none transition placeholder:text-on-surface-variant/70 focus:border-brand-orange focus:bg-white" /></label>
+  return <label className="relative block"><span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant"><IconSearch /></span><input data-search-input value={value} onChange={(event) => onChange(event.target.value)} placeholder="Tìm tên khách hàng, email, số điện thoại..." className="h-12 w-full rounded-2xl border border-outline-variant bg-surface-container-low pl-11 pr-4 text-sm text-on-surface outline-none transition placeholder:text-on-surface-variant/70 focus:border-brand-orange focus:bg-white" /></label>
 }
 
 function Metric({ label, value }: { label: string; value: string }) {

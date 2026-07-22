@@ -1512,6 +1512,7 @@ function SearchInput({ value, onChange, placeholder }: { value: string; onChange
         <IconSearch />
       </span>
       <input
+        data-search-input
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}

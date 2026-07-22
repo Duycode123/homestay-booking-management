@@ -222,6 +222,7 @@ export default function StaffNotificationsPage() {
               ))}
             </div>
             <input
+              data-search-input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Tìm thông báo, khách, phòng..."

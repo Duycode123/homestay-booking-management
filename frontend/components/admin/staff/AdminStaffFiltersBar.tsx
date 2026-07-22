@@ -18,6 +18,7 @@ export default function AdminStaffFiltersBar({ filters, resultCount, onChange }:
         <label className="relative block min-w-0 flex-1">
           <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
           <input
+            data-search-input
             value={filters.query}
             onChange={(event) => onChange({ ...filters, query: event.target.value })}
             placeholder="Tìm theo tên, email, SĐT, mã nhân viên"

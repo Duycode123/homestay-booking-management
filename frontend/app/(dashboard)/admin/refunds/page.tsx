@@ -113,7 +113,7 @@ export default function AdminRefundsPage() {
               <span className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-on-surface-variant">Tìm hồ sơ</span>
               <span className="relative block">
                 <IconSearch className="pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
-                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Mã booking, khách hàng, phòng..." className="h-12 w-full rounded-2xl border border-[#ded3c5] bg-[#fcfaf7] pl-11 pr-4 text-sm outline-none transition focus:border-brand-orange focus:bg-white focus:shadow-[0_0_0_3px_rgba(184,136,87,0.10)]" />
+                <input data-search-input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Mã booking, khách hàng, phòng..." className="h-12 w-full rounded-2xl border border-[#ded3c5] bg-[#fcfaf7] pl-11 pr-4 text-sm outline-none transition focus:border-brand-orange focus:bg-white focus:shadow-[0_0_0_3px_rgba(184,136,87,0.10)]" />
               </span>
             </label>
             <label>

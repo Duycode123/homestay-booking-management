@@ -85,6 +85,7 @@ export default function StaffScheduleToolbar({
           <label className="relative block">
             <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
             <input
+              data-search-input
               value={query}
               onChange={(event) => onQueryChange(event.target.value)}
               disabled={isLoading}

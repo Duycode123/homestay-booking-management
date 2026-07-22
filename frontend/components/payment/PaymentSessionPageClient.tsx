@@ -201,11 +201,13 @@ export default function PaymentSessionPageClient() {
     }
 
     document.addEventListener('click', handleDocumentClick, { capture: true })
+    window.addEventListener('beforeunload', handlePageHide)
     window.addEventListener('pagehide', handlePageHide)
     window.addEventListener('popstate', handlePopState)
 
     return () => {
       document.removeEventListener('click', handleDocumentClick, { capture: true })
+      window.removeEventListener('beforeunload', handlePageHide)
       window.removeEventListener('pagehide', handlePageHide)
       window.removeEventListener('popstate', handlePopState)
       window.setTimeout(() => {

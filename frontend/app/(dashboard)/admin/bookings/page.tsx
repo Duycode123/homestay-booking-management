@@ -6,9 +6,12 @@ import AdminStatCard from '@/components/admin/AdminStatCard'
 import AdminToast from '@/components/admin/AdminToast'
 import { IconBookings, IconCheckCircle, IconClock, IconRefresh } from '@/components/admin/AdminIcons'
 import BookingDetailPanel from '@/components/admin/bookings/BookingDetailPanel'
+import BookingCalendarView from '@/components/admin/bookings/BookingCalendarView'
 import BookingFiltersBar from '@/components/admin/bookings/BookingFiltersBar'
 import BookingTable from '@/components/admin/bookings/BookingTable'
 import { fetchAdminBookings, formatAdminPrice, formatBookingDateTime, getAdminBookingById, reviewCancellationRequest, settleAdminBookingAtCheckout, updateAdminBookingStatus } from '@/lib/admin/adminBookingApi'
+import { getAdminRooms } from '@/lib/admin/rooms/adminRoomApi'
+import type { AdminRoom } from '@/lib/admin/rooms/types'
 import type { AdminBooking, BookingFilters, BookingStatus } from '@/lib/admin/types'
 
 const DEFAULT_FILTERS: BookingFilters = {
@@ -21,6 +24,8 @@ const DEFAULT_FILTERS: BookingFilters = {
 export default function AdminBookingsPage() {
   const [filters, setFilters] = useState<BookingFilters>(DEFAULT_FILTERS)
   const [bookings, setBookings] = useState<AdminBooking[]>([])
+  const [rooms, setRooms] = useState<AdminRoom[]>([])
+  const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar')
   const [isLoading, setIsLoading] = useState(true)
   const [selected, setSelected] = useState<AdminBooking | null>(null)
   const [toast, setToast] = useState('')
@@ -48,10 +53,23 @@ export default function AdminBookingsPage() {
     }
   }, [filters])
 
+  const loadRooms = useCallback(async () => {
+    try {
+      setRooms(await getAdminRooms())
+    } catch {
+      // Calendar can still build its room rows from the booking data.
+      setRooms([])
+    }
+  }, [])
+
   useEffect(() => {
     const timer = setTimeout(() => void loadBookings(), 200)
     return () => clearTimeout(timer)
   }, [loadBookings])
+
+  useEffect(() => {
+    void loadRooms()
+  }, [loadRooms])
 
   useEffect(() => {
     if (!toast) return
@@ -134,7 +152,7 @@ export default function AdminBookingsPage() {
           actions={
             <button
               type="button"
-              onClick={() => void loadBookings()}
+              onClick={() => void Promise.all([loadBookings(), loadRooms()])}
               disabled={isLoading}
               title="Làm mới"
               aria-label="Làm mới"
@@ -244,12 +262,54 @@ export default function AdminBookingsPage() {
 
           <BookingFiltersBar filters={filters} onChange={setFilters} resultCount={bookings.length} />
 
-          <BookingTable
-            bookings={bookings}
-            isLoading={isLoading}
-            selectedId={selected?.bookingId ?? null}
-            onSelect={handleSelectBooking}
-          />
+          <div className="flex items-center justify-between gap-3">
+            <div className="inline-flex rounded-xl border border-outline-variant bg-white p-1 shadow-sm" aria-label="Chọn cách xem đơn đặt phòng">
+              <button
+                type="button"
+                onClick={() => setViewMode('calendar')}
+                aria-pressed={viewMode === 'calendar'}
+                className={[
+                  'h-9 rounded-lg px-4 text-sm font-bold transition active:scale-[0.98]',
+                  viewMode === 'calendar' ? 'bg-secondary text-white shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface',
+                ].join(' ')}
+              >
+                Lịch phòng
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('list')}
+                aria-pressed={viewMode === 'list'}
+                className={[
+                  'h-9 rounded-lg px-4 text-sm font-bold transition active:scale-[0.98]',
+                  viewMode === 'list' ? 'bg-secondary text-white shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface',
+                ].join(' ')}
+              >
+                Danh sách
+              </button>
+            </div>
+            <p className="hidden text-xs text-on-surface-variant sm:block">
+              Bấm vào booking để xem và cập nhật chi tiết
+            </p>
+          </div>
+
+          {viewMode === 'calendar' ? (
+            <BookingCalendarView
+              bookings={bookings}
+              rooms={rooms}
+              isLoading={isLoading}
+              selectedId={selected?.bookingId ?? null}
+              filterDate={filters.date}
+              showOnlyMatchingRooms={filters.query.trim().length > 0 || filters.bookingStatus !== 'ALL' || filters.paymentStatus !== 'ALL' || Boolean(filters.date)}
+              onSelect={handleSelectBooking}
+            />
+          ) : (
+            <BookingTable
+              bookings={bookings}
+              isLoading={isLoading}
+              selectedId={selected?.bookingId ?? null}
+              onSelect={handleSelectBooking}
+            />
+          )}
         </div>
 
         <BookingDetailPanel

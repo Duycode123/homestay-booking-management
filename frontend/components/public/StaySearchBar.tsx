@@ -196,7 +196,7 @@ export default function StaySearchBar({
   const isCatalog = variant === 'catalog'
   const isSidebar = variant === 'sidebar'
   const fieldClassName = [
-    'group flex min-w-0 items-center gap-3 rounded-[18px] border bg-white px-4 text-left transition',
+    'group flex min-w-0 items-center gap-3 rounded-[18px] border bg-white px-4 text-left transition focus-within:border-[#b28455] focus-within:ring-4 focus-within:ring-[#b28455]/10',
     isCatalog ? 'h-[68px] border-[#e2d7c9] hover:border-[#b28455]' : isSidebar ? 'h-[60px] border-[#e2d7c9] px-3.5 hover:border-[#b28455]' : 'h-[72px] border-[#e5dacd] hover:border-[#b28455] hover:shadow-[0_10px_28px_rgba(31,48,41,.08)]',
   ].join(' ')
 
@@ -214,6 +214,7 @@ export default function StaySearchBar({
           <span className="min-w-0 flex-1">
             <span className="block text-[10px] font-bold uppercase tracking-[0.13em] text-[#89877f]">{copy.keywordLabel}</span>
             <input
+              data-search-input
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
               onKeyDown={(event) => {

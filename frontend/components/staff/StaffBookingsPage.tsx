@@ -703,6 +703,7 @@ function SearchInput({ value, onChange }: { value: string; onChange: (value: str
     <label className="relative block">
       <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant"><IconSearch /></span>
       <input
+        data-search-input
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder="Tìm mã booking, khách hàng, số điện thoại..."

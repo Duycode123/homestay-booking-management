@@ -325,6 +325,10 @@ export default function RoomsPublicPage() {
     .map((room) => new Date(room.holdExpiresAt as string).getTime())
     .filter(Number.isFinite)
     .sort((left, right) => left - right)[0], [liveRooms])
+  const hasActivePaymentHold = useMemo(
+    () => liveRooms.some((room) => room.todayAvailabilityReason === 'PAYMENT_HOLD'),
+    [liveRooms],
+  )
   const scheduleCoverage = liveRooms.length > 0
     ? Math.round((bookableRoomCount / liveRooms.length) * 100)
     : 0
@@ -419,12 +423,24 @@ export default function RoomsPublicPage() {
   }, [rooms, scheduleRefreshKey])
 
   useEffect(() => {
-    const intervalId = window.setInterval(() => {
+    const refreshSchedule = () => {
       setScheduleRefreshKey((current) => current + 1)
-    }, 60_000)
+    }
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') refreshSchedule()
+    }
+    const intervalId = window.setInterval(() => {
+      refreshSchedule()
+    }, hasActivePaymentHold ? 2_500 : 60_000)
 
-    return () => window.clearInterval(intervalId)
-  }, [])
+    window.addEventListener('focus', refreshSchedule)
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+    return () => {
+      window.clearInterval(intervalId)
+      window.removeEventListener('focus', refreshSchedule)
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
+    }
+  }, [hasActivePaymentHold])
 
   useEffect(() => {
     const criteria = readStaySearchCriteria(window.location.search)

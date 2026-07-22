@@ -117,20 +117,16 @@ button:disabled,
   outline-offset: 3px;
 }
 
-/* The catalog search uses its rounded parent as the visible focus target. */
-html body input.room-catalog-search-input,
-html body input.room-catalog-search-input:hover,
-html body input.room-catalog-search-input:focus,
-html body input.room-catalog-search-input:focus-visible {
+/* Search controls use their rounded field/wrapper as the visible focus target.
+   Do not draw the global rectangular focus outline on the inner text input. */
+html body input:is([type='search'], [role='searchbox'], [data-search-input]),
+html body input:is([type='search'], [role='searchbox'], [data-search-input]):hover,
+html body input:is([type='search'], [role='searchbox'], [data-search-input]):focus,
+html body input:is([type='search'], [role='searchbox'], [data-search-input]):focus-visible {
   appearance: none !important;
   -webkit-appearance: none !important;
-  background: transparent !important;
-  border: 0 !important;
-  border-radius: 0 !important;
   outline: none !important;
   outline-offset: 0 !important;
-  box-shadow: none !important;
-  padding: 0 !important;
 }
 
 .panel-scroll {

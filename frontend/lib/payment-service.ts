@@ -171,7 +171,20 @@ export function releasePaymentHoldKeepalive(
   paymentId: string,
   csrfHeaders: Record<string, string>,
 ) {
-  return fetch(`/api/payments/transactions/${encodeURIComponent(paymentId)}/release`, {
+  const releaseUrl = `/api/payments/transactions/${encodeURIComponent(paymentId)}/release`
+
+  // A normal fetch can be cancelled while the browser is closing the page.
+  // Beacon is deliberately sent as a second, idempotent release request so
+  // the backend still receives it during unload/navigation.
+  if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
+    const csrfToken = Object.values(csrfHeaders).find((value) => value.trim().length > 0)
+    if (csrfToken) {
+      const beaconBody = new URLSearchParams({ _csrf: csrfToken })
+      navigator.sendBeacon(releaseUrl, beaconBody)
+    }
+  }
+
+  return fetch(releaseUrl, {
     method: 'POST',
     credentials: 'include',
     keepalive: true,

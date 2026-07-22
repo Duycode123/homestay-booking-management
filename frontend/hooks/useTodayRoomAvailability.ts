@@ -57,11 +57,6 @@ export function useTodayRoomAvailability(rooms: Room[]) {
     }
   }, [rooms, refreshKey])
 
-  useEffect(() => {
-    const intervalId = window.setInterval(() => setRefreshKey((current) => current + 1), 60_000)
-    return () => window.clearInterval(intervalId)
-  }, [])
-
   const liveRooms = useMemo(
     () => rooms.map((room) => applyTodayAvailability(
       room,
@@ -71,6 +66,30 @@ export function useTodayRoomAvailability(rooms: Room[]) {
     )),
     [availabilityByRoomId, rooms],
   )
+
+  const hasActivePaymentHold = useMemo(
+    () => liveRooms.some((room) => room.todayAvailabilityReason === 'PAYMENT_HOLD'),
+    [liveRooms],
+  )
+
+  useEffect(() => {
+    const refreshAvailability = () => setRefreshKey((current) => current + 1)
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') refreshAvailability()
+    }
+    const intervalId = window.setInterval(
+      refreshAvailability,
+      hasActivePaymentHold ? 2_500 : 60_000,
+    )
+
+    window.addEventListener('focus', refreshAvailability)
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+    return () => {
+      window.clearInterval(intervalId)
+      window.removeEventListener('focus', refreshAvailability)
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
+    }
+  }, [hasActivePaymentHold])
 
   const nearestHoldExpiry = useMemo(() => liveRooms
     .filter((room) => room.todayAvailabilityReason === 'PAYMENT_HOLD' && room.holdExpiresAt)

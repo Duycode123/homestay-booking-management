@@ -536,7 +536,7 @@ BEGIN
         room_id WITH =,
         tsrange(start_time, end_time, '[)') WITH &&
       )
-      WHERE (status <> 'CANCELLED');
+      WHERE (status NOT IN ('CANCELLED', 'EXPIRED'));
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'excl_shift_staff_no_overlap') THEN
