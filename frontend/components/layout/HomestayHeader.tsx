@@ -122,7 +122,7 @@ export default function HomestayHeader() {
               <><FavoriteRoomsMenu /><NotificationMenu /><AccountMenu /></>
             ) : (
               <>
-                <Link href={localizedHref('/login')} className="px-3 py-2 font-display text-sm font-semibold text-on-surface-variant transition-colors hover:text-secondary">{t('auth.login')}</Link>
+                <Link href={localizedHref('/register')} className="px-3 py-2 font-display text-sm font-semibold text-on-surface-variant transition-colors hover:text-secondary">{t('auth.register')}</Link>
                 <button type="button" onClick={handleBookClick} className="rounded-full bg-secondary px-5 py-2.5 font-display text-sm font-semibold text-white shadow-[0_12px_30px_rgba(23,58,49,0.17)] transition-all hover:-translate-y-0.5 hover:bg-secondary-container active:translate-y-0">{t('auth.findRoom')}</button>
               </>
             )}
@@ -151,7 +151,7 @@ export default function HomestayHeader() {
               <div className="mt-4 flex items-center justify-end gap-3"><FavoriteRoomsMenu onNavigate={() => setMenuOpen(false)} /><NotificationMenu onNavigate={() => setMenuOpen(false)} /><AccountMenu align="full" onNavigate={() => setMenuOpen(false)} /></div>
             ) : (
               <div className="mt-4 grid grid-cols-2 gap-3">
-                <Link href={localizedHref('/login')} onClick={() => setMenuOpen(false)} className="rounded-full border border-outline px-4 py-3 text-center font-display text-sm font-semibold text-secondary">{t('auth.login')}</Link>
+                <Link href={localizedHref('/register')} onClick={() => setMenuOpen(false)} className="rounded-full border border-outline px-4 py-3 text-center font-display text-sm font-semibold text-secondary">{t('auth.register')}</Link>
                 <button type="button" onClick={handleBookClick} className="rounded-full bg-secondary px-4 py-3 font-display text-sm font-semibold text-white">{t('auth.findRoom')}</button>
               </div>
             )}

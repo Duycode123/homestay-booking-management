@@ -60,7 +60,7 @@ function AdminShell({ children }: AdminShellProps) {
             </Link>
           </div>
 
-          <nav aria-label="Điều hướng quản trị" className="min-h-0 flex-1 overflow-y-auto px-4 py-6">
+          <nav aria-label="Điều hướng quản trị" className="premium-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-6">
             <p className="mb-3 px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">
               Vận hành homestay
             </p>
@@ -160,7 +160,7 @@ function AdminShell({ children }: AdminShellProps) {
           </nav>
         </div>
 
-        <main className="min-w-0 flex-1 overflow-y-auto overscroll-contain pt-[7.25rem] lg:pt-0">{children}</main>
+        <main className="premium-scrollbar min-w-0 flex-1 overflow-y-auto overscroll-contain pt-[7.25rem] lg:pt-0">{children}</main>
       </div>
     </div>
   )

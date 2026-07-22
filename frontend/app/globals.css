@@ -154,6 +154,36 @@ html body input:is([type='search'], [role='searchbox'], [data-search-input]):foc
   background: rgba(178, 132, 85, 0.48);
 }
 
+.premium-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(35, 83, 70, 0.58) #f1ece4;
+}
+
+.premium-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.premium-scrollbar::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: #f1ece4;
+}
+
+.premium-scrollbar::-webkit-scrollbar-thumb {
+  min-width: 48px;
+  border: 2px solid #f1ece4;
+  border-radius: 999px;
+  background: #78958b;
+}
+
+.premium-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #315f52;
+}
+
+.premium-scrollbar::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 @keyframes site-page-enter {
   from {
     opacity: 0.97;

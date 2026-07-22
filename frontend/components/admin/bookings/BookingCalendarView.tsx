@@ -23,10 +23,13 @@ type CalendarRoom = {
   roomType: string
 }
 
-const DAY_COLUMN_WIDTH = 138
-const ROOM_COLUMN_WIDTH = 230
+const DAY_COLUMN_WIDTH = 176
+const ROOM_COLUMN_WIDTH = 250
 const DAYS_PER_WEEK = 7
 const DAY_MS = 24 * 60 * 60 * 1000
+const BOOKING_CARD_HEIGHT = 76
+const BOOKING_CARD_GAP = 8
+const BOOKING_ROW_PADDING = 10
 
 const statusStyles: Record<BookingStatus, string> = {
   PENDING_PAYMENT: 'border-[#d5aa69] bg-[#f5dfbd] text-[#63451f]',
@@ -43,6 +46,7 @@ const legendStatuses: BookingStatus[] = [
   'PAID',
   'CHECKED_IN',
   'COMPLETED',
+  'CANCELLED',
 ]
 
 export default function BookingCalendarView({
@@ -68,18 +72,17 @@ export default function BookingCalendarView({
     [weekStart.getTime()],
   )
 
-  const activeBookings = useMemo(
+  const visibleBookings = useMemo(
     () => bookings.filter((booking) => (
-      booking.bookingStatus !== 'CANCELLED'
-      && new Date(booking.startTime) < weekEnd
+      new Date(booking.startTime) < weekEnd
       && new Date(booking.endTime) > weekStart
     )),
     [bookings, weekEnd.getTime(), weekStart.getTime()],
   )
 
   const calendarRooms = useMemo(() => buildCalendarRooms(rooms, bookings)
-    .filter((room) => !showOnlyMatchingRooms || activeBookings.some((booking) => booking.roomId === room.id)),
-  [activeBookings, bookings, rooms, showOnlyMatchingRooms])
+    .filter((room) => !showOnlyMatchingRooms || visibleBookings.some((booking) => booking.roomId === room.id)),
+  [bookings, rooms, showOnlyMatchingRooms, visibleBookings])
 
   const todayKey = toDateKey(new Date())
   const gridWidth = ROOM_COLUMN_WIDTH + DAYS_PER_WEEK * DAY_COLUMN_WIDTH
@@ -96,7 +99,7 @@ export default function BookingCalendarView({
             Lịch phòng tuần {formatWeekRange(weekStart, weekEnd)}
           </h2>
           <p className="mt-1 text-sm text-on-surface-variant">
-            {activeBookings.length} booking trên {calendarRooms.length} phòng trong 7 ngày đang xem
+            {visibleBookings.length} booking trên {calendarRooms.length} phòng trong 7 ngày đang xem
           </p>
         </div>
 
@@ -137,7 +140,7 @@ export default function BookingCalendarView({
           ))}
         </div>
         <p className="mt-2 text-xs leading-5 text-on-surface-variant">
-          Mỗi thẻ là một đơn đặt phòng; vị trí và độ dài thẻ thể hiện thời gian nhận - trả phòng. Bấm vào thẻ để xem chi tiết.
+          Mỗi thẻ là một đơn đặt phòng. Màu thẻ thể hiện trạng thái; giờ nhận - trả được ghi trực tiếp trên thẻ.
         </p>
       </div>
 
@@ -147,7 +150,7 @@ export default function BookingCalendarView({
           <p className="mt-2 text-sm text-on-surface-variant">Hãy đổi bộ lọc hoặc chuyển sang tuần khác.</p>
         </div>
       ) : (
-        <div className="overflow-x-auto" aria-label="Lịch booking theo từng phòng trong tuần">
+        <div className="premium-scrollbar overflow-x-auto" aria-label="Lịch booking theo từng phòng trong tuần">
           <div style={{ minWidth: gridWidth }}>
             <div
               className="grid border-b border-outline-variant bg-[#faf8f4]"
@@ -175,12 +178,22 @@ export default function BookingCalendarView({
             </div>
 
             {calendarRooms.map((room) => {
-              const roomBookings = activeBookings
+              const roomBookings = visibleBookings
                 .filter((booking) => booking.roomId === room.id)
                 .sort((left, right) => new Date(left.startTime).getTime() - new Date(right.startTime).getTime())
+              const bookingLayouts = buildBookingLayouts(roomBookings, weekStart, weekEnd)
+              const laneCount = Math.max(1, ...bookingLayouts.map((layout) => layout.lane + 1))
+              const rowHeight = Math.max(
+                100,
+                BOOKING_ROW_PADDING * 2 + laneCount * BOOKING_CARD_HEIGHT + (laneCount - 1) * BOOKING_CARD_GAP,
+              )
 
               return (
-                <div key={room.id} className="relative h-[96px] border-b border-outline-variant/80 last:border-b-0">
+                <div
+                  key={room.id}
+                  className="relative border-b border-outline-variant/80 last:border-b-0"
+                  style={{ height: rowHeight }}
+                >
                   <div
                     className="grid h-full"
                     style={{ gridTemplateColumns: `${ROOM_COLUMN_WIDTH}px repeat(${DAYS_PER_WEEK}, ${DAY_COLUMN_WIDTH}px)` }}
@@ -204,9 +217,7 @@ export default function BookingCalendarView({
                     className="pointer-events-none absolute bottom-0 top-0 overflow-hidden"
                     style={{ left: ROOM_COLUMN_WIDTH, width: DAYS_PER_WEEK * DAY_COLUMN_WIDTH }}
                   >
-                    {roomBookings.map((booking) => {
-                      const position = getBookingPosition(booking, weekStart, weekEnd)
-                      if (!position) return null
+                    {bookingLayouts.map(({ booking, position, lane }) => {
                       const isSelected = selectedId === booking.bookingId
 
                       return (
@@ -216,16 +227,25 @@ export default function BookingCalendarView({
                           onClick={() => onSelect(booking)}
                           title={`${booking.bookingCode} - ${booking.customerName} - ${BOOKING_STATUS_LABELS[booking.bookingStatus]}`}
                           className={[
-                            'pointer-events-auto absolute top-3 h-[72px] overflow-hidden rounded-xl border px-3 py-2 text-left shadow-[0_1px_3px_rgba(24,58,49,.08)] transition-[filter,border-color,box-shadow]',
+                            'pointer-events-auto absolute overflow-hidden rounded-xl border px-3 py-2 text-left shadow-[0_1px_3px_rgba(24,58,49,.08)] transition-[filter,border-color,box-shadow]',
                             'hover:brightness-[0.97] hover:shadow-[0_2px_5px_rgba(24,58,49,.1)] active:brightness-[0.94]',
                             statusStyles[booking.bookingStatus],
                             isSelected ? 'ring-2 ring-[#b28455] ring-offset-2' : '',
                           ].join(' ')}
-                          style={{ left: position.left, width: position.width }}
+                          style={{
+                            left: position.left,
+                            top: BOOKING_ROW_PADDING + lane * (BOOKING_CARD_HEIGHT + BOOKING_CARD_GAP),
+                            width: position.width,
+                            height: BOOKING_CARD_HEIGHT,
+                          }}
                         >
                           <span className="block truncate text-[11px] font-bold leading-4">{booking.bookingCode}</span>
-                          <span className="block truncate text-[11px] font-semibold leading-4 opacity-95">{booking.customerName}</span>
-                          <span className="mt-0.5 block truncate text-[10px] leading-4 opacity-80">{formatBookingHours(booking)}</span>
+                          <span className="block truncate text-xs font-semibold leading-4 opacity-95">{booking.customerName}</span>
+                          <span className="mt-1 flex items-center gap-1.5 truncate text-[10px] font-medium leading-4 opacity-85">
+                            <span className="truncate">{BOOKING_STATUS_LABELS[booking.bookingStatus]}</span>
+                            <span aria-hidden>•</span>
+                            <span className="shrink-0">{formatBookingPeriod(booking)}</span>
+                          </span>
                         </button>
                       )
                     })}
@@ -284,20 +304,43 @@ function buildCalendarRooms(rooms: AdminRoom[], bookings: AdminBooking[]): Calen
   ))
 }
 
+type BookingLayout = {
+  booking: AdminBooking
+  position: { left: number; width: number }
+  lane: number
+}
+
+function buildBookingLayouts(bookings: AdminBooking[], weekStart: Date, weekEnd: Date): BookingLayout[] {
+  const positioned = bookings
+    .map((booking) => ({ booking, position: getBookingPosition(booking, weekStart, weekEnd) }))
+    .filter((item): item is { booking: AdminBooking; position: { left: number; width: number } } => Boolean(item.position))
+    .sort((left, right) => left.position.left - right.position.left || left.booking.bookingId - right.booking.bookingId)
+
+  const laneEnds: number[] = []
+  return positioned.map(({ booking, position }) => {
+    const availableLane = laneEnds.findIndex((end) => position.left >= end + BOOKING_CARD_GAP)
+    const lane = availableLane === -1 ? laneEnds.length : availableLane
+    laneEnds[lane] = position.left + position.width
+    return { booking, position, lane }
+  })
+}
+
 function getBookingPosition(booking: AdminBooking, weekStart: Date, weekEnd: Date) {
   const rawStart = new Date(booking.startTime).getTime()
   const rawEnd = new Date(booking.endTime).getTime()
   if (!Number.isFinite(rawStart) || !Number.isFinite(rawEnd) || rawEnd <= rawStart) return null
 
-  const start = Math.max(rawStart, weekStart.getTime())
-  const end = Math.min(rawEnd, weekEnd.getTime())
-  if (end <= start) return null
+  const rawStartDate = new Date(rawStart)
+  const bookingDayStart = new Date(rawStartDate.getFullYear(), rawStartDate.getMonth(), rawStartDate.getDate()).getTime()
+  const startDayIndex = Math.floor((bookingDayStart - weekStart.getTime()) / DAY_MS)
+  const occupiedDays = Math.max(1, Math.ceil((rawEnd - rawStart) / DAY_MS))
+  const visibleStartDay = Math.max(0, startDayIndex)
+  const visibleEndDay = Math.min(DAYS_PER_WEEK, startDayIndex + occupiedDays)
+  if (visibleEndDay <= visibleStartDay || rawStart >= weekEnd.getTime() || rawEnd <= weekStart.getTime()) return null
 
-  const left = ((start - weekStart.getTime()) / DAY_MS) * DAY_COLUMN_WIDTH
-  const width = Math.min(
-    DAYS_PER_WEEK * DAY_COLUMN_WIDTH - left,
-    ((end - start) / DAY_MS) * DAY_COLUMN_WIDTH,
-  )
+  const horizontalPadding = 7
+  const left = visibleStartDay * DAY_COLUMN_WIDTH + horizontalPadding
+  const width = (visibleEndDay - visibleStartDay) * DAY_COLUMN_WIDTH - horizontalPadding * 2
 
   return { left, width }
 }
@@ -342,11 +385,11 @@ function formatWeekRange(start: Date, endExclusive: Date) {
   return `${formatDayMonth(start)} - ${end.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}`
 }
 
-function formatBookingHours(booking: AdminBooking) {
-  const format = (value: string) => new Date(value).toLocaleTimeString('vi-VN', {
+function formatBookingPeriod(booking: AdminBooking) {
+  const formatTime = (value: string) => new Date(value).toLocaleTimeString('vi-VN', {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
   })
-  return `${format(booking.startTime)} - ${format(booking.endTime)}`
+  return `${formatTime(booking.startTime)}–${formatTime(booking.endTime)}`
 }
