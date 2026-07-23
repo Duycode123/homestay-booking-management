@@ -13,6 +13,7 @@ export const metadata = createPublicPageMetadata({
 
 // Thay null bằng đường dẫn ảnh trong public/images khi bạn đã chọn được ảnh phù hợp.
 // Ví dụ: '/images/the-serene-villa-story.jpg'
+///testtest
 const brandStoryImage: string | null = '/images/the-serene-villa-story1.jpg'
 
 const values = [
