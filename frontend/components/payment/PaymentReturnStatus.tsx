@@ -104,16 +104,16 @@ export default function PaymentReturnStatus() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#F4F0E8] px-4 py-5 text-[#202723] sm:px-6 sm:py-8 lg:px-8">
       <div aria-hidden className="pointer-events-none absolute -left-28 top-24 h-80 w-80 rounded-full bg-[#C59A68]/12 blur-3xl" />
-      <div aria-hidden className="pointer-events-none absolute -right-24 bottom-0 h-96 w-96 rounded-full bg-[#17483B]/10 blur-3xl" />
+      <div aria-hidden className="pointer-events-none absolute -right-24 bottom-0 h-96 w-96 rounded-full bg-[#514C44]/10 blur-3xl" />
 
       <div className="relative mx-auto max-w-6xl">
         <header className="flex items-center justify-between gap-4 py-2">
           <Link href="/" className="inline-flex items-center gap-3 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B98A55]/40">
-            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#153F34] text-white shadow-[0_10px_24px_rgba(21,63,52,0.18)]">
+            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#514C44] text-white shadow-[0_10px_24px_rgba(21,63,52,0.18)]">
               <HomeIcon />
             </span>
             <span>
-              <span className="block font-display text-lg font-bold leading-tight text-[#153F34]">The Serene Villa</span>
+              <span className="block font-display text-lg font-bold leading-tight text-[#514C44]">The Serene Villa</span>
               <span className="block text-[9px] font-semibold uppercase tracking-[0.22em] text-[#7A7B74]">Stay in serenity</span>
             </span>
           </Link>
@@ -155,7 +155,7 @@ export default function PaymentReturnStatus() {
                 {!missingBooking && (
                   <Link
                     href={primaryHref}
-                    className="inline-flex min-h-13 flex-1 items-center justify-center gap-2 rounded-2xl bg-[#183F35] px-6 py-3.5 font-display font-bold text-white shadow-[0_14px_28px_rgba(24,63,53,0.22)] transition hover:-translate-y-0.5 hover:bg-[#0F322A]"
+                    className="inline-flex min-h-13 flex-1 items-center justify-center gap-2 rounded-2xl bg-[#514C44] px-6 py-3.5 font-display font-bold text-white shadow-[0_14px_28px_rgba(24,63,53,0.22)] transition hover:-translate-y-0.5 hover:bg-[#3F3A34]"
                   >
                     {primaryLabel}
                     <ArrowRightIcon />
@@ -191,11 +191,11 @@ export default function PaymentReturnStatus() {
 
               <div className="mt-6 rounded-[22px] border border-[#DCE8E2] bg-[#F1F7F4] p-5">
                 <div className="flex gap-3">
-                  <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#DDECE5] text-[#17483B]">
+                  <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#DDECE5] text-[#514C44]">
                     <ShieldIcon />
                   </span>
                   <div>
-                    <p className="font-display text-sm font-bold text-[#17483B]">Thông tin của bạn được bảo vệ</p>
+                    <p className="font-display text-sm font-bold text-[#514C44]">Thông tin của bạn được bảo vệ</p>
                     <p className="mt-1 text-sm leading-6 text-[#587068]">
                       Trạng thái thanh toán được lưu cùng booking. Bạn luôn có thể kiểm tra lại trong lịch sử đặt phòng.
                     </p>
@@ -236,8 +236,8 @@ function getStatusPresentation(status: DisplayStatus, paymentOption: 'full' | 'd
         ? 'Chúng tôi đã ghi nhận khoản cọc 50%. Phần còn lại sẽ được nhân viên xác nhận và kết toán khi bạn checkout.'
         : 'Toàn bộ tiền phòng đã được ghi nhận. Bạn chỉ cần mang theo mã đặt phòng khi đến nhận phòng.',
       badgeLabel: isDeposit ? 'Đã đặt cọc' : 'Đã thanh toán',
-      panelClass: 'bg-[#EAF3EE] text-[#173D33]',
-      iconClass: 'bg-[#173D33] text-white',
+      panelClass: 'bg-[#EAF3EE] text-[#514C44]',
+      iconClass: 'bg-[#514C44] text-white',
       badgeClass: 'bg-[#E3F1E9] text-[#176044]',
     }
   }

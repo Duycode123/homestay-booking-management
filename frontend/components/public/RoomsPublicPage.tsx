@@ -610,7 +610,7 @@ export default function RoomsPublicPage() {
               {copy.heroDescription}
             </p>
           </div>
-          <div className="w-full max-w-[390px] justify-self-end rounded-[20px] border border-white/16 bg-[#173a31]/88 p-4 shadow-[0_22px_64px_rgba(0,0,0,0.26)] backdrop-blur-2xl sm:p-5">
+          <div className="w-full max-w-[390px] justify-self-end rounded-[20px] border border-white/16 bg-[#514C44]/88 p-4 shadow-[0_22px_64px_rgba(0,0,0,0.26)] backdrop-blur-2xl sm:p-5">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2.5">
@@ -692,7 +692,7 @@ export default function RoomsPublicPage() {
         <div className="grid items-start gap-7 lg:grid-cols-[320px_minmax(0,1fr)] xl:gap-9">
           <aside className="self-start">
             <div className="overflow-hidden rounded-[24px] border border-[#d9cebf] bg-[#fffdfa] shadow-[0_20px_55px_rgba(29,49,41,.10)]">
-              <div className="rounded-t-[23px] bg-[linear-gradient(135deg,#173a31,#285648)] px-5 py-4 text-white">
+              <div className="rounded-t-[23px] bg-[linear-gradient(135deg,#514C44,#746D63)] px-5 py-4 text-white">
                 <div className="flex items-center gap-3">
                   <FilterControlIcon name="tune" prominent />
                   <div>
@@ -831,7 +831,7 @@ export default function RoomsPublicPage() {
                 <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#f2e7d8] text-[#8d6339]"><FilterControlIcon name="tune" /></span>
                 <p className="mt-5 font-editorial text-3xl font-semibold text-secondary">{copy.noRooms}</p>
                 <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-on-surface-variant">{copy.noRoomsDescription}</p>
-                <button type="button" onClick={resetDetailFilters} className="mt-6 rounded-full bg-secondary px-6 py-3 font-display text-sm font-bold text-white transition hover:bg-[#245545]">{copy.viewAllRooms}</button>
+                <button type="button" onClick={resetDetailFilters} className="mt-6 rounded-full bg-secondary px-6 py-3 font-display text-sm font-bold text-white transition hover:bg-[#746D63]">{copy.viewAllRooms}</button>
               </div>
             )}
           </div>
@@ -1051,7 +1051,7 @@ function RoomCard({
               onClick={(event) => { event.stopPropagation(); onBook(room) }}
               disabled={isUnavailable || isCheckingAvailability}
               className={[
-                !isUnavailable && !isCheckingAvailability ? 'bg-secondary text-white shadow-[0_12px_28px_rgba(23,58,49,.2)] hover:-translate-y-0.5 hover:bg-[#245545]' : 'border border-outline-variant bg-surface-container text-on-surface-variant',
+                !isUnavailable && !isCheckingAvailability ? 'bg-secondary text-white shadow-[0_12px_28px_rgba(23,58,49,.2)] hover:-translate-y-0.5 hover:bg-[#746D63]' : 'border border-outline-variant bg-surface-container text-on-surface-variant',
                 'h-11 w-full rounded-full font-display text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-55',
               ].join(' ')}
             >
@@ -1246,7 +1246,7 @@ function SidebarPriceFilter({ min, max, onMinChange, onMaxChange }: { min: numbe
       </div>
       <div className="mt-7 px-1">
         <div className="relative h-2 rounded-full bg-[#e3dbd0]">
-          <div className="absolute h-2 rounded-full bg-[linear-gradient(90deg,#b28455,#173a31)]" style={{ left: `${minPosition}%`, right: `${100 - maxPosition}%` }} />
+          <div className="absolute h-2 rounded-full bg-[linear-gradient(90deg,#b28455,#514C44)]" style={{ left: `${minPosition}%`, right: `${100 - maxPosition}%` }} />
           <input type="range" min={MIN_NIGHTLY_PRICE} max={MAX_NIGHTLY_PRICE} step={NIGHTLY_PRICE_STEP} value={min} onChange={(event) => onMinChange(Math.min(Number(event.target.value), max - NIGHTLY_PRICE_STEP))} aria-label={isEnglish ? 'Lowest nightly price' : 'Giá thấp nhất mỗi đêm'} className={`${sliderClassName} z-20`} />
           <input type="range" min={MIN_NIGHTLY_PRICE} max={MAX_NIGHTLY_PRICE} step={NIGHTLY_PRICE_STEP} value={max} onChange={(event) => onMaxChange(Math.max(Number(event.target.value), min + NIGHTLY_PRICE_STEP))} aria-label={isEnglish ? 'Highest nightly price' : 'Giá cao nhất mỗi đêm'} className={`${sliderClassName} z-30`} />
         </div>
@@ -1548,7 +1548,7 @@ function NightlyPriceFilter({
           <div className="mt-7 px-1">
             <div className="relative h-2 rounded-full bg-[#e3dbd0]">
               <div
-                className="absolute h-2 rounded-full bg-[linear-gradient(90deg,#b28455,#173a31)]"
+                className="absolute h-2 rounded-full bg-[linear-gradient(90deg,#b28455,#514C44)]"
                 style={{ left: `${minPosition}%`, right: `${100 - maxPosition}%` }}
               />
               <input
@@ -1582,7 +1582,7 @@ function NightlyPriceFilter({
           <button
             type="button"
             onClick={() => setIsOpen(false)}
-            className="mt-5 w-full rounded-xl bg-secondary px-4 py-3 font-display text-sm font-bold text-white shadow-[0_10px_24px_rgba(23,58,49,0.18)] transition hover:bg-[#204b40]"
+            className="mt-5 w-full rounded-xl bg-secondary px-4 py-3 font-display text-sm font-bold text-white shadow-[0_10px_24px_rgba(23,58,49,0.18)] transition hover:bg-[#746D63]"
           >
             {isEnglish ? 'Apply price range' : 'Áp dụng khoảng giá'}
           </button>
@@ -1596,7 +1596,7 @@ function PriceBadge({ label, value, locale = 'vi' }: { label: string; value: num
   return (
     <div className="min-w-0 rounded-xl border border-[#e4dbd0] bg-[#fcfaf7] px-3 py-2.5">
       <span className="block text-[9px] font-bold uppercase tracking-[0.12em] text-[#8a847b]">{label}</span>
-      <span className="mt-0.5 block font-display text-sm font-bold text-[#173a31]">{formatPriceInMillions(value, locale)}</span>
+      <span className="mt-0.5 block font-display text-sm font-bold text-[#514C44]">{formatPriceInMillions(value, locale)}</span>
     </div>
   )
 }

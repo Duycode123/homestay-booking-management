@@ -151,7 +151,7 @@ export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenu
             align === 'full' ? 'right-0' : 'right-0',
           ].join(' ')}
         >
-          <div className="relative border-b border-white/10 bg-[linear-gradient(145deg,#173f35,#254f43)] px-4 py-4 text-white">
+          <div className="relative border-b border-white/10 bg-[linear-gradient(145deg,#514C44,#746D63)] px-4 py-4 text-white">
             <div className="pointer-events-none absolute -right-12 -top-16 h-32 w-32 rounded-full border border-white/10" aria-hidden />
             <div className="relative flex items-center gap-3">
               <span className="relative">
@@ -208,12 +208,12 @@ function MenuLink({ href, label, icon, emphasized = false, onClick }: { href: st
       className={[
         'group flex items-center justify-between rounded-xl border px-3 py-2.5 transition focus:outline-none focus:ring-2 focus:ring-[#b98853]/25',
         emphasized
-          ? 'border-transparent bg-[#f7efe4] text-[#173f35] hover:bg-[#f1e3d1]'
+          ? 'border-transparent bg-[#f7efe4] text-[#514C44] hover:bg-[#f1e3d1]'
           : 'border-transparent text-[#303833] hover:border-[#e2d5c3] hover:bg-[#f8f3ec]',
       ].join(' ')}
     >
       <span className="flex items-center gap-3">
-        <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${emphasized ? 'bg-[#173f35] text-white' : 'bg-[#efe5d7] text-[#74593b]'}`}>
+        <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${emphasized ? 'bg-[#514C44] text-white' : 'bg-[#efe5d7] text-[#74593b]'}`}>
           <Icon name={icon} />
         </span>
         <span className="font-display text-sm font-semibold">{label}</span>
@@ -235,7 +235,7 @@ function ContactRow({ icon, value }: { icon: 'mail'; value: string }) {
 function AccountAvatar({ avatarUrl, initial, size, alt = 'Ảnh đại diện' }: { avatarUrl?: string; initial: string; size: 'trigger' | 'menu'; alt?: string }) {
   const classes = size === 'menu' ? 'h-11 w-11 border border-[#d8b98e] text-base' : 'h-9 w-9 text-sm'
   return (
-    <span className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#173f35] font-display font-bold text-white ${classes}`}>
+    <span className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#514C44] font-display font-bold text-white ${classes}`}>
       {avatarUrl ? <img src={avatarUrl} alt={alt} width={size === 'menu' ? 44 : 36} height={size === 'menu' ? 44 : 36} decoding="async" className="h-full w-full object-cover" /> : initial}
     </span>
   )

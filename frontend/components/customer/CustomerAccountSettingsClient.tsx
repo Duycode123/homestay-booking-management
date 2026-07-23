@@ -78,7 +78,7 @@ export default function CustomerAccountSettingsClient() {
         </section>
 
         <div className="mt-4 flex items-start gap-3 rounded-2xl border border-[#dfd3c2] bg-[#f5eee3]/80 px-4 py-3.5 text-sm leading-6 text-[#6f685e]">
-          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-[#17483b] shadow-sm">
+          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-[#514C44] shadow-sm">
             <SettingIconSvg name="security" />
           </span>
           <p>Mọi thay đổi quan trọng về mật khẩu hoặc đăng nhập đều được bảo vệ bằng phiên xác thực của bạn.</p>
@@ -101,7 +101,7 @@ function SettingRow({
       href={href}
       className="group grid gap-3 border-b border-[#ece2d5] px-5 py-4 transition last:border-b-0 hover:bg-[#f8f3ec] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#b98853]/35 sm:grid-cols-[44px_minmax(0,1fr)_auto] sm:items-center md:px-7 md:py-5"
     >
-      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#efe4d4] text-[#704f2e] transition duration-300 group-hover:bg-[#17483b] group-hover:text-white">
+      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#efe4d4] text-[#704f2e] transition duration-300 group-hover:bg-[#514C44] group-hover:text-white">
         <SettingIconSvg name={icon} />
       </span>
 
@@ -111,7 +111,7 @@ function SettingRow({
         <span className="mt-1 block text-sm leading-6 text-[#77756e]">{description}</span>
       </span>
 
-      <span className="flex items-center gap-2 pl-14 text-sm font-semibold text-[#17483b] sm:pl-4">
+      <span className="flex items-center gap-2 pl-14 text-sm font-semibold text-[#514C44] sm:pl-4">
         <span className="hidden lg:inline">{action}</span>
         <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#dfd0bc] bg-white transition group-hover:translate-x-0.5 group-hover:border-[#b98853]" aria-hidden>
           →

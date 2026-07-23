@@ -21,7 +21,7 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ slu
 
   return (
     <main id="main-content" className="bg-[#f7f3ec] text-on-surface">
-      <section className="border-b border-[#e2d8c9] bg-[#143c32] text-white">
+      <section className="border-b border-[#e2d8c9] bg-[#514C44] text-white">
         <div className="mx-auto max-w-[1120px] px-5 py-12 sm:px-8 sm:py-16">
           <Link href="/news" className="text-xs font-semibold uppercase tracking-[0.15em] text-primary-fixed transition-opacity hover:opacity-75">← Trở về Tin tức</Link>
           <p className="mt-8 text-xs font-semibold uppercase tracking-[0.16em] text-[#f2d5a8]">{article.source}</p>

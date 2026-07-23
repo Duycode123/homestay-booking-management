@@ -1,121 +1,93 @@
-const DEFAULT_BULLETS = [
-  { title: 'Đặt phòng liền mạch', desc: 'Chọn không gian và hoàn tất đặt phòng chỉ trong vài bước.' },
-  { title: 'Không gian được tuyển chọn', desc: 'Mỗi phòng đều được chuẩn bị kỹ lưỡng trước khi đón khách.' },
-  { title: 'Đồng hành suốt kỳ nghỉ', desc: 'Đội ngũ vận hành luôn sẵn sàng khi bạn cần hỗ trợ.' },
-]
-
-const STATS = [
-  { value: 'Rõ ràng', label: 'Thông tin phòng' },
-  { value: 'Linh hoạt', label: 'Khung giờ đặt' },
-  { value: 'Chu đáo', label: 'Hỗ trợ lưu trú' },
-]
+import Image from 'next/image'
+import SereneVillaWordmark from '@/components/layout/SereneVillaWordmark'
 
 type AuthBannerProps = {
   description?: string
   bullets?: { title: string; desc: string }[]
 }
 
-function HomestayMark() {
+export default function AuthBanner({
+  description = 'Một không gian riêng tư, chỉn chu cho những ngày bạn muốn sống chậm hơn.',
+}: AuthBannerProps) {
   return (
-    <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M3.75 11.25 12 4.5l8.25 6.75v7.5a.75.75 0 0 1-.75.75h-15a.75.75 0 0 1-.75-.75v-7.5Z"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinejoin="round"
+    <aside className="relative hidden min-h-screen overflow-hidden bg-[#514C44] text-white lg:flex lg:w-[46%] lg:flex-col">
+      <Image
+        src="/images/homestay-luxury-hero.webp"
+        alt=""
+        fill
+        priority
+        sizes="46vw"
+        className="object-cover object-center"
       />
-      <path d="M9.25 19.5v-5.25h5.5v5.25" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
-      <path
-        d="M15.8 5.7c.25-1.65 1.35-2.7 3.2-2.95-.12 1.7-1.2 2.73-3.2 2.95Z"
-        fill="currentColor"
+
+      <div
+        className="absolute inset-0 bg-[linear-gradient(180deg,rgba(50,46,41,.66)_0%,rgba(50,46,41,.34)_42%,rgba(50,46,41,.88)_100%)]"
+        aria-hidden="true"
       />
-    </svg>
+      <div
+        className="absolute inset-0 bg-[radial-gradient(circle_at_78%_18%,rgba(221,202,177,.18),transparent_32%)]"
+        aria-hidden="true"
+      />
+
+      <BotanicalDecoration className="-left-20 top-[15%] h-72 w-72 -rotate-12 opacity-[0.16]" />
+      <BotanicalDecoration className="-bottom-20 -right-16 h-80 w-80 rotate-[165deg] opacity-[0.13]" />
+
+      <div className="relative z-10 flex min-h-screen flex-col px-10 py-9 xl:px-14 xl:py-11">
+        <SereneVillaWordmark compact className="text-[#F4EFE6]" />
+
+        <div className="my-auto max-w-[34rem] py-12">
+          <span className="mb-7 block h-px w-14 bg-[#D9C2A8]" aria-hidden="true" />
+          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#E2CBAF]">
+            A quiet place to belong
+          </p>
+          <h2 className="font-editorial mt-5 max-w-[11ch] text-5xl font-medium leading-[1.02] text-[#FFFDF9] xl:text-[3.75rem]">
+            Một kỳ nghỉ dịu dàng, bắt đầu từ đây.
+          </h2>
+          <p className="mt-6 max-w-md text-sm leading-7 text-white/68 line-clamp-2">
+            {description}
+          </p>
+        </div>
+
+        <div className="flex items-end justify-between border-t border-white/18 pt-5">
+          <div>
+            <p className="text-[9px] font-semibold uppercase tracking-[0.26em] text-[#E2CBAF]">
+              The Serene Villa
+            </p>
+            <p className="mt-1.5 text-xs tracking-[0.08em] text-white/52">Hanoi · Private stays</p>
+          </div>
+          <span className="font-editorial text-3xl font-medium text-white/42">01</span>
+        </div>
+      </div>
+    </aside>
   )
 }
 
-export default function AuthBanner({
-  description = 'Một nơi ở chỉn chu, ấm áp và đủ riêng tư để bạn thực sự tận hưởng từng khoảnh khắc của chuyến đi.',
-  bullets = DEFAULT_BULLETS,
-}: AuthBannerProps) {
+function BotanicalDecoration({ className }: { className: string }) {
   return (
-    <aside className="relative hidden min-h-screen overflow-hidden bg-brand-greenDark text-white lg:flex lg:w-[48%] lg:flex-col">
-      <div
-        className="pointer-events-none absolute inset-0 opacity-70"
-        style={{
-          backgroundImage:
-            'radial-gradient(circle at 82% 15%, rgba(196,158,106,0.22), transparent 30%), radial-gradient(circle at 2% 90%, rgba(255,255,255,0.08), transparent 28%)',
-        }}
-        aria-hidden="true"
+    <svg
+      className={`pointer-events-none absolute text-[#E8D9C6] ${className}`}
+      viewBox="0 0 220 220"
+      fill="none"
+      aria-hidden="true"
+    >
+      <ellipse cx="110" cy="110" rx="67" ry="82" stroke="currentColor" strokeWidth="1.1" />
+      <path
+        d="M71 92C47 73 33 49 29 20M149 143c25 17 41 39 46 66M54 76l-22-4m29 11-3-21M44 61 26 51m26 17 4-18m108 108 21 1m-29-9 3 20m8-7 18 8m-25-16-5 18"
+        stroke="currentColor"
+        strokeWidth="1.15"
+        strokeLinecap="round"
       />
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.045]"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(255,255,255,.8) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.8) 1px, transparent 1px)',
-          backgroundSize: '72px 72px',
-        }}
-        aria-hidden="true"
-      />
-      <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-white/20 to-transparent" aria-hidden="true" />
-
-      <div className="relative z-10 flex min-h-screen flex-col px-10 py-9 xl:px-16 xl:py-12">
-        <div className="flex items-center justify-between gap-5">
-          <div className="flex items-center gap-3.5">
-            <span className="flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-white/10 text-brand-orange backdrop-blur-sm">
-              <HomestayMark />
-            </span>
-            <div>
-              <p className="font-display text-lg font-semibold tracking-[0.01em] text-white">The Serene Villa</p>
-              <p className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.24em] text-white/55">
-                Curated stays · Thoughtful service
-              </p>
-            </div>
-          </div>
-          <span className="hidden rounded-full border border-white/15 bg-white/[0.06] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/70 xl:inline-flex">
-            Kỳ nghỉ riêng tư
-          </span>
-        </div>
-
-        <div className="my-auto max-w-xl py-12">
-          <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.3em] text-brand-orange">
-            A quiet place to belong
-          </p>
-          <h2 className="font-editorial max-w-[12ch] text-5xl font-semibold leading-[1.04] tracking-[-0.035em] text-white xl:text-6xl">
-            Một kỳ nghỉ dịu dàng, bắt đầu từ đây.
-          </h2>
-          <p className="mt-6 max-w-lg text-[15px] leading-7 text-white/66">{description}</p>
-
-          <ul className="mt-10 grid gap-3" aria-label="Lợi ích khi đặt phòng">
-            {bullets.map((item) => (
-              <li
-                key={item.title}
-                className="group flex items-start gap-4 border-t border-white/12 py-4 transition-colors first:border-t-0"
-              >
-                <span className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-brand-orange/45 text-brand-orange">
-                  <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                    <path d="m5.5 10.25 2.7 2.7 6.3-6.4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </span>
-                <div>
-                  <p className="font-display text-[15px] font-semibold text-white">{item.title}</p>
-                  <p className="mt-1 text-xs leading-5 text-white/55">{item.desc}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="grid grid-cols-3 border-y border-white/12">
-          {STATS.map((stat) => (
-            <div key={stat.label} className="border-r border-white/12 px-3 py-4 first:pl-0 last:border-r-0 last:pr-0">
-              <p className="font-editorial text-lg font-semibold text-primary-fixed">{stat.value}</p>
-              <p className="mt-1 text-[10px] uppercase leading-4 tracking-[0.12em] text-white/45">{stat.label}</p>
-            </div>
-          ))}
-        </div>
-
-        <p className="mt-6 text-[10px] tracking-[0.08em] text-white/35">© 2026 The Serene Villa</p>
-      </div>
-    </aside>
+      <g fill="currentColor" opacity="0.78">
+        <ellipse cx="29" cy="21" rx="6" ry="12" transform="rotate(-28 29 21)" />
+        <ellipse cx="26" cy="51" rx="6" ry="12" transform="rotate(-62 26 51)" />
+        <ellipse cx="32" cy="72" rx="6" ry="12" transform="rotate(-76 32 72)" />
+        <ellipse cx="55" cy="50" rx="6" ry="12" transform="rotate(31 55 50)" />
+        <ellipse cx="59" cy="72" rx="6" ry="12" transform="rotate(18 59 72)" />
+        <ellipse cx="195" cy="208" rx="6" ry="12" transform="rotate(-25 195 208)" />
+        <ellipse cx="185" cy="171" rx="6" ry="12" transform="rotate(-70 185 171)" />
+        <ellipse cx="158" cy="173" rx="6" ry="12" transform="rotate(25 158 173)" />
+        <ellipse cx="162" cy="153" rx="6" ry="12" transform="rotate(12 162 153)" />
+      </g>
+    </svg>
   )
 }

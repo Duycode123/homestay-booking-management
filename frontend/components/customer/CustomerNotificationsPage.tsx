@@ -73,7 +73,7 @@ export default function CustomerNotificationsPage() {
 
   return (
     <CustomerPageShell>
-      <section className="relative overflow-hidden rounded-[26px] bg-[linear-gradient(135deg,#143f34,#2b5d4f)] px-6 py-8 text-white shadow-[0_24px_60px_rgba(20,55,46,.17)] sm:px-9 sm:py-10">
+      <section className="relative overflow-hidden rounded-[26px] bg-[linear-gradient(135deg,#514C44,#746D63)] px-6 py-8 text-white shadow-[0_24px_60px_rgba(20,55,46,.17)] sm:px-9 sm:py-10">
         <div aria-hidden className="absolute -right-16 -top-20 h-56 w-56 rounded-full border border-white/10" />
         <div className="relative flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
           <div>
@@ -91,7 +91,7 @@ export default function CustomerNotificationsPage() {
       <section className="mt-6 rounded-[24px] border border-[#e2d7c8] bg-[#fffdfa] p-3 shadow-[0_18px_50px_rgba(30,53,45,.08)] sm:p-5">
         <div className="flex gap-2 overflow-x-auto border-b border-[#ebe1d4] pb-4">
           {filters.map((item) => (
-            <button key={item.value} type="button" onClick={() => setFilter(item.value)} className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold transition ${filter === item.value ? 'bg-[#17493c] text-white shadow-sm' : 'bg-[#f5eee4] text-[#665d52] hover:bg-[#eee2d3]'}`}>{item.label}</button>
+            <button key={item.value} type="button" onClick={() => setFilter(item.value)} className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold transition ${filter === item.value ? 'bg-[#514C44] text-white shadow-sm' : 'bg-[#f5eee4] text-[#665d52] hover:bg-[#eee2d3]'}`}>{item.label}</button>
           ))}
         </div>
 

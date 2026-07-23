@@ -79,7 +79,7 @@ function PaymentOptionCard({
       {active && <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-[#B28455]" />}
       <span className="flex items-start justify-between gap-3">
         <span className="flex items-center gap-2">
-          <span className={['rounded-full px-2.5 py-1 font-display text-xs font-bold', active ? 'bg-[#173F35] text-white' : 'bg-[#EEEAE3] text-[#5F655F]'].join(' ')}>{percentage}</span>
+          <span className={['rounded-full px-2.5 py-1 font-display text-xs font-bold', active ? 'bg-[#514C44] text-white' : 'bg-[#EEEAE3] text-[#5F655F]'].join(' ')}>{percentage}</span>
           {badge && <span className="text-[10px] font-bold uppercase tracking-wide text-[#A16F3E]">{badge}</span>}
         </span>
         <span className={['flex h-6 w-6 items-center justify-center rounded-full border', active ? 'border-[#B28455] bg-[#B28455] text-white' : 'border-[#CFC7BB] text-transparent'].join(' ')}>

@@ -93,7 +93,7 @@ export default function HomestayHeader() {
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-outline-variant/75 bg-[#F7F3EB]/94 shadow-[0_10px_36px_rgba(38,55,47,0.045)] backdrop-blur-xl">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-outline-variant/75 bg-[#F4EFE6]/94 shadow-[0_10px_36px_rgba(81,76,68,0.055)] backdrop-blur-xl">
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-orange/45 to-transparent" aria-hidden />
         <div className="mx-auto flex h-20 max-w-[1400px] items-center gap-3 px-4 sm:gap-4 sm:px-8 xl:px-6 2xl:gap-5 2xl:px-8">
           <Link href={localizedHref('/')} onClick={handleLogoClick} className="group min-w-0 shrink text-secondary transition-opacity hover:opacity-75 sm:shrink-0" aria-label={`${t('nav.home')} The Serene Villa`}>
@@ -131,7 +131,7 @@ export default function HomestayHeader() {
         </div>
 
         {menuOpen && (
-          <div id="homestay-mobile-menu" className="premium-scrollbar max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain border-t border-outline-variant bg-[#F7F3EB]/98 px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-[0_24px_44px_rgba(23,58,49,0.1)] backdrop-blur-xl sm:px-5 xl:hidden">
+          <div id="homestay-mobile-menu" className="premium-scrollbar max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain border-t border-outline-variant bg-[#F4EFE6]/98 px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-[0_24px_44px_rgba(81,76,68,0.11)] backdrop-blur-xl sm:px-5 xl:hidden">
             <div className="flex justify-end pt-3"><LanguageSwitcher compact /></div>
             <nav className="grid py-2" aria-label={t('nav.main')}>
               {publicNavItems.map((item) => {

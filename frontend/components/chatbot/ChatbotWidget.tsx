@@ -443,7 +443,7 @@ export default function ChatbotWidget() {
         ].join(' ')}
       >
         {/* Header */}
-        <header className="relative shrink-0 bg-gradient-to-br from-brand-greenDark via-[#1e4d3a] to-brand-greenLight px-4 py-3.5 text-white sm:px-5 sm:py-4">
+        <header className="relative shrink-0 bg-gradient-to-br from-brand-greenDark via-[#746D63] to-brand-greenLight px-4 py-3.5 text-white sm:px-5 sm:py-4">
           <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-t-[28px]">
             <div className="absolute -right-6 -top-8 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
             <div className="absolute -bottom-10 left-4 h-24 w-24 rounded-full bg-brand-orange/20 blur-2xl" />

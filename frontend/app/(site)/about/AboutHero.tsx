@@ -161,7 +161,7 @@ export default function AboutHero() {
                         className="absolute -bottom-6 left-[8%] h-20 w-[84%] rounded-[50%] bg-black/30 blur-3xl"
                     />
 
-                    <div className="relative overflow-hidden rounded-[28px] border border-white/14 bg-[#153d32] shadow-[0_34px_90px_rgba(0,0,0,0.3)]">
+                    <div className="relative overflow-hidden rounded-[28px] border border-white/14 bg-[#514C44] shadow-[0_34px_90px_rgba(0,0,0,0.3)]">
                         <div className="relative aspect-[4/3] min-h-0 sm:min-h-[470px] lg:min-h-[540px]">
                             <motion.div
                                 style={{ y: imageY, scale: imageScale }}

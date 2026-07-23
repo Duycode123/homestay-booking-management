@@ -207,7 +207,7 @@ export default function CustomerProfileClient() {
 
   return (
     <CustomerPageShell>
-      <div className="relative mb-6 overflow-hidden rounded-[22px] bg-gradient-to-br from-[#0B3B2F] via-secondary to-[#245545] px-6 py-8 text-white shadow-[0_22px_60px_rgba(11,59,47,0.2)] sm:px-9 sm:py-10">
+      <div className="relative mb-6 overflow-hidden rounded-[22px] bg-gradient-to-br from-[#514C44] via-secondary to-[#746D63] px-6 py-8 text-white shadow-[0_22px_60px_rgba(11,59,47,0.2)] sm:px-9 sm:py-10">
         <div className="pointer-events-none absolute -right-16 -top-28 h-72 w-72 rounded-full border border-white/10" />
         <div className="pointer-events-none absolute -right-4 -top-16 h-48 w-48 rounded-full bg-primary-fixed/10 blur-3xl" />
         <div className="relative flex flex-col gap-7 md:flex-row md:items-center md:justify-between">
@@ -313,7 +313,7 @@ export default function CustomerProfileClient() {
                 <button
                   type="submit"
                   disabled={isSavingProfile || isFetchingProfile || isUploadingAvatar}
-                  className="inline-flex h-12 items-center justify-center rounded-full bg-secondary px-7 font-display text-sm font-semibold text-white shadow-[0_12px_28px_rgba(11,59,47,0.18)] transition hover:bg-[#245545] focus:outline-none focus:ring-2 focus:ring-secondary/25 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-12 items-center justify-center rounded-full bg-secondary px-7 font-display text-sm font-semibold text-white shadow-[0_12px_28px_rgba(11,59,47,0.18)] transition hover:bg-[#746D63] focus:outline-none focus:ring-2 focus:ring-secondary/25 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isSavingProfile ? 'Đang lưu thay đổi...' : 'Lưu thay đổi'}
                 </button>
@@ -418,7 +418,7 @@ function MessageBox({ message }: { message: Message }) {
       aria-live={isSuccess ? 'polite' : 'assertive'}
       className={[
         'mt-4 rounded-2xl border px-4 py-3 text-sm',
-        isSuccess ? 'border-[#245545]/25 bg-[#F1F8F2] text-[#245545]' : 'border-[#C62828]/20 bg-[#FFEBEE] text-[#C62828]',
+        isSuccess ? 'border-[#746D63]/25 bg-[#F1F8F2] text-[#746D63]' : 'border-[#C62828]/20 bg-[#FFEBEE] text-[#C62828]',
       ].join(' ')}
     >
       {message.text}

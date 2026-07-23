@@ -84,7 +84,7 @@ export default async function AmenitiesPage() {
       className="overflow-x-hidden bg-[#F7F3EC] text-on-surface"
     >
       <section className="relative isolate overflow-hidden bg-secondary text-white">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_15%,rgba(216,181,136,0.18),transparent_34%),linear-gradient(120deg,rgba(5,35,28,0.98),rgba(18,73,57,0.82))]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_15%,rgba(216,194,168,0.20),transparent_34%),linear-gradient(120deg,rgba(63,58,52,0.98),rgba(116,109,99,0.84))]" />
         <div
           aria-hidden="true"
           className="absolute -left-28 -top-40 h-[30rem] w-[30rem] rounded-full border border-white/[0.06]"

@@ -62,6 +62,7 @@
   --font-sans: "Aptos", "Segoe UI Variable Text", "Segoe UI", sans-serif;
   --font-display: "Aptos Display", "Segoe UI Variable Display", "Segoe UI", sans-serif;
   --font-editorial: "Iowan Old Style", "Baskerville", "Palatino Linotype", Georgia, serif;
+  --public-botanical-ornament: url("data:image/svg+xml,%3Csvg viewBox='0 0 220 220' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%237d756a' stroke-width='1.4' stroke-linecap='round'%3E%3Cellipse cx='110' cy='110' rx='72' ry='86' opacity='.48'/%3E%3Cpath d='M69 91C45 72 31 48 28 20M151 144c25 16 40 38 45 65'/%3E%3Cpath d='m53 75-22-4m30 12-3-21M43 61l-18-10m26 17 4-18M36 45 23 31m22 22 9-15M165 158l21 1m-29-9 3 20m8-7 18 8m-25-16-5 18m18 3 14 13m-22-20-9 14'/%3E%3C/g%3E%3Cg fill='%237d756a' opacity='.62'%3E%3Cellipse cx='28' cy='20' rx='6' ry='12' transform='rotate(-28 28 20)'/%3E%3Cellipse cx='25' cy='51' rx='6' ry='12' transform='rotate(-62 25 51)'/%3E%3Cellipse cx='31' cy='71' rx='6' ry='12' transform='rotate(-76 31 71)'/%3E%3Cellipse cx='54' cy='50' rx='6' ry='12' transform='rotate(35 54 50)'/%3E%3Cellipse cx='58' cy='72' rx='6' ry='12' transform='rotate(18 58 72)'/%3E%3Cellipse cx='196' cy='209' rx='6' ry='12' transform='rotate(-25 196 209)'/%3E%3Cellipse cx='186' cy='171' rx='6' ry='12' transform='rotate(-70 186 171)'/%3E%3Cellipse cx='190' cy='190' rx='6' ry='12' transform='rotate(-43 190 190)'/%3E%3Cellipse cx='157' cy='173' rx='6' ry='12' transform='rotate(25 157 173)'/%3E%3Cellipse cx='161' cy='153' rx='6' ry='12' transform='rotate(12 161 153)'/%3E%3C/g%3E%3C/svg%3E");
 
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
@@ -415,44 +416,43 @@ h1, h2, h3, h4, h5, h6 {
 /* Customer-facing quiet-luxury theme. It is scoped so admin and staff retain
    their compact operational typography and surfaces. */
 .public-site-shell {
-  --color-brand-orange: #B88A59;
-  --color-brand-orangeHover: #9C7148;
-  --color-brand-greenDark: #173F35;
-  --color-brand-greenLight: #28594A;
-  --color-brand-bgGray: #F7F3EB;
-  --color-surface: #F7F3EB;
-  --color-surface-dim: #E8E0D4;
+  --color-brand-orange: #9A8064;
+  --color-brand-orangeHover: #7D6852;
+  --color-brand-greenDark: #514C44;
+  --color-brand-greenLight: #746D63;
+  --color-brand-bgGray: #F4EFE6;
+  --color-surface: #F4EFE6;
+  --color-surface-dim: #E5DDD2;
   --color-surface-container-lowest: #FFFDFC;
-  --color-surface-container-low: #FBF8F2;
-  --color-surface-container: #F0E9DE;
-  --color-surface-container-high: #E8E0D4;
-  --color-on-surface: #30342F;
-  --color-on-surface-variant: #6D7069;
-  --color-outline: #CFC5B7;
-  --color-outline-variant: #E6DDD1;
-  --color-primary: #B88A59;
-  --color-primary-container: #EFE1D0;
-  --color-primary-fixed: #E8C99E;
-  --color-secondary: #173F35;
-  --color-secondary-container: #28594A;
-  --color-on-secondary-container: #D6E4DC;
-  --color-inverse-surface: #173F35;
-  --font-sans: var(--font-public-sans), "Segoe UI", sans-serif;
-  --font-display: var(--font-public-sans), "Segoe UI", sans-serif;
-  --font-editorial: var(--font-public-editorial), "Iowan Old Style", Georgia, serif;
-  --homestay-shadow-card: 0 14px 44px rgba(38, 55, 47, 0.07);
-  --homestay-shadow-elevated: 0 28px 76px rgba(35, 50, 43, 0.14);
+  --color-surface-container-low: #FAF6F0;
+  --color-surface-container: #EDE5DA;
+  --color-surface-container-high: #E4DBCF;
+  --color-on-surface: #45413B;
+  --color-on-surface-variant: #746F67;
+  --color-outline: #C9BFB2;
+  --color-outline-variant: #E1D8CC;
+  --color-primary: #9A8064;
+  --color-primary-container: #EADFD1;
+  --color-primary-fixed: #D9C2A8;
+  --color-secondary: #514C44;
+  --color-secondary-container: #746D63;
+  --color-on-secondary-container: #F3EEE7;
+  --color-inverse-surface: #514C44;
+  --font-sans: "Aptos", "Segoe UI Variable Text", "Segoe UI", sans-serif;
+  --font-display: "Aptos Display", "Segoe UI Variable Display", "Segoe UI", sans-serif;
+  --font-editorial: "Iowan Old Style", "Baskerville", "Palatino Linotype", Georgia, serif;
+  --homestay-shadow-card: 0 14px 44px rgba(81, 76, 68, 0.075);
+  --homestay-shadow-elevated: 0 28px 76px rgba(81, 76, 68, 0.15);
   background:
-    radial-gradient(circle at 7% 0%, rgba(184, 138, 89, 0.07), transparent 30rem),
-    #F7F3EB;
+    radial-gradient(circle at 7% 0%, rgba(154, 128, 100, 0.09), transparent 30rem),
+    #F4EFE6;
   color: var(--color-on-surface);
-  font-family: var(--font-public-sans), "Segoe UI", sans-serif;
+  font-family: var(--font-sans);
 }
 
 .public-site-shell .font-editorial {
-  font-family: var(--font-public-editorial), "Iowan Old Style", Georgia, serif;
-  font-weight: 500;
-  letter-spacing: -0.018em;
+  font-family: var(--font-editorial);
+  letter-spacing: normal;
 }
 
 .public-site-shell :is(p, li) {
@@ -461,6 +461,134 @@ h1, h2, h3, h4, h5, h6 {
 
 .public-site-shell :is(button, a) {
   transition-duration: 220ms;
+}
+
+/* A restrained botanical watermark gives every top-level customer section
+   the same identity as the wordmark without competing with the content. */
+.public-site-shell main {
+  position: relative;
+  isolation: isolate;
+}
+
+.public-site-shell main::before,
+.public-site-shell main::after {
+  position: absolute;
+  z-index: 0;
+  width: clamp(16rem, 25vw, 25rem);
+  aspect-ratio: 1;
+  background: var(--public-botanical-ornament) center / contain no-repeat;
+  content: "";
+  opacity: 0.085;
+  pointer-events: none;
+}
+
+.public-site-shell main::before {
+  top: 22rem;
+  left: clamp(-10rem, -7vw, -5rem);
+  transform: rotate(-16deg);
+}
+
+.public-site-shell main::after {
+  right: clamp(-11rem, -8vw, -6rem);
+  bottom: 14rem;
+  transform: rotate(168deg);
+}
+
+.public-site-shell :is(main > section, main > div > section, main > div > div > section) {
+  position: relative;
+  isolation: isolate;
+}
+
+.public-site-shell :is(main > section, main > div > section, main > div > div > section)::after {
+  position: absolute;
+  z-index: 0;
+  top: clamp(1rem, 4vw, 3rem);
+  right: clamp(-3rem, -2vw, -1rem);
+  width: clamp(10rem, 18vw, 17rem);
+  aspect-ratio: 1;
+  background: var(--public-botanical-ornament) center / contain no-repeat;
+  content: "";
+  opacity: 0.23;
+  pointer-events: none;
+}
+
+.public-site-shell :is(main > section, main > div > section, main > div > div > section)::before {
+  position: absolute;
+  z-index: 0;
+  bottom: clamp(0.5rem, 3vw, 2.5rem);
+  left: clamp(-3.5rem, -2vw, -1.5rem);
+  width: clamp(7.5rem, 11vw, 11rem);
+  aspect-ratio: 1;
+  background: var(--public-botanical-ornament) center / contain no-repeat;
+  content: "";
+  opacity: 0.105;
+  pointer-events: none;
+  transform: rotate(122deg);
+}
+
+.public-site-shell :is(main > section, main > div > section, main > div > div > section):nth-of-type(even)::after {
+  right: auto;
+  left: clamp(-3rem, -2vw, -1rem);
+  transform: scaleX(-1) rotate(-8deg);
+}
+
+.public-site-shell :is(main > section, main > div > section, main > div > div > section):nth-of-type(even)::before {
+  right: clamp(-3.5rem, -2vw, -1.5rem);
+  left: auto;
+  transform: scaleX(-1) rotate(122deg);
+}
+
+.public-site-shell :is(main > section, main > div > section, main > div > div > section)[class*="bg-secondary"]::before,
+.public-site-shell :is(main > section, main > div > section, main > div > div > section)[class*="bg-secondary"]::after {
+  filter: brightness(2.35) saturate(0.45);
+}
+
+.public-site-shell :is(main > section, main > div > section, main > div > div > section)[class*="bg-secondary"]::after {
+  opacity: 0.28;
+}
+
+.public-site-shell :is(main > section, main > div > section, main > div > div > section)[class*="bg-secondary"]::before {
+  opacity: 0.14;
+}
+
+.public-site-shell .premium-scrollbar {
+  scrollbar-color: rgba(116, 109, 99, 0.6) #eee7dd;
+}
+
+.public-site-shell .premium-scrollbar::-webkit-scrollbar-track {
+  background: #eee7dd;
+}
+
+.public-site-shell .premium-scrollbar::-webkit-scrollbar-thumb {
+  border-color: #eee7dd;
+  background: #9b9185;
+}
+
+.public-site-shell .premium-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #6f685f;
+}
+
+.public-site-shell :is(.btn-warm, .btn-date-choice),
+.public-site-shell :is(button.bg-brand-orange, a.bg-brand-orange, [role="button"].bg-brand-orange) {
+  box-shadow: 0 14px 30px rgba(81, 76, 68, 0.2);
+}
+
+@media (max-width: 767px) {
+  .public-site-shell main::before,
+  .public-site-shell main::after {
+    width: 13rem;
+    opacity: 0.06;
+  }
+
+  .public-site-shell :is(main > section, main > div > section, main > div > div > section)::before {
+    display: none;
+  }
+
+  .public-site-shell :is(main > section, main > div > section, main > div > div > section)::after {
+    top: 1rem;
+    width: 10rem;
+    opacity: 0.16;
+  }
 }
 
 .eyebrow {

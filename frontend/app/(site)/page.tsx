@@ -851,7 +851,7 @@ function SereneExperience() {
                   <span className="h-px flex-1 bg-[#d8cbb9]" />
                 </div>
 
-                <h2 className="font-editorial mt-5 max-w-[620px] text-4xl font-semibold leading-[1.08] text-[#173f35] sm:text-5xl lg:text-[3.45rem]">
+                <h2 className="font-editorial mt-5 max-w-[620px] text-4xl font-semibold leading-[1.08] text-[#514C44] sm:text-5xl lg:text-[3.45rem]">
                   {activeSeason.title}
                 </h2>
 
@@ -860,7 +860,7 @@ function SereneExperience() {
                 </p>
 
                 <div className="mt-9 flex items-center gap-5">
-                  <span className="font-editorial text-3xl font-semibold text-[#173f35]">
+                  <span className="font-editorial text-3xl font-semibold text-[#514C44]">
                     {activeSeason.number}
                   </span>
                   <div className="h-px w-16 bg-[#b67a43]" />
@@ -878,7 +878,7 @@ function SereneExperience() {
 
           <div className="relative z-0 mx-auto h-[500px] w-full max-w-[720px] sm:h-[620px] lg:h-[680px]">
             <div
-              className="pointer-events-none absolute bottom-[3%] left-[8%] h-28 w-[82%] rounded-[50%] bg-[#173f35]/20 blur-3xl"
+              className="pointer-events-none absolute bottom-[3%] left-[8%] h-28 w-[82%] rounded-[50%] bg-[#514C44]/20 blur-3xl"
               aria-hidden="true"
             />
 
@@ -957,11 +957,11 @@ function SereneExperience() {
                       />
 
                       <span
-                        className="absolute inset-0 bg-gradient-to-t from-[#102f28]/55 via-transparent to-black/5"
+                        className="absolute inset-0 bg-gradient-to-t from-[#514C44]/55 via-transparent to-black/5"
                         aria-hidden="true"
                       />
 
-                      <span className="absolute right-3 top-3 rounded-full border border-white/40 bg-[#153d32]/75 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur-md">
+                      <span className="absolute right-3 top-3 rounded-full border border-white/40 bg-[#514C44]/75 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur-md">
                         {season.shortName}
                       </span>
 
@@ -1152,9 +1152,9 @@ function SereneDayExperience() {
                     />
                   </motion.div>
 
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#153d32]/65 via-[#153d32]/5 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#514C44]/65 via-[#514C44]/5 to-transparent" />
 
-                  <span className="absolute left-4 top-4 rounded-full border border-white/30 bg-[#153d32]/65 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur-md transition-colors duration-300 group-hover:bg-brand-orange/85">
+                  <span className="absolute left-4 top-4 rounded-full border border-white/30 bg-[#514C44]/65 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur-md transition-colors duration-300 group-hover:bg-brand-orange/85">
                     {moment.time}
                   </span>
 
@@ -1496,7 +1496,7 @@ function EquipmentShowcase() {
                 "focus-within:ring-2 focus-within:ring-secondary/35",
                 category.layout,
                 category.featured
-                  ? "border-secondary bg-secondary text-white shadow-[0_22px_50px_rgba(20,57,47,0.18)] hover:-translate-y-0.5 hover:bg-[#123d31]"
+                  ? "border-secondary bg-secondary text-white shadow-[0_22px_50px_rgba(20,57,47,0.18)] hover:-translate-y-0.5 hover:bg-[#3F3A34]"
                   : "border-outline-variant bg-white/90 shadow-[0_12px_30px_rgba(63,51,35,0.06)] hover:-translate-y-0.5 hover:border-brand-orange/50 hover:bg-[#FFFEFB] hover:shadow-[0_18px_36px_rgba(63,51,35,0.09)]",
               ].join(" ")}
             >

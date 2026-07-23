@@ -137,7 +137,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
 
 export function AuthFormPanel({ children }: { children: ReactNode }) {
   return (
-    <section className="relative z-10 flex min-h-dvh w-full items-center justify-center px-5 py-8 sm:px-8 sm:py-12 lg:w-[52%] lg:px-10 xl:px-16">
+    <section className="relative z-10 flex min-h-dvh w-full items-center justify-center px-5 py-8 sm:px-8 sm:py-12 lg:w-[54%] lg:px-10 xl:px-16">
       <div className="w-full max-w-[460px] py-4 sm:rounded-[1.75rem] sm:border sm:border-outline-variant/80 sm:bg-white/90 sm:p-10 sm:shadow-[0_24px_70px_rgba(23,48,39,.08)] sm:backdrop-blur-xl">
         {children}
       </div>
