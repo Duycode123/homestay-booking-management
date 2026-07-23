@@ -53,12 +53,14 @@ const teamStories = [
 
 export default function AboutPage() {
   return (
-    <main id="main-content" className="bg-[#F7F3EC] text-on-surface">
+    <main id="main-content" className="overflow-hidden bg-[#F7F3EC] text-on-surface">
       <AboutHero />
 
-      <section className="border-b border-outline-variant bg-white py-20 sm:py-28">
-        <div className="mx-auto grid max-w-[1400px] gap-12 px-5 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-          <div className="max-w-3xl">
+      <section id="brand-story" className="relative border-b border-outline-variant bg-[#FBF8F2] py-20 sm:py-28 lg:py-32">
+        <div aria-hidden className="pointer-events-none absolute -left-40 top-10 h-80 w-80 rounded-full border border-secondary/[0.06]" />
+        <div aria-hidden className="pointer-events-none absolute -right-32 bottom-10 h-72 w-72 rounded-full border border-brand-orange/10" />
+        <div className="relative mx-auto grid max-w-[1400px] gap-14 px-5 sm:px-8 lg:grid-cols-[0.92fr_1.08fr] lg:items-center lg:gap-20">
+          <div className="max-w-3xl lg:py-6">
             <p className="eyebrow text-brand-orange">Tên gọi &amp; tinh thần thương hiệu</p>
             <h2 className="font-editorial mt-5 text-4xl font-semibold leading-[1.08] text-secondary sm:text-5xl">
               The Serene Villa — nơi bình yên có hình hài.
@@ -81,7 +83,7 @@ export default function AboutPage() {
                 ['02', 'Tinh tế', 'Chỉn chu trong từng chi tiết.'],
                 ['03', 'Chân thành', 'Đón tiếp bằng sự thấu hiểu.'],
               ].map(([number, title, description]) => (
-                <div key={number} className="rounded-[18px] border border-outline-variant bg-[#F8F4ED] p-5">
+                <div key={number} className="group rounded-[20px] border border-outline-variant bg-white/75 p-5 shadow-[0_12px_32px_rgba(35,77,66,0.045)] transition duration-300 hover:-translate-y-1 hover:border-brand-orange/30 hover:shadow-[0_18px_42px_rgba(35,77,66,0.09)]">
                   <span className="font-display text-xs font-bold text-brand-orange">{number}</span>
                   <h3 className="font-editorial mt-4 text-2xl font-semibold text-secondary">{title}</h3>
                   <p className="mt-2 text-xs leading-5 text-on-surface-variant">{description}</p>
@@ -90,7 +92,7 @@ export default function AboutPage() {
             </div>
           </div>
 
-          <div className="serene-image-lift group relative min-h-[460px] overflow-hidden rounded-[30px] border border-outline-variant bg-[#EEE6D9] shadow-[0_24px_70px_rgba(23,58,49,0.10)] sm:min-h-[560px]">
+          <div className="serene-image-lift group relative min-h-[500px] overflow-hidden rounded-[34px] border border-white/80 bg-[#EEE6D9] shadow-[0_34px_90px_rgba(23,58,49,0.14)] sm:min-h-[620px]">
             {brandStoryImage ? (
               <Image
                 src={brandStoryImage}
@@ -98,7 +100,7 @@ export default function AboutPage() {
                 fill
                 unoptimized
                 sizes="(max-width: 1024px) 100vw, 45vw"
-                className="object-cover transition duration-700 ease-out group-hover:scale-[1.025]"
+                className="object-cover transition duration-[1100ms] ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-[1.045]"
               />
             ) : (
               <div className="absolute inset-5 flex flex-col items-center justify-center rounded-[24px] border border-dashed border-secondary/30 bg-[radial-gradient(circle_at_top,#f8f3ea,#e8dfd1)] px-8 text-center">
@@ -119,7 +121,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="py-20 sm:py-28">
+      <section className="relative py-20 sm:py-28 lg:py-32">
         <div className="mx-auto grid max-w-[1400px] gap-12 px-5 sm:px-8 lg:grid-cols-[0.7fr_1.3fr]">
           <div>
             <p className="eyebrow text-brand-orange">Sứ mệnh của chúng tôi</p>
@@ -135,7 +137,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="border-y border-outline-variant bg-white">
+      <section className="border-y border-outline-variant bg-[#FFFDFC]">
         <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
           <div className="grid lg:grid-cols-3">
             {values.map(([number, title, description], index) => (
@@ -149,7 +151,9 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="overflow-hidden bg-[#F7F3EC] py-20 sm:py-28">
+      <section id="team-stories" className="relative overflow-hidden bg-[#F7F3EC] py-20 sm:py-28 lg:py-32">
+        <div aria-hidden className="pointer-events-none absolute -left-48 bottom-0 h-96 w-96 rounded-full border border-secondary/[0.06]" />
+        <div aria-hidden className="pointer-events-none absolute -right-32 top-16 h-72 w-72 rounded-full border border-brand-orange/10" />
         <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
           <div className="grid gap-8 lg:grid-cols-[0.75fr_1.25fr] lg:items-end">
             <div>
@@ -177,7 +181,7 @@ export default function AboutPage() {
                     unoptimized
                     sizes="(max-width: 1024px) 100vw, 50vw"
                     style={{ objectPosition: story.objectPosition }}
-                    className="object-cover transition duration-700 ease-out group-hover:scale-[1.035]"
+                    className="object-cover transition duration-[1000ms] ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-[1.055]"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-secondary/55 via-transparent to-transparent" />
                   <span className="absolute bottom-5 left-5 rounded-full border border-white/30 bg-secondary/75 px-4 py-2 font-display text-[11px] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur-md sm:bottom-6 sm:left-6">
@@ -208,15 +212,15 @@ export default function AboutPage() {
 
       <AboutNearbyPlacesCarousel />
 
-      <section className="bg-[#EAE4D9] py-20 sm:py-28">
+      <section className="relative bg-[#EAE4D9] py-20 sm:py-28 lg:py-32">
         <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
-          <div className="max-w-3xl">
+          <div className="max-w-3xl lg:py-6">
             <p className="eyebrow text-brand-orange">Một hành trình liền mạch</p>
             <h2 className="font-editorial mt-4 text-4xl font-semibold leading-tight text-secondary sm:text-5xl">Từ lựa chọn đầu tiên đến lúc rời phòng.</h2>
           </div>
           <ol className="mt-12 grid gap-5 lg:grid-cols-3">
             {journey.map(([title, description], index) => (
-              <li key={title} className="relative overflow-hidden rounded-[18px] border border-outline-variant bg-[#F7F3EC] p-7 sm:p-8">
+              <li key={title} className="group relative overflow-hidden rounded-[22px] border border-outline-variant bg-[#F7F3EC] p-7 shadow-[0_12px_34px_rgba(35,77,66,0.05)] transition duration-300 hover:-translate-y-1 hover:border-brand-orange/30 hover:bg-white hover:shadow-[0_20px_48px_rgba(35,77,66,0.10)] sm:p-8">
                 <span className="absolute right-5 top-1 font-editorial text-7xl text-secondary/[0.06]">{index + 1}</span>
                 <p className="font-display text-xs font-semibold uppercase tracking-[0.18em] text-brand-orange">Bước 0{index + 1}</p>
                 <h3 className="font-editorial mt-8 text-3xl font-semibold text-secondary">{title}</h3>
@@ -227,7 +231,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="border-t border-outline-variant bg-[#F7F3EC] py-20 sm:py-28">
+      <section className="relative border-t border-outline-variant bg-[#F7F3EC] py-20 sm:py-28 lg:py-32">
         <div className="mx-auto grid max-w-[1400px] gap-10 px-5 sm:px-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
           <div className="max-w-xl lg:sticky lg:top-28">
             <p className="eyebrow text-brand-orange">Trải nghiệm tại The Serene Villa</p>
@@ -286,7 +290,7 @@ export default function AboutPage() {
             ].map((experience) => (
               <article
                 key={experience.title}
-                className="group rounded-[22px] border border-outline-variant bg-white p-6 shadow-[0_16px_46px_rgba(23,58,49,0.06)] transition duration-300 hover:-translate-y-1 hover:border-brand-orange/35 hover:shadow-[0_22px_54px_rgba(23,58,49,0.11)] sm:p-7"
+                className="group rounded-[24px] border border-outline-variant bg-white p-6 shadow-[0_16px_46px_rgba(23,58,49,0.06)] transition duration-300 hover:-translate-y-1.5 hover:border-brand-orange/35 hover:shadow-[0_26px_62px_rgba(23,58,49,0.12)] sm:p-7"
               >
                 <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F0E5D4] text-secondary transition duration-300 group-hover:bg-secondary group-hover:text-white">
                   {experience.icon}
@@ -306,9 +310,11 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="bg-secondary py-20 text-white sm:py-24">
+      <section className="relative overflow-hidden bg-secondary py-20 text-white sm:py-24 lg:py-28">
+        <div aria-hidden className="pointer-events-none absolute -right-32 -top-32 h-80 w-80 rounded-full border border-white/[0.07]" />
+        <div aria-hidden className="pointer-events-none absolute -left-24 -bottom-32 h-64 w-64 rounded-full border border-primary-fixed/10" />
         <div className="mx-auto grid max-w-[1400px] gap-10 px-5 sm:px-8 lg:grid-cols-[1fr_auto] lg:items-end">
-          <div className="max-w-3xl">
+          <div className="max-w-3xl lg:py-6">
             <p className="eyebrow text-primary-fixed">Trải nghiệm The Serene Villa</p>
             <h2 className="font-editorial mt-4 text-4xl font-semibold leading-tight sm:text-5xl">Không chỉ là một căn phòng. Đó là cảm giác được đón tiếp chu đáo.</h2>
           </div>

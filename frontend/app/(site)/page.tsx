@@ -1244,7 +1244,7 @@ const sereneMoments = [
     title: "Khép lại một ngày trong sự ấm áp",
     description:
       "Ánh đèn dịu, căn phòng riêng tư và một nhịp sống chậm giúp bạn thật sự thư giãn trước khi nghỉ ngơi.",
-    image: "/images/seasons/serene-evenings.webp",
+    image: "/images/Buoitoi.png",
     alt: "Không gian mùa thu ấm áp khi ngày dần khép lại tại The Serene Villa",
   },
 ] as const;

@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
+import { motion, useReducedMotion } from 'framer-motion'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useI18n } from '@/components/i18n/LocaleProvider'
 import BookingQuickModal from '@/components/booking/BookingQuickModal'
@@ -276,6 +277,7 @@ export default function RoomsPublicPage() {
   const router = useRouter()
   const { locale, localizedHref } = useI18n()
   const copy = getRoomsCopy(locale)
+  const reduceMotion = useReducedMotion()
   const capacityOptions = useMemo(() => getCapacityOptions(locale), [locale])
   const [filters, setFilters] = useState<RoomFilters>(defaultFilters)
   const [sortBy, setSortBy] = useState<RoomSortOption>('recommended')
@@ -340,6 +342,31 @@ export default function RoomsPublicPage() {
     filters.availability !== 'all' ||
     filters.minNightlyPrice !== MIN_NIGHTLY_PRICE ||
     filters.maxNightlyPrice !== MAX_NIGHTLY_PRICE
+
+  const heroContainerVariants = {
+    hidden: {},
+    visible: {
+      transition: {
+        staggerChildren: reduceMotion ? 0 : 0.11,
+        delayChildren: reduceMotion ? 0 : 0.08,
+      },
+    },
+  }
+
+  const heroItemVariants = {
+    hidden: reduceMotion
+      ? { opacity: 0 }
+      : { opacity: 0, y: 24, filter: 'blur(5px)' },
+    visible: {
+      opacity: 1,
+      y: 0,
+      filter: 'blur(0px)',
+      transition: {
+        duration: reduceMotion ? 0.18 : 0.65,
+        ease: [0.22, 1, 0.36, 1] as const,
+      },
+    },
+  }
 
   useEffect(() => {
     if (!shouldAnimateInitialRoomCards) return
@@ -594,23 +621,48 @@ export default function RoomsPublicPage() {
 
       <section className="relative min-h-[460px] overflow-hidden border-b border-outline-variant bg-secondary text-white">
         <Image
-          src="/images/homestay-luxury-hero.webp"
+          src="/images/Banner31.png"
           alt={copy.heroImageAlt}
           fill
           priority
           sizes="100vw"
           className="object-cover object-center"
         />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(17,42,35,0.96)_0%,rgba(17,42,35,0.78)_44%,rgba(17,42,35,0.2)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(9,31,25,0.74)_0%,rgba(9,31,25,0.50)_42%,rgba(9,31,25,0.16)_74%,rgba(9,31,25,0.08)_100%)]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/18 via-transparent to-black/8" />
         <div className="relative mx-auto grid min-h-[460px] max-w-[1400px] gap-8 px-5 py-20 sm:px-8 lg:grid-cols-[1fr_390px] lg:items-end">
-          <div>
-            <p className="eyebrow text-primary-fixed">{copy.heroEyebrow}</p>
-            <h1 className="font-editorial mt-4 text-5xl font-semibold tracking-[-0.03em] sm:text-6xl">{copy.heroTitle}</h1>
-            <p className="mt-5 max-w-2xl text-lg leading-8 text-white/72">
+          <motion.div
+            variants={heroContainerVariants}
+            initial="hidden"
+            animate="visible"
+            className="max-w-3xl"
+          >
+            <motion.p variants={heroItemVariants} className="eyebrow text-primary-fixed">
+              {copy.heroEyebrow}
+            </motion.p>
+            <motion.h1
+              variants={heroItemVariants}
+              className="font-editorial mt-4 text-5xl font-semibold tracking-[-0.03em] sm:text-6xl"
+            >
+              {copy.heroTitle}
+            </motion.h1>
+            <motion.p
+              variants={heroItemVariants}
+              className="mt-5 max-w-2xl text-lg leading-8 text-white/78"
+            >
               {copy.heroDescription}
-            </p>
-          </div>
-          <div className="w-full max-w-[390px] justify-self-end rounded-[20px] border border-white/16 bg-[#234D42]/88 p-4 shadow-[0_22px_64px_rgba(0,0,0,0.26)] backdrop-blur-2xl sm:p-5">
+            </motion.p>
+          </motion.div>
+          <motion.div
+            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, x: 34, scale: 0.975 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            transition={{
+              duration: reduceMotion ? 0.2 : 0.82,
+              delay: reduceMotion ? 0 : 0.16,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            className="w-full max-w-[390px] justify-self-end rounded-[20px] border border-white/16 bg-[#234D42]/82 p-4 shadow-[0_22px_64px_rgba(0,0,0,0.26)] backdrop-blur-xl sm:p-5"
+          >
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2.5">
@@ -635,29 +687,29 @@ export default function RoomsPublicPage() {
             </div>
 
             <div className="mt-3.5 grid grid-cols-4 gap-2">
-                <AvailabilityMetric
-                  value={isInitialScheduleLoading ? '--' : String(todayRoomSummary.available)}
-                  label={copy.available}
-                  tone="available"
-                  onClick={() => showRoomsByAvailability('AVAILABLE')}
-                />
-                <AvailabilityMetric
-                  value={isInitialScheduleLoading ? '--' : String(todayRoomSummary.almostFull)}
-                  label={copy.onHold}
-                  tone="limited"
-                  onClick={() => showRoomsByAvailability('ALMOST_FULL')}
-                />
-                <AvailabilityMetric
-                  value={isInitialScheduleLoading ? '--' : String(todayRoomSummary.full)}
-                  label={copy.fullyBooked}
-                  tone="full"
-                  onClick={() => showRoomsByAvailability('FULL_TODAY')}
-                />
-                <AvailabilityMetric
-                  value={isInitialScheduleLoading ? '--' : String(todayRoomSummary.unavailable)}
-                  label={copy.paused}
-                  tone="paused"
-                />
+              <AvailabilityMetric
+                value={isInitialScheduleLoading ? '--' : String(todayRoomSummary.available)}
+                label={copy.available}
+                tone="available"
+                onClick={() => showRoomsByAvailability('AVAILABLE')}
+              />
+              <AvailabilityMetric
+                value={isInitialScheduleLoading ? '--' : String(todayRoomSummary.almostFull)}
+                label={copy.onHold}
+                tone="limited"
+                onClick={() => showRoomsByAvailability('ALMOST_FULL')}
+              />
+              <AvailabilityMetric
+                value={isInitialScheduleLoading ? '--' : String(todayRoomSummary.full)}
+                label={copy.fullyBooked}
+                tone="full"
+                onClick={() => showRoomsByAvailability('FULL_TODAY')}
+              />
+              <AvailabilityMetric
+                value={isInitialScheduleLoading ? '--' : String(todayRoomSummary.unavailable)}
+                label={copy.paused}
+                tone="paused"
+              />
             </div>
 
             <div className="mt-3.5 flex items-center justify-between gap-3 text-[11px]">
@@ -684,7 +736,7 @@ export default function RoomsPublicPage() {
                   ? copy.scheduleUpdated(formatScheduleUpdateTime(scheduleUpdatedAt, locale))
                   : copy.connectingSchedule}
             </p>
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -783,12 +835,12 @@ export default function RoomsPublicPage() {
                   <p className="mt-1 text-xs leading-5 text-on-surface-variant">
                     {isStayAvailabilityLoading
                       ? copy.checkingDateRange(
-                          formatShortStayDate(stayCriteria?.checkIn, locale),
-                          formatShortStayDate(stayCriteria?.checkOut, locale),
-                        )
+                        formatShortStayDate(stayCriteria?.checkIn, locale),
+                        formatShortStayDate(stayCriteria?.checkOut, locale),
+                      )
                       : stayAvailabilityErrorCount > 0
                         ? copy.roomsUnavailableToCheck(stayAvailabilityErrorCount)
-                      : catalogSource === 'backend'
+                        : catalogSource === 'backend'
                           ? isRefreshing ? copy.refreshingCatalog : copy.catalogSynchronized
                           : catalogError || copy.catalogUnavailable}
                   </p>
@@ -901,21 +953,21 @@ function RoomCard({
       ? locale === 'en'
         ? `Temporarily held for payment${formatHoldExpiry(room.holdExpiresAt, locale)}`
         : `Đang giữ chỗ chờ thanh toán${formatHoldExpiry(room.holdExpiresAt, locale)}`
-    : canBookFutureDate
-      ? locale === 'en'
-        ? 'Unavailable today — other dates can be selected'
-        : 'Hôm nay đã kín — bạn vẫn có thể chọn ngày khác'
-    : isUnavailable
-      ? locale === 'en'
-        ? 'This room is temporarily unavailable for booking'
-        : 'Phòng đang tạm ngừng nhận đặt chỗ'
-      : isCheckingAvailability
+      : canBookFutureDate
         ? locale === 'en'
-          ? 'Checking the latest availability'
-          : 'Đang kiểm tra lịch trống mới nhất'
-        : locale === 'en'
-          ? `Booked today${room.nextAvailableSlot ? ` — next available ${room.nextAvailableSlot}` : ''}`
-          : `Hôm nay đã kín${room.nextAvailableSlot ? ` — lịch gần nhất ${room.nextAvailableSlot}` : ''}`
+          ? 'Unavailable today — other dates can be selected'
+          : 'Hôm nay đã kín — bạn vẫn có thể chọn ngày khác'
+        : isUnavailable
+          ? locale === 'en'
+            ? 'This room is temporarily unavailable for booking'
+            : 'Phòng đang tạm ngừng nhận đặt chỗ'
+          : isCheckingAvailability
+            ? locale === 'en'
+              ? 'Checking the latest availability'
+              : 'Đang kiểm tra lịch trống mới nhất'
+            : locale === 'en'
+              ? `Booked today${room.nextAvailableSlot ? ` — next available ${room.nextAvailableSlot}` : ''}`
+              : `Hôm nay đã kín${room.nextAvailableSlot ? ` — lịch gần nhất ${room.nextAvailableSlot}` : ''}`
 
   const handleFavorite = async () => {
     if (!isAuthenticated) {
@@ -943,7 +995,7 @@ function RoomCard({
               ? 'border-outline-variant bg-surface-container-low opacity-90'
               : 'border-outline-variant bg-surface-container-low opacity-[0.86]',
         animationClassName,
-        ].join(' ')}
+      ].join(' ')}
     >
       <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden bg-surface-container md:aspect-auto md:min-h-[310px] md:w-[36%] md:min-w-[285px] md:max-w-[390px]">
         <button
@@ -952,31 +1004,31 @@ function RoomCard({
           className="absolute inset-0 block h-full w-full overflow-hidden text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-brand-orange/60"
           aria-label={cardCopy.viewDetail(room.name)}
         >
-        <Image
-          src={imageSrc}
-          alt={room.name}
-          fill
-          quality={90}
-          unoptimized={shouldBypassImageOptimization(imageSrc)}
-          sizes="(min-width: 1280px) 390px, (min-width: 768px) 36vw, 100vw"
-          className={[
-            'object-cover transition duration-300 group-hover:scale-105',
-            isFullToday ? 'brightness-[0.82] saturate-[0.78]' : '',
-            isUnavailable ? 'brightness-75 saturate-50' : '',
-            room.imageClassName,
-          ].join(' ')}
-        />
-        <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(23,58,49,0.62),transparent_58%)]" />
-        <span
-          className={[
-            'absolute left-4 top-4 rounded-full border px-3 py-1 font-display text-xs font-bold',
-            isCheckingAvailability
-              ? 'border-white/20 bg-white/90 text-on-surface-variant'
-              : getAvailabilityClassName(availabilityStatus, isUnavailable),
-          ].join(' ')}
-        >
-          {isUnavailable ? cardCopy.paused : isCheckingAvailability ? cardCopy.availabilityUpdating : getLocalizedAvailabilityLabel(availabilityStatus, room, locale)}
-        </span>
+          <Image
+            src={imageSrc}
+            alt={room.name}
+            fill
+            quality={90}
+            unoptimized={shouldBypassImageOptimization(imageSrc)}
+            sizes="(min-width: 1280px) 390px, (min-width: 768px) 36vw, 100vw"
+            className={[
+              'object-cover transition duration-300 group-hover:scale-105',
+              isFullToday ? 'brightness-[0.82] saturate-[0.78]' : '',
+              isUnavailable ? 'brightness-75 saturate-50' : '',
+              room.imageClassName,
+            ].join(' ')}
+          />
+          <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(23,58,49,0.62),transparent_58%)]" />
+          <span
+            className={[
+              'absolute left-4 top-4 rounded-full border px-3 py-1 font-display text-xs font-bold',
+              isCheckingAvailability
+                ? 'border-white/20 bg-white/90 text-on-surface-variant'
+                : getAvailabilityClassName(availabilityStatus, isUnavailable),
+            ].join(' ')}
+          >
+            {isUnavailable ? cardCopy.paused : isCheckingAvailability ? cardCopy.availabilityUpdating : getLocalizedAvailabilityLabel(availabilityStatus, room, locale)}
+          </span>
         </button>
         <button
           type="button"
@@ -1700,9 +1752,9 @@ function InfoPill({ label, value }: { label: string; value: string }) {
   )
 }
 
-function BedroomIcon() { return <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4 text-[#9b6b3c]" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M4 20V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v15M8 20v-5h8v5M9 8h6" strokeLinecap="round" strokeLinejoin="round"/></svg> }
-function BedIcon() { return <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4 text-[#9b6b3c]" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M3 19v-8M21 19v-5a3 3 0 0 0-3-3H9v8M3 15h18M7 11V8h5a3 3 0 0 1 3 3" strokeLinecap="round" strokeLinejoin="round"/></svg> }
-function GuestsMiniIcon() { return <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4 text-[#9b6b3c]" fill="none" stroke="currentColor" strokeWidth="1.7"><circle cx="9" cy="8" r="3"/><path d="M3.5 20v-1.5A4.5 4.5 0 0 1 8 14h2a4.5 4.5 0 0 1 4.5 4.5V20M16 7a2.5 2.5 0 0 1 0 5M17 14.5a4 4 0 0 1 3 3.8V20" strokeLinecap="round"/></svg> }
+function BedroomIcon() { return <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4 text-[#9b6b3c]" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M4 20V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v15M8 20v-5h8v5M9 8h6" strokeLinecap="round" strokeLinejoin="round" /></svg> }
+function BedIcon() { return <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4 text-[#9b6b3c]" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M3 19v-8M21 19v-5a3 3 0 0 0-3-3H9v8M3 15h18M7 11V8h5a3 3 0 0 1 3 3" strokeLinecap="round" strokeLinejoin="round" /></svg> }
+function GuestsMiniIcon() { return <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4 text-[#9b6b3c]" fill="none" stroke="currentColor" strokeWidth="1.7"><circle cx="9" cy="8" r="3" /><path d="M3.5 20v-1.5A4.5 4.5 0 0 1 8 14h2a4.5 4.5 0 0 1 4.5 4.5V20M16 7a2.5 2.5 0 0 1 0 5M17 14.5a4 4 0 0 1 3 3.8V20" strokeLinecap="round" /></svg> }
 
 function sortPublicRooms(rooms: Room[], sortBy: RoomSortOption) {
   const sortedRooms = [...rooms]
