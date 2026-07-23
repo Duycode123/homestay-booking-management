@@ -212,14 +212,14 @@ export default function StaffCheckInPage() {
 
         if (distance <= STAFF_LOCATION.radiusMeters) {
           setLocationStatus('VALID')
-          showToast({ type: 'success', message: 'Vị trí hợp lệ. Bạn đang ở gần HPC Landmark.' })
+          showToast({ type: 'success', message: 'Vị trí hợp lệ. Bạn đang ở trong khu vực chấm công.' })
           return
         }
 
         setLocationStatus('INVALID')
         showToast({
           type: 'error',
-          message: 'Bạn chưa ở gần HPC Landmark. Vui lòng đến đúng địa điểm để check-in.',
+            message: 'Bạn chưa ở trong bán kính chấm công. Vui lòng đến đúng địa điểm để check-in.',
         })
       },
       () => {

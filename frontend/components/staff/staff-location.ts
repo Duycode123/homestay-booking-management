@@ -1,8 +1,8 @@
 export const STAFF_LOCATION = {
   name: 'The Serene Villa',
-  address: 'HPC Landmark, 105 Tố Hữu, Văn Khê, Hà Đông, Hà Nội',
-  lat: 20.9829,
-  lng: 105.7874,
+  address: 'CT8B Khu Đô Thị Dương Nội, Yên Lộ, Dương Nội, Hà Nội 100000, Việt Nam',
+  lat: 20.9625358,
+  lng: 105.7452029,
   radiusMeters: 100,
 } as const
 
