@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import BookingQuickModal from "@/components/booking/BookingQuickModal";
 import StaySearchBar from "@/components/public/StaySearchBar";
 import NewCustomerOfferModal from "@/components/public/NewCustomerOfferModal";
@@ -21,12 +21,7 @@ import {
 import { useHomepageLiveData } from "@/hooks/useHomepageLiveData";
 import { usePublicRoomCatalog } from "@/hooks/usePublicRoomCatalog";
 import { useTodayRoomAvailability } from "@/hooks/useTodayRoomAvailability";
-import {
-  formatRelativeTime,
-  getActivityActionLabel,
-  maskCustomerName,
-  type AvailabilityTone,
-} from "@/lib/homepage-live-service";
+import { type AvailabilityTone } from "@/lib/homepage-live-service";
 import { getAvailabilityLabel } from "@/lib/public/room-filters";
 import { shouldBypassImageOptimization } from "@/lib/image-optimization";
 import {
@@ -406,23 +401,23 @@ function Icon({
 function getAvailabilityBadgeClassName(tone: AvailabilityTone) {
   const toneClassName = {
     success:
-      "border-brand-orange/40 bg-white/10 text-primary-fixed hover:bg-white/15",
+      "border-secondary/12 bg-[#F2F5F1] text-secondary hover:border-secondary/22 hover:bg-[#EAF0EC]",
     warning:
-      "border-brand-orange/60 bg-brand-orange/15 text-primary-fixed hover:bg-brand-orange/20",
-    muted: "border-white/20 bg-white/10 text-white/65 hover:bg-white/15",
+      "border-brand-orange/30 bg-[#F7EEE4] text-[#7A5635] hover:border-brand-orange/45",
+    muted: "border-outline-variant bg-white/70 text-on-surface-variant hover:bg-white",
   };
 
   return [
-    "mb-5 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-left font-display text-sm font-semibold transition",
+    "inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-left font-display text-xs font-semibold transition sm:text-sm",
     toneClassName[tone],
   ].join(" ");
 }
 
 function getAvailabilityDotClassName(tone: AvailabilityTone) {
   const toneClassName = {
-    success: "bg-brand-orange shadow-[0_0_0_5px_rgba(178,132,85,0.16)]",
-    warning: "bg-primary-fixed shadow-[0_0_0_5px_rgba(178,132,85,0.16)]",
-    muted: "bg-white/45",
+    success: "bg-[#93AE9D] shadow-[0_0_0_5px_rgba(147,174,157,0.15)]",
+    warning: "bg-brand-orange shadow-[0_0_0_5px_rgba(184,138,89,0.14)]",
+    muted: "bg-outline",
   };
 
   return ["h-2 w-2 rounded-full", toneClassName[tone]].join(" ");
@@ -457,103 +452,52 @@ function TopRatedRoomsSection({
 }) {
   const { locale, localizedHref } = useI18n();
   const copy = homeCopy[locale];
-  const scrollerRef = useRef<HTMLDivElement | null>(null);
-  const [canScrollPrevious, setCanScrollPrevious] = useState(false);
-  const [canScrollNext, setCanScrollNext] = useState(false);
-
-  useEffect(() => {
-    const scroller = scrollerRef.current;
-    if (!scroller) return;
-
-    const updateScrollState = () => {
-      const maxScrollLeft = scroller.scrollWidth - scroller.clientWidth;
-      setCanScrollPrevious(scroller.scrollLeft > 8);
-      setCanScrollNext(scroller.scrollLeft < maxScrollLeft - 8);
-    };
-
-    updateScrollState();
-    scroller.addEventListener("scroll", updateScrollState, { passive: true });
-    window.addEventListener("resize", updateScrollState);
-
-    return () => {
-      scroller.removeEventListener("scroll", updateScrollState);
-      window.removeEventListener("resize", updateScrollState);
-    };
-  }, [rooms.length, isLoading]);
-
-  const scrollCards = (direction: "previous" | "next") => {
-    const scroller = scrollerRef.current;
-    if (!scroller) return;
-
-    scroller.scrollBy({
-      left: direction === "next" ? scroller.clientWidth : -scroller.clientWidth,
-      behavior: "smooth",
-    });
-  };
+  const featuredRoom = rooms[0];
+  const supportingRooms = rooms.slice(1, 3);
 
   return (
-    <section className="relative overflow-hidden border-y border-outline-variant bg-brand-bgGray py-20 sm:py-24">
+    <section id="top-rated-rooms" className="relative scroll-mt-24 overflow-hidden bg-[#F7F3EB] pb-24 pt-20 sm:pb-28 sm:pt-28">
+      <div aria-hidden className="pointer-events-none absolute -bottom-24 -left-28 h-80 w-80 rounded-full border border-brand-orange/10" />
       <div className="relative mx-auto max-w-[1400px] px-5 sm:px-8">
-        <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+        <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
           <div className="max-w-2xl">
             <p className="eyebrow text-brand-orange">{copy.topRatedEyebrow}</p>
-            <h2 className="font-editorial mt-3 text-4xl font-semibold leading-tight text-secondary sm:text-5xl">
+            <h2 className="font-editorial mt-4 text-5xl font-medium leading-[0.95] tracking-[-0.035em] text-secondary sm:text-6xl lg:text-[4.75rem]">
               {copy.topRatedTitle}
             </h2>
-            <p className="mt-4 text-base leading-7 text-on-surface-variant">
+            <p className="mt-5 max-w-xl text-base leading-8 text-on-surface-variant">
               {copy.topRatedDescription}
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <Link
-              href={localizedHref("/rooms?sort=rating")}
-              className="inline-flex h-11 items-center rounded-full bg-secondary px-5 font-display text-sm font-semibold text-white shadow-[0_12px_28px_rgba(23,58,49,0.16)] transition-all hover:-translate-y-0.5 hover:bg-secondary-container"
-            >
-              {copy.viewAll}
-            </Link>
-          </div>
+          <Link
+            href={localizedHref("/rooms?sort=rating")}
+            className="group inline-flex min-h-11 w-fit items-center gap-3 border-b border-secondary/55 font-display text-sm font-semibold text-secondary"
+          >
+            {copy.viewAll}
+            <span aria-hidden className="transition-transform group-hover:translate-x-1">→</span>
+          </Link>
         </div>
 
         {isLoading ? (
-          <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, index) => (
-              <div
-                key={index}
-                className="h-[420px] animate-pulse rounded-[28px] border border-outline-variant bg-white"
-              />
-            ))}
+          <div className="mt-12 grid gap-6 lg:grid-cols-[1.12fr_0.88fr]">
+            <div className="min-h-[540px] animate-pulse rounded-[32px] bg-white/80" />
+            <div className="grid gap-6">
+              <div className="min-h-[255px] animate-pulse rounded-[28px] bg-white/80" />
+              <div className="min-h-[255px] animate-pulse rounded-[28px] bg-white/80" />
+            </div>
           </div>
-        ) : rooms.length > 0 ? (
-          <div className="relative mt-10">
-            {canScrollPrevious && (
-              <button
-                type="button"
-                onClick={() => scrollCards("previous")}
-                className="group absolute left-1 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-outline-variant bg-white text-secondary shadow-[var(--shadow-card)] transition hover:-translate-y-[54%] hover:bg-secondary hover:text-white sm:left-2"
-                aria-label={copy.previousRooms}
-              >
-                <ChevronIcon className="h-5 w-5 rotate-180 stroke-[2.4] transition-transform duration-300 ease-out group-hover:-translate-x-0.5" />
-              </button>
-            )}
-
-            {canScrollNext && (
-              <button
-                type="button"
-                onClick={() => scrollCards("next")}
-                className="group absolute right-1 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-outline-variant bg-white text-secondary shadow-[var(--shadow-card)] transition hover:-translate-y-[54%] hover:bg-secondary hover:text-white sm:right-2"
-                aria-label={copy.nextRooms}
-              >
-                <ChevronIcon className="h-5 w-5 stroke-[2.4] transition-transform duration-300 ease-out group-hover:translate-x-0.5" />
-              </button>
-            )}
-
-            <div
-              ref={scrollerRef}
-              className="-mx-5 flex snap-x gap-5 overflow-x-auto scroll-smooth px-5 pb-4 sm:-mx-8 sm:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            >
-              {rooms.map((room) => (
-                <TopRatedRoomCard
+        ) : featuredRoom ? (
+          <div className="mt-12 grid gap-6 lg:grid-cols-[1.12fr_0.88fr] lg:items-stretch">
+            <TopRatedFeaturedRoom
+              room={featuredRoom}
+              onOpenDetail={onOpenDetail}
+              onBook={onBook}
+              copy={copy}
+            />
+            <div className="grid gap-6">
+              {supportingRooms.map((room) => (
+                <TopRatedSupportingRoom
                   key={room.id}
                   room={room}
                   onOpenDetail={onOpenDetail}
@@ -575,18 +519,7 @@ function TopRatedRoomsSection({
   );
 }
 
-function TopRatedRoomCard({
-  room,
-  onOpenDetail,
-  onBook,
-  copy,
-}: {
-  room: BookingRoom;
-  onOpenDetail: (room: BookingRoom) => void;
-  onBook: (room: BookingRoom) => void;
-  copy: HomeCopy;
-}) {
-  const imageSrc = room.image ?? "/images/homestay-luxury-hero.webp";
+function getTopRatedRoomUi(room: BookingRoom, copy: HomeCopy) {
   const availabilityState = getRoomCardAvailabilityState(room);
   const availabilityStatus = room.availabilityStatus ?? "AVAILABLE";
   const availabilityLabel = availabilityState.isUnavailable
@@ -604,96 +537,51 @@ function TopRatedRoomCard({
           ? copy.bookNow
           : copy.chooseAnotherDate;
 
+  return { availabilityState, availabilityLabel, bookingLabel };
+}
+
+function TopRatedFeaturedRoom({
+  room,
+  onOpenDetail,
+  onBook,
+  copy,
+}: {
+  room: BookingRoom;
+  onOpenDetail: (room: BookingRoom) => void;
+  onBook: (room: BookingRoom) => void;
+  copy: HomeCopy;
+}) {
+  const imageSrc = room.image ?? "/images/homestay-luxury-hero.webp";
+  const { availabilityState, availabilityLabel, bookingLabel } = getTopRatedRoomUi(room, copy);
+
   return (
-    <article className="group flex w-[82vw] shrink-0 snap-start flex-col overflow-hidden rounded-[18px] border border-outline-variant bg-white shadow-[var(--shadow-card)] transition-all duration-300 hover:border-brand-orange/45 hover:shadow-[var(--shadow-elevated)] sm:w-[calc((100vw-5rem-1.25rem)/2)] xl:w-[calc((100vw-12rem-3.75rem)/4)] xl:max-w-[310px]">
+    <article className="group relative min-h-[540px] overflow-hidden rounded-[30px] bg-secondary shadow-[var(--homestay-shadow-elevated)]">
       <button
         type="button"
         onClick={() => onOpenDetail(room)}
-        className="block text-left"
+        className="absolute inset-0 block w-full text-left"
+        aria-label={`${copy.detail}: ${room.name}`}
       >
-        <div className="relative aspect-[16/11] overflow-hidden bg-surface-container">
-          <Image
-            src={imageSrc}
-            alt={room.name}
-            fill
-            quality={90}
-            unoptimized={shouldBypassImageOptimization(imageSrc)}
-            sizes="(min-width: 1280px) 292px, (min-width: 768px) 46vw, 82vw"
-            className={[
-              "object-cover transition duration-300 group-hover:scale-105",
-              room.imageClassName,
-            ].join(" ")}
-          />
-          <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(23,58,49,0.58),transparent_58%)]" />
-          <span className="absolute right-4 top-4 rounded-full bg-white/95 px-3 py-1 font-display text-xs font-bold text-[#242A27] shadow-sm">
-            ★ {(room.rating ?? 0).toFixed(1)}
-          </span>
-          <span className="absolute bottom-4 left-4 rounded-full border border-white/20 bg-white/92 px-3 py-1 font-display text-xs font-bold text-[#6A6C66]">
-            {availabilityLabel}
-          </span>
-        </div>
+        <Image src={imageSrc} alt={room.name} fill quality={94} unoptimized={shouldBypassImageOptimization(imageSrc)} sizes="(min-width: 1024px) 55vw, 100vw" className={["object-cover transition duration-700 ease-out group-hover:scale-[1.025]", room.imageClassName].join(" ")} />
+        <span className="absolute inset-0 bg-[linear-gradient(to_top,rgba(18,40,33,0.54),transparent_52%)]" />
       </button>
 
-      <div className="flex flex-1 flex-col p-5">
-        <p className="font-display text-xs font-bold uppercase tracking-wide text-brand-orange">
-          {room.categoryLabel}
-        </p>
-        <h3 className="mt-2 font-display text-xl font-bold leading-tight text-on-surface">
-          {room.name}
-        </h3>
-        <p className="mt-2 line-clamp-2 text-sm leading-6 text-on-surface-variant">
-          {room.description}
-        </p>
-
-        <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-          <div className="rounded-2xl border border-[#E4DED3] bg-[#FBF9F5] px-3 py-3">
-            <p className="font-display text-[10px] font-bold uppercase text-[#6A6C66]">
-              {copy.capacity}
-            </p>
-            <p className="mt-1 font-semibold text-[#242A27]">{room.capacity}</p>
+      <div className="absolute inset-x-4 bottom-4 z-10 rounded-[22px] bg-[#FFFDFC]/96 p-5 shadow-[0_20px_50px_rgba(30,42,36,0.15)] backdrop-blur-md sm:inset-x-7 sm:bottom-7 sm:grid sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end sm:gap-6 sm:p-6">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-on-surface-variant">
+            <span className="text-brand-orange">★ {(room.rating ?? 0).toFixed(1)}</span>
+            <span>{room.capacity}</span>
+            <span className="h-1 w-1 rounded-full bg-outline" />
+            <span>{availabilityLabel}</span>
           </div>
-          <div className="rounded-2xl border border-[#E4DED3] bg-[#FBF9F5] px-3 py-3">
-            <p className="font-display text-[10px] font-bold uppercase text-[#6A6C66]">
-              {copy.pricePerNight}
-            </p>
-            <p className="mt-1 font-semibold text-brand-orange">
-              {formatCurrency(getNightlyDisplayPrice(room.pricePerHour))}
-            </p>
-          </div>
+          <h3 className="font-editorial mt-2 text-3xl font-medium leading-none text-secondary sm:text-4xl">{room.name}</h3>
         </div>
-
-        <div className="mt-3 flex items-center gap-4 text-xs font-semibold text-[#646b65]">
-          <span className="inline-flex items-center gap-1.5">
-            <BedroomIcon />
-            {room.bedroomCount} {copy.bedrooms}
-          </span>
-          <span className="h-1 w-1 rounded-full bg-[#c5b7a6]" />
-          <span className="inline-flex items-center gap-1.5">
-            <BedIcon />
-            {room.bedCount} {copy.beds}
-          </span>
-        </div>
-
-        <p className="mt-4 text-sm font-medium text-on-surface-variant">
-          {room.reviews ? `${room.reviews} ${copy.reviews}` : copy.noReviews}
-        </p>
-
-        <div className="mt-3 flex flex-wrap gap-2">
-          {room.equipments.slice(0, 3).map((item) => (
-            <span
-              key={item}
-              className="rounded-full border border-[#E4DED3] bg-[#F6F3ED] px-3 py-1 text-xs font-medium text-[#6A6C66]"
-            >
-              {item}
-            </span>
-          ))}
-        </div>
-
-        <div className="mt-auto grid grid-cols-2 gap-2 border-t border-[#E4DED3] pt-4">
+        <div className="mt-5 flex flex-wrap items-center gap-3 sm:mt-0 sm:justify-end">
+          <p className="mr-2 font-editorial text-2xl font-medium text-secondary">{formatCurrency(getNightlyDisplayPrice(room.pricePerHour))}</p>
           <button
             type="button"
             onClick={() => onOpenDetail(room)}
-            className="rounded-xl border border-[#E4DED3] bg-white px-4 py-2.5 font-display text-sm font-semibold text-[#6A6C66] transition-colors hover:border-brand-orange/40 hover:text-brand-orange"
+            className="min-h-11 border-b border-secondary/45 px-1 font-display text-xs font-semibold text-secondary"
           >
             {copy.detail}
           </button>
@@ -703,10 +591,42 @@ function TopRatedRoomCard({
             disabled={
               availabilityState.isUnavailable || availabilityState.isChecking
             }
-            className="rounded-xl bg-secondary px-4 py-2.5 font-display text-sm font-semibold text-white shadow-[0_10px_24px_rgba(23,58,49,0.16)] transition-colors hover:bg-secondary-container"
+            className="min-h-11 rounded-xl bg-secondary px-4 font-display text-xs font-semibold text-white shadow-[0_10px_24px_rgba(23,58,49,0.16)] transition hover:-translate-y-0.5 hover:bg-secondary-container disabled:cursor-not-allowed disabled:opacity-55"
           >
             {bookingLabel}
           </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function TopRatedSupportingRoom({ room, onOpenDetail, onBook, copy }: {
+  room: BookingRoom;
+  onOpenDetail: (room: BookingRoom) => void;
+  onBook: (room: BookingRoom) => void;
+  copy: HomeCopy;
+}) {
+  const imageSrc = room.image ?? "/images/homestay-luxury-hero.webp";
+  const { availabilityState, availabilityLabel, bookingLabel } = getTopRatedRoomUi(room, copy);
+
+  return (
+    <article className="group grid min-h-[258px] overflow-hidden rounded-[26px] bg-[#FFFDFC] shadow-[var(--homestay-shadow-card)] sm:grid-cols-[0.92fr_1.08fr]">
+      <button type="button" onClick={() => onOpenDetail(room)} className="relative min-h-[220px] overflow-hidden text-left sm:min-h-full" aria-label={`${copy.detail}: ${room.name}`}>
+        <Image src={imageSrc} alt={room.name} fill quality={92} unoptimized={shouldBypassImageOptimization(imageSrc)} sizes="(min-width: 1024px) 24vw, 100vw" className={["object-cover transition duration-700 ease-out group-hover:scale-[1.035]", room.imageClassName].join(" ")} />
+      </button>
+      <div className="flex min-w-0 flex-col p-5 sm:p-6">
+        <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-on-surface-variant">
+          <span className="text-brand-orange">★ {(room.rating ?? 0).toFixed(1)}</span>
+          <span className="h-1 w-1 rounded-full bg-outline" />
+          <span>{availabilityLabel}</span>
+        </div>
+        <h3 className="font-editorial mt-3 text-[1.8rem] font-medium leading-[1.02] text-secondary">{room.name}</h3>
+        <p className="mt-3 line-clamp-2 text-xs leading-5 text-on-surface-variant">{room.description}</p>
+        <p className="font-editorial mt-4 text-2xl font-medium text-secondary">{formatCurrency(getNightlyDisplayPrice(room.pricePerHour))}</p>
+        <div className="mt-auto flex flex-wrap items-center gap-3 pt-4">
+          <button type="button" onClick={() => onOpenDetail(room)} className="min-h-10 border-b border-secondary/45 px-1 font-display text-xs font-semibold text-secondary">{copy.detail}</button>
+          <button type="button" onClick={() => onBook(room)} disabled={availabilityState.isUnavailable || availabilityState.isChecking} className="min-h-10 rounded-xl bg-secondary px-4 font-display text-xs font-semibold text-white transition hover:-translate-y-0.5 hover:bg-secondary-container disabled:cursor-not-allowed disabled:opacity-55">{bookingLabel}</button>
         </div>
       </div>
     </article>
@@ -724,42 +644,6 @@ function ChevronIcon({ className = "h-5 w-5" }: { className?: string }) {
       strokeLinejoin="round"
     >
       <path d="m9 18 6-6-6-6" />
-    </svg>
-  );
-}
-
-function BedroomIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      className="h-4 w-4"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M4 20V9.5A2.5 2.5 0 0 1 6.5 7H9a3 3 0 0 1 3 3v10" />
-      <path d="M12 12h5.5A2.5 2.5 0 0 1 20 14.5V20M4 16h16M7 11h2" />
-    </svg>
-  );
-}
-
-function BedIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      className="h-4 w-4"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M3 18v-7a2 2 0 0 1 2-2h3a3 3 0 0 1 3 3v1h8a2 2 0 0 1 2 2v3" />
-      <path d="M3 16h18M5 18v2M19 18v2" />
     </svg>
   );
 }
@@ -1708,9 +1592,7 @@ export default function HomePage() {
   const copy = homeCopy[locale];
   const {
     availabilityStatus,
-    recentActivities,
     isLoading: isLiveDataLoading,
-    error: liveDataError,
   } = useHomepageLiveData();
   const { rooms, isLoading: isRoomCatalogLoading } = usePublicRoomCatalog();
   const [availabilityHintVisible, setAvailabilityHintVisible] = useState(false);
@@ -1771,164 +1653,74 @@ export default function HomePage() {
     >
       <NewCustomerOfferModal />
 
-      <section className="relative flex min-h-[540px] items-center overflow-hidden bg-secondary text-white sm:min-h-[570px] lg:min-h-[610px]">
-        <Image
-          src="/images/homestay-luxury-hero.webp"
-          alt={copy.heroAlt}
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover object-center"
-        />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(17,42,35,0.96)_0%,rgba(17,42,35,0.82)_38%,rgba(17,42,35,0.18)_72%,rgba(17,42,35,0.18)_100%)]" />
-        <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-b from-transparent to-black/18" />
-
-        <div className="relative mx-auto grid w-full max-w-[1400px] items-center gap-8 px-5 pb-20 pt-12 sm:px-8 sm:pb-24 sm:pt-14 lg:grid-cols-[1fr_360px] lg:py-14">
-          <div className="max-w-3xl">
-            <button
-              type="button"
-              onClick={handleAvailabilityBadgeClick}
-              className={getAvailabilityBadgeClassName(availabilityStatus.tone)}
-              aria-live="polite"
-            >
-              <span
-                className={getAvailabilityDotClassName(availabilityStatus.tone)}
+      <section className="relative overflow-hidden bg-[#F7F3EB] pb-24 pt-7 sm:pb-28 sm:pt-10 lg:pb-32 lg:pt-12">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-40 [background-image:radial-gradient(rgba(63,70,64,0.13)_0.55px,transparent_0.55px)] [background-size:5px_5px]" />
+        <div className="relative mx-auto max-w-[1460px] px-4 sm:px-8 lg:px-10">
+          <div className="relative lg:grid lg:min-h-[610px] lg:grid-cols-[minmax(0,1.42fr)_minmax(390px,0.72fr)] lg:items-end">
+            <figure className="relative min-h-[420px] overflow-hidden rounded-bl-[30px] rounded-tl-[30px] rounded-tr-[clamp(72px,12vw,190px)] bg-surface-container shadow-[0_30px_80px_rgba(37,48,42,0.13)] sm:min-h-[540px] lg:col-start-1 lg:row-start-1 lg:min-h-[610px]">
+              <Image
+                src="/images/homestay-luxury-hero.webp"
+                alt={copy.heroAlt}
+                fill
+                priority
+                quality={94}
+                sizes="(min-width: 1024px) 68vw, 100vw"
+                className="object-cover object-[62%_center]"
               />
-              <span>
-                {isLiveDataLoading
-                  ? copy.loadingAvailability
-                  : availabilityStatus.label}
-              </span>
-            </button>
+              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(37,36,29,0.18),transparent_44%,rgba(255,255,255,0.04))]" />
+              <figcaption className="absolute bottom-5 left-5 rounded-xl bg-[#FBF8F2]/92 px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-secondary shadow-[0_14px_34px_rgba(32,42,37,0.1)] backdrop-blur-md sm:bottom-7 sm:left-7">
+                The Serene Villa <span className="mx-2 text-brand-orange">·</span> Hà Nội
+              </figcaption>
+            </figure>
 
-            {availabilityHintVisible &&
-              availabilityStatus.status === "CLOSED" && (
-                <p className="-mt-5 mb-8 max-w-md text-sm text-white/55">
+            <article className="relative z-10 -mt-9 rounded-tl-[44px] rounded-tr-[18px] bg-[#FFFDFC]/96 px-6 pb-7 pt-9 shadow-[0_28px_70px_rgba(40,50,44,0.13)] sm:mx-7 sm:-mt-14 sm:px-10 sm:pb-9 sm:pt-11 lg:col-start-2 lg:row-start-1 lg:mx-0 lg:mb-8 lg:-ml-24 lg:mt-0 lg:min-h-[430px] lg:rounded-tl-[58px] lg:rounded-tr-[22px] lg:px-12 lg:pb-10 lg:pt-12">
+              <p className="eyebrow text-brand-orange">
+                {locale === "vi" ? "Một địa chỉ để chậm lại" : "An address for slowing down"}
+              </p>
+              <h1 className="font-editorial mt-5 text-[3.25rem] font-medium leading-[0.9] tracking-[-0.045em] text-secondary sm:text-[4.5rem] lg:text-[5rem]">
+                {copy.heroTitleLine1}
+                <span className="mt-1 block">{copy.heroTitleLine2}</span>
+              </h1>
+              <p className="mt-6 max-w-md text-sm leading-7 text-on-surface-variant sm:text-base sm:leading-8">
+                {copy.heroDescription}
+              </p>
+
+              <div className="mt-7 flex flex-wrap items-center gap-x-7 gap-y-4 border-b border-outline-variant pb-6">
+                <Link
+                  href="#top-rated-rooms"
+                  className="group inline-flex min-h-11 items-center gap-3 border-b border-secondary/55 font-display text-sm font-semibold text-secondary"
+                >
+                  {locale === "vi" ? "Xem phòng được yêu thích" : "View guest favourites"}
+                  <span aria-hidden className="transition-transform group-hover:translate-y-0.5">↓</span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleAvailabilityBadgeClick}
+                  className={getAvailabilityBadgeClassName(availabilityStatus.tone)}
+                  aria-live="polite"
+                >
+                  <span className={getAvailabilityDotClassName(availabilityStatus.tone)} />
+                  <span>{isLiveDataLoading ? copy.loadingAvailability : availabilityStatus.label}</span>
+                </button>
+              </div>
+
+              {availabilityHintVisible && availabilityStatus.status === "CLOSED" && (
+                <p className="mt-4 max-w-md text-xs leading-6 text-on-surface-variant">
                   {copy.closedHint}
                 </p>
               )}
+            </article>
 
-            <p className="eyebrow mb-4 text-primary-fixed">
-              {copy.heroEyebrow}
-            </p>
-            <h1 className="font-editorial text-5xl font-semibold leading-[0.98] tracking-[-0.035em] text-white sm:text-[3.65rem] lg:text-[4.45rem]">
-              {copy.heroTitleLine1}
-              <span className="mt-2 block text-primary-fixed">
-                {copy.heroTitleLine2}
-              </span>
-            </h1>
-
-            <p className="mt-5 max-w-xl text-base leading-7 text-white/74 sm:text-[17px]">
-              {copy.heroDescription}
-            </p>
-
-            <div className="mt-7 flex flex-wrap items-center gap-4">
-              <Link
-                href={localizedHref("/rooms")}
-                className="rounded-full bg-white px-6 py-3.5 font-display text-sm font-semibold text-secondary shadow-[0_16px_38px_rgba(0,0,0,0.18)] transition-all hover:-translate-y-0.5"
-              >
-                {copy.checkAvailability}
-              </Link>
-              <Link
-                href={localizedHref("/process")}
-                className="rounded-full border border-white/25 bg-black/10 px-6 py-3.5 font-display text-sm font-semibold text-white backdrop-blur-sm transition-all hover:bg-white/10"
-              >
-                {copy.process}
-              </Link>
-            </div>
-
-            <div className="mt-8 grid max-w-2xl grid-cols-3 gap-4">
-              {copy.stats.map((item) => (
-                <div
-                  key={item.label}
-                  className="border-l border-white/18 px-4 py-2 first:border-l-0 first:pl-0"
-                >
-                  <p className="font-editorial text-xl font-semibold text-primary-fixed sm:text-2xl">
-                    {item.value}
-                  </p>
-                  <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/58">
-                    {item.label}
-                  </p>
-                </div>
-              ))}
+            <div aria-hidden="true" className="absolute right-1 top-6 hidden h-[82%] flex-col items-center gap-5 text-brand-orange lg:flex">
+              <span className="font-editorial text-2xl text-secondary">01</span>
+              <span className="h-20 w-px bg-brand-orange/45" />
+              <span className="[writing-mode:vertical-rl] text-[10px] font-semibold uppercase tracking-[0.28em]">Arrival</span>
             </div>
           </div>
-
-          <aside className="hidden lg:block">
-            <div className="overflow-hidden rounded-[20px] border border-white/16 bg-[#173A31]/82 p-4 shadow-[0_20px_54px_rgba(0,0,0,0.22)] backdrop-blur-xl">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="relative flex h-2 w-2">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#8dd7b4] opacity-40" />
-                      <span className="relative inline-flex h-2 w-2 rounded-full bg-[#8dd7b4]" />
-                    </span>
-                    <p className="font-display text-sm font-bold text-white">
-                      {copy.recentBookings}
-                    </p>
-                  </div>
-                  <p className="mt-1 text-[11px] text-white/45">
-                    {copy.liveFromSystem}
-                  </p>
-                </div>
-                <span className="rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-1 text-[10px] font-semibold text-white/55">
-                  {recentActivities.length} {copy.activityCount}
-                </span>
-              </div>
-
-              <div className="mt-3 divide-y divide-white/[0.08] overflow-hidden rounded-[14px] border border-white/10 bg-black/10">
-                {recentActivities.length > 0 ? (
-                  recentActivities.map((activity) => (
-                    <div
-                      key={activity.id}
-                      className="grid grid-cols-[10px_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2.5"
-                    >
-                      <span
-                        className={[
-                          "h-2 w-2 rounded-full",
-                          activity.action === "CHECKED_IN"
-                            ? "bg-[#8dd7b4]"
-                            : activity.action === "PAID"
-                              ? "bg-[#e0ad76]"
-                              : "bg-white/45",
-                        ].join(" ")}
-                      />
-                      <div className="min-w-0">
-                        <p className="truncate text-xs text-white/58">
-                          <span className="font-semibold text-white">
-                            {maskCustomerName(activity.customerName)}
-                          </span>{" "}
-                          {getActivityActionLabel(activity.action)}
-                        </p>
-                        <p className="mt-0.5 truncate text-[11px] font-semibold text-primary-fixed">
-                          {activity.roomName}
-                        </p>
-                      </div>
-                      <span className="shrink-0 text-[10px] text-white/32">
-                        {formatRelativeTime(activity.createdAt)}
-                      </span>
-                    </div>
-                  ))
-                ) : (
-                  <p className="px-3 py-4 text-xs text-white/45">
-                    {isLiveDataLoading
-                      ? copy.updatingActivities
-                      : copy.noRecentBookings}
-                  </p>
-                )}
-              </div>
-
-              {liveDataError && (
-                <p className="mt-2 text-[10px] text-[#f1d2a9]/70">
-                  {copy.showingLatestData}
-                </p>
-              )}
-            </div>
-          </aside>
         </div>
       </section>
 
-      <div className="relative z-20 mx-auto -mt-9 w-full max-w-[1400px] px-5 sm:px-8">
+      <div className="relative z-20 mx-auto -mt-16 w-full max-w-[1340px] px-4 sm:-mt-20 sm:px-8 lg:-mt-24">
         <StaySearchBar />
       </div>
 

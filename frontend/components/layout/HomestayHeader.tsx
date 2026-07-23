@@ -9,6 +9,7 @@ import LanguageSwitcher from '@/components/i18n/LanguageSwitcher'
 import AccountMenu from '@/components/layout/AccountMenu'
 import FavoriteRoomsMenu from '@/components/layout/FavoriteRoomsMenu'
 import NotificationMenu from '@/components/layout/NotificationMenu'
+import SereneVillaWordmark from '@/components/layout/SereneVillaWordmark'
 import { useAuth } from '@/contexts/AuthContext'
 import { useHomepageActiveSection } from '@/hooks/useHomepageActiveSection'
 import { stripLocalePrefix } from '@/i18n/config'
@@ -23,16 +24,6 @@ import {
   scrollToPageTop,
   shouldScrollToTop,
 } from '@/lib/site-nav'
-
-function BrandMark({ className = 'h-6 w-6' }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
-      <path d="m3.5 11 8.5-7 8.5 7" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M5.5 9.6V20h13V9.6M9 20v-6.5h6V20" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M16.2 6.6c.8-1.6 2-2.4 3.6-2.5-.1 1.8-1.1 3-3 3.6" strokeLinecap="round" />
-    </svg>
-  )
-}
 
 export default function HomestayHeader() {
   const pathname = usePathname()
@@ -71,11 +62,6 @@ export default function HomestayHeader() {
     isActive ? 'text-secondary' : 'text-on-surface-variant',
   ].join(' ')
 
-  const handleBookClick = () => {
-    setMenuOpen(false)
-    router.push(localizedHref('/rooms'))
-  }
-
   const handleLogoClick = (event: MouseEvent<HTMLAnchorElement>) => {
     setMenuOpen(false)
     event.preventDefault()
@@ -107,17 +93,11 @@ export default function HomestayHeader() {
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-outline-variant/80 bg-[#FBF9F5]/92 shadow-[0_8px_32px_rgba(23,58,49,0.06)] backdrop-blur-xl">
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-orange/70 to-transparent" aria-hidden />
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-outline-variant/75 bg-[#F7F3EB]/94 shadow-[0_10px_36px_rgba(38,55,47,0.045)] backdrop-blur-xl">
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-orange/45 to-transparent" aria-hidden />
         <div className="mx-auto flex h-20 max-w-[1400px] items-center gap-3 px-4 sm:gap-4 sm:px-8 xl:px-6 2xl:gap-5 2xl:px-8">
-          <Link href={localizedHref('/')} onClick={handleLogoClick} className="group flex min-w-0 shrink items-center gap-2.5 sm:shrink-0 sm:gap-3" aria-label={`${t('nav.home')} The Serene Villa`}>
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-brand-orange/45 bg-secondary text-primary-fixed shadow-[0_10px_28px_rgba(23,58,49,0.16)] transition-transform group-hover:-translate-y-0.5 sm:h-11 sm:w-11">
-              <BrandMark />
-            </span>
-            <span className="min-w-0">
-              <span className="font-editorial block truncate text-lg font-semibold leading-none tracking-[-0.02em] text-secondary sm:text-[1.28rem]">The Serene Villa</span>
-              <span className="mt-1 block truncate text-[8px] font-semibold uppercase tracking-[0.18em] text-on-surface-variant sm:text-[9px] sm:tracking-[0.22em]">{t('brand.tagline')}</span>
-            </span>
+          <Link href={localizedHref('/')} onClick={handleLogoClick} className="group min-w-0 shrink text-secondary transition-opacity hover:opacity-75 sm:shrink-0" aria-label={`${t('nav.home')} The Serene Villa`}>
+            <SereneVillaWordmark compact className="max-w-[12.4rem] sm:max-w-none" />
           </Link>
 
           <nav className="mx-auto hidden items-center gap-5 xl:flex 2xl:gap-7" aria-label={t('nav.main')}>
@@ -138,20 +118,20 @@ export default function HomestayHeader() {
               <><FavoriteRoomsMenu /><NotificationMenu /><AccountMenu /></>
             ) : (
               <>
-                <Link href={localizedHref('/register')} className="px-3 py-2 font-display text-sm font-semibold text-on-surface-variant transition-colors hover:text-secondary">{t('auth.register')}</Link>
-                <button type="button" onClick={handleBookClick} className="rounded-full bg-secondary px-5 py-2.5 font-display text-sm font-semibold text-white shadow-[0_12px_30px_rgba(23,58,49,0.17)] transition-all hover:-translate-y-0.5 hover:bg-secondary-container active:translate-y-0">{t('auth.findRoom')}</button>
+                <Link href={localizedHref('/register')} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-secondary/65 bg-transparent px-5 font-display text-sm font-semibold text-secondary transition-all hover:-translate-y-0.5 hover:border-secondary hover:bg-secondary hover:text-white active:translate-y-0">{t('auth.register')}</Link>
+                <Link href={localizedHref('/login')} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-secondary/65 bg-transparent px-5 font-display text-sm font-semibold text-secondary transition-all hover:-translate-y-0.5 hover:border-secondary hover:bg-secondary hover:text-white active:translate-y-0">{t('auth.login')}</Link>
               </>
             )}
           </div>
 
-          <button type="button" onClick={() => setMenuOpen((open) => !open)} className="ml-auto flex h-11 w-11 items-center justify-center rounded-full border border-outline-variant bg-white text-secondary shadow-sm xl:hidden" aria-expanded={menuOpen} aria-controls="homestay-mobile-menu" aria-label={menuOpen ? t('menu.close') : t('menu.open')}>
+          <button type="button" onClick={() => setMenuOpen((open) => !open)} className="ml-auto flex h-11 w-11 items-center justify-center rounded-xl border border-outline-variant bg-[#FBF8F2] text-secondary shadow-sm xl:hidden" aria-expanded={menuOpen} aria-controls="homestay-mobile-menu" aria-label={menuOpen ? t('menu.close') : t('menu.open')}>
             <span className="sr-only">{menuOpen ? t('menu.close') : t('menu.open')}</span>
             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>{menuOpen ? <path d="m6 6 12 12M18 6 6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}</svg>
           </button>
         </div>
 
         {menuOpen && (
-          <div id="homestay-mobile-menu" className="premium-scrollbar max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain border-t border-outline-variant bg-[#FBF9F5]/98 px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-[0_24px_44px_rgba(23,58,49,0.12)] backdrop-blur-xl sm:px-5 xl:hidden">
+          <div id="homestay-mobile-menu" className="premium-scrollbar max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain border-t border-outline-variant bg-[#F7F3EB]/98 px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-[0_24px_44px_rgba(23,58,49,0.1)] backdrop-blur-xl sm:px-5 xl:hidden">
             <div className="flex justify-end pt-3"><LanguageSwitcher compact /></div>
             <nav className="grid py-2" aria-label={t('nav.main')}>
               {publicNavItems.map((item) => {
@@ -167,8 +147,8 @@ export default function HomestayHeader() {
               <div className="mt-4 flex items-center justify-end gap-3 pb-1"><FavoriteRoomsMenu onNavigate={() => setMenuOpen(false)} /><NotificationMenu onNavigate={() => setMenuOpen(false)} /><AccountMenu align="full" onNavigate={() => setMenuOpen(false)} /></div>
             ) : (
               <div className="mt-4 grid grid-cols-2 gap-3">
-                <Link href={localizedHref('/register')} onClick={() => setMenuOpen(false)} className="rounded-full border border-outline px-4 py-3 text-center font-display text-sm font-semibold text-secondary">{t('auth.register')}</Link>
-                <button type="button" onClick={handleBookClick} className="rounded-full bg-secondary px-4 py-3 font-display text-sm font-semibold text-white">{t('auth.findRoom')}</button>
+                <Link href={localizedHref('/register')} onClick={() => setMenuOpen(false)} className="inline-flex min-h-12 items-center justify-center rounded-xl border border-secondary bg-[#FBF8F2] px-4 text-center font-display text-sm font-semibold text-secondary transition-colors hover:bg-secondary hover:text-white">{t('auth.register')}</Link>
+                <Link href={localizedHref('/login')} onClick={() => setMenuOpen(false)} className="inline-flex min-h-12 items-center justify-center rounded-xl border border-secondary bg-[#FBF8F2] px-4 text-center font-display text-sm font-semibold text-secondary transition-colors hover:bg-secondary hover:text-white">{t('auth.login')}</Link>
               </div>
             )}
           </div>

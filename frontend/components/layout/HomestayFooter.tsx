@@ -4,6 +4,7 @@ import type { MouseEvent, ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useI18n } from '@/components/i18n/LocaleProvider'
+import SereneVillaWordmark from '@/components/layout/SereneVillaWordmark'
 import { useAuth } from '@/contexts/AuthContext'
 import { stripLocalePrefix } from '@/i18n/config'
 import { clearForceHomepageTop, markForceHomepageTop } from '@/lib/navigation/scroll-restoration'
@@ -62,12 +63,8 @@ export default function HomestayFooter() {
       <div className="relative mx-auto max-w-[1400px] px-5 py-14 sm:px-8 sm:py-18">
         <div className="grid gap-12 border-b border-white/10 pb-12 lg:grid-cols-[1.4fr_0.7fr_0.8fr_1fr]">
           <div className="max-w-md">
-            <Link href={localizedHref('/')} onClick={handleLogoClick} className="inline-flex items-center gap-3" aria-label={`${t('nav.home')} The Serene Villa`}>
-              <span className="flex h-12 w-12 items-center justify-center rounded-full border border-brand-orange/45 bg-white/[0.06] text-primary-fixed"><BrandMark /></span>
-              <span>
-                <span className="font-editorial block text-2xl font-semibold tracking-[-0.02em]">The Serene Villa</span>
-                <span className="mt-1 block text-[9px] font-semibold uppercase tracking-[0.24em] text-white/55">{t('brand.tagline')}</span>
-              </span>
+            <Link href={localizedHref('/')} onClick={handleLogoClick} className="inline-flex text-primary-fixed transition-opacity hover:opacity-80" aria-label={`${t('nav.home')} The Serene Villa`}>
+              <SereneVillaWordmark />
             </Link>
             <p className="mt-6 text-sm leading-7 text-white/68">{t('footer.description')}</p>
             <div className="mt-7 flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-fixed">
@@ -105,8 +102,4 @@ export default function HomestayFooter() {
 
 function FooterColumn({ title, children }: { title: string; children: ReactNode }) {
   return <div><h2 className="eyebrow text-primary-fixed">{title}</h2><nav className="mt-5 grid gap-3.5 text-sm text-white/64">{children}</nav></div>
-}
-
-function BrandMark() {
-  return <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden><path d="m3.5 11 8.5-7 8.5 7" strokeLinecap="round" strokeLinejoin="round" /><path d="M5.5 9.6V20h13V9.6M9 20v-6.5h6V20" strokeLinecap="round" strokeLinejoin="round" /><path d="M16.2 6.6c.8-1.6 2-2.4 3.6-2.5-.1 1.8-1.1 3-3 3.6" strokeLinecap="round" /></svg>
 }

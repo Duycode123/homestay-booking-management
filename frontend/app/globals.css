@@ -412,6 +412,57 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-editorial);
 }
 
+/* Customer-facing quiet-luxury theme. It is scoped so admin and staff retain
+   their compact operational typography and surfaces. */
+.public-site-shell {
+  --color-brand-orange: #B88A59;
+  --color-brand-orangeHover: #9C7148;
+  --color-brand-greenDark: #173F35;
+  --color-brand-greenLight: #28594A;
+  --color-brand-bgGray: #F7F3EB;
+  --color-surface: #F7F3EB;
+  --color-surface-dim: #E8E0D4;
+  --color-surface-container-lowest: #FFFDFC;
+  --color-surface-container-low: #FBF8F2;
+  --color-surface-container: #F0E9DE;
+  --color-surface-container-high: #E8E0D4;
+  --color-on-surface: #30342F;
+  --color-on-surface-variant: #6D7069;
+  --color-outline: #CFC5B7;
+  --color-outline-variant: #E6DDD1;
+  --color-primary: #B88A59;
+  --color-primary-container: #EFE1D0;
+  --color-primary-fixed: #E8C99E;
+  --color-secondary: #173F35;
+  --color-secondary-container: #28594A;
+  --color-on-secondary-container: #D6E4DC;
+  --color-inverse-surface: #173F35;
+  --font-sans: var(--font-public-sans), "Segoe UI", sans-serif;
+  --font-display: var(--font-public-sans), "Segoe UI", sans-serif;
+  --font-editorial: var(--font-public-editorial), "Iowan Old Style", Georgia, serif;
+  --homestay-shadow-card: 0 14px 44px rgba(38, 55, 47, 0.07);
+  --homestay-shadow-elevated: 0 28px 76px rgba(35, 50, 43, 0.14);
+  background:
+    radial-gradient(circle at 7% 0%, rgba(184, 138, 89, 0.07), transparent 30rem),
+    #F7F3EB;
+  color: var(--color-on-surface);
+  font-family: var(--font-public-sans), "Segoe UI", sans-serif;
+}
+
+.public-site-shell .font-editorial {
+  font-family: var(--font-public-editorial), "Iowan Old Style", Georgia, serif;
+  font-weight: 500;
+  letter-spacing: -0.018em;
+}
+
+.public-site-shell :is(p, li) {
+  text-wrap: pretty;
+}
+
+.public-site-shell :is(button, a) {
+  transition-duration: 220ms;
+}
+
 .eyebrow {
   font-family: var(--font-display);
   font-size: 0.72rem;
