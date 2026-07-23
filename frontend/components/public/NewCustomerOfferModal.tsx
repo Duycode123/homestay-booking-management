@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import {
   dismissNewCustomerOffer,
@@ -65,11 +66,11 @@ export default function NewCustomerOfferModal() {
     router.push(`/rooms?promotion=${encodeURIComponent(offer.code)}`)
   }
 
-  if (!offer) return null
+  if (!offer || typeof document === 'undefined') return null
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-[120] flex items-center justify-center bg-[#234D42]/70 px-4 py-6 backdrop-blur-[5px]"
+      className="fixed inset-0 z-[120] flex items-center justify-center overflow-hidden bg-[#234D42]/70 px-3 py-4 backdrop-blur-[5px] sm:px-5 sm:py-6"
       role="presentation"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) closeOffer()
@@ -80,7 +81,7 @@ export default function NewCustomerOfferModal() {
         aria-modal="true"
         aria-labelledby="new-customer-offer-title"
         aria-describedby="new-customer-offer-description"
-        className="relative grid max-h-[calc(100dvh-1rem)] w-full max-w-[860px] overflow-y-auto overscroll-contain rounded-t-[24px] border border-white/50 bg-[#FBF8F2] shadow-[0_34px_100px_rgba(8,30,24,.35)] sm:max-h-[calc(100dvh-3rem)] sm:rounded-[30px] md:grid-cols-[.9fr_1.1fr]"
+        className="relative grid max-h-[calc(100dvh-2rem)] w-full max-w-[900px] grid-cols-[minmax(0,1fr)] overflow-x-hidden overflow-y-auto overscroll-contain rounded-[24px] border border-white/50 bg-[#FBF8F2] shadow-[0_34px_100px_rgba(8,30,24,.35)] sm:max-h-[calc(100dvh-3rem)] sm:rounded-[30px] md:grid-cols-[minmax(0,.9fr)_minmax(0,1.1fr)]"
       >
         <button
           type="button"
@@ -93,7 +94,7 @@ export default function NewCustomerOfferModal() {
           </svg>
         </button>
 
-        <div className="relative min-h-[235px] overflow-hidden md:min-h-[500px]">
+        <div className="relative min-h-[220px] min-w-0 overflow-hidden sm:min-h-[250px] md:min-h-[480px]">
           <Image
             src="/images/Bannercoupon.png"
             alt="Không gian nghỉ dưỡng xanh tại The Serene Villa"
@@ -108,7 +109,7 @@ export default function NewCustomerOfferModal() {
           </div>
         </div>
 
-        <div className="relative flex flex-col justify-center px-6 py-8 sm:px-10 sm:py-10 md:px-12">
+        <div className="relative flex min-w-0 flex-col justify-center px-5 py-7 sm:px-9 sm:py-9 md:px-10">
           <div className="absolute right-8 top-9 hidden h-24 w-24 rounded-full border border-[#C18B52]/15 md:block" />
           <p className="text-[11px] font-bold uppercase tracking-[.24em] text-[#B47D46]">Dành riêng cho kỳ nghỉ đầu tiên</p>
           <div className="mt-5 flex items-end gap-3">
@@ -148,6 +149,7 @@ export default function NewCustomerOfferModal() {
           </p>
         </div>
       </section>
-    </div>
+    </div>,
+    document.body,
   )
 }

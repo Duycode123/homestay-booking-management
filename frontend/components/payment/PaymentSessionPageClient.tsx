@@ -73,7 +73,12 @@ export default function PaymentSessionPageClient() {
   }, [router])
 
   const releaseWithKeepalive = useCallback(() => {
-    if (!paymentId || statusRef.current !== 'pending' || releaseStartedRef.current) return
+    if (
+      document.documentElement.dataset.sereneLocaleNavigation === 'true'
+      || !paymentId
+      || statusRef.current !== 'pending'
+      || releaseStartedRef.current
+    ) return
     releaseStartedRef.current = true
     clearPendingBooking()
     clearCheckoutSession()
@@ -183,7 +188,13 @@ export default function PaymentSessionPageClient() {
         && nextUrl.pathname === currentUrl.pathname
         && nextUrl.search === currentUrl.search
 
-      if (!staysOnSamePaymentSession && paymentId && statusRef.current === 'pending' && !releaseStartedRef.current) {
+      if (
+        document.documentElement.dataset.sereneLocaleNavigation !== 'true'
+        && !staysOnSamePaymentSession
+        && paymentId
+        && statusRef.current === 'pending'
+        && !releaseStartedRef.current
+      ) {
         event.preventDefault()
         releaseStartedRef.current = true
         clearPendingBooking()

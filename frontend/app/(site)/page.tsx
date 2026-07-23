@@ -1659,7 +1659,7 @@ export default function HomePage() {
           <div className="relative lg:grid lg:min-h-[610px] lg:grid-cols-[minmax(0,1.42fr)_minmax(390px,0.72fr)] lg:items-end">
             <figure className="relative min-h-[420px] overflow-hidden rounded-bl-[30px] rounded-tl-[30px] rounded-tr-[clamp(72px,12vw,190px)] bg-surface-container shadow-[0_30px_80px_rgba(37,48,42,0.13)] sm:min-h-[540px] lg:col-start-1 lg:row-start-1 lg:min-h-[610px]">
               <Image
-                src="/images/homestay-luxury-hero.webp"
+                src="/images/main.png"
                 alt={copy.heroAlt}
                 fill
                 priority

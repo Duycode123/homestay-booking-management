@@ -14,6 +14,10 @@ export default function LanguageSwitcher({ compact = false }: { compact?: boolea
     const query = searchParams.toString()
     const target = `${withLocale(stripLocalePrefix(pathname), nextLocale)}${query ? `?${query}` : ''}`
     document.cookie = `${localeCookieName}=${nextLocale}; path=/; max-age=31536000; samesite=lax`
+    // Payment pages release their room hold on a genuine page exit. A locale
+    // refresh is only a presentation change, so mark this document before the
+    // reload and let the payment page preserve the active QR session.
+    document.documentElement.dataset.sereneLocaleNavigation = 'true'
     const current = `${window.location.pathname}${window.location.search}`
     if (target === current) {
       window.location.reload()

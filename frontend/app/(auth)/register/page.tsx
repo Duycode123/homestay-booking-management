@@ -181,6 +181,9 @@ export default function RegisterPage() {
       <AuthBanner
         description="Tạo tài khoản để lưu thông tin, theo dõi kỳ nghỉ và nhận các cập nhật đặt phòng quan trọng."
         bullets={REGISTER_BULLETS}
+        imageSrc="/images/Regis.png"
+        imageAlt="Phong cảnh núi và cánh đồng trong làn mây nhìn từ The Serene Villa"
+        imagePosition="object-[center_52%]"
       />
 
       <AuthFormPanel>

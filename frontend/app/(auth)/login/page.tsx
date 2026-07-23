@@ -71,7 +71,11 @@ export default function LoginPage() {
 
   return (
     <AuthShell>
-      <AuthBanner />
+      <AuthBanner
+        imageSrc="/images/Login.png"
+        imageAlt="Phong cảnh núi rừng và thung lũng trong mây nhìn từ The Serene Villa"
+        imagePosition="object-[center_48%]"
+      />
 
       <AuthFormPanel>
         <AuthMobileBrand />
