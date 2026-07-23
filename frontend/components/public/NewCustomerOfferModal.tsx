@@ -80,7 +80,7 @@ export default function NewCustomerOfferModal() {
         aria-modal="true"
         aria-labelledby="new-customer-offer-title"
         aria-describedby="new-customer-offer-description"
-        className="relative grid max-h-[calc(100vh-3rem)] w-full max-w-[860px] overflow-y-auto rounded-[30px] border border-white/50 bg-[#FBF8F2] shadow-[0_34px_100px_rgba(8,30,24,.35)] md:grid-cols-[.9fr_1.1fr]"
+        className="relative grid max-h-[calc(100dvh-1rem)] w-full max-w-[860px] overflow-y-auto overscroll-contain rounded-t-[24px] border border-white/50 bg-[#FBF8F2] shadow-[0_34px_100px_rgba(8,30,24,.35)] sm:max-h-[calc(100dvh-3rem)] sm:rounded-[30px] md:grid-cols-[.9fr_1.1fr]"
       >
         <button
           type="button"

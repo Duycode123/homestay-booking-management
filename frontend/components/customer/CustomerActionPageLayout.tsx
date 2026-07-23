@@ -142,7 +142,7 @@ export function CustomerActionPageLayout({
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <CustomerCard className="overflow-hidden p-0">
-          <div className={`px-6 py-5 md:px-8 ${styles.formHeader}`}>
+          <div className={`px-4 py-5 sm:px-6 md:px-8 ${styles.formHeader}`}>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="flex items-start gap-4">
                 <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${styles.formIcon}`}>
@@ -189,7 +189,7 @@ export function CustomerActionPageLayout({
             ) : null}
           </div>
 
-          <div className="px-6 py-6 md:px-8 md:py-7">{children}</div>
+          <div className="px-4 py-5 sm:px-6 sm:py-6 md:px-8 md:py-7">{children}</div>
         </CustomerCard>
 
         <aside className="space-y-4">{sidebar}</aside>
@@ -308,7 +308,7 @@ export function CustomerActionSubmitButton({
     <button
       type="submit"
       disabled={isSubmitting}
-      className={`inline-flex h-12 items-center justify-center gap-2 rounded-xl px-6 font-display text-sm font-semibold text-white transition focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:opacity-60 ${buttonClass}`}
+      className={`inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl px-5 font-display text-sm font-semibold text-white transition focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:px-6 ${buttonClass}`}
     >
       {isSubmitting ? (
         <>

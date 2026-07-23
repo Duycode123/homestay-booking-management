@@ -45,6 +45,22 @@ export default function HomestayHeader() {
 
   useEffect(() => setMenuOpen(false), [pathname])
 
+  useEffect(() => {
+    if (!menuOpen) return
+
+    const previousOverflow = document.body.style.overflow
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMenuOpen(false)
+    }
+
+    document.body.style.overflow = 'hidden'
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [menuOpen])
+
   const navLinkClassName = (isActive: boolean) => [
     'relative inline-flex items-center gap-1.5 px-0.5 py-2 font-display text-[13px] font-semibold whitespace-nowrap transition-colors after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:origin-left after:bg-brand-orange after:transition-transform 2xl:text-sm',
     isActive ? 'text-secondary after:scale-x-100' : 'text-on-surface-variant after:scale-x-0 hover:text-secondary hover:after:scale-x-100',
@@ -93,14 +109,14 @@ export default function HomestayHeader() {
     <>
       <header className="fixed inset-x-0 top-0 z-50 border-b border-outline-variant/80 bg-[#FBF9F5]/92 shadow-[0_8px_32px_rgba(23,58,49,0.06)] backdrop-blur-xl">
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-orange/70 to-transparent" aria-hidden />
-        <div className="mx-auto flex h-20 max-w-[1400px] items-center gap-4 px-5 sm:px-8 xl:px-6 2xl:gap-5 2xl:px-8">
-          <Link href={localizedHref('/')} onClick={handleLogoClick} className="group flex shrink-0 items-center gap-3" aria-label={`${t('nav.home')} The Serene Villa`}>
-            <span className="flex h-11 w-11 items-center justify-center rounded-full border border-brand-orange/45 bg-secondary text-primary-fixed shadow-[0_10px_28px_rgba(23,58,49,0.16)] transition-transform group-hover:-translate-y-0.5">
+        <div className="mx-auto flex h-20 max-w-[1400px] items-center gap-3 px-4 sm:gap-4 sm:px-8 xl:px-6 2xl:gap-5 2xl:px-8">
+          <Link href={localizedHref('/')} onClick={handleLogoClick} className="group flex min-w-0 shrink items-center gap-2.5 sm:shrink-0 sm:gap-3" aria-label={`${t('nav.home')} The Serene Villa`}>
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-brand-orange/45 bg-secondary text-primary-fixed shadow-[0_10px_28px_rgba(23,58,49,0.16)] transition-transform group-hover:-translate-y-0.5 sm:h-11 sm:w-11">
               <BrandMark />
             </span>
-            <span>
-              <span className="font-editorial block text-[1.28rem] font-semibold leading-none tracking-[-0.02em] text-secondary">The Serene Villa</span>
-              <span className="mt-1 block text-[9px] font-semibold uppercase tracking-[0.22em] text-on-surface-variant">{t('brand.tagline')}</span>
+            <span className="min-w-0">
+              <span className="font-editorial block truncate text-lg font-semibold leading-none tracking-[-0.02em] text-secondary sm:text-[1.28rem]">The Serene Villa</span>
+              <span className="mt-1 block truncate text-[8px] font-semibold uppercase tracking-[0.18em] text-on-surface-variant sm:text-[9px] sm:tracking-[0.22em]">{t('brand.tagline')}</span>
             </span>
           </Link>
 
@@ -135,7 +151,7 @@ export default function HomestayHeader() {
         </div>
 
         {menuOpen && (
-          <div id="homestay-mobile-menu" className="border-t border-outline-variant bg-[#FBF9F5]/98 px-5 pb-6 shadow-[0_24px_44px_rgba(23,58,49,0.12)] backdrop-blur-xl xl:hidden">
+          <div id="homestay-mobile-menu" className="premium-scrollbar max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain border-t border-outline-variant bg-[#FBF9F5]/98 px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-[0_24px_44px_rgba(23,58,49,0.12)] backdrop-blur-xl sm:px-5 xl:hidden">
             <div className="flex justify-end pt-3"><LanguageSwitcher compact /></div>
             <nav className="grid py-2" aria-label={t('nav.main')}>
               {publicNavItems.map((item) => {
@@ -148,7 +164,7 @@ export default function HomestayHeader() {
               })}
             </nav>
             {isAuthenticated && user ? (
-              <div className="mt-4 flex items-center justify-end gap-3"><FavoriteRoomsMenu onNavigate={() => setMenuOpen(false)} /><NotificationMenu onNavigate={() => setMenuOpen(false)} /><AccountMenu align="full" onNavigate={() => setMenuOpen(false)} /></div>
+              <div className="mt-4 flex items-center justify-end gap-3 pb-1"><FavoriteRoomsMenu onNavigate={() => setMenuOpen(false)} /><NotificationMenu onNavigate={() => setMenuOpen(false)} /><AccountMenu align="full" onNavigate={() => setMenuOpen(false)} /></div>
             ) : (
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <Link href={localizedHref('/register')} onClick={() => setMenuOpen(false)} className="rounded-full border border-outline px-4 py-3 text-center font-display text-sm font-semibold text-secondary">{t('auth.register')}</Link>

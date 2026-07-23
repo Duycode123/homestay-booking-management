@@ -282,7 +282,7 @@ export default function StaySearchBar({
             <ChevronIcon open={guestPanelOpen} />
           </button>
           {guestPanelOpen && (
-            <div className={`serene-dropdown-enter absolute right-0 z-40 mt-2 w-full rounded-[22px] border border-[#ded2c3] bg-white p-4 shadow-[0_24px_60px_rgba(30,48,40,.18)] ${isSidebar ? 'min-w-0' : 'min-w-[300px]'}`}>
+            <div className={`serene-dropdown-enter absolute right-0 z-40 mt-2 w-full rounded-[22px] border border-[#ded2c3] bg-white p-4 shadow-[0_24px_60px_rgba(30,48,40,.18)] ${isSidebar ? 'min-w-0' : 'min-w-0 sm:min-w-[300px]'}`}>
               <GuestCounter label={copy.adults} note={copy.adultsNote} value={adults} min={1} max={20} onChange={setAdults} decreaseLabel={copy.decrease} increaseLabel={copy.increase} />
               <div className="my-3 h-px bg-[#eee7de]" />
               <GuestCounter label={copy.children} note={copy.childrenNote} value={children} min={0} max={12} onChange={setChildren} decreaseLabel={copy.decrease} increaseLabel={copy.increase} />

@@ -47,9 +47,9 @@ function AdminShell({ children }: AdminShellProps) {
   }
 
   return (
-    <div className="h-screen overflow-hidden bg-brand-bgGray">
-      <div className="flex h-screen">
-        <aside className="sticky top-0 hidden h-screen w-[17rem] shrink-0 flex-col border-r border-white/10 bg-brand-greenDark lg:flex">
+    <div className="h-dvh overflow-hidden bg-brand-bgGray">
+      <div className="flex h-dvh">
+        <aside className="sticky top-0 hidden h-dvh w-[17rem] shrink-0 flex-col border-r border-white/10 bg-brand-greenDark lg:flex">
           <div className="shrink-0 border-b border-white/10 px-6 py-6">
             <Link
               href="/admin/dashboard"
@@ -138,7 +138,7 @@ function AdminShell({ children }: AdminShellProps) {
               </button>
             </div>
           </div>
-          <nav aria-label="Điều hướng quản trị trên di động" className="flex h-[3.25rem] items-center gap-2 overflow-x-auto border-b border-outline-variant bg-white/95 px-4 backdrop-blur-md">
+          <nav aria-label="Điều hướng quản trị trên di động" className="premium-scrollbar flex h-[3.25rem] items-center gap-2 overflow-x-auto overscroll-x-contain border-b border-outline-variant bg-white/95 px-4 backdrop-blur-md">
             {NAV_ITEMS.map((item) => {
               const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
               return (

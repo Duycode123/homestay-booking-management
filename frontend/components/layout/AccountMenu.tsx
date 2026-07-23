@@ -147,7 +147,7 @@ export default function AccountMenu({ onNavigate, align = 'right' }: AccountMenu
           role="menu"
           aria-label={copy.account}
           className={[
-            'serene-dropdown-enter absolute z-[100] mt-3 w-[min(304px,calc(100vw-24px))] overflow-hidden rounded-[18px] border border-[#d8c9b5] bg-[#fffdfa] shadow-[0_22px_56px_rgba(20,47,38,.22)]',
+            'serene-dropdown-enter premium-scrollbar absolute z-[100] mt-3 max-h-[calc(100dvh-7rem)] w-[min(304px,calc(100vw-24px))] overflow-y-auto overscroll-contain rounded-[18px] border border-[#d8c9b5] bg-[#fffdfa] shadow-[0_22px_56px_rgba(20,47,38,.22)]',
             align === 'full' ? 'right-0' : 'right-0',
           ].join(' ')}
         >

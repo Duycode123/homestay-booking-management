@@ -81,13 +81,13 @@ export default function AboutHero() {
                 className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_16%_22%,rgba(216,181,136,0.12),transparent_31%)]"
             />
 
-            <div className="relative mx-auto grid max-w-[1400px] gap-10 px-5 sm:px-8 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:items-center lg:gap-14">
+            <div className="relative mx-auto grid w-full min-w-0 max-w-[1400px] gap-10 px-5 sm:px-8 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:items-center lg:gap-14">
                 <motion.div
                     style={{ y: copyY }}
                     variants={containerVariants}
                     initial="hidden"
                     animate="visible"
-                    className="max-w-xl lg:py-10"
+                    className="min-w-0 max-w-xl lg:py-10"
                 >
                     <motion.div variants={itemVariants} className="flex items-center gap-3">
                         <span className="h-px w-10 bg-primary-fixed" />
@@ -99,7 +99,7 @@ export default function AboutHero() {
 
                     <motion.h1
                         variants={itemVariants}
-                        className="font-editorial mt-5 text-5xl font-semibold leading-[1.02] tracking-[-0.035em] sm:text-6xl lg:text-[4.2rem]"
+                        className="font-editorial mt-5 text-[2.65rem] font-semibold leading-[1.04] tracking-[-0.035em] min-[380px]:text-5xl sm:text-6xl lg:text-[4.2rem]"
                     >
                         Một khoảng lặng được chăm chút từ những điều nhỏ nhất.
                     </motion.h1>
@@ -154,7 +154,7 @@ export default function AboutHero() {
                                 transition: { duration: 0.28 },
                             }
                     }
-                    className="relative lg:py-3"
+                    className="relative min-w-0 lg:py-3"
                 >
                     <div
                         aria-hidden="true"
@@ -162,7 +162,7 @@ export default function AboutHero() {
                     />
 
                     <div className="relative overflow-hidden rounded-[28px] border border-white/14 bg-[#153d32] shadow-[0_34px_90px_rgba(0,0,0,0.3)]">
-                        <div className="relative aspect-[4/3] min-h-[360px] sm:min-h-[470px] lg:min-h-[540px]">
+                        <div className="relative aspect-[4/3] min-h-0 sm:min-h-[470px] lg:min-h-[540px]">
                             <motion.div
                                 style={{ y: imageY, scale: imageScale }}
                                 className="absolute -inset-y-10 inset-x-0"

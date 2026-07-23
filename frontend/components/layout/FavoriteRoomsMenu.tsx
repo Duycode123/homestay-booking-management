@@ -76,7 +76,7 @@ export default function FavoriteRoomsMenu({ onNavigate }: FavoriteRoomsMenuProps
         <section
           role="dialog"
           aria-label="Danh sách phòng yêu thích"
-          className="serene-dropdown-enter absolute right-0 z-[95] mt-3 w-[min(390px,calc(100vw-24px))] overflow-hidden rounded-[24px] border border-[#dfd2bf] bg-[#fffdfa] shadow-[0_24px_70px_rgba(26,47,39,.22)]"
+          className="serene-dropdown-enter absolute right-0 z-[95] mt-3 flex max-h-[calc(100dvh-7rem)] w-[min(390px,calc(100vw-24px))] flex-col overflow-hidden rounded-[24px] border border-[#dfd2bf] bg-[#fffdfa] shadow-[0_24px_70px_rgba(26,47,39,.22)]"
         >
           <header className="bg-[linear-gradient(145deg,#123f34,#255e4e)] px-5 py-4 text-white">
             <div className="flex items-center justify-between gap-3">
@@ -90,7 +90,7 @@ export default function FavoriteRoomsMenu({ onNavigate }: FavoriteRoomsMenuProps
             </div>
           </header>
 
-          <div className="max-h-[min(520px,70vh)] overflow-y-auto p-3">
+          <div className="premium-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
             {isLoading ? (
               <div className="space-y-2 p-2" aria-label="Đang tải phòng yêu thích">
                 {[1, 2].map((item) => <div key={item} className="h-24 animate-pulse rounded-2xl bg-[#f1e9dd]" />)}

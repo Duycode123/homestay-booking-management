@@ -109,7 +109,7 @@ export default function NotificationMenu({ onNavigate }: NotificationMenuProps) 
       </button>
 
       {open ? (
-        <section role="dialog" aria-label="Trung tâm thông báo" className="serene-dropdown-enter absolute right-0 z-[98] mt-3 w-[min(380px,calc(100vw-24px))] overflow-hidden rounded-[22px] border border-[#d8c9b5] bg-[#fffdfa] shadow-[0_26px_70px_rgba(20,47,38,.24)]">
+        <section role="dialog" aria-label="Trung tâm thông báo" className="serene-dropdown-enter absolute right-0 z-[98] mt-3 flex max-h-[calc(100dvh-7rem)] w-[min(380px,calc(100vw-24px))] flex-col overflow-hidden rounded-[22px] border border-[#d8c9b5] bg-[#fffdfa] shadow-[0_26px_70px_rgba(20,47,38,.24)]">
           <header className="bg-[linear-gradient(145deg,#173f35,#254f43)] px-5 py-4 text-white">
             <div className="flex items-center justify-between gap-4">
               <div>
@@ -120,7 +120,7 @@ export default function NotificationMenu({ onNavigate }: NotificationMenuProps) 
             </div>
           </header>
 
-          <div className="max-h-[min(480px,66vh)] overflow-y-auto p-2.5">
+          <div className="premium-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain p-2.5">
             {loading ? (
               <div className="space-y-2 p-1">{[1, 2, 3].map((value) => <div key={value} className="h-20 animate-pulse rounded-2xl bg-[#f1e9dd]" />)}</div>
             ) : error ? (

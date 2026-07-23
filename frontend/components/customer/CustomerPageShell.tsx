@@ -16,7 +16,7 @@ export function CustomerPageShell({
       className={
         contained
           ? 'flex h-[calc(100dvh-5rem)] flex-col overflow-hidden bg-brand-bgGray text-on-surface'
-          : 'min-h-screen bg-brand-bgGray text-on-surface'
+          : 'min-h-dvh bg-brand-bgGray text-on-surface'
       }
     >
       <div className={contained ? 'relative flex min-h-0 flex-1 flex-col overflow-hidden' : 'relative overflow-x-hidden'}>
@@ -48,7 +48,7 @@ export function CustomerPageHeader({
   return (
     <div
       className={[
-        'mb-8 border-b border-outline-variant pb-6 pt-1 md:pb-8',
+        'mb-6 border-b border-outline-variant pb-5 pt-1 sm:mb-8 sm:pb-6 md:pb-8',
         className,
       ].join(' ')}
     >
@@ -57,7 +57,7 @@ export function CustomerPageHeader({
           <span aria-hidden className="h-px w-8 bg-brand-orange" />
           <p className="font-display text-[10px] font-semibold uppercase tracking-[0.22em] text-brand-orange">{eyebrow}</p>
         </div>
-        <h1 className="mt-3 font-editorial text-4xl font-normal leading-tight text-on-surface sm:text-5xl">{title}</h1>
+        <h1 className="mt-3 font-editorial text-[2.15rem] font-normal leading-tight text-on-surface min-[380px]:text-4xl sm:text-5xl">{title}</h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-on-surface-variant">{description}</p>
       </div>
     </div>
@@ -68,7 +68,7 @@ export function CustomerCard({ children, className = '' }: { children: ReactNode
   return (
     <section
       className={[
-        'rounded-xl border border-outline-variant bg-white/95 p-6 shadow-[var(--shadow-card)] transition-colors hover:border-outline',
+        'rounded-xl border border-outline-variant bg-white/95 p-4 shadow-[var(--shadow-card)] transition-colors hover:border-outline sm:p-6',
         className,
       ].join(' ')}
     >

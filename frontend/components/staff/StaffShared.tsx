@@ -27,7 +27,7 @@ export function StaffSidebar() {
 
   return (
     <>
-      <aside className="hidden w-[17rem] shrink-0 border-r border-white/10 bg-brand-greenDark px-4 py-6 text-inverse-on-surface lg:sticky lg:top-0 lg:flex lg:h-screen lg:self-start lg:flex-col lg:overflow-hidden">
+      <aside className="hidden w-[17rem] shrink-0 border-r border-white/10 bg-brand-greenDark px-4 py-6 text-inverse-on-surface lg:sticky lg:top-0 lg:flex lg:h-dvh lg:self-start lg:flex-col lg:overflow-hidden">
         <div className="flex items-center gap-3 px-2">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-brand-orange text-white">
             <IconLogo />
@@ -112,7 +112,7 @@ export function StaffSidebar() {
         </div>
       </header>
 
-      <nav aria-label="Điều hướng nhân viên trên di động" className="fixed inset-x-0 bottom-0 z-50 grid min-h-16 grid-cols-4 border-t border-outline-variant bg-white/95 px-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_32px_rgba(31,43,37,0.08)] backdrop-blur-md lg:hidden">
+      <nav aria-label="Điều hướng nhân viên trên di động" className="fixed inset-x-0 bottom-0 z-50 grid min-h-16 grid-cols-4 border-t border-outline-variant bg-white/95 px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_32px_rgba(31,43,37,0.08)] backdrop-blur-md sm:px-2 lg:hidden">
         {menuItems.map((item) => {
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
           return (
@@ -121,13 +121,13 @@ export function StaffSidebar() {
               href={item.href}
               aria-current={active ? 'page' : undefined}
               className={[
-                'relative flex min-h-16 flex-col items-center justify-center gap-1 px-1 text-[10px] font-semibold transition-colors',
+                'relative flex min-h-16 min-w-0 flex-col items-center justify-center gap-1 px-0.5 text-[9px] font-semibold transition-colors min-[380px]:px-1 min-[380px]:text-[10px]',
                 active ? 'text-brand-greenDark' : 'text-on-surface-variant',
               ].join(' ')}
             >
               {active && <span aria-hidden className="absolute inset-x-4 top-0 h-0.5 bg-brand-orange" />}
               <span className={active ? 'text-brand-orange' : ''}><StaffNavIcon name={item.icon} /></span>
-              <span className="truncate">{item.shortLabel}</span>
+              <span className="w-full truncate text-center">{item.shortLabel}</span>
             </Link>
           )
         })}
@@ -158,7 +158,7 @@ export function StaffSidebar() {
 
 export function StaffPageShell({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-brand-bgGray pb-20 pt-16 text-on-surface lg:flex lg:pb-0 lg:pt-0">
+    <div className="min-h-dvh bg-brand-bgGray pb-[calc(5rem+env(safe-area-inset-bottom))] pt-16 text-on-surface lg:flex lg:pb-0 lg:pt-0">
       <StaffSidebar />
       <main className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-[1480px] space-y-6">{children}</div>

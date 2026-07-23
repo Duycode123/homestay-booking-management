@@ -75,10 +75,16 @@
 html {
   scroll-behavior: smooth;
   background: var(--color-brand-bgGray);
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body {
   min-height: 100dvh;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-x: clip;
   background:
     radial-gradient(circle at 10% -10%, rgba(178, 132, 85, 0.07), transparent 32rem),
     var(--color-brand-bgGray);
@@ -184,6 +190,29 @@ html body input:is([type='search'], [role='searchbox'], [data-search-input]):foc
   background: transparent;
 }
 
+/* Compact, touch-friendly horizontal scrollbars for mobile tabs and wide tables. */
+.overflow-x-auto {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(35, 83, 70, 0.48) transparent;
+}
+
+.overflow-x-auto::-webkit-scrollbar {
+  height: 6px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(35, 83, 70, 0.42);
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb:hover {
+  background: rgba(35, 83, 70, 0.68);
+}
+
 @keyframes site-page-enter {
   from {
     opacity: 0.97;
@@ -220,6 +249,15 @@ html body input:is([type='search'], [role='searchbox'], [data-search-input]):foc
   select,
   textarea {
     font-size: 16px !important;
+  }
+
+  /* Long labels and media must not widen mobile grid/flex pages. */
+  main,
+  section,
+  article,
+  aside,
+  form {
+    min-width: 0;
   }
 }
 
