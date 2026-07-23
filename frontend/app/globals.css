@@ -416,10 +416,10 @@ h1, h2, h3, h4, h5, h6 {
 /* Customer-facing quiet-luxury theme. It is scoped so admin and staff retain
    their compact operational typography and surfaces. */
 .public-site-shell {
-  --color-brand-orange: #9A8064;
-  --color-brand-orangeHover: #7D6852;
-  --color-brand-greenDark: #514C44;
-  --color-brand-greenLight: #746D63;
+  --color-brand-orange: #6F8F84;
+  --color-brand-orangeHover: #52766B;
+  --color-brand-greenDark: #234D42;
+  --color-brand-greenLight: #52766B;
   --color-brand-bgGray: #F4EFE6;
   --color-surface: #F4EFE6;
   --color-surface-dim: #E5DDD2;
@@ -427,24 +427,24 @@ h1, h2, h3, h4, h5, h6 {
   --color-surface-container-low: #FAF6F0;
   --color-surface-container: #EDE5DA;
   --color-surface-container-high: #E4DBCF;
-  --color-on-surface: #45413B;
-  --color-on-surface-variant: #746F67;
-  --color-outline: #C9BFB2;
-  --color-outline-variant: #E1D8CC;
-  --color-primary: #9A8064;
-  --color-primary-container: #EADFD1;
-  --color-primary-fixed: #D9C2A8;
-  --color-secondary: #514C44;
-  --color-secondary-container: #746D63;
+  --color-on-surface: #3F4945;
+  --color-on-surface-variant: #68736E;
+  --color-outline: #C5D0CB;
+  --color-outline-variant: #DCE4E0;
+  --color-primary: #6F8F84;
+  --color-primary-container: #DDE9E4;
+  --color-primary-fixed: #C7DAD2;
+  --color-secondary: #234D42;
+  --color-secondary-container: #52766B;
   --color-on-secondary-container: #F3EEE7;
-  --color-inverse-surface: #514C44;
+  --color-inverse-surface: #234D42;
   --font-sans: "Aptos", "Segoe UI Variable Text", "Segoe UI", sans-serif;
   --font-display: "Aptos Display", "Segoe UI Variable Display", "Segoe UI", sans-serif;
   --font-editorial: "Iowan Old Style", "Baskerville", "Palatino Linotype", Georgia, serif;
-  --homestay-shadow-card: 0 14px 44px rgba(81, 76, 68, 0.075);
-  --homestay-shadow-elevated: 0 28px 76px rgba(81, 76, 68, 0.15);
+  --homestay-shadow-card: 0 14px 44px rgba(35, 77, 66, 0.075);
+  --homestay-shadow-elevated: 0 28px 76px rgba(35, 77, 66, 0.15);
   background:
-    radial-gradient(circle at 7% 0%, rgba(154, 128, 100, 0.09), transparent 30rem),
+    radial-gradient(circle at 7% 0%, rgba(111, 143, 132, 0.1), transparent 30rem),
     #F4EFE6;
   color: var(--color-on-surface);
   font-family: var(--font-sans);
@@ -552,25 +552,25 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .public-site-shell .premium-scrollbar {
-  scrollbar-color: rgba(116, 109, 99, 0.6) #eee7dd;
+  scrollbar-color: rgba(82, 118, 107, 0.6) #e6eeea;
 }
 
 .public-site-shell .premium-scrollbar::-webkit-scrollbar-track {
-  background: #eee7dd;
+  background: #e6eeea;
 }
 
 .public-site-shell .premium-scrollbar::-webkit-scrollbar-thumb {
   border-color: #eee7dd;
-  background: #9b9185;
+  background: #879D95;
 }
 
 .public-site-shell .premium-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #6f685f;
+  background: #45685D;
 }
 
 .public-site-shell :is(.btn-warm, .btn-date-choice),
 .public-site-shell :is(button.bg-brand-orange, a.bg-brand-orange, [role="button"].bg-brand-orange) {
-  box-shadow: 0 14px 30px rgba(81, 76, 68, 0.2);
+  box-shadow: 0 14px 30px rgba(35, 77, 66, 0.2);
 }
 
 @media (max-width: 767px) {

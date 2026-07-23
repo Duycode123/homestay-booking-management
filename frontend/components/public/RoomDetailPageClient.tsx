@@ -581,7 +581,7 @@ const houseRules = [
 function HouseRulesSection() {
   return (
     <section className="overflow-hidden rounded-[26px] border border-outline-variant bg-white" id="house-rules">
-      <div className="border-b border-outline-variant bg-[linear-gradient(115deg,#514C44,#746D63)] px-6 py-6 text-white sm:px-8">
+      <div className="border-b border-outline-variant bg-[linear-gradient(115deg,#234D42,#52766B)] px-6 py-6 text-white sm:px-8">
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#e7c49c]">Thông tin cần biết</p>
         <h2 className="font-editorial mt-2 text-3xl font-semibold">Nội quy chỗ ở</h2>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-white/68">Vui lòng tuân thủ để kỳ lưu trú an toàn, riêng tư và thoải mái cho mọi khách.</p>

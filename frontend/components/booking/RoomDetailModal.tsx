@@ -145,7 +145,7 @@ export default function RoomDetailModal({ room, open, onClose, onBook }: RoomDet
       maxWidthClassName="max-w-[1040px]"
       bodyClassName="bg-[#F6F3ED] p-0"
     >
-        <div className="relative aspect-[16/9] min-h-[220px] overflow-hidden rounded-t-[24px] bg-[#514C44] sm:aspect-[21/9]">
+        <div className="relative aspect-[16/9] min-h-[220px] overflow-hidden rounded-t-[24px] bg-[#234D42] sm:aspect-[21/9]">
           {room.image ? (
             <Image
               src={room.image}
@@ -156,7 +156,7 @@ export default function RoomDetailModal({ room, open, onClose, onBook }: RoomDet
               className={`object-cover ${room.imageClassName}`}
             />
           ) : (
-            <div className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_top,#EDE0CF,transparent_52%),linear-gradient(135deg,#514C44,#0B3E24)] px-6 text-center">
+            <div className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_top,#EDE0CF,transparent_52%),linear-gradient(135deg,#234D42,#0B3E24)] px-6 text-center">
               <div>
                 <p className="font-display text-2xl font-bold text-white">{room.name}</p>
                 <p className="mt-3 text-sm text-white/72">Backend chưa cung cấp ảnh cho phòng này.</p>
@@ -166,7 +166,7 @@ export default function RoomDetailModal({ room, open, onClose, onBook }: RoomDet
           <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(4,42,22,0.86),rgba(4,42,22,0.2)_55%,rgba(4,42,22,0.1))]" />
           <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7">
             <div className="mb-3 flex flex-wrap gap-2">
-              <span className="rounded-full bg-[#EDE0CF] px-3 py-1 font-display text-xs font-bold uppercase text-[#514C44]">
+              <span className="rounded-full bg-[#EDE0CF] px-3 py-1 font-display text-xs font-bold uppercase text-[#234D42]">
                 {room.categoryLabel}
               </span>
               {room.badge && (

@@ -16,7 +16,7 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ['travel', 'lifestyle'],
     icons: [
       {
-        src: '/favicon.svg',
+        src: '/serene-favicon.svg',
         sizes: 'any',
         type: 'image/svg+xml',
         purpose: 'any',

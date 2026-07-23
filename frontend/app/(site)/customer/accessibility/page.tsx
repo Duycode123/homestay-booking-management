@@ -153,7 +153,7 @@ export default function CustomerAccessibilityPage() {
           </button>
           <p
             aria-live="polite"
-            className="mt-3 min-h-6 text-sm font-semibold text-[#746D63]"
+            className="mt-3 min-h-6 text-sm font-semibold text-[#52766B]"
           >
             {message}
           </p>

@@ -301,7 +301,7 @@ export function CustomerActionSubmitButton({
 }) {
   const buttonClass =
     variant === 'support'
-      ? 'bg-secondary shadow-[0_12px_28px_rgba(11,59,47,0.24)] hover:bg-[#746D63] focus:ring-secondary/30'
+      ? 'bg-secondary shadow-[0_12px_28px_rgba(11,59,47,0.24)] hover:bg-[#52766B] focus:ring-secondary/30'
       : 'bg-brand-greenDark shadow-[0_12px_28px_rgba(10,77,39,0.28)] hover:bg-secondary focus:ring-brand-greenDark/30'
 
   return (

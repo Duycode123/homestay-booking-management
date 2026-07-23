@@ -110,7 +110,7 @@ export default function NotificationMenu({ onNavigate }: NotificationMenuProps) 
 
       {open ? (
         <section role="dialog" aria-label="Trung tâm thông báo" className="serene-dropdown-enter absolute right-0 z-[98] mt-3 flex max-h-[calc(100dvh-7rem)] w-[min(380px,calc(100vw-24px))] flex-col overflow-hidden rounded-[22px] border border-[#d8c9b5] bg-[#fffdfa] shadow-[0_26px_70px_rgba(20,47,38,.24)]">
-          <header className="bg-[linear-gradient(145deg,#514C44,#746D63)] px-5 py-4 text-white">
+          <header className="bg-[linear-gradient(145deg,#234D42,#52766B)] px-5 py-4 text-white">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#e7c59d]">Cập nhật hành trình</p>
@@ -158,7 +158,7 @@ export default function NotificationMenu({ onNavigate }: NotificationMenuProps) 
 
           <footer className="flex items-center justify-between gap-3 border-t border-[#eadfce] bg-[#fcf8f2] px-4 py-3">
             <button type="button" disabled={!unreadCount} onClick={() => void markAll()} className="text-xs font-bold text-[#806344] transition hover:text-[#a56d35] disabled:opacity-40">Đọc tất cả</button>
-            <button type="button" onClick={() => { setOpen(false); onNavigate?.(); router.push('/customer/notifications') }} className="rounded-full bg-[#514C44] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#3F3A34]">Xem tất cả</button>
+            <button type="button" onClick={() => { setOpen(false); onNavigate?.(); router.push('/customer/notifications') }} className="rounded-full bg-[#234D42] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#173B32]">Xem tất cả</button>
           </footer>
         </section>
       ) : null}

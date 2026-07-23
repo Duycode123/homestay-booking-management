@@ -352,7 +352,7 @@ export default function AmenitiesExplorer() {
                                         "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary",
                                         "lg:mb-1 lg:w-full lg:rounded-[15px] lg:border-transparent lg:px-4 lg:py-3.5 lg:last:mb-0",
                                         isActive
-                                            ? "border-secondary bg-secondary text-white shadow-[0_10px_24px_rgba(81,76,68,0.16)]"
+                                            ? "border-secondary bg-secondary text-white shadow-[0_10px_24px_rgba(35,77,66,0.16)]"
                                             : "border-outline-variant bg-white text-secondary hover:-translate-y-0.5 hover:border-brand-orange/35 lg:bg-transparent lg:hover:translate-y-0 lg:hover:bg-[#F7F3EC]",
                                     ].join(" ")}
                                 >

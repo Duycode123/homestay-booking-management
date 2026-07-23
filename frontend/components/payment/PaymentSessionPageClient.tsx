@@ -228,7 +228,7 @@ export default function PaymentSessionPageClient() {
           <p className="text-xs font-bold uppercase tracking-[.18em] text-[#B28455]">Thanh toán The Serene Villa</p>
           <h1 className="mt-3 font-display text-3xl font-bold">Không thể mở phiên thanh toán</h1>
           <p className="mt-3 leading-7 text-[#6A6C66]">{error || 'Không tìm thấy thông tin booking.'}</p>
-          <Link href={roomId ? `/rooms/${roomId}` : '/rooms'} className="mt-7 inline-flex min-h-12 items-center justify-center rounded-full bg-[#514C44] px-6 font-bold text-white">Chọn lại phòng</Link>
+          <Link href={roomId ? `/rooms/${roomId}` : '/rooms'} className="mt-7 inline-flex min-h-12 items-center justify-center rounded-full bg-[#234D42] px-6 font-bold text-white">Chọn lại phòng</Link>
         </section>
       </main>
     )
@@ -246,7 +246,7 @@ export default function PaymentSessionPageClient() {
           <div className="inline-flex w-fit items-center gap-3 rounded-full border border-[#DCC9B4] bg-white px-4 py-2 shadow-sm">
             <ClockIcon />
             <span className="text-xs font-semibold uppercase tracking-[.12em] text-[#756A5E]">Thời gian còn lại</span>
-            <strong className={status === 'pending' ? 'text-[#514C44]' : 'text-[#A3293A]'}>
+            <strong className={status === 'pending' ? 'text-[#234D42]' : 'text-[#A3293A]'}>
               {status === 'pending' ? formatCountdown(secondsRemaining ?? 0) : 'Đã kết thúc'}
             </strong>
           </div>
@@ -258,7 +258,7 @@ export default function PaymentSessionPageClient() {
           </div>
 
           <section className="overflow-hidden rounded-[30px] border border-[#DED7CB] bg-white shadow-[0_24px_65px_rgba(45,42,36,.1)]">
-            <div className="border-b border-[#E8E1D7] bg-[#514C44] px-5 py-5 text-white sm:px-7 sm:py-6">
+            <div className="border-b border-[#E8E1D7] bg-[#234D42] px-5 py-5 text-white sm:px-7 sm:py-6">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <p className="text-[11px] font-bold uppercase tracking-[.18em] text-[#E3C39D]">Booking {booking.bookingId}</p>
@@ -294,7 +294,7 @@ export default function PaymentSessionPageClient() {
                   </div>
 
                   <div className="mt-4 rounded-2xl border border-[#D8E7E0] bg-[#F1F7F4] p-4 text-sm leading-6 text-[#52665E]">
-                    <p className="font-bold text-[#514C44]">Lưu ý khi chuyển khoản</p>
+                    <p className="font-bold text-[#234D42]">Lưu ý khi chuyển khoản</p>
                     <ul className="mt-2 space-y-1.5">
                       <li>• Chuyển đúng số tiền và nội dung hiển thị.</li>
                       <li>• Không đóng trang cho đến khi giao dịch được xác nhận.</li>
@@ -327,7 +327,7 @@ export default function PaymentSessionPageClient() {
               )}
 
               {status !== 'pending' && (
-                <Link href={roomId ? `/rooms/${roomId}` : '/rooms'} className="mt-6 flex min-h-14 items-center justify-center rounded-full bg-[#514C44] px-6 font-bold text-white">Chọn lại kỳ lưu trú</Link>
+                <Link href={roomId ? `/rooms/${roomId}` : '/rooms'} className="mt-6 flex min-h-14 items-center justify-center rounded-full bg-[#234D42] px-6 font-bold text-white">Chọn lại kỳ lưu trú</Link>
               )}
 
             </div>
@@ -351,7 +351,7 @@ function StatusBadge({ status }: { status: PaymentStatus }) {
   const content = status === 'pending'
     ? ['Đang giữ phòng', 'bg-white/10 text-white']
     : status === 'success'
-      ? ['Đã thanh toán', 'bg-[#DDF0E7] text-[#514C44]']
+      ? ['Đã thanh toán', 'bg-[#DDF0E7] text-[#234D42]']
       : ['Đã nhả phòng', 'bg-[#F8E2E5] text-[#9C2C3B]']
   return <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${content[1]}`}>{content[0]}</span>
 }

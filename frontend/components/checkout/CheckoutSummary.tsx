@@ -60,7 +60,7 @@ function PaymentRow({ label, value, green = false }: { label: string; value: str
   return (
     <div className="flex items-center justify-between gap-3 py-1.5 text-sm">
       <span className="min-w-0 text-[#6A6C66]">{label}</span>
-      <span className={['shrink-0 text-nowrap text-right font-semibold', green ? 'text-[#746D63]' : 'text-[#242A27]'].join(' ')}>
+      <span className={['shrink-0 text-nowrap text-right font-semibold', green ? 'text-[#52766B]' : 'text-[#242A27]'].join(' ')}>
         {value}
       </span>
     </div>

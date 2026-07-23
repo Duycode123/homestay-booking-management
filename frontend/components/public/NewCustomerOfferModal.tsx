@@ -69,7 +69,7 @@ export default function NewCustomerOfferModal() {
 
   return (
     <div
-      className="fixed inset-0 z-[120] flex items-center justify-center bg-[#514C44]/70 px-4 py-6 backdrop-blur-[5px]"
+      className="fixed inset-0 z-[120] flex items-center justify-center bg-[#234D42]/70 px-4 py-6 backdrop-blur-[5px]"
       role="presentation"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) closeOffer()
@@ -86,7 +86,7 @@ export default function NewCustomerOfferModal() {
           type="button"
           onClick={closeOffer}
           aria-label="Đóng ưu đãi"
-          className="absolute right-4 top-4 z-20 grid h-10 w-10 place-items-center rounded-full border border-white/55 bg-white/85 text-[#514C44] shadow-sm backdrop-blur transition hover:rotate-90 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C18B52]"
+          className="absolute right-4 top-4 z-20 grid h-10 w-10 place-items-center rounded-full border border-white/55 bg-white/85 text-[#234D42] shadow-sm backdrop-blur transition hover:rotate-90 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C18B52]"
         >
           <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
             <path d="M6 6l12 12M18 6 6 18" strokeLinecap="round" />
@@ -102,8 +102,8 @@ export default function NewCustomerOfferModal() {
             sizes="(max-width: 767px) 100vw, 390px"
             className="object-cover object-center"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#514C44]/70 via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:to-[#514C44]/15" />
-          <div className="absolute bottom-5 left-5 rounded-full border border-white/35 bg-[#514C44]/72 px-4 py-2 text-[11px] font-bold uppercase tracking-[.2em] text-white backdrop-blur">
+          <div className="absolute inset-0 bg-gradient-to-t from-[#234D42]/70 via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:to-[#234D42]/15" />
+          <div className="absolute bottom-5 left-5 rounded-full border border-white/35 bg-[#234D42]/72 px-4 py-2 text-[11px] font-bold uppercase tracking-[.2em] text-white backdrop-blur">
             Ưu đãi chào đón
           </div>
         </div>
@@ -112,13 +112,13 @@ export default function NewCustomerOfferModal() {
           <div className="absolute right-8 top-9 hidden h-24 w-24 rounded-full border border-[#C18B52]/15 md:block" />
           <p className="text-[11px] font-bold uppercase tracking-[.24em] text-[#B47D46]">Dành riêng cho kỳ nghỉ đầu tiên</p>
           <div className="mt-5 flex items-end gap-3">
-            <span className="font-editorial text-[5.2rem] font-semibold leading-[.8] tracking-[-.06em] text-[#514C44] sm:text-[6rem]">
+            <span className="font-editorial text-[5.2rem] font-semibold leading-[.8] tracking-[-.06em] text-[#234D42] sm:text-[6rem]">
               {offer.discountPercent}%
             </span>
             <span className="pb-1.5 text-sm font-bold uppercase tracking-[.18em] text-[#B47D46]">giảm ngay</span>
           </div>
 
-          <h2 id="new-customer-offer-title" className="mt-7 font-editorial text-3xl font-semibold leading-tight text-[#514C44] sm:text-[2.15rem]">
+          <h2 id="new-customer-offer-title" className="mt-7 font-editorial text-3xl font-semibold leading-tight text-[#234D42] sm:text-[2.15rem]">
             Lần đầu ghé Serene,<br />nhẹ nhàng hơn một chút.
           </h2>
           <p id="new-customer-offer-description" className="mt-4 text-sm leading-6 text-[#6C706B]">
@@ -128,15 +128,15 @@ export default function NewCustomerOfferModal() {
           <div className="mt-6 flex items-center justify-between rounded-2xl border border-dashed border-[#B47D46]/45 bg-white px-4 py-3">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[.18em] text-[#8B8B83]">Mã ưu đãi</p>
-              <p className="mt-0.5 text-lg font-extrabold tracking-[.12em] text-[#514C44]">{offer.code}</p>
+              <p className="mt-0.5 text-lg font-extrabold tracking-[.12em] text-[#234D42]">{offer.code}</p>
             </div>
-            <span className="rounded-full bg-[#E9F3EE] px-3 py-1.5 text-xs font-bold text-[#746D63]">Booking đầu tiên</span>
+            <span className="rounded-full bg-[#E9F3EE] px-3 py-1.5 text-xs font-bold text-[#52766B]">Booking đầu tiên</span>
           </div>
 
           <button
             type="button"
             onClick={exploreRooms}
-            className="mt-6 inline-flex h-[52px] items-center justify-center gap-2 rounded-full bg-[#514C44] px-6 font-display text-sm font-bold text-white shadow-[0_16px_34px_rgba(23,58,49,.23)] transition hover:-translate-y-0.5 hover:bg-[#746D63] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C18B52] focus-visible:ring-offset-2"
+            className="mt-6 inline-flex h-[52px] items-center justify-center gap-2 rounded-full bg-[#234D42] px-6 font-display text-sm font-bold text-white shadow-[0_16px_34px_rgba(23,58,49,.23)] transition hover:-translate-y-0.5 hover:bg-[#52766B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C18B52] focus-visible:ring-offset-2"
           >
             Chọn phòng ngay
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">

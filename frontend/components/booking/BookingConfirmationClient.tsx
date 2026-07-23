@@ -182,7 +182,7 @@ export default function BookingConfirmationClient() {
             <p className="mt-2 text-[#6A6C66]">Kiểm tra lần cuối. Phòng chỉ được giữ khi bạn tạo mã QR ở bước thanh toán.</p>
           </div>
 
-          <span className="w-fit rounded-full bg-[#746D63] px-4 py-2 font-display text-sm font-semibold text-white">
+          <span className="w-fit rounded-full bg-[#52766B] px-4 py-2 font-display text-sm font-semibold text-white">
             Sẵn sàng xác nhận
           </span>
         </div>
@@ -256,7 +256,7 @@ export default function BookingConfirmationClient() {
                   <h3 className="mt-1 font-display text-xl font-bold">Dịch vụ thuê thêm</h3>
                   <p className="mt-1 text-sm text-[#6A6C66]">Chọn trước để đội ngũ chuẩn bị đúng giờ nhận phòng.</p>
                 </div>
-                {addonTotal > 0 && <span className="rounded-full bg-[#E8F2ED] px-3 py-1 text-sm font-bold text-[#514C44]">+ {formatCurrency(addonTotal)}</span>}
+                {addonTotal > 0 && <span className="rounded-full bg-[#E8F2ED] px-3 py-1 text-sm font-bold text-[#234D42]">+ {formatCurrency(addonTotal)}</span>}
               </div>
 
               {isLoadingAddons ? (
@@ -268,16 +268,16 @@ export default function BookingConfirmationClient() {
                   {addonCatalog.map((item) => {
                     const quantity = addonQuantities[item.id] ?? 0
                     return (
-                      <div key={item.id} className={['group overflow-hidden rounded-2xl border transition', quantity > 0 ? 'border-[#746D63] bg-[#EEF6F2]' : 'border-[#E4DED3] bg-white'].join(' ')}>
+                      <div key={item.id} className={['group overflow-hidden rounded-2xl border transition', quantity > 0 ? 'border-[#52766B] bg-[#EEF6F2]' : 'border-[#E4DED3] bg-white'].join(' ')}>
                         <AddonServiceImage imageUrl={item.imageUrl} name={item.name} className="h-28 w-full" />
                         <div className="p-4">
                         <button type="button" onClick={() => setAddonQuantities((current) => ({ ...current, [item.id]: quantity > 0 ? 0 : 1 }))} className="w-full text-left">
                           <div className="flex items-start justify-between gap-3">
                             <div>
-                              <p className="font-display font-bold text-[#514C44]">{item.name}</p>
+                              <p className="font-display font-bold text-[#234D42]">{item.name}</p>
                               <p className="mt-1 line-clamp-2 text-sm text-[#6A6C66]">{item.description}</p>
                             </div>
-                            <span className={['mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold', quantity > 0 ? 'border-[#514C44] bg-[#514C44] text-white' : 'border-[#CFC6B8] text-transparent'].join(' ')}>✓</span>
+                            <span className={['mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold', quantity > 0 ? 'border-[#234D42] bg-[#234D42] text-white' : 'border-[#CFC6B8] text-transparent'].join(' ')}>✓</span>
                           </div>
                         </button>
                         <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#DCD5CA] pt-3">
@@ -393,7 +393,7 @@ function BookingStep({
         className={[
           'flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-display text-xs font-bold',
           state === 'done'
-            ? 'bg-[#746D63] text-white'
+            ? 'bg-[#52766B] text-white'
             : state === 'current'
               ? 'bg-[#B28455] text-white'
               : 'bg-[#EFEAE1] text-[#6A6C66]',
@@ -427,7 +427,7 @@ function PaymentRow({ label, value, green = false }: { label: string; value: str
   return (
     <div className="flex items-center justify-between py-2 text-sm">
       <span className="text-[#6A6C66]">{label}</span>
-      <span className={['font-semibold', green ? 'text-[#746D63]' : 'text-[#242A27]'].join(' ')}>{value}</span>
+      <span className={['font-semibold', green ? 'text-[#52766B]' : 'text-[#242A27]'].join(' ')}>{value}</span>
     </div>
   )
 }

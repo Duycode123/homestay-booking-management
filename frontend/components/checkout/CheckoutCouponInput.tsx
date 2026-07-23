@@ -94,7 +94,7 @@ export default function CheckoutCouponInput({
       <div className="flex items-center justify-between gap-3">
         <p className="font-display text-sm font-bold text-[#242A27]">Mã giảm giá</p>
         {appliedDiscount && (
-          <span className="rounded-full bg-[#E8F5EC] px-2.5 py-1 font-display text-[11px] font-bold text-[#746D63]">
+          <span className="rounded-full bg-[#E8F5EC] px-2.5 py-1 font-display text-[11px] font-bold text-[#52766B]">
             Đã áp dụng
           </span>
         )}
@@ -150,7 +150,7 @@ export default function CheckoutCouponInput({
           role={status === 'error' ? 'alert' : 'status'}
           className={[
             'mt-2 text-xs leading-5',
-            status === 'error' ? 'text-[#C62828]' : status === 'success' ? 'text-[#746D63]' : 'text-[#6A6C66]',
+            status === 'error' ? 'text-[#C62828]' : status === 'success' ? 'text-[#52766B]' : 'text-[#6A6C66]',
           ].join(' ')}
         >
           {feedback}

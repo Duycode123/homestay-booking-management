@@ -73,7 +73,7 @@ export async function generateMetadata(): Promise<Metadata> {
       follow: true,
       googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1, 'max-video-preview': -1 },
     },
-    icons: { icon: '/favicon.svg', shortcut: '/favicon.svg', apple: '/favicon.svg' },
+    icons: { icon: '/serene-favicon.svg', shortcut: '/serene-favicon.svg', apple: '/serene-favicon.svg' },
     manifest: '/manifest.webmanifest',
     formatDetection: { email: false, address: false, telephone: false },
   }

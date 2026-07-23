@@ -476,7 +476,7 @@ function CancellationSection({ booking }: { booking: BookingHistoryItem }) {
           {errorMessage && <p className="mt-3 rounded-xl bg-error-container px-3 py-2 text-sm text-error">{errorMessage}</p>}
           <div className="mt-4 flex gap-3">
             <button type="button" onClick={() => setShowForm(false)} className="h-11 flex-1 rounded-xl border border-outline bg-white text-sm font-semibold text-on-surface">Để sau</button>
-            <button type="button" disabled={reason.trim().length < 10 || !isRefundDestinationValid || isSubmitting} onClick={() => void submitRequest()} className="h-11 flex-[1.5] rounded-xl bg-[#514C44] text-sm font-bold text-white transition hover:bg-[#3F3A34] disabled:cursor-not-allowed disabled:opacity-50">
+            <button type="button" disabled={reason.trim().length < 10 || !isRefundDestinationValid || isSubmitting} onClick={() => void submitRequest()} className="h-11 flex-[1.5] rounded-xl bg-[#234D42] text-sm font-bold text-white transition hover:bg-[#173B32] disabled:cursor-not-allowed disabled:opacity-50">
               {isSubmitting ? 'Đang gửi...' : 'Xác nhận gửi yêu cầu'}
             </button>
           </div>

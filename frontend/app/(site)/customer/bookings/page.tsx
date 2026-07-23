@@ -67,7 +67,7 @@ export default function CustomerBookingsPage() {
 
   return (
     <CustomerPageShell>
-      <section className="relative mb-5 overflow-hidden rounded-[22px] bg-gradient-to-br from-[#514C44] via-[#1C4B3E] to-[#746D63] px-5 py-6 text-white shadow-[0_24px_60px_rgba(20,55,46,0.18)] sm:mb-6 sm:rounded-[28px] sm:px-8 sm:py-10">
+      <section className="relative mb-5 overflow-hidden rounded-[22px] bg-gradient-to-br from-[#234D42] via-[#1C4B3E] to-[#52766B] px-5 py-6 text-white shadow-[0_24px_60px_rgba(20,55,46,0.18)] sm:mb-6 sm:rounded-[28px] sm:px-8 sm:py-10">
         <div aria-hidden className="absolute -right-20 -top-24 h-72 w-72 rounded-full border border-white/10" />
         <div aria-hidden className="absolute right-8 top-8 h-40 w-40 rounded-full border border-white/10" />
         <div className="relative flex flex-col justify-between gap-7 lg:flex-row lg:items-end">

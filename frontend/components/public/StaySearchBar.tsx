@@ -286,7 +286,7 @@ export default function StaySearchBar({
               <GuestCounter label={copy.adults} note={copy.adultsNote} value={adults} min={1} max={20} onChange={setAdults} decreaseLabel={copy.decrease} increaseLabel={copy.increase} />
               <div className="my-3 h-px bg-[#eee7de]" />
               <GuestCounter label={copy.children} note={copy.childrenNote} value={children} min={0} max={12} onChange={setChildren} decreaseLabel={copy.decrease} increaseLabel={copy.increase} />
-              <button type="button" onClick={() => setGuestPanelOpen(false)} className="mt-4 w-full rounded-full bg-secondary px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#746D63]">{copy.done}</button>
+              <button type="button" onClick={() => setGuestPanelOpen(false)} className="mt-4 w-full rounded-full bg-secondary px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#52766B]">{copy.done}</button>
             </div>
           )}
         </div>
@@ -294,7 +294,7 @@ export default function StaySearchBar({
         <button
           type="button"
           onClick={submit}
-          className={`inline-flex items-center justify-center gap-2 rounded-[18px] bg-secondary px-6 font-display text-sm font-bold text-white shadow-[0_16px_34px_rgba(23,58,49,.2)] transition hover:-translate-y-0.5 hover:bg-[#746D63] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#514C44]/20 ${isSidebar ? 'h-12' : 'h-[68px] xl:h-[72px]'}`}
+          className={`inline-flex items-center justify-center gap-2 rounded-[18px] bg-secondary px-6 font-display text-sm font-bold text-white shadow-[0_16px_34px_rgba(23,58,49,.2)] transition hover:-translate-y-0.5 hover:bg-[#52766B] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#234D42]/20 ${isSidebar ? 'h-12' : 'h-[68px] xl:h-[72px]'}`}
         >
           <SearchIcon className="text-white" />
           {copy.search}
@@ -372,7 +372,7 @@ function CompactCalendar({ sidebar, activeField, visibleMonth, checkIn, checkOut
               aria-label={formatDate(date, locale)}
               className={[
                 'flex h-10 items-center justify-center text-sm font-semibold transition',
-                endpoint ? 'rounded-full bg-secondary text-white shadow-[0_7px_18px_rgba(23,58,49,.24)]' : inRange ? 'bg-[#f0e3d2] text-[#654b31]' : 'rounded-full text-[#5F5A53] hover:bg-[#f5eee5]',
+                endpoint ? 'rounded-full bg-secondary text-white shadow-[0_7px_18px_rgba(23,58,49,.24)]' : inRange ? 'bg-[#f0e3d2] text-[#654b31]' : 'rounded-full text-[#53635E] hover:bg-[#f5eee5]',
                 disabled ? 'cursor-not-allowed text-[#cdcac3] hover:bg-transparent' : '',
               ].join(' ')}
             >

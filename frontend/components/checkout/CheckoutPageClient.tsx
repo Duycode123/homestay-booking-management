@@ -281,11 +281,11 @@ export default function CheckoutPageClient() {
       <section className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-9 lg:px-8">
         <div className="mb-7">
           <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-[#74776F]">
-            <Link href="/" className="transition hover:text-[#514C44]">Trang chủ</Link>
+            <Link href="/" className="transition hover:text-[#234D42]">Trang chủ</Link>
             <span aria-hidden>/</span>
-            <Link href={confirmationHref} className="transition hover:text-[#514C44]">Xác nhận đặt phòng</Link>
+            <Link href={confirmationHref} className="transition hover:text-[#234D42]">Xác nhận đặt phòng</Link>
             <span aria-hidden>/</span>
-            <span className="font-semibold text-[#514C44]">Thanh toán</span>
+            <span className="font-semibold text-[#234D42]">Thanh toán</span>
           </div>
 
           <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
@@ -313,7 +313,7 @@ export default function CheckoutPageClient() {
             <h2 className="mt-5 font-display text-2xl font-bold text-[#8F2433]">Chưa thể mở trang thanh toán</h2>
             <p className="mt-2 max-w-2xl leading-6 text-[#6A6C66]">{error}</p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <Link href={missingCheckoutReturnHref} className="inline-flex min-h-[50px] items-center justify-center rounded-2xl bg-[#514C44] px-6 font-display font-bold text-white transition hover:bg-[#3F3A34]">Quay lại đặt phòng</Link>
+              <Link href={missingCheckoutReturnHref} className="inline-flex min-h-[50px] items-center justify-center rounded-2xl bg-[#234D42] px-6 font-display font-bold text-white transition hover:bg-[#173B32]">Quay lại đặt phòng</Link>
               <Link href="/customer/bookings" className="inline-flex min-h-[50px] items-center justify-center rounded-2xl border border-[#D9D1C5] bg-white px-6 font-display font-bold transition hover:bg-[#FBF9F5]">Xem lịch sử booking</Link>
             </div>
           </div>
@@ -386,7 +386,7 @@ export default function CheckoutPageClient() {
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.13em] text-[#587068]">Thanh toán hôm nay</p>
-                      <span className="mt-1 block font-display text-3xl font-bold text-[#514C44]">
+                      <span className="mt-1 block font-display text-3xl font-bold text-[#234D42]">
                         {formatCurrency(amountToPayNow)}
                       </span>
                     </div>
@@ -397,7 +397,7 @@ export default function CheckoutPageClient() {
                   {paymentOption === 'deposit' && (
                     <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#D7E5DE] pt-3 text-sm text-[#587068]">
                       <span>Còn lại khi checkout</span>
-                      <span className="font-display font-bold text-[#514C44]">{formatCurrency(remainingAmount)}</span>
+                      <span className="font-display font-bold text-[#234D42]">{formatCurrency(remainingAmount)}</span>
                     </div>
                   )}
                   </div>
@@ -414,7 +414,7 @@ export default function CheckoutPageClient() {
                 type="button"
                 onClick={handlePay}
                 disabled={isPaying}
-                className="mt-5 flex min-h-[56px] w-full items-center justify-center gap-2 rounded-full border border-[#514C44] bg-[#514C44] px-6 font-display text-base font-bold text-white shadow-[0_14px_30px_rgba(23,58,49,.24)] transition hover:-translate-y-0.5 hover:border-[#746D63] hover:bg-[#746D63] hover:shadow-[0_18px_36px_rgba(23,58,49,.3)] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-5 flex min-h-[56px] w-full items-center justify-center gap-2 rounded-full border border-[#234D42] bg-[#234D42] px-6 font-display text-base font-bold text-white shadow-[0_14px_30px_rgba(23,58,49,.24)] transition hover:-translate-y-0.5 hover:border-[#52766B] hover:bg-[#52766B] hover:shadow-[0_18px_36px_rgba(23,58,49,.3)] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isPaying
                   ? 'Đang xử lý...'
@@ -446,7 +446,7 @@ function CheckoutProgress() {
         <li key={step.number} className="flex min-w-0 flex-1 items-center">
           <span className={[
             'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold',
-            step.complete ? 'bg-[#DDECE5] text-[#514C44]' : step.active ? 'bg-[#B88752] text-white' : 'bg-[#EEEAE3] text-[#888A84]',
+            step.complete ? 'bg-[#DDECE5] text-[#234D42]' : step.active ? 'bg-[#B88752] text-white' : 'bg-[#EEEAE3] text-[#888A84]',
           ].join(' ')}>
             {step.complete ? '✓' : step.number}
           </span>

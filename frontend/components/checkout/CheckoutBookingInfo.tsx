@@ -14,7 +14,7 @@ export default function CheckoutBookingInfo({ booking }: { booking: CheckoutBook
 
   return (
     <section className="overflow-hidden rounded-[28px] border border-[#DED7CB] bg-white shadow-[0_18px_50px_rgba(45,42,36,0.08)]">
-      <div className="relative min-h-[190px] overflow-hidden bg-gradient-to-br from-[#514C44] via-[#746D63] to-[#B28455]">
+      <div className="relative min-h-[190px] overflow-hidden bg-gradient-to-br from-[#234D42] via-[#52766B] to-[#B28455]">
         {showRoomImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -31,7 +31,7 @@ export default function CheckoutBookingInfo({ booking }: { booking: CheckoutBook
             <div className="absolute right-10 top-8 h-36 w-36 rounded-full border border-white/30" />
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#514C44]/85 via-[#514C44]/15 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#234D42]/85 via-[#234D42]/15 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 p-5 text-white sm:p-6">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>

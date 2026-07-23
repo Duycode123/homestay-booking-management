@@ -78,7 +78,7 @@ export default function FavoriteRoomsMenu({ onNavigate }: FavoriteRoomsMenuProps
           aria-label="Danh sách phòng yêu thích"
           className="serene-dropdown-enter absolute right-0 z-[95] mt-3 flex max-h-[calc(100dvh-7rem)] w-[min(390px,calc(100vw-24px))] flex-col overflow-hidden rounded-[24px] border border-[#dfd2bf] bg-[#fffdfa] shadow-[0_24px_70px_rgba(26,47,39,.22)]"
         >
-          <header className="bg-[linear-gradient(145deg,#514C44,#746D63)] px-5 py-4 text-white">
+          <header className="bg-[linear-gradient(145deg,#234D42,#52766B)] px-5 py-4 text-white">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#e5c69f]">Bộ sưu tập của bạn</p>
@@ -142,7 +142,7 @@ export default function FavoriteRoomsMenu({ onNavigate }: FavoriteRoomsMenuProps
                         </div>
                         <div className="mt-2 flex items-end justify-between gap-2">
                           <p className="text-xs font-bold text-[#805b35]">{formatPrice(getNightlyDisplayPrice(favorite.pricePerHour ?? 0))}<span className="font-normal text-on-surface-variant">/đêm</span></p>
-                          <button type="button" onClick={() => bookRoom(favorite.roomId)} className="rounded-lg bg-[#514C44] px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-[#3F3A34]">Đặt nhanh</button>
+                          <button type="button" onClick={() => bookRoom(favorite.roomId)} className="rounded-lg bg-[#234D42] px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-[#173B32]">Đặt nhanh</button>
                         </div>
                       </div>
                     </div>

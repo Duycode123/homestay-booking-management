@@ -1,4 +1,5 @@
 import type { ChangeEvent, InputHTMLAttributes, ReactNode } from 'react'
+import SereneVillaWordmark from '@/components/layout/SereneVillaWordmark'
 
 type AuthFieldProps = {
   label: string
@@ -147,18 +148,8 @@ export function AuthFormPanel({ children }: { children: ReactNode }) {
 
 export function AuthMobileBrand() {
   return (
-    <div className="mb-8 flex items-center gap-3 lg:hidden">
-      <span className="flex h-11 w-11 items-center justify-center rounded-full border border-brand-orange/30 bg-brand-greenDark text-brand-orange shadow-[0_8px_20px_rgba(18,50,39,.12)]">
-        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M3.75 11.25 12 4.5l8.25 6.75v7.5a.75.75 0 0 1-.75.75h-15a.75.75 0 0 1-.75-.75v-7.5Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
-          <path d="M9.25 19.5v-5.25h5.5v5.25" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
-          <path d="M15.8 5.7c.25-1.65 1.35-2.7 3.2-2.95-.12 1.7-1.2 2.73-3.2 2.95Z" fill="currentColor" />
-        </svg>
-      </span>
-      <div>
-        <p className="font-display text-base font-semibold tracking-[0.01em] text-on-surface">The Serene Villa</p>
-        <p className="mt-0.5 text-[9px] font-medium uppercase tracking-[0.22em] text-on-surface-variant">Curated stays</p>
-      </div>
+    <div className="mb-8 text-[#52766B] lg:hidden">
+      <SereneVillaWordmark compact />
     </div>
   )
 }
