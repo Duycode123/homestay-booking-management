@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./animations.css";
 
 :root {
   --homestay-bg: #F6F3ED;
@@ -245,6 +246,7 @@ html body input:is([type='search'], [role='searchbox'], [data-search-input]):foc
 }
 
 @media (max-width: 767px) {
+
   /* Prevent iOS Safari from zooming the viewport when a compact form receives focus. */
   input:not([type='checkbox']):not([type='radio']):not([type='range']),
   select,
@@ -404,7 +406,12 @@ a.bg-brand-orange:hover,
   box-shadow: 0 0 0 4px rgba(178, 132, 85, 0.13);
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: var(--font-display);
   text-wrap: balance;
 }
@@ -574,6 +581,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @media (max-width: 767px) {
+
   .public-site-shell main::before,
   .public-site-shell main::after {
     width: 13rem;
@@ -663,20 +671,44 @@ h1, h2, h3, h4, h5, h6 {
   filter: saturate(1.03);
 }
 
-.serene-stagger-1 { animation-delay: 0ms; }
-.serene-stagger-2 { animation-delay: 35ms; }
-.serene-stagger-3 { animation-delay: 70ms; }
-.serene-stagger-4 { animation-delay: 105ms; }
-.serene-stagger-5 { animation-delay: 140ms; }
-.serene-stagger-6 { animation-delay: 175ms; }
-.serene-stagger-7 { animation-delay: 210ms; }
-.serene-stagger-8 { animation-delay: 245ms; }
+.serene-stagger-1 {
+  animation-delay: 0ms;
+}
+
+.serene-stagger-2 {
+  animation-delay: 35ms;
+}
+
+.serene-stagger-3 {
+  animation-delay: 70ms;
+}
+
+.serene-stagger-4 {
+  animation-delay: 105ms;
+}
+
+.serene-stagger-5 {
+  animation-delay: 140ms;
+}
+
+.serene-stagger-6 {
+  animation-delay: 175ms;
+}
+
+.serene-stagger-7 {
+  animation-delay: 210ms;
+}
+
+.serene-stagger-8 {
+  animation-delay: 245ms;
+}
 
 @keyframes sereneDropdownEnter {
   from {
     opacity: 0;
     transform: translateY(-4px) scale(0.985);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -684,8 +716,13 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @keyframes sereneBackdropEnter {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes sereneModalPanelEnter {
@@ -693,6 +730,7 @@ h1, h2, h3, h4, h5, h6 {
     opacity: 0;
     transform: translateY(8px) scale(0.985);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -704,6 +742,7 @@ h1, h2, h3, h4, h5, h6 {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -711,8 +750,13 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @keyframes sereneQrEnter {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes sereneAboutCopyEnter {
@@ -720,6 +764,7 @@ h1, h2, h3, h4, h5, h6 {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -731,9 +776,22 @@ h1, h2, h3, h4, h5, h6 {
     opacity: 0;
     transform: scale(1.012);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+@keyframes sereneMenuIn {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -811,6 +869,7 @@ html.staff-reduced-motion *::after {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .serene-dropdown-enter,
   .serene-lightbox-backdrop,
   .serene-lightbox-panel,

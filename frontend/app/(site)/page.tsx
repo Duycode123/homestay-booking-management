@@ -57,6 +57,9 @@ const homeCopy = {
     topRatedTitle: "Phòng được đánh giá cao",
     topRatedDescription:
       "Những phòng homestay được khách hàng yêu thích và đánh giá tốt nhất.",
+    featuredBadge: "Được yêu thích nhất",
+    fromPrice: "Từ",
+    perNight: "/ đêm",
     viewAll: "Xem tất cả",
     previousRooms: "Xem nhóm phòng trước",
     nextRooms: "Xem nhóm phòng tiếp theo",
@@ -136,6 +139,9 @@ const homeCopy = {
     topRatedTitle: "Top-rated rooms",
     topRatedDescription:
       "Handpicked stays loved by guests for comfort, service and a calmer rhythm.",
+    featuredBadge: "Guest favourite",
+    fromPrice: "From",
+    perNight: "/ night",
     viewAll: "View all",
     previousRooms: "View previous rooms",
     nextRooms: "View next rooms",
@@ -452,19 +458,42 @@ function TopRatedRoomsSection({
 }) {
   const { locale, localizedHref } = useI18n();
   const copy = homeCopy[locale];
+  const reduceMotion = useReducedMotion();
   const featuredRoom = rooms[0];
   const supportingRooms = rooms.slice(1, 3);
 
   return (
-    <section id="top-rated-rooms" className="relative scroll-mt-24 overflow-hidden bg-[#F7F3EB] pb-24 pt-20 sm:pb-28 sm:pt-28">
-      <div aria-hidden className="pointer-events-none absolute -bottom-24 -left-28 h-80 w-80 rounded-full border border-brand-orange/10" />
+    <section
+      id="top-rated-rooms"
+      className="relative scroll-mt-24 overflow-hidden bg-[#F7F3EB] pb-24 pt-20 sm:pb-28 sm:pt-28"
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-24 -left-28 h-80 w-80 rounded-full border border-brand-orange/10"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-32 top-24 h-72 w-72 rounded-full border border-secondary/[0.06]"
+      />
+
       <div className="relative mx-auto max-w-[1400px] px-5 sm:px-8">
-        <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+        <motion.div
+          initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 26 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.35 }}
+          transition={{
+            duration: reduceMotion ? 0.2 : 0.72,
+            ease: [0.22, 1, 0.36, 1],
+          }}
+          className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end"
+        >
           <div className="max-w-2xl">
             <p className="eyebrow text-brand-orange">{copy.topRatedEyebrow}</p>
+
             <h2 className="font-editorial mt-4 text-5xl font-medium leading-[0.95] tracking-[-0.035em] text-secondary sm:text-6xl lg:text-[4.75rem]">
               {copy.topRatedTitle}
             </h2>
+
             <p className="mt-5 max-w-xl text-base leading-8 text-on-surface-variant">
               {copy.topRatedDescription}
             </p>
@@ -472,41 +501,96 @@ function TopRatedRoomsSection({
 
           <Link
             href={localizedHref("/rooms?sort=rating")}
-            className="group inline-flex min-h-11 w-fit items-center gap-3 border-b border-secondary/55 font-display text-sm font-semibold text-secondary"
+            className="group inline-flex min-h-11 w-fit items-center gap-3 font-display text-sm font-semibold text-secondary"
           >
-            {copy.viewAll}
-            <span aria-hidden className="transition-transform group-hover:translate-x-1">→</span>
+            <span className="border-b border-secondary/45 pb-1 transition-colors group-hover:border-secondary">
+              {copy.viewAll}
+            </span>
+            <span
+              aria-hidden
+              className="transition-transform duration-300 group-hover:translate-x-1"
+            >
+              →
+            </span>
           </Link>
-        </div>
+        </motion.div>
 
         {isLoading ? (
           <div className="mt-12 grid gap-6 lg:grid-cols-[1.12fr_0.88fr]">
-            <div className="min-h-[540px] animate-pulse rounded-[32px] bg-white/80" />
+            <div className="serene-shimmer min-h-[540px] rounded-[32px] bg-white/80" />
             <div className="grid gap-6">
-              <div className="min-h-[255px] animate-pulse rounded-[28px] bg-white/80" />
-              <div className="min-h-[255px] animate-pulse rounded-[28px] bg-white/80" />
+              <div className="serene-shimmer min-h-[255px] rounded-[28px] bg-white/80" />
+              <div className="serene-shimmer min-h-[255px] rounded-[28px] bg-white/80" />
             </div>
           </div>
         ) : featuredRoom ? (
-          <div className="mt-12 grid gap-6 lg:grid-cols-[1.12fr_0.88fr] lg:items-stretch">
-            <TopRatedFeaturedRoom
-              room={featuredRoom}
-              onOpenDetail={onOpenDetail}
-              onBook={onBook}
-              copy={copy}
-            />
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.14 }}
+            variants={{
+              hidden: {},
+              visible: {
+                transition: {
+                  staggerChildren: reduceMotion ? 0 : 0.12,
+                  delayChildren: reduceMotion ? 0 : 0.08,
+                },
+              },
+            }}
+            className="mt-12 grid gap-6 lg:grid-cols-[1.12fr_0.88fr] lg:items-stretch"
+          >
+            <motion.div
+              variants={{
+                hidden: reduceMotion
+                  ? { opacity: 0 }
+                  : { opacity: 0, y: 32, scale: 0.985 },
+                visible: {
+                  opacity: 1,
+                  y: 0,
+                  scale: 1,
+                  transition: {
+                    duration: reduceMotion ? 0.2 : 0.72,
+                    ease: [0.22, 1, 0.36, 1],
+                  },
+                },
+              }}
+            >
+              <TopRatedFeaturedRoom
+                room={featuredRoom}
+                onOpenDetail={onOpenDetail}
+                onBook={onBook}
+                copy={copy}
+              />
+            </motion.div>
+
             <div className="grid gap-6">
               {supportingRooms.map((room) => (
-                <TopRatedSupportingRoom
+                <motion.div
                   key={room.id}
-                  room={room}
-                  onOpenDetail={onOpenDetail}
-                  onBook={onBook}
-                  copy={copy}
-                />
+                  variants={{
+                    hidden: reduceMotion
+                      ? { opacity: 0 }
+                      : { opacity: 0, y: 28 },
+                    visible: {
+                      opacity: 1,
+                      y: 0,
+                      transition: {
+                        duration: reduceMotion ? 0.2 : 0.66,
+                        ease: [0.22, 1, 0.36, 1],
+                      },
+                    },
+                  }}
+                >
+                  <TopRatedSupportingRoom
+                    room={room}
+                    onOpenDetail={onOpenDetail}
+                    onBook={onBook}
+                    copy={copy}
+                  />
+                </motion.div>
               ))}
             </div>
-          </div>
+          </motion.div>
         ) : (
           <div className="mt-10 rounded-[28px] border border-dashed border-outline-variant bg-white px-6 py-12 text-center shadow-[var(--shadow-card)]">
             <p className="font-display text-lg font-bold text-on-surface">
@@ -518,7 +602,6 @@ function TopRatedRoomsSection({
     </section>
   );
 }
-
 function getTopRatedRoomUi(room: BookingRoom, copy: HomeCopy) {
   const availabilityState = getRoomCardAvailabilityState(room);
   const availabilityStatus = room.availabilityStatus ?? "AVAILABLE";
@@ -551,88 +634,239 @@ function TopRatedFeaturedRoom({
   onBook: (room: BookingRoom) => void;
   copy: HomeCopy;
 }) {
+  const reduceMotion = useReducedMotion();
   const imageSrc = room.image ?? "/images/homestay-luxury-hero.webp";
-  const { availabilityState, availabilityLabel, bookingLabel } = getTopRatedRoomUi(room, copy);
+  const { availabilityState, availabilityLabel, bookingLabel } =
+    getTopRatedRoomUi(room, copy);
+  const reviewCount = room.reviews ?? 0;
 
   return (
-    <article className="group relative min-h-[540px] overflow-hidden rounded-[30px] bg-secondary shadow-[var(--homestay-shadow-elevated)]">
+    <motion.article
+      whileHover={reduceMotion ? undefined : { y: -5 }}
+      transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+      className="group relative min-h-[540px] overflow-hidden rounded-[30px] border border-white/50 bg-secondary shadow-[var(--homestay-shadow-elevated)]"
+    >
       <button
         type="button"
         onClick={() => onOpenDetail(room)}
-        className="absolute inset-0 block w-full text-left"
+        className="absolute inset-0 block w-full overflow-hidden text-left"
         aria-label={`${copy.detail}: ${room.name}`}
       >
-        <Image src={imageSrc} alt={room.name} fill quality={94} unoptimized={shouldBypassImageOptimization(imageSrc)} sizes="(min-width: 1024px) 55vw, 100vw" className={["object-cover transition duration-700 ease-out group-hover:scale-[1.025]", room.imageClassName].join(" ")} />
-        <span className="absolute inset-0 bg-[linear-gradient(to_top,rgba(18,40,33,0.54),transparent_52%)]" />
+        <Image
+          src={imageSrc}
+          alt={room.name}
+          fill
+          quality={94}
+          unoptimized={shouldBypassImageOptimization(imageSrc)}
+          sizes="(min-width: 1024px) 55vw, 100vw"
+          className={[
+            "object-cover transition-transform duration-[900ms] ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-[1.045]",
+            room.imageClassName,
+          ].join(" ")}
+        />
+        <span className="absolute inset-0 bg-[linear-gradient(to_top,rgba(18,40,33,0.78)_0%,rgba(18,40,33,0.16)_52%,rgba(0,0,0,0.08)_100%)]" />
       </button>
 
-      <div className="absolute inset-x-4 bottom-4 z-10 rounded-[22px] bg-[#FFFDFC]/96 p-5 shadow-[0_20px_50px_rgba(30,42,36,0.15)] backdrop-blur-md sm:inset-x-7 sm:bottom-7 sm:grid sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end sm:gap-6 sm:p-6">
+      <div className="pointer-events-none absolute inset-x-5 top-5 z-10 flex flex-wrap items-center justify-between gap-3 sm:inset-x-7 sm:top-7">
+        <span className="rounded-full border border-white/25 bg-[#173A31]/72 px-4 py-2 font-display text-[10px] font-bold uppercase tracking-[0.17em] text-white backdrop-blur-md">
+          {copy.featuredBadge}
+        </span>
+
+        <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/92 px-3.5 py-2 text-xs font-semibold text-secondary shadow-sm backdrop-blur-md">
+          <span className="text-brand-orange">★</span>
+          {(room.rating ?? 0).toFixed(1)}
+          {reviewCount > 0 ? (
+            <span className="text-on-surface-variant">
+              · {reviewCount} {copy.reviews}
+            </span>
+          ) : null}
+        </span>
+      </div>
+
+      <div className="absolute inset-x-4 bottom-4 z-10 rounded-[24px] border border-white/55 bg-[#FFFDFC]/95 p-5 shadow-[0_24px_60px_rgba(30,42,36,0.18)] backdrop-blur-xl transition-transform duration-500 ease-[cubic-bezier(.22,1,.36,1)] group-hover:-translate-y-1 sm:inset-x-7 sm:bottom-7 sm:grid sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end sm:gap-7 sm:p-6">
         <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-on-surface-variant">
-            <span className="text-brand-orange">★ {(room.rating ?? 0).toFixed(1)}</span>
+          <div className="flex flex-wrap items-center gap-2.5 text-xs font-semibold text-on-surface-variant">
             <span>{room.capacity}</span>
             <span className="h-1 w-1 rounded-full bg-outline" />
             <span>{availabilityLabel}</span>
           </div>
-          <h3 className="font-editorial mt-2 text-3xl font-medium leading-none text-secondary sm:text-4xl">{room.name}</h3>
-        </div>
-        <div className="mt-5 flex flex-wrap items-center gap-3 sm:mt-0 sm:justify-end">
-          <p className="mr-2 font-editorial text-2xl font-medium text-secondary">{formatCurrency(getNightlyDisplayPrice(room.pricePerHour))}</p>
+
           <button
             type="button"
             onClick={() => onOpenDetail(room)}
-            className="min-h-11 border-b border-secondary/45 px-1 font-display text-xs font-semibold text-secondary"
+            className="mt-2 block text-left"
           >
-            {copy.detail}
-          </button>
-          <button
-            type="button"
-            onClick={() => onBook(room)}
-            disabled={
-              availabilityState.isUnavailable || availabilityState.isChecking
-            }
-            className="min-h-11 rounded-xl bg-secondary px-4 font-display text-xs font-semibold text-white shadow-[0_10px_24px_rgba(23,58,49,0.16)] transition hover:-translate-y-0.5 hover:bg-secondary-container disabled:cursor-not-allowed disabled:opacity-55"
-          >
-            {bookingLabel}
+            <h3 className="font-editorial text-3xl font-medium leading-none text-secondary transition-colors hover:text-secondary-container sm:text-4xl">
+              {room.name}
+            </h3>
           </button>
         </div>
+
+        <div className="mt-5 sm:mt-0">
+          <div className="flex items-end gap-2 sm:justify-end">
+            <span className="pb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">
+              {copy.fromPrice}
+            </span>
+            <p className="font-editorial text-2xl font-medium leading-none text-secondary sm:text-3xl">
+              {formatCurrency(getNightlyDisplayPrice(room.pricePerHour))}
+            </p>
+            <span className="pb-1 text-xs text-on-surface-variant">
+              {copy.perNight}
+            </span>
+          </div>
+
+          <div className="mt-5 flex flex-wrap items-center gap-3 sm:justify-end">
+            <button
+              type="button"
+              onClick={() => onOpenDetail(room)}
+              className="group/detail inline-flex min-h-11 items-center gap-2 px-1 font-display text-xs font-semibold text-secondary"
+            >
+              <span className="border-b border-secondary/40 pb-1">
+                {copy.detail}
+              </span>
+              <span
+                aria-hidden
+                className="transition-transform group-hover/detail:translate-x-1"
+              >
+                →
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onBook(room)}
+              disabled={
+                availabilityState.isUnavailable ||
+                availabilityState.isChecking
+              }
+              className="min-h-11 min-w-[128px] rounded-full bg-secondary px-5 font-display text-xs font-semibold text-white shadow-[0_12px_28px_rgba(23,58,49,0.2)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-secondary-container hover:shadow-[0_16px_34px_rgba(23,58,49,0.25)] disabled:cursor-not-allowed disabled:opacity-55"
+            >
+              {bookingLabel}
+            </button>
+          </div>
+        </div>
       </div>
-    </article>
+    </motion.article>
   );
 }
-
-function TopRatedSupportingRoom({ room, onOpenDetail, onBook, copy }: {
+function TopRatedSupportingRoom({
+  room,
+  onOpenDetail,
+  onBook,
+  copy,
+}: {
   room: BookingRoom;
   onOpenDetail: (room: BookingRoom) => void;
   onBook: (room: BookingRoom) => void;
   copy: HomeCopy;
 }) {
+  const reduceMotion = useReducedMotion();
   const imageSrc = room.image ?? "/images/homestay-luxury-hero.webp";
-  const { availabilityState, availabilityLabel, bookingLabel } = getTopRatedRoomUi(room, copy);
+  const { availabilityState, availabilityLabel, bookingLabel } =
+    getTopRatedRoomUi(room, copy);
+  const reviewCount = room.reviews ?? 0;
 
   return (
-    <article className="group grid min-h-[258px] overflow-hidden rounded-[26px] bg-[#FFFDFC] shadow-[var(--homestay-shadow-card)] sm:grid-cols-[0.92fr_1.08fr]">
-      <button type="button" onClick={() => onOpenDetail(room)} className="relative min-h-[220px] overflow-hidden text-left sm:min-h-full" aria-label={`${copy.detail}: ${room.name}`}>
-        <Image src={imageSrc} alt={room.name} fill quality={92} unoptimized={shouldBypassImageOptimization(imageSrc)} sizes="(min-width: 1024px) 24vw, 100vw" className={["object-cover transition duration-700 ease-out group-hover:scale-[1.035]", room.imageClassName].join(" ")} />
+    <motion.article
+      whileHover={reduceMotion ? undefined : { y: -4 }}
+      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      className="group grid min-h-[258px] overflow-hidden rounded-[26px] border border-secondary/[0.08] bg-[#FFFDFC] shadow-[var(--homestay-shadow-card)] transition-[border-color,box-shadow] duration-500 hover:border-secondary/20 hover:shadow-[0_24px_54px_rgba(35,77,66,0.11)] sm:grid-cols-[0.92fr_1.08fr]"
+    >
+      <button
+        type="button"
+        onClick={() => onOpenDetail(room)}
+        className="relative min-h-[220px] overflow-hidden text-left sm:min-h-full"
+        aria-label={`${copy.detail}: ${room.name}`}
+      >
+        <Image
+          src={imageSrc}
+          alt={room.name}
+          fill
+          quality={92}
+          unoptimized={shouldBypassImageOptimization(imageSrc)}
+          sizes="(min-width: 1024px) 24vw, 100vw"
+          className={[
+            "object-cover transition-transform duration-[850ms] ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-[1.055]",
+            room.imageClassName,
+          ].join(" ")}
+        />
+        <span className="absolute inset-0 bg-gradient-to-t from-secondary/30 via-transparent to-transparent" />
+
+        <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/90 px-3 py-1.5 text-[11px] font-semibold text-secondary backdrop-blur-md">
+          <span className="text-brand-orange">★</span>
+          {(room.rating ?? 0).toFixed(1)}
+          {reviewCount > 0 ? (
+            <span className="text-on-surface-variant">· {reviewCount}</span>
+          ) : null}
+        </span>
       </button>
+
       <div className="flex min-w-0 flex-col p-5 sm:p-6">
         <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-on-surface-variant">
-          <span className="text-brand-orange">★ {(room.rating ?? 0).toFixed(1)}</span>
+          <span>{room.capacity}</span>
           <span className="h-1 w-1 rounded-full bg-outline" />
           <span>{availabilityLabel}</span>
         </div>
-        <h3 className="font-editorial mt-3 text-[1.8rem] font-medium leading-[1.02] text-secondary">{room.name}</h3>
-        <p className="mt-3 line-clamp-2 text-xs leading-5 text-on-surface-variant">{room.description}</p>
-        <p className="font-editorial mt-4 text-2xl font-medium text-secondary">{formatCurrency(getNightlyDisplayPrice(room.pricePerHour))}</p>
-        <div className="mt-auto flex flex-wrap items-center gap-3 pt-4">
-          <button type="button" onClick={() => onOpenDetail(room)} className="min-h-10 border-b border-secondary/45 px-1 font-display text-xs font-semibold text-secondary">{copy.detail}</button>
-          <button type="button" onClick={() => onBook(room)} disabled={availabilityState.isUnavailable || availabilityState.isChecking} className="min-h-10 rounded-xl bg-secondary px-4 font-display text-xs font-semibold text-white transition hover:-translate-y-0.5 hover:bg-secondary-container disabled:cursor-not-allowed disabled:opacity-55">{bookingLabel}</button>
+
+        <button
+          type="button"
+          onClick={() => onOpenDetail(room)}
+          className="mt-3 block text-left"
+        >
+          <h3 className="font-editorial text-[1.8rem] font-medium leading-[1.02] text-secondary transition-colors hover:text-secondary-container">
+            {room.name}
+          </h3>
+        </button>
+
+        <p className="mt-3 line-clamp-2 text-xs leading-5 text-on-surface-variant">
+          {room.description}
+        </p>
+
+        <div className="mt-4 flex flex-wrap items-end gap-1.5">
+          <span className="pb-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">
+            {copy.fromPrice}
+          </span>
+          <p className="font-editorial text-2xl font-medium leading-none text-secondary">
+            {formatCurrency(getNightlyDisplayPrice(room.pricePerHour))}
+          </p>
+          <span className="pb-0.5 text-[11px] text-on-surface-variant">
+            {copy.perNight}
+          </span>
+        </div>
+
+        <div className="mt-auto flex flex-wrap items-center gap-3 pt-5">
+          <button
+            type="button"
+            onClick={() => onOpenDetail(room)}
+            className="group/detail inline-flex min-h-10 items-center gap-2 px-1 font-display text-xs font-semibold text-secondary"
+          >
+            <span className="border-b border-secondary/35 pb-1">
+              {copy.detail}
+            </span>
+            <span
+              aria-hidden
+              className="transition-transform group-hover/detail:translate-x-1"
+            >
+              →
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onBook(room)}
+            disabled={
+              availabilityState.isUnavailable ||
+              availabilityState.isChecking
+            }
+            className="ml-auto min-h-10 rounded-full bg-secondary px-4 font-display text-xs font-semibold text-white shadow-[0_9px_20px_rgba(23,58,49,0.15)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-secondary-container disabled:cursor-not-allowed disabled:opacity-55"
+          >
+            {bookingLabel}
+          </button>
         </div>
       </div>
-    </article>
+    </motion.article>
   );
 }
-
 function ChevronIcon({ className = "h-5 w-5" }: { className?: string }) {
   return (
     <svg
@@ -1053,12 +1287,12 @@ function SereneDayExperience() {
           reduceMotion
             ? undefined
             : {
-              y: [0, -14, 0],
+              y: [0, -12, 0],
               rotate: [0, 2, 0],
             }
         }
         transition={{
-          duration: 9,
+          duration: 10,
           repeat: Infinity,
           ease: "easeInOut",
         }}
@@ -1067,14 +1301,14 @@ function SereneDayExperience() {
 
       <div className="relative mx-auto max-w-[1400px] px-5 sm:px-8">
         <motion.div
-          initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 28 }}
+          initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.45 }}
+          viewport={{ once: true, amount: 0.25 }}
           transition={{
-            duration: reduceMotion ? 0.2 : 0.65,
+            duration: reduceMotion ? 0.2 : 0.7,
             ease: [0.22, 1, 0.36, 1],
           }}
-          className="grid gap-6 lg:grid-cols-[minmax(0,.82fr)_minmax(0,1.18fr)] lg:items-end"
+          className="grid gap-6 lg:grid-cols-[minmax(0,.9fr)_minmax(0,1.1fr)] lg:items-end"
         >
           <div>
             <div className="flex items-center gap-3">
@@ -1084,16 +1318,36 @@ function SereneDayExperience() {
               </p>
             </div>
 
-            <h2 className="font-editorial mt-5 max-w-2xl text-4xl font-semibold leading-[1.06] tracking-[-0.02em] text-secondary sm:text-5xl">
+            <motion.h2
+              initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.3 }}
+              transition={{
+                duration: reduceMotion ? 0.2 : 0.75,
+                delay: reduceMotion ? 0 : 0.08,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+              className="font-editorial mt-5 max-w-2xl text-4xl font-semibold leading-[1.06] tracking-[-0.02em] text-secondary sm:text-5xl"
+            >
               Một ngày không cần bắt đầu bằng sự vội vàng.
-            </h2>
+            </motion.h2>
           </div>
 
-          <p className="max-w-xl text-base leading-8 text-on-surface-variant lg:justify-self-end">
+          <motion.p
+            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{
+              duration: reduceMotion ? 0.2 : 0.7,
+              delay: reduceMotion ? 0 : 0.14,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            className="max-w-xl text-base leading-8 text-on-surface-variant lg:justify-self-end"
+          >
             Mỗi khoảng thời gian tại The Serene Villa đều dành cho một nhịp nghỉ
             nhẹ nhàng hơn — từ buổi sáng trong trẻo đến những phút cuối ngày
             thật yên tĩnh.
-          </p>
+          </motion.p>
         </motion.div>
 
         <div className="relative mt-11">
@@ -1101,7 +1355,7 @@ function SereneDayExperience() {
             aria-hidden="true"
             initial={{ scaleX: 0 }}
             whileInView={{ scaleX: 1 }}
-            viewport={{ once: true, amount: 0.4 }}
+            viewport={{ once: true, amount: 0.35 }}
             transition={{
               duration: reduceMotion ? 0.2 : 1,
               ease: [0.22, 1, 0.36, 1],
@@ -1113,8 +1367,8 @@ function SereneDayExperience() {
             variants={sereneMomentContainerVariants}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, amount: 0.2 }}
-            className="relative grid gap-5 md:grid-cols-3"
+            viewport={{ once: true, amount: 0.18 }}
+            className="relative grid items-stretch gap-6 md:grid-cols-3"
           >
             {sereneMoments.map((moment) => (
               <motion.article
@@ -1124,11 +1378,14 @@ function SereneDayExperience() {
                   reduceMotion
                     ? undefined
                     : {
-                      y: -7,
-                      transition: { duration: 0.25 },
+                      y: -6,
+                      transition: {
+                        duration: 0.28,
+                        ease: [0.22, 1, 0.36, 1],
+                      },
                     }
                 }
-                className="group relative overflow-hidden rounded-[22px] border border-outline-variant bg-white shadow-[0_14px_34px_rgba(63,51,35,0.07)]"
+                className="group relative flex h-full flex-col overflow-hidden rounded-[22px] border border-outline-variant bg-white shadow-[0_14px_34px_rgba(63,51,35,0.07)] transition-[border-color,box-shadow] duration-500 hover:border-secondary/20 hover:shadow-[0_26px_60px_rgba(35,77,66,0.12)]"
               >
                 <span className="absolute left-1/2 top-2 z-20 hidden h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full border-4 border-[#F8F5EF] bg-secondary font-display text-[10px] font-bold text-white shadow-sm md:flex">
                   {moment.number}
@@ -1137,9 +1394,9 @@ function SereneDayExperience() {
                 <div className="relative aspect-[4/3] overflow-hidden bg-[#ddd5c9]">
                   <motion.div
                     className="absolute inset-0"
-                    whileHover={reduceMotion ? undefined : { scale: 1.045 }}
+                    whileHover={reduceMotion ? undefined : { scale: 1.05 }}
                     transition={{
-                      duration: 0.75,
+                      duration: 0.8,
                       ease: [0.22, 1, 0.36, 1],
                     }}
                   >
@@ -1163,7 +1420,7 @@ function SereneDayExperience() {
                   </span>
                 </div>
 
-                <div className="p-5 sm:p-6">
+                <div className="flex flex-1 flex-col p-5 sm:p-6">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-orange">
                     Khoảnh khắc {moment.number}
                   </p>

@@ -4,6 +4,7 @@ import SkipNavigationLink from '@/components/i18n/SkipNavigationLink'
 import HomestayFooter from '@/components/layout/HomestayFooter'
 import HomestayHeader from '@/components/layout/HomestayHeader'
 import RouteScrollRestorer from '@/components/layout/RouteScrollRestorer'
+import SereneRevealObserver from '@/components/motion/SereneRevealObserver'
 
 export default function PublicSiteLayout({ children }: { children: ReactNode }) {
   return (
@@ -11,6 +12,7 @@ export default function PublicSiteLayout({ children }: { children: ReactNode }) 
       <SkipNavigationLink />
       <LocalizedNavigationGuard />
       <RouteScrollRestorer />
+      <SereneRevealObserver />
       <HomestayHeader />
       <div className="flex flex-1 flex-col">{children}</div>
       <HomestayFooter />

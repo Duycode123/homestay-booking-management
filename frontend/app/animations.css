@@ -1,0 +1,423 @@
+/*
+ * The Serene Villa — quiet luxury motion system
+ *
+ * Usage:
+ *   className="serene-reveal"
+ *   className="serene-reveal serene-delay-2"
+ *
+ * When using IntersectionObserver, add `.is-visible` when the element enters
+ * the viewport. Elements remain visible when JavaScript is unavailable.
+ */
+
+:root {
+    --serene-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --serene-ease-soft: cubic-bezier(0.16, 1, 0.3, 1);
+    --serene-duration-fast: 220ms;
+    --serene-duration-medium: 520ms;
+    --serene-duration-slow: 820ms;
+    --serene-reveal-distance: 32px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Page and section entrances                                                  */
+/* -------------------------------------------------------------------------- */
+
+.serene-page-enter {
+    animation: serene-page-enter 520ms var(--serene-ease-out) both;
+}
+
+.serene-section-enter {
+    animation: serene-section-enter 720ms var(--serene-ease-out) both;
+}
+
+@keyframes serene-page-enter {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes serene-section-enter {
+    from {
+        opacity: 0;
+        transform: translateY(24px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Scroll reveal                                                               */
+/* -------------------------------------------------------------------------- */
+
+/*
+   * Add `data-serene-reveal` to the document root once the observer is active.
+   * This prevents content from remaining hidden when JavaScript is unavailable.
+   */
+[data-serene-reveal] .serene-reveal,
+[data-serene-reveal] .serene-reveal-left,
+[data-serene-reveal] .serene-reveal-right,
+[data-serene-reveal] .serene-reveal-scale {
+    opacity: 0;
+    transition:
+        opacity var(--serene-duration-slow) var(--serene-ease-out),
+        transform var(--serene-duration-slow) var(--serene-ease-out);
+    will-change: transform, opacity;
+}
+
+[data-serene-reveal] .serene-reveal {
+    transform: translateY(var(--serene-reveal-distance));
+}
+
+[data-serene-reveal] .serene-reveal-left {
+    transform: translateX(-28px);
+}
+
+[data-serene-reveal] .serene-reveal-right {
+    transform: translateX(28px);
+}
+
+[data-serene-reveal] .serene-reveal-scale {
+    transform: translateY(20px) scale(0.975);
+}
+
+[data-serene-reveal] :is(.serene-reveal,
+    .serene-reveal-left,
+    .serene-reveal-right,
+    .serene-reveal-scale).is-visible {
+    opacity: 1;
+    transform: none;
+}
+
+/* Stagger delays for card grids and editorial copy. */
+.serene-delay-1 {
+    transition-delay: 60ms !important;
+    animation-delay: 60ms !important;
+}
+
+.serene-delay-2 {
+    transition-delay: 120ms !important;
+    animation-delay: 120ms !important;
+}
+
+.serene-delay-3 {
+    transition-delay: 180ms !important;
+    animation-delay: 180ms !important;
+}
+
+.serene-delay-4 {
+    transition-delay: 240ms !important;
+    animation-delay: 240ms !important;
+}
+
+.serene-delay-5 {
+    transition-delay: 300ms !important;
+    animation-delay: 300ms !important;
+}
+
+.serene-delay-6 {
+    transition-delay: 360ms !important;
+    animation-delay: 360ms !important;
+}
+
+.serene-delay-7 {
+    transition-delay: 420ms !important;
+    animation-delay: 420ms !important;
+}
+
+.serene-delay-8 {
+    transition-delay: 480ms !important;
+    animation-delay: 480ms !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Editorial text reveal                                                       */
+/* -------------------------------------------------------------------------- */
+
+.serene-text-mask {
+    display: block;
+    overflow: hidden;
+}
+
+.serene-text-mask>* {
+    animation: serene-text-rise 860ms var(--serene-ease-out) both;
+}
+
+@keyframes serene-text-rise {
+    from {
+        opacity: 0;
+        transform: translateY(115%);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Images                                                                      */
+/* -------------------------------------------------------------------------- */
+
+.serene-image {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+}
+
+.serene-image img {
+    transition:
+        transform 900ms var(--serene-ease-out),
+        filter 700ms var(--serene-ease-out);
+    will-change: transform;
+}
+
+.serene-image::after {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background:
+        linear-gradient(to top,
+            rgba(23, 58, 49, 0.32) 0%,
+            rgba(23, 58, 49, 0.08) 38%,
+            transparent 68%);
+    content: "";
+    opacity: 0.52;
+    pointer-events: none;
+    transition: opacity 600ms var(--serene-ease-out);
+}
+
+.serene-image:hover img,
+.group:hover .serene-image img {
+    transform: scale(1.055);
+    filter: saturate(1.025);
+}
+
+.serene-image:hover::after,
+.group:hover .serene-image::after {
+    opacity: 0.72;
+}
+
+.serene-image-quiet::after {
+    opacity: 0.24;
+}
+
+/* Optional, restrained parallax target. Apply transform from JavaScript. */
+.serene-parallax-media {
+    height: 116%;
+    inset-block-start: -8%;
+    will-change: transform;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Cards                                                                       */
+/* -------------------------------------------------------------------------- */
+
+.serene-hover-card {
+    transition:
+        transform 520ms var(--serene-ease-out),
+        box-shadow 520ms var(--serene-ease-out),
+        border-color 420ms var(--serene-ease-out),
+        background-color 420ms var(--serene-ease-out);
+    will-change: transform;
+}
+
+.serene-hover-card:hover {
+    transform: translateY(-6px);
+    border-color: rgba(82, 118, 107, 0.3);
+    box-shadow: 0 30px 76px rgba(35, 77, 66, 0.14);
+}
+
+.serene-hover-card:active {
+    transform: translateY(-2px);
+}
+
+/* Deliberately slight offset for editorial three-card layouts. */
+@media (min-width: 1024px) {
+    .serene-stagger-layout> :nth-child(2) {
+        transform: translateY(22px);
+    }
+
+    .serene-stagger-layout> :nth-child(2):hover {
+        transform: translateY(16px);
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Buttons and links                                                           */
+/* -------------------------------------------------------------------------- */
+
+.serene-button {
+    position: relative;
+    overflow: hidden;
+    transition:
+        transform 320ms var(--serene-ease-out),
+        box-shadow 320ms var(--serene-ease-out),
+        background-color 320ms var(--serene-ease-out),
+        border-color 320ms var(--serene-ease-out);
+}
+
+.serene-button::before {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(110deg,
+            transparent 20%,
+            rgba(255, 255, 255, 0.2) 48%,
+            transparent 76%);
+    content: "";
+    pointer-events: none;
+    transform: translateX(-130%);
+    transition: transform 760ms var(--serene-ease-out);
+}
+
+.serene-button:hover {
+    transform: translateY(-2px);
+}
+
+.serene-button:hover::before {
+    transform: translateX(130%);
+}
+
+.serene-button:active {
+    transform: translateY(0);
+}
+
+.serene-arrow {
+    display: inline-block;
+    transition: transform 320ms var(--serene-ease-out);
+}
+
+:is(a, button):hover .serene-arrow {
+    transform: translateX(5px);
+}
+
+.serene-link {
+    position: relative;
+    width: fit-content;
+}
+
+.serene-link::after {
+    position: absolute;
+    right: 0;
+    bottom: -0.22rem;
+    left: 0;
+    height: 1px;
+    background: currentColor;
+    content: "";
+    opacity: 0.72;
+    transform: scaleX(0);
+    transform-origin: right center;
+    transition: transform 440ms var(--serene-ease-out);
+}
+
+.serene-link:hover::after,
+.serene-link[aria-current="page"]::after {
+    transform: scaleX(1);
+    transform-origin: left center;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Glass surfaces and subtle texture                                           */
+/* -------------------------------------------------------------------------- */
+
+.serene-glass {
+    border: 1px solid rgba(220, 228, 224, 0.76);
+    background: rgba(255, 253, 250, 0.76);
+    box-shadow: 0 22px 64px rgba(35, 77, 66, 0.11);
+    backdrop-filter: blur(20px) saturate(1.1);
+    -webkit-backdrop-filter: blur(20px) saturate(1.1);
+}
+
+.serene-noise {
+    position: relative;
+    isolation: isolate;
+}
+
+.serene-noise::before {
+    position: absolute;
+    z-index: 20;
+    inset: 0;
+    background-image:
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.3'/%3E%3C/svg%3E");
+    content: "";
+    mix-blend-mode: soft-light;
+    opacity: 0.025;
+    pointer-events: none;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Loading                                                                      */
+/* -------------------------------------------------------------------------- */
+
+.serene-shimmer {
+    position: relative;
+    overflow: hidden;
+    background: rgba(82, 118, 107, 0.08);
+}
+
+.serene-shimmer::after {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(100deg,
+            transparent 20%,
+            rgba(255, 255, 255, 0.64) 48%,
+            transparent 76%);
+    content: "";
+    transform: translateX(-100%);
+    animation: serene-shimmer 1.7s ease-in-out infinite;
+}
+
+@keyframes serene-shimmer {
+    to {
+        transform: translateX(100%);
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Accessibility                                                               */
+/* -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .serene-page-enter,
+    .serene-section-enter,
+    .serene-text-mask>*,
+    .serene-shimmer::after {
+        animation: none !important;
+    }
+
+    [data-serene-reveal] :is(.serene-reveal,
+        .serene-reveal-left,
+        .serene-reveal-right,
+        .serene-reveal-scale) {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+    }
+
+    .serene-image img,
+    .serene-hover-card,
+    .serene-button,
+    .serene-arrow,
+    .serene-link::after {
+        transition: none !important;
+    }
+
+    .serene-image:hover img,
+    .group:hover .serene-image img,
+    .serene-hover-card:hover,
+    .serene-hover-card:active,
+    .serene-button:hover,
+    .serene-button:active,
+    :is(a, button):hover .serene-arrow {
+        transform: none !important;
+    }
+}
