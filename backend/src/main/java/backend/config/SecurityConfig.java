@@ -3,31 +3,31 @@ package backend.config;
 import backend.auth.adapter.in.oauth.OAuthLoginFailureHandler;
 import backend.auth.adapter.in.oauth.OAuthLoginSuccessHandler;
 import backend.repository.UserRepository;
+import backend.security.AuthRateLimitFilter;
 import backend.security.CsrfAccessDeniedHandler;
 import backend.security.JwtAuthenticationFilter;
-import backend.security.AuthRateLimitFilter;
 import backend.security.UnauthenticatedHandler;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.ObjectPostProcessor;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.ObjectPostProcessor;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
-import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
-import org.springframework.beans.factory.annotation.Value;
 
 @Configuration
 @RequiredArgsConstructor
@@ -67,52 +67,71 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        DaoAuthenticationProvider authProvider =
+                new DaoAuthenticationProvider();
+
         authProvider.setUserDetailsService(userDetailsService());
         authProvider.setPasswordEncoder(passwordEncoder);
+
         return authProvider;
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.cors(cors -> {});
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http
+    ) throws Exception {
+        http.cors(cors -> {
+        });
 
         if (csrfEnabled) {
-            CookieCsrfTokenRepository csrfTokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+            CookieCsrfTokenRepository csrfTokenRepository =
+                    CookieCsrfTokenRepository.withHttpOnlyFalse();
+
             csrfTokenRepository.setCookieName(CSRF_COOKIE_NAME);
             csrfTokenRepository.setCookieCustomizer(cookie -> cookie
                     .httpOnly(false)
                     .secure(secureCookies)
                     .sameSite("Strict")
-                    .path("/"));
+                    .path("/")
+            );
+
             http.csrf(csrf -> csrf
                     .csrfTokenRepository(csrfTokenRepository)
-                    .withObjectPostProcessor(new ObjectPostProcessor<CsrfFilter>() {
-                        @Override
-                        public <O extends CsrfFilter> O postProcess(O csrfFilter) {
-                            csrfFilter.setAccessDeniedHandler(csrfAccessDeniedHandler);
-                            return csrfFilter;
-                        }
-                    })
+                    .withObjectPostProcessor(
+                            new ObjectPostProcessor<CsrfFilter>() {
+                                @Override
+                                public <O extends CsrfFilter> O postProcess(
+                                        O csrfFilter
+                                ) {
+                                    csrfFilter.setAccessDeniedHandler(
+                                            csrfAccessDeniedHandler
+                                    );
+                                    return csrfFilter;
+                                }
+                            }
+                    )
                     .ignoringRequestMatchers(
+                            "/api/health",
                             "/api/auth/logout",
                             "/api/payments/vnpay/ipn",
                             "/api/payments/sepay/webhook",
                             "/api/payments/transactions/*/release-on-exit"
-                    ));
+                    )
+            );
         } else {
             http.csrf(AbstractHttpConfigurer::disable);
         }
 
         http.sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                        session.sessionCreationPolicy(
+                                SessionCreationPolicy.IF_REQUIRED
+                        )
                 )
-                // OAuth may use a short-lived HttpSession for its authorization request,
-                // but authenticated identity must never persist there. JWT cookies are
-                // the only identity source after the callback completes.
                 .securityContext(securityContext -> securityContext
                         .requireExplicitSave(true)
-                        .securityContextRepository(new RequestAttributeSecurityContextRepository())
+                        .securityContextRepository(
+                                new RequestAttributeSecurityContextRepository()
+                        )
                 )
                 .oauth2Login(oauth -> oauth
                         .successHandler(oauthLoginSuccessHandler)
@@ -120,10 +139,16 @@ public class SecurityConfig {
                 )
                 .authenticationProvider(authenticationProvider())
                 .exceptionHandling(exceptions ->
-                        exceptions.authenticationEntryPoint(unauthenticatedHandler)
+                        exceptions.authenticationEntryPoint(
+                                unauthenticatedHandler
+                        )
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.GET, "/", "/api/health").permitAll()
+                        // Public for every HTTP method, including HEAD checks.
+                        .requestMatchers("/api/health").permitAll()
+
+                        .requestMatchers(HttpMethod.GET, "/").permitAll()
+
                         .requestMatchers(
                                 "/oauth2/**",
                                 "/login/oauth2/**",
@@ -141,16 +166,67 @@ public class SecurityConfig {
                                 "/api/ai/chat",
                                 "/api/ai/suggested-questions"
                         ).permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/rooms/**", "/api/room-types/**", "/api/reviews", "/api/reviews/rooms/**", "/api/homepage/**", "/api/addons/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/reviews", "/api/reviews/images").hasRole("CUSTOMER")
-                        .requestMatchers(HttpMethod.POST, "/api/rooms/**", "/api/room-types/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/rooms/**", "/api/room-types/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PATCH, "/api/rooms/**", "/api/room-types/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/rooms/**", "/api/room-types/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/bookings/calculate-cost").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/coupons/validate").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/payments/transactions/*/release-on-exit").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/coupons/new-customer-offer").permitAll()
+
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/rooms/**",
+                                "/api/room-types/**",
+                                "/api/reviews",
+                                "/api/reviews/rooms/**",
+                                "/api/homepage/**",
+                                "/api/addons/**"
+                        ).permitAll()
+
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/reviews",
+                                "/api/reviews/images"
+                        ).hasRole("CUSTOMER")
+
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/rooms/**",
+                                "/api/room-types/**"
+                        ).hasRole("ADMIN")
+
+                        .requestMatchers(
+                                HttpMethod.PUT,
+                                "/api/rooms/**",
+                                "/api/room-types/**"
+                        ).hasRole("ADMIN")
+
+                        .requestMatchers(
+                                HttpMethod.PATCH,
+                                "/api/rooms/**",
+                                "/api/room-types/**"
+                        ).hasRole("ADMIN")
+
+                        .requestMatchers(
+                                HttpMethod.DELETE,
+                                "/api/rooms/**",
+                                "/api/room-types/**"
+                        ).hasRole("ADMIN")
+
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/bookings/calculate-cost"
+                        ).permitAll()
+
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/coupons/validate"
+                        ).permitAll()
+
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/payments/transactions/*/release-on-exit"
+                        ).permitAll()
+
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/coupons/new-customer-offer"
+                        ).permitAll()
+
                         .requestMatchers("/api/auth/session").authenticated()
                         .requestMatchers("/api/staff/attendance/**").hasRole("STAFF")
                         .requestMatchers("/api/staff/customers/**").hasRole("STAFF")
@@ -165,8 +241,14 @@ public class SecurityConfig {
                         .requestMatchers("/api/bookings/**").authenticated()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(authRateLimitFilter, JwtAuthenticationFilter.class);
+                .addFilterBefore(
+                        jwtAuthenticationFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                )
+                .addFilterBefore(
+                        authRateLimitFilter,
+                        JwtAuthenticationFilter.class
+                );
 
         return http.build();
     }

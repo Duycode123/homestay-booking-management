@@ -1,12 +1,12 @@
 package backend.security;
 
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.Cookie;
 import backend.service.TokenRevocationService;
 import io.jsonwebtoken.JwtException;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -28,7 +28,8 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private static final Set<String> PUBLIC_AUTH_PATHS = Set.of(
+    private static final Set<String> PUBLIC_PATHS = Set.of(
+            "/api/health",
             "/api/auth/csrf",
             "/api/auth/register",
             "/api/auth/login",
@@ -46,7 +47,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
-        return PUBLIC_AUTH_PATHS.contains(request.getRequestURI());
+        return PUBLIC_PATHS.contains(request.getServletPath());
     }
 
     @Override
@@ -56,12 +57,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
         List<String> tokens = resolveTokens(request);
+
         if (tokens.isEmpty()) {
             filterChain.doFilter(request, response);
             return;
         }
 
         AuthenticationCandidate newestCandidate = null;
+
         for (String jwt : tokens) {
             if (tokenRevocationService.isRevoked(jwt)) {
                 continue;
@@ -70,6 +73,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 String userEmail = jwtService.extractUsername(jwt);
                 UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
+
                 if (userDetails == null
                         || !userDetails.isEnabled()
                         || !jwtService.isAccessTokenValid(jwt, userDetails)) {
@@ -80,42 +84,67 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 if (issuedAt == null) {
                     continue;
                 }
-                if (newestCandidate == null || !issuedAt.before(newestCandidate.issuedAt())) {
-                    newestCandidate = new AuthenticationCandidate(userDetails, issuedAt);
+
+                if (newestCandidate == null
+                        || !issuedAt.before(newestCandidate.issuedAt())) {
+                    newestCandidate = new AuthenticationCandidate(
+                            userDetails,
+                            issuedAt
+                    );
                 }
-            } catch (JwtException | IllegalArgumentException | UsernameNotFoundException ex) {
-                // A browser can retain legacy cookies with the same name but a different path/domain.
-                // Ignore each invalid candidate and keep looking for the newest valid access token.
+            } catch (
+                    JwtException
+                    | IllegalArgumentException
+                    | UsernameNotFoundException ex
+            ) {
+                // Ignore invalid legacy or duplicate token candidates and keep
+                // looking for the newest valid access token.
             }
         }
 
         if (newestCandidate != null) {
             UserDetails userDetails = newestCandidate.userDetails();
-            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                    userDetails, null, userDetails.getAuthorities()
+
+            UsernamePasswordAuthenticationToken authToken =
+                    new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities()
+                    );
+
+            authToken.setDetails(
+                    new WebAuthenticationDetailsSource().buildDetails(request)
             );
-            authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
             SecurityContextHolder.getContext().setAuthentication(authToken);
         }
+
         filterChain.doFilter(request, response);
     }
 
     private List<String> resolveTokens(HttpServletRequest request) {
         String authHeader = request.getHeader("Authorization");
+
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             return List.of(authHeader.substring(7));
         }
 
         List<String> tokens = new ArrayList<>();
+
         Enumeration<String> cookieHeaders = request.getHeaders("Cookie");
         while (cookieHeaders != null && cookieHeaders.hasMoreElements()) {
-            addAccessTokensFromRawCookieHeader(cookieHeaders.nextElement(), tokens);
+            addAccessTokensFromRawCookieHeader(
+                    cookieHeaders.nextElement(),
+                    tokens
+            );
         }
+
         if (!tokens.isEmpty()) {
             return tokens;
         }
 
         Cookie[] cookies = request.getCookies();
+
         if (cookies != null) {
             for (Cookie cookie : cookies) {
                 if (AuthCookieService.ACCESS_COOKIE_NAME.equals(cookie.getName())
@@ -125,28 +154,38 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
         }
+
         return tokens;
     }
 
-    private void addAccessTokensFromRawCookieHeader(String cookieHeader, List<String> tokens) {
+    private void addAccessTokensFromRawCookieHeader(
+            String cookieHeader,
+            List<String> tokens
+    ) {
         if (cookieHeader == null || cookieHeader.isBlank()) {
             return;
         }
 
         for (String cookiePart : cookieHeader.split(";")) {
             int separatorIndex = cookiePart.indexOf('=');
+
             if (separatorIndex <= 0) {
                 continue;
             }
 
             String name = cookiePart.substring(0, separatorIndex).trim();
             String value = cookiePart.substring(separatorIndex + 1).trim();
-            if (AuthCookieService.ACCESS_COOKIE_NAME.equals(name) && !value.isBlank()) {
+
+            if (AuthCookieService.ACCESS_COOKIE_NAME.equals(name)
+                    && !value.isBlank()) {
                 tokens.add(value);
             }
         }
     }
 
-    private record AuthenticationCandidate(UserDetails userDetails, Date issuedAt) {
+    private record AuthenticationCandidate(
+            UserDetails userDetails,
+            Date issuedAt
+    ) {
     }
 }
