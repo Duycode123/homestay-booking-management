@@ -5,5 +5,5 @@ import backend.amenity.domain.model.CommonAmenity;
 import java.util.List;
 
 public interface ListCommonAmenitiesUseCase {
-    List<CommonAmenity> listActiveAmenities();
+    List<CommonAmenity> listActiveAmenities(Integer roomId);
 }

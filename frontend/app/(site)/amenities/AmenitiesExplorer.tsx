@@ -229,21 +229,21 @@ const amenityGroupsByLocale: Record<'vi' | 'en', readonly AmenityGroup[]> = {
 
 const explorerCopy = {
     vi: {
-        eyebrow: 'Tiện nghi trong phòng',
+        eyebrow: 'Tiện nghi trong căn',
         count: '06 nhóm thiết yếu',
         title: 'Tìm theo nhu cầu, không cần đọc một danh sách quá dài.',
         description:
-            'Chọn từng nhóm để xem lợi ích, tiện nghi đi kèm và những lưu ý quan trọng trước khi đặt phòng.',
-        navigationLabel: 'Nhóm tiện nghi trong phòng',
+            'Chọn từng nhóm để xem lợi ích, tiện nghi đi kèm và những lưu ý quan trọng trước khi đặt homestay.',
+        navigationLabel: 'Nhóm tiện nghi trong căn',
         note: 'Lưu ý:',
     },
     en: {
-        eyebrow: 'In-room amenities',
+        eyebrow: 'In-home amenities',
         count: '06 essential groups',
         title: 'Explore by need, without reading through a long list.',
         description:
             'Choose a group to see its benefits, included amenities, and key details before reserving.',
-        navigationLabel: 'In-room amenity groups',
+        navigationLabel: 'In-home amenity groups',
         note: 'Please note:',
     },
 } as const

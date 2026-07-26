@@ -1,9 +1,13 @@
 package backend.amenity.adapter.out.persistence;
 
+import backend.entity.Room;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "common_amenity")
@@ -32,4 +36,13 @@ class CommonAmenityEntity {
 
     @Column(nullable = false)
     private boolean active;
+
+    @ManyToMany
+    @JoinTable(
+            name = "room_included_amenity",
+            joinColumns = @JoinColumn(name = "amenity_id"),
+            inverseJoinColumns = @JoinColumn(name = "room_id")
+    )
+    @OrderBy("roomName ASC")
+    private Set<Room> rooms = new LinkedHashSet<>();
 }

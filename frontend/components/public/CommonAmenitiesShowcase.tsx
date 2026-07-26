@@ -10,26 +10,30 @@ import {
 
 const copy = {
   vi: {
-    eyebrow: 'Dành cho toàn khu homestay',
-    title: 'Tiện ích chung quy mô lớn, miễn phí cho khách lưu trú.',
+    eyebrow: 'Theo từng homestay',
+    title: 'Tiện ích đi kèm, phù hợp với từng địa điểm lưu trú.',
     description:
-      'Các tiện ích nhỏ trong phòng vẫn được giữ nguyên. Đây là những không gian chung khách có thể sử dụng trong thời gian lưu trú.',
+      'Mỗi homestay có không gian và tiện ích khác nhau. Hãy xem trang chi tiết của căn bạn chọn để biết chính xác những gì đã được bao gồm trong kỳ nghỉ.',
     loading: 'Đang tải tiện ích...',
-    empty: 'Hiện chưa có tiện ích chung để hiển thị.',
-    errorTitle: 'Không thể hiển thị tiện ích chung',
+    empty: 'Hiện chưa có tiện ích đi kèm để hiển thị.',
+    errorTitle: 'Không thể hiển thị tiện ích đi kèm',
     errorDescription:
       'Đã xảy ra lỗi khi tải dữ liệu. Vui lòng thử tải lại trang.',
+    availableAt: 'Có tại',
+    homestay: 'homestay',
   },
   en: {
-    eyebrow: 'Shared across the villa grounds',
-    title: 'Thoughtful shared spaces, included with every stay.',
+    eyebrow: 'Unique to each homestay',
+    title: 'Included amenities, matched to each location.',
     description:
-      'Your in-room amenities remain exactly as listed. These are the shared spaces guests can enjoy throughout their stay.',
+      'Each homestay has its own spaces and included amenities. Check the detail page of your chosen stay for the exact list included with your booking.',
     loading: 'Loading amenities...',
-    empty: 'There are currently no shared amenities to display.',
-    errorTitle: 'Unable to display shared amenities',
+    empty: 'There are currently no included amenities to display.',
+    errorTitle: 'Unable to display included amenities',
     errorDescription:
       'An error occurred while loading the data. Please refresh the page.',
+    availableAt: 'Available at',
+    homestay: 'homestay',
   },
 } as const
 
@@ -172,6 +176,10 @@ export default function CommonAmenitiesShowcase() {
                       {item.description}
                     </p>
                   )}
+                  <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-secondary/60">
+                    {content.availableAt} {item.roomIds?.length ?? 0}{' '}
+                    {locale === 'en' && (item.roomIds?.length ?? 0) !== 1 ? 'homestays' : content.homestay}
+                  </p>
                 </div>
               </article>
             ))}

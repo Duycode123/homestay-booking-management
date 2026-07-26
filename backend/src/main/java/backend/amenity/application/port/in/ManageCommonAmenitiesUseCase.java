@@ -6,7 +6,23 @@ import java.util.List;
 
 public interface ManageCommonAmenitiesUseCase {
     List<CommonAmenity> listAllAmenities();
-    CommonAmenity create(String name, String description, String iconName, String imageUrl, Integer displayOrder);
-    CommonAmenity update(Long id, String name, String description, String iconName, String imageUrl, Integer displayOrder, Boolean active);
+    CommonAmenity create(
+            String name,
+            String description,
+            String iconName,
+            String imageUrl,
+            Integer displayOrder,
+            List<Integer> roomIds
+    );
+    CommonAmenity update(
+            Long id,
+            String name,
+            String description,
+            String iconName,
+            String imageUrl,
+            Integer displayOrder,
+            Boolean active,
+            List<Integer> roomIds
+    );
     void delete(Long id);
 }

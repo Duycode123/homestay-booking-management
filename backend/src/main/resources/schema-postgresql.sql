@@ -77,6 +77,15 @@ CREATE TABLE IF NOT EXISTS common_amenity (
     active BOOLEAN NOT NULL DEFAULT TRUE
 );
 
+CREATE TABLE IF NOT EXISTS room_included_amenity (
+    room_id INT NOT NULL REFERENCES room(id) ON DELETE CASCADE,
+    amenity_id BIGINT NOT NULL REFERENCES common_amenity(id) ON DELETE CASCADE,
+    PRIMARY KEY (room_id, amenity_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_room_included_amenity_amenity
+    ON room_included_amenity (amenity_id, room_id);
+
 -- Common amenities are admin-managed business data. Do not seed or reactivate them
 -- from this startup schema: doing so would undo an administrator's delete/hide action.
 

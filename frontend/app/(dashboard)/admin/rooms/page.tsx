@@ -429,6 +429,7 @@ export default function AdminRoomsPage() {
           </section>
 
           <AdminAmenitiesManager
+            rooms={rooms}
             privateAmenities={
               <RoomEquipmentManager
                 rooms={rooms}

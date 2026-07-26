@@ -10,22 +10,22 @@ const amenitiesContent = {
     metadata: {
       title: 'Tiện nghi homestay',
       description:
-        'Khám phá tiện nghi trong phòng, tiện ích chung, tiêu chuẩn chuẩn bị phòng và dịch vụ hỗ trợ tại The Serene Villa.',
+        'Khám phá tiện nghi trong căn, tiện ích đi kèm theo từng homestay, tiêu chuẩn chuẩn bị và dịch vụ hỗ trợ tại The Serene Villa.',
     },
     eyebrow: 'Tiện nghi The Serene Villa',
     title: ['Mọi thứ cần thiết,', 'được chuẩn bị vừa đủ.'],
     description:
-      'Từ tiện nghi trong phòng đến hồ bơi, sân vườn và những không gian sinh hoạt chung, mỗi chi tiết đều hướng đến một kỳ nghỉ nhẹ nhàng, chủ động và không cần bận tâm quá nhiều.',
+      'Từ tiện nghi trong căn đến hồ bơi, sân vườn và những tiện ích đi kèm theo từng homestay, mỗi chi tiết đều hướng đến một kỳ nghỉ nhẹ nhàng, chủ động và không cần bận tâm quá nhiều.',
     discover: 'Khám phá tiện nghi',
-    shared: 'Xem tiện ích chung',
+    shared: 'Xem tiện ích đi kèm',
     assurances: [
       'Kiểm tra trước check-in',
-      'Thông tin rõ theo từng phòng',
+      'Thông tin rõ theo từng homestay',
       'Hỗ trợ khi có phát sinh',
     ],
     visualAlt:
-      'Khu homestay giữa thiên nhiên với hồ bơi và không gian sinh hoạt chung',
-    visualEyebrow: 'Trong phòng & khu vực chung',
+      'Một homestay giữa thiên nhiên với hồ bơi và không gian nghỉ ngơi',
+    visualEyebrow: 'Trong căn & tiện ích đi kèm',
     visualTitle:
       'Tiện nghi không chỉ để sử dụng, mà để kỳ nghỉ diễn ra tự nhiên và dễ chịu hơn.',
     philosophyEyebrow: 'Triết lý tiện nghi',
@@ -90,7 +90,7 @@ const amenitiesContent = {
     readyEyebrow: 'Sẵn sàng cho kỳ nghỉ',
     readyTitle: 'Chọn không gian phù hợp với nhịp nghỉ của bạn.',
     readyDescription:
-      'Xem tiện nghi chính xác của từng hạng phòng, so sánh lựa chọn và kiểm tra lịch trống trước khi đặt.',
+      'Xem tiện nghi chính xác của từng homestay, so sánh lựa chọn và kiểm tra lịch trống trước khi đặt.',
     roomsCta: 'Khám phá phòng homestay',
     supportCta: 'Cần tư vấn',
   },
@@ -98,22 +98,22 @@ const amenitiesContent = {
     metadata: {
       title: 'Homestay amenities',
       description:
-        'Explore in-room amenities, shared facilities, room preparation standards, and support services at The Serene Villa.',
+        'Explore in-home amenities, included amenities for each homestay, preparation standards, and support services at The Serene Villa.',
     },
     eyebrow: 'The Serene Villa amenities',
     title: ['Everything you need,', 'prepared with intention.'],
     description:
-      'From in-room comforts to the pool, garden, and shared living spaces, every detail is designed for a calm, self-directed stay with less to think about.',
+      'From in-home comforts to pools, gardens, and amenities unique to each homestay, every detail is designed for a calm, self-directed stay with less to think about.',
     discover: 'Explore amenities',
-    shared: 'View shared facilities',
+    shared: 'View included amenities',
     assurances: [
       'Checked before check-in',
-      'Clear details for every room',
+      'Clear details for every homestay',
       'Support when you need it',
     ],
     visualAlt:
-      'The homestay surrounded by nature, with a pool and shared spaces',
-    visualEyebrow: 'In-room & shared spaces',
+      'A homestay surrounded by nature, with a pool and restful spaces',
+    visualEyebrow: 'In-home & included amenities',
     visualTitle:
       'Amenities are not only for use, but for a stay that feels natural and effortless.',
     philosophyEyebrow: 'Our amenity philosophy',
@@ -179,7 +179,7 @@ const amenitiesContent = {
     readyEyebrow: 'Ready for your stay',
     readyTitle: 'Choose a space that matches the way you want to rest.',
     readyDescription:
-      'Review the exact amenities for each room tier, compare choices, and check availability before reserving.',
+      'Review the exact amenities for each homestay, compare choices, and check availability before reserving.',
     roomsCta: 'Explore homestay rooms',
     supportCta: 'Need advice?',
   },

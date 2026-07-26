@@ -8,11 +8,14 @@ export type CommonAmenity = {
   imageUrl?: string | null
   displayOrder: number
   active: boolean
+  roomIds: number[]
 }
 
 type ApiResponse<T> = { data?: T }
 
-export async function fetchCommonAmenities() {
-  const response = await api.get<ApiResponse<CommonAmenity[]>>('/api/rooms/common-amenities')
+export async function fetchCommonAmenities(roomId?: string | number) {
+  const response = await api.get<ApiResponse<CommonAmenity[]>>('/api/rooms/common-amenities', {
+    params: roomId == null ? undefined : { roomId },
+  })
   return response.data.data ?? []
 }

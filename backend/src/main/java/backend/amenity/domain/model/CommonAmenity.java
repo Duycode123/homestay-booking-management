@@ -1,5 +1,7 @@
 package backend.amenity.domain.model;
 
+import java.util.List;
+
 public record CommonAmenity(
         Long id,
         String name,
@@ -7,6 +9,7 @@ public record CommonAmenity(
         String iconName,
         String imageUrl,
         Integer displayOrder,
-        boolean active
+        boolean active,
+        List<Integer> roomIds
 ) {
 }

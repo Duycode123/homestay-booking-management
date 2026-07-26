@@ -11,6 +11,7 @@ export type CommonAmenityForm = {
   imageUrl: string
   displayOrder: number
   active: boolean
+  roomIds: number[]
 }
 
 function data<T>(payload: ApiResponse<T>) {
@@ -42,5 +43,5 @@ export async function uploadCommonAmenityImage(file: File) {
 
 export function commonAmenityError(error: unknown) {
   const candidate = error as { message?: string; response?: { data?: { message?: string } } }
-  return candidate.response?.data?.message || candidate.message || 'Không thể cập nhật tiện nghi chung.'
+  return candidate.response?.data?.message || candidate.message || 'Không thể cập nhật tiện ích đi kèm.'
 }

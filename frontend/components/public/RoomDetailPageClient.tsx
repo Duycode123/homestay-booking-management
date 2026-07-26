@@ -53,7 +53,7 @@ export default function RoomDetailPageClient({ roomId }: { roomId: string }) {
       fetchRoom(roomId),
       fetchPublicRoomEquipment({ roomId }).catch(() => []),
       fetchPublicReviewsByRoomId(roomId).catch(() => []),
-      fetchCommonAmenities().catch(() => []),
+      fetchCommonAmenities(roomId).catch(() => []),
       fetchRooms().catch(() => []),
       fetchAvailableAddons(roomId).catch(() => []),
     ]).then(async ([backendRoom, equipment, roomReviews, amenities, allRooms, addons]) => {
@@ -130,8 +130,13 @@ export default function RoomDetailPageClient({ roomId }: { roomId: string }) {
             </section>
 
             <AmenitiesTabs
-              privateItems={room.includedEquipments.map((name) => ({ name, description: 'Sẵn sàng phục vụ trong căn.', iconName: 'private' }))}
-              commonItems={commonAmenities}
+              locale={locale}
+              privateItems={room.includedEquipments.map((name) => ({
+                name,
+                description: locale === 'en' ? 'Prepared inside this homestay.' : 'Sẵn sàng phục vụ trong căn.',
+                iconName: 'private',
+              }))}
+              includedItems={commonAmenities}
             />
 
             <section className="overflow-hidden rounded-[26px] border border-outline-variant bg-white shadow-[var(--shadow-card)]">
@@ -166,7 +171,7 @@ export default function RoomDetailPageClient({ roomId }: { roomId: string }) {
 
             <AddonServicesSection items={addonServices} />
 
-            <section className="rounded-[26px] border border-outline-variant bg-white p-6 sm:p-8"><h2 className="font-editorial text-3xl font-semibold text-secondary">Chính sách lưu trú</h2><div className="mt-5 grid gap-4 sm:grid-cols-2"><Policy title="Khung lưu trú" text="Nhận phòng từ 14:00 và trả phòng trước 12:00 ngày cuối cùng; thời gian tối thiểu 1 đêm." /><Policy title="Nhận phòng" text="Khách có thể check-in sớm tối đa 5 phút khi phòng đã sẵn sàng." /><Policy title="Hủy phòng" text="Gửi yêu cầu trước ít nhất 24 giờ để được admin xem xét hoàn tiền." /><Policy title="Sử dụng tiện ích chung" text="Giữ gìn vệ sinh, tuân thủ giờ hoạt động và hướng dẫn an toàn tại từng khu vực." /></div></section>
+            <section className="rounded-[26px] border border-outline-variant bg-white p-6 sm:p-8"><h2 className="font-editorial text-3xl font-semibold text-secondary">Chính sách lưu trú</h2><div className="mt-5 grid gap-4 sm:grid-cols-2"><Policy title="Khung lưu trú" text="Nhận phòng từ 14:00 và trả phòng trước 12:00 ngày cuối cùng; thời gian tối thiểu 1 đêm." /><Policy title="Nhận phòng" text="Khách có thể check-in sớm tối đa 5 phút khi phòng đã sẵn sàng." /><Policy title="Hủy phòng" text="Gửi yêu cầu trước ít nhất 24 giờ để được admin xem xét hoàn tiền." /><Policy title="Sử dụng tiện ích đi kèm" text="Giữ gìn vệ sinh, tuân thủ giờ hoạt động và hướng dẫn an toàn tại từng khu vực." /></div></section>
             <HouseRulesSection />
             <ReviewSection reviews={reviews} />
           </div>
@@ -482,22 +487,30 @@ type AmenityDisplayItem = {
   imageUrl?: string | null
 }
 
-function AmenitiesTabs({ privateItems, commonItems }: { privateItems: AmenityDisplayItem[]; commonItems: AmenityDisplayItem[] }) {
+function AmenitiesTabs({
+  locale,
+  privateItems,
+  includedItems,
+}: {
+  locale: 'vi' | 'en'
+  privateItems: AmenityDisplayItem[]
+  includedItems: AmenityDisplayItem[]
+}) {
   const [activeTab, setActiveTab] = useState<'private' | 'common'>('private')
-  const activeItems = activeTab === 'private' ? privateItems : commonItems
+  const activeItems = activeTab === 'private' ? privateItems : includedItems
   const panelId = `room-amenities-${activeTab}`
 
   return (
-    <section className="overflow-hidden rounded-[26px] border border-[#ddd1c0] bg-[#fffdf8] shadow-[0_16px_44px_rgba(35,54,45,.06)]" aria-label="Tiện ích lưu trú">
+    <section className="overflow-hidden rounded-[26px] border border-[#ddd1c0] bg-[#fffdf8] shadow-[0_16px_44px_rgba(35,54,45,.06)]" aria-label={locale === 'en' ? 'Homestay amenities' : 'Tiện nghi homestay'}>
       <div className="overflow-x-auto px-5 pt-5 sm:px-8 sm:pt-7">
-        <div className="flex min-w-max gap-2 border-b border-[#ddd1c0]" role="tablist" aria-label="Loại tiện ích">
+        <div className="flex min-w-max gap-2 border-b border-[#ddd1c0]" role="tablist" aria-label={locale === 'en' ? 'Amenity group' : 'Nhóm tiện nghi'}>
           <AmenityTab
             active={activeTab === 'private'}
             id="private-amenities-tab"
             controls="room-amenities-private"
             onClick={() => setActiveTab('private')}
           >
-            Tiện ích riêng
+            {locale === 'en' ? 'In-home amenities' : 'Tiện nghi trong căn'}
           </AmenityTab>
           <AmenityTab
             active={activeTab === 'common'}
@@ -505,7 +518,7 @@ function AmenitiesTabs({ privateItems, commonItems }: { privateItems: AmenityDis
             controls="room-amenities-common"
             onClick={() => setActiveTab('common')}
           >
-            Tiện ích chung
+            {locale === 'en' ? 'Included amenities' : 'Tiện ích đi kèm'}
           </AmenityTab>
         </div>
       </div>
@@ -518,16 +531,21 @@ function AmenitiesTabs({ privateItems, commonItems }: { privateItems: AmenityDis
       >
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#8a7458] sm:text-sm">
-            {activeItems.length} {activeTab === 'private' ? 'tiện nghi trong phòng' : 'tiện ích toàn khu'}
+            {activeItems.length}{' '}
+            {activeTab === 'private'
+              ? (locale === 'en' ? 'amenities inside this homestay' : 'tiện nghi trong căn')
+              : (locale === 'en' ? 'amenities included at this homestay' : 'tiện ích có tại homestay này')}
           </p>
           {activeTab === 'common' && activeItems.length > 0 && (
-            <p className="text-xs text-on-surface-variant">Dùng chung miễn phí trong thời gian lưu trú</p>
+            <p className="text-xs text-on-surface-variant">
+              {locale === 'en' ? 'Included with your stay at this homestay' : 'Đã bao gồm trong kỳ nghỉ tại homestay này'}
+            </p>
           )}
         </div>
 
         {activeItems.length > 0 ? (
           activeTab === 'private' ? (
-            <ul className="mt-4 flex flex-wrap gap-2.5 sm:gap-3" aria-label="Danh sách tiện ích riêng">
+            <ul className="mt-4 flex flex-wrap gap-2.5 sm:gap-3" aria-label={locale === 'en' ? 'In-home amenity list' : 'Danh sách tiện nghi trong căn'}>
               {activeItems.map((item) => (
                 <li key={item.name} className="inline-flex min-h-11 items-center gap-2.5 rounded-full border border-[#dfd2bf] bg-white px-4 py-2 text-sm font-medium text-secondary shadow-[0_3px_10px_rgba(35,54,45,.03)] sm:text-base">
                   <span className="flex h-5 w-5 shrink-0 items-center justify-center text-[#637b58] [&_svg]:h-5 [&_svg]:w-5">
@@ -554,7 +572,9 @@ function AmenitiesTabs({ privateItems, commonItems }: { privateItems: AmenityDis
           )
         ) : (
           <p className="mt-4 rounded-2xl border border-dashed border-[#ddd1c0] bg-white/70 px-4 py-5 text-sm text-on-surface-variant">
-            Chưa có dữ liệu tiện ích.
+            {locale === 'en'
+              ? 'No amenity information is available for this homestay yet.'
+              : 'Homestay này chưa có thông tin tiện nghi.'}
           </p>
         )}
       </div>

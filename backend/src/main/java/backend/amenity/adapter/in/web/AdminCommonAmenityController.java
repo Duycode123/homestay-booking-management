@@ -18,26 +18,40 @@ public class AdminCommonAmenityController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<CommonAmenity>>> list() {
-        return ResponseEntity.ok(success("Lay tien ich chung thanh cong", useCase.listAllAmenities()));
+        return ResponseEntity.ok(success("Lấy tiện ích đi kèm thành công", useCase.listAllAmenities()));
     }
 
     @PostMapping
     public ResponseEntity<ApiResponse<CommonAmenity>> create(@Valid @RequestBody CommonAmenityRequest request) {
-        CommonAmenity result = useCase.create(request.name(), request.description(), request.iconName(), request.imageUrl(), request.displayOrder());
-        return ResponseEntity.status(201).body(success("Them tien ich chung thanh cong", result));
+        CommonAmenity result = useCase.create(
+                request.name(),
+                request.description(),
+                request.iconName(),
+                request.imageUrl(),
+                request.displayOrder(),
+                request.roomIds()
+        );
+        return ResponseEntity.status(201).body(success("Thêm tiện ích đi kèm thành công", result));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<CommonAmenity>> update(@PathVariable Long id, @Valid @RequestBody CommonAmenityRequest request) {
-        return ResponseEntity.ok(success("Cap nhat tien ich chung thanh cong", useCase.update(
-                id, request.name(), request.description(), request.iconName(), request.imageUrl(), request.displayOrder(), request.active()
+        return ResponseEntity.ok(success("Cập nhật tiện ích đi kèm thành công", useCase.update(
+                id,
+                request.name(),
+                request.description(),
+                request.iconName(),
+                request.imageUrl(),
+                request.displayOrder(),
+                request.active(),
+                request.roomIds()
         )));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         useCase.delete(id);
-        return ResponseEntity.ok(success("Xoa tien ich chung thanh cong", null));
+        return ResponseEntity.ok(success("Xóa tiện ích đi kèm thành công", null));
     }
 
     private <T> ApiResponse<T> success(String message, T data) {
