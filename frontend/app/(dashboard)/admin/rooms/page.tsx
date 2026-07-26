@@ -98,8 +98,8 @@ function filterAndSortRooms(rooms: AdminRoom[], filters: RoomFilters) {
   })
 
   return [...filtered].sort((a, b) => {
-    if (filters.sortBy === 'price-asc') return a.pricePerHour - b.pricePerHour
-    if (filters.sortBy === 'price-desc') return b.pricePerHour - a.pricePerHour
+    if (filters.sortBy === 'price-asc') return a.baseNightlyRate - b.baseNightlyRate
+    if (filters.sortBy === 'price-desc') return b.baseNightlyRate - a.baseNightlyRate
     if (filters.sortBy === 'capacity') return b.capacity - a.capacity
     return 0
   })

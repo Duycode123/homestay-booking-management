@@ -1,6 +1,7 @@
 package backend.staffschedule.adapter.out.persistence;
 
 import backend.entity.Staff;
+import backend.entity.Room;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -29,6 +30,10 @@ public class ShiftJpaEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "staff_id", nullable = false)
     private Staff staff;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "room_id")
+    private Room room;
 
     @Column(name = "date", nullable = false)
     private LocalDate date;

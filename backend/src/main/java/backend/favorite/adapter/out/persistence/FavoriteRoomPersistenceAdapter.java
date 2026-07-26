@@ -10,6 +10,8 @@ import backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.Optional;
 
@@ -66,9 +68,16 @@ class FavoriteRoomPersistenceAdapter implements FavoriteRoomPort {
                 room.getRoomName(),
                 room.getRoomType() == null ? null : room.getRoomType().getTypeName(),
                 room.getMaxPeople(),
-                room.getRoomType() == null ? null : room.getRoomType().getPricePerHour(),
+                resolveCompatibilityHourlyRate(room),
                 room.getImageUrl(),
                 entity.getCreatedAt()
         );
+    }
+
+    private BigDecimal resolveCompatibilityHourlyRate(Room room) {
+        if (room.getBaseNightlyRate() != null && room.getBaseNightlyRate().signum() > 0) {
+            return room.getBaseNightlyRate().divide(BigDecimal.valueOf(22), 2, RoundingMode.HALF_UP);
+        }
+        return room.getRoomType() == null ? null : room.getRoomType().getPricePerHour();
     }
 }

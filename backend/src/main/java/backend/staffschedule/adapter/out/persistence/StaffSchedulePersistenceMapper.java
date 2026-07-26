@@ -12,10 +12,28 @@ public class StaffSchedulePersistenceMapper {
         return new StaffShift(
                 shift.getId(),
                 shift.getStaff().getId(),
+                shift.getRoom() == null ? null : shift.getRoom().getId(),
+                shift.getRoom() == null ? null : shift.getRoom().getRoomName(),
+                shift.getRoom() == null ? null : formatAddress(shift.getRoom()),
+                shift.getRoom() == null ? null : shift.getRoom().getLatitude(),
+                shift.getRoom() == null ? null : shift.getRoom().getLongitude(),
+                shift.getRoom() == null ? null : shift.getRoom().getCheckInRadiusMeters(),
                 shift.getDate(),
                 shift.getStartTime(),
                 shift.getEndTime()
         );
+    }
+
+    private String formatAddress(backend.entity.Room room) {
+        return java.util.stream.Stream.of(
+                        room.getAddressLine(),
+                        room.getWard(),
+                        room.getDistrict(),
+                        room.getCity()
+                )
+                .filter(value -> value != null && !value.isBlank())
+                .distinct()
+                .collect(java.util.stream.Collectors.joining(", "));
     }
 
     StaffShiftBooking toShiftBooking(Booking booking) {

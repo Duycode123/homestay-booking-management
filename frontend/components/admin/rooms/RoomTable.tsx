@@ -57,10 +57,10 @@ export default function RoomTable({
           <table className="min-w-[980px] w-full border-collapse text-left">
             <thead className="bg-surface-container-low text-[10px] uppercase tracking-[0.12em] text-on-surface-variant">
               <tr>
-                <th className="px-4 py-3 font-display font-semibold">Phòng</th>
+                <th className="px-4 py-3 font-display font-semibold">Căn lưu trú</th>
                 <th className="px-4 py-3 font-display font-semibold">Hạng phòng</th>
                 <th className="px-4 py-3 font-display font-semibold">Sức chứa</th>
-                <th className="px-4 py-3 font-display font-semibold">Giá/giờ</th>
+                <th className="px-4 py-3 font-display font-semibold">Giá/đêm</th>
                 <th className="px-4 py-3 font-display font-semibold">Trạng thái</th>
                 <th className="px-4 py-3 font-display font-semibold">Tiện nghi</th>
                 <th className="px-4 py-3 font-display font-semibold">Thao tác</th>
@@ -94,7 +94,7 @@ export default function RoomTable({
                     </td>
                     <td className="px-4 py-4 text-sm font-medium text-on-surface">{room.capacity} người</td>
                     <td className="px-4 py-4 text-sm font-bold text-brand-orange">
-                      {formatRoomPrice(room.pricePerHour)}
+                      {formatRoomPrice(room.baseNightlyRate)}
                     </td>
                     <td className="px-4 py-4">
                       <RoomStatusBadge status={room.status} />
@@ -170,7 +170,7 @@ export default function RoomTable({
                 Tiện nghi <span className="font-semibold text-on-surface">{room.equipmentCount}</span>
               </p>
               <p className="col-span-2 font-display text-base font-bold text-brand-orange">
-                {formatRoomPrice(room.pricePerHour)} / giờ
+                {formatRoomPrice(room.baseNightlyRate)} / đêm
               </p>
             </div>
 

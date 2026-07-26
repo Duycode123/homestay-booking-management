@@ -7,6 +7,7 @@ import { AuthProvider } from '@/contexts/AuthContext'
 import { FavoritesProvider } from '@/contexts/FavoritesContext'
 import { defaultLocale, isLocale, localeHeaderName, type Locale } from '@/i18n/config'
 import './globals.css'
+import 'leaflet/dist/leaflet.css'
 
 const siteName = 'The Serene Villa'
 const siteUrl = new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000')

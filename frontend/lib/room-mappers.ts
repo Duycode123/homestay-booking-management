@@ -108,7 +108,16 @@ function getRoomImages(room: BackendRoom) {
 }
 
 function getRoomPrice(room: BackendRoom, category: RoomCategory) {
-  return asNumber(room.roomType?.pricePerHour, 0)
+  const nightlyRate = asNumber(room.baseNightlyRate, 0)
+  return nightlyRate > 0 ? nightlyRate / 22 : asNumber(room.roomType?.pricePerHour, 0)
+}
+
+function getRoomLocation(room: BackendRoom) {
+  return [room.addressLine, room.ward, room.district, room.city]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .filter((part, index, values) => values.indexOf(part) === index)
+    .join(', ') || 'Hà Nội'
 }
 
 function getRoomEquipmentNames(equipment: PublicRoomEquipment[] | undefined) {
@@ -229,7 +238,17 @@ export function mapBackendRoomToAdminRoom(
     capacity: getRoomCapacity(room, category),
     bedroomCount: room.bedroomCount ?? 1,
     bedCount: room.bedCount ?? 1,
+    bathroomCount: room.bathroomCount ?? 1,
     pricePerHour: getRoomPrice(room, category),
+    baseNightlyRate: asNumber(room.baseNightlyRate, getRoomPrice(room, category) * 22),
+    accommodationType: room.accommodationType ?? 'VILLA',
+    addressLine: room.addressLine?.trim() ?? '',
+    ward: room.ward?.trim() ?? '',
+    district: room.district?.trim() ?? '',
+    city: room.city?.trim() || 'Hà Nội',
+    latitude: room.latitude == null ? null : asNumber(room.latitude, 0),
+    longitude: room.longitude == null ? null : asNumber(room.longitude, 0),
+    checkInRadiusMeters: room.checkInRadiusMeters ?? 100,
     status,
     image: images[0],
     imageUrl: room.imageUrl?.trim() || '',
@@ -277,7 +296,16 @@ export function mapBackendRoomToBookingRoom(
     capacity: `Tối đa ${capacity} người`,
     bedroomCount: room.bedroomCount ?? 1,
     bedCount: room.bedCount ?? 1,
-    location: room.floor ? `Tầng ${room.floor}, The Serene Villa` : 'The Serene Villa',
+    bathroomCount: room.bathroomCount ?? 1,
+    location: getRoomLocation(room),
+    addressLine: room.addressLine?.trim() || undefined,
+    ward: room.ward?.trim() || undefined,
+    district: room.district?.trim() || undefined,
+    city: room.city?.trim() || 'Hà Nội',
+    latitude: room.latitude == null ? undefined : asNumber(room.latitude, 0),
+    longitude: room.longitude == null ? undefined : asNumber(room.longitude, 0),
+    checkInRadiusMeters: room.checkInRadiusMeters ?? 100,
+    baseNightlyRate: asNumber(room.baseNightlyRate, getRoomPrice(room, category) * 22),
     image: images[0],
     images,
     imageClassName: '',

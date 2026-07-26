@@ -84,14 +84,23 @@ public class RoomPersistenceAdapter implements
                 predicates.add(criteriaBuilder.notEqual(root.get("status"), RoomStatus.INACTIVE));
             }
             if (criteria.search() != null) {
-                predicates.add(criteriaBuilder.like(
-                        criteriaBuilder.lower(root.get("roomName")),
-                        "%" + escapeLikePattern(criteria.search().toLowerCase()) + "%",
-                        '\\'
+                String pattern = "%" + escapeLikePattern(criteria.search().toLowerCase()) + "%";
+                predicates.add(criteriaBuilder.or(
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("roomName")), pattern, '\\'),
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("addressLine")), pattern, '\\'),
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("ward")), pattern, '\\'),
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("district")), pattern, '\\'),
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("city")), pattern, '\\')
                 ));
             }
             if (criteria.minCapacity() != null) {
                 predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("maxPeople"), criteria.minCapacity()));
+            }
+            if (criteria.district() != null) {
+                predicates.add(criteriaBuilder.equal(
+                        criteriaBuilder.lower(root.get("district")),
+                        criteria.district().toLowerCase()
+                ));
             }
 
             return criteriaBuilder.and(predicates.toArray(Predicate[]::new));

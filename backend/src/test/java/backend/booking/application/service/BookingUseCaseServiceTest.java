@@ -692,6 +692,30 @@ class BookingUseCaseServiceTest {
     }
 
     @Test
+    void calculatesWholeAccommodationPriceByCalendarNights() {
+        LocalDateTime startTime = LocalDateTime.of(2030, 1, 10, 14, 0);
+        LocalDateTime endTime = LocalDateTime.of(2030, 1, 12, 12, 0);
+        Room room = availableRoom();
+        room.setBaseNightlyRate(new BigDecimal("2200000.00"));
+
+        when(loadRoomPort.loadRoom(1)).thenReturn(Optional.of(room));
+
+        BookingCostResponse response = bookingUseCaseService.calculateCost(
+                new backend.booking.application.port.in.command.CalculateBookingCostCommand(
+                        1,
+                        startTime,
+                        endTime,
+                        null
+                )
+        );
+
+        assertEquals(new BigDecimal("46.00"), response.getTotalHours());
+        assertEquals(new BigDecimal("100000.00"), response.getPricePerHour());
+        assertEquals(new BigDecimal("4400000.00"), response.getOriginalAmount());
+        assertEquals(new BigDecimal("4400000.00"), response.getTotalAmount());
+    }
+
+    @Test
     void rejectsBookingCostThatDoesNotUseStandardNightStayTimes() {
         LocalDateTime startTime = LocalDateTime.of(2030, 1, 10, 10, 0);
 

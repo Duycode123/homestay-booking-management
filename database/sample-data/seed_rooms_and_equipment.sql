@@ -14,9 +14,9 @@ $$;
 
 WITH sample_room_tiers(name, hourly_rate, description) AS (
     VALUES
-        ('Standard', 350000.00::numeric, 'Không gian ấm cúng cho 1-2 khách, giường êm, phòng tắm riêng, bàn làm việc và đầy đủ tiện nghi thiết yếu.'),
-        ('Deluxe', 550000.00::numeric, 'Phòng rộng rãi cho 2-4 khách với tầm nhìn đẹp, nội thất nâng cấp, khu thư giãn và tiện nghi cao cấp.'),
-        ('Family', 750000.00::numeric, 'Không gian gia đình cho 4-6 khách, có khu sinh hoạt chung, nhiều giường, bàn ăn và tiện nghi phù hợp lưu trú theo nhóm.')
+        ('Standard', 100000.00::numeric, 'Căn lưu trú ấm cúng cho 1-2 khách với đầy đủ tiện nghi thiết yếu.'),
+        ('Deluxe', 150000.00::numeric, 'Căn rộng rãi cho 2-4 khách với không gian riêng, tầm nhìn đẹp và tiện nghi nâng cấp.'),
+        ('Family', 200000.00::numeric, 'Căn nguyên căn cho 4-6 khách, có khu sinh hoạt chung và tiện nghi phù hợp lưu trú theo nhóm.')
 )
 UPDATE room_tier
 SET hourly_rate = sample_room_tiers.hourly_rate,
@@ -26,9 +26,9 @@ WHERE room_tier.name = sample_room_tiers.name;
 
 WITH sample_room_tiers(name, hourly_rate, description) AS (
     VALUES
-        ('Standard', 350000.00::numeric, 'Không gian ấm cúng cho 1-2 khách, giường êm, phòng tắm riêng, bàn làm việc và đầy đủ tiện nghi thiết yếu.'),
-        ('Deluxe', 550000.00::numeric, 'Phòng rộng rãi cho 2-4 khách với tầm nhìn đẹp, nội thất nâng cấp, khu thư giãn và tiện nghi cao cấp.'),
-        ('Family', 750000.00::numeric, 'Không gian gia đình cho 4-6 khách, có khu sinh hoạt chung, nhiều giường, bàn ăn và tiện nghi phù hợp lưu trú theo nhóm.')
+        ('Standard', 100000.00::numeric, 'Căn lưu trú ấm cúng cho 1-2 khách với đầy đủ tiện nghi thiết yếu.'),
+        ('Deluxe', 150000.00::numeric, 'Căn rộng rãi cho 2-4 khách với không gian riêng, tầm nhìn đẹp và tiện nghi nâng cấp.'),
+        ('Family', 200000.00::numeric, 'Căn nguyên căn cho 4-6 khách, có khu sinh hoạt chung và tiện nghi phù hợp lưu trú theo nhóm.')
 )
 INSERT INTO room_tier (name, hourly_rate, description)
 SELECT name, hourly_rate, description
@@ -53,7 +53,8 @@ WITH sample_rooms(name, tier_name, status, max_people) AS (
 UPDATE room
 SET room_tier_id = room_tier.id,
     status = sample_rooms.status::room_status,
-    max_people = sample_rooms.max_people
+    max_people = sample_rooms.max_people,
+    base_nightly_rate = room_tier.hourly_rate * 22
 FROM sample_rooms
 JOIN room_tier ON room_tier.name = sample_rooms.tier_name
 WHERE room.name = sample_rooms.name;
@@ -73,11 +74,57 @@ WITH sample_rooms(name, tier_name, status, max_people) AS (
         ('Family Loft 303', 'Family', 'AVAILABLE', 5),
         ('Family Pool View 304', 'Family', 'AVAILABLE', 6)
 )
-INSERT INTO room (name, room_tier_id, status, max_people)
-SELECT sample_rooms.name, room_tier.id, sample_rooms.status::room_status, sample_rooms.max_people
+INSERT INTO room (name, room_tier_id, status, max_people, base_nightly_rate)
+SELECT sample_rooms.name,
+       room_tier.id,
+       sample_rooms.status::room_status,
+       sample_rooms.max_people,
+       room_tier.hourly_rate * 22
 FROM sample_rooms
 JOIN room_tier ON room_tier.name = sample_rooms.tier_name
 WHERE NOT EXISTS (SELECT 1 FROM room WHERE room.name = sample_rooms.name);
+
+WITH sample_locations(
+    room_name,
+    accommodation_type,
+    address_line,
+    ward,
+    district,
+    city,
+    latitude,
+    longitude,
+    bedroom_count,
+    bed_count,
+    bathroom_count
+) AS (
+    VALUES
+        ('Standard Garden 101', 'APARTMENT', 'CT8B Khu Đô Thị Dương Nội, Yên Lộ', 'Dương Nội', 'Hà Đông', 'Hà Nội', 20.962536::numeric, 105.745203::numeric, 1, 1, 2),
+        ('Standard Garden 102', 'GARDEN_HOUSE', 'Đường Vườn Quốc Gia Ba Vì', 'Tản Lĩnh', 'Ba Vì', 'Hà Nội', 21.098700::numeric, 105.382600::numeric, 1, 1, 1),
+        ('Standard Courtyard 103', 'HOMESTAY', 'Thôn Lâm Trường', 'Minh Phú', 'Sóc Sơn', 'Hà Nội', 21.305500::numeric, 105.833900::numeric, 1, 1, 1),
+        ('Standard Quiet 104', 'APARTMENT', 'Phố Quảng Khánh', 'Quảng An', 'Tây Hồ', 'Hà Nội', 21.066200::numeric, 105.826300::numeric, 1, 1, 1),
+        ('Deluxe Balcony 201', 'APARTMENT', 'Đường Hồng Tiến', 'Bồ Đề', 'Long Biên', 'Hà Nội', 21.046600::numeric, 105.873600::numeric, 2, 2, 2),
+        ('Deluxe City View 202', 'APARTMENT', 'Phố Hàng Vôi', 'Lý Thái Tổ', 'Hoàn Kiếm', 'Hà Nội', 21.027800::numeric, 105.852300::numeric, 2, 2, 1),
+        ('Deluxe Garden View 203', 'GARDEN_HOUSE', 'Đường Đa Tốn', 'Đa Tốn', 'Gia Lâm', 'Hà Nội', 20.995800::numeric, 105.944600::numeric, 2, 2, 2),
+        ('Deluxe Corner 204', 'APARTMENT', 'Đường Võ Chí Công', 'Xuân La', 'Tây Hồ', 'Hà Nội', 21.066900::numeric, 105.802800::numeric, 2, 2, 2),
+        ('Family Suite 301', 'VILLA', 'Thôn Muồng Cháu', 'Vân Hòa', 'Ba Vì', 'Hà Nội', 21.073800::numeric, 105.381800::numeric, 3, 3, 3),
+        ('Family Garden 302', 'VILLA', 'Thôn Phú Ninh', 'Minh Phú', 'Sóc Sơn', 'Hà Nội', 21.316000::numeric, 105.834000::numeric, 3, 3, 3),
+        ('Family Loft 303', 'BUNGALOW', 'Khu sinh thái Đồng Mô', 'Sơn Đông', 'Sơn Tây', 'Hà Nội', 21.055500::numeric, 105.430500::numeric, 3, 3, 2),
+        ('Family Pool View 304', 'VILLA', 'Đường Võ Nguyên Giáp', 'Vĩnh Ngọc', 'Đông Anh', 'Hà Nội', 21.137000::numeric, 105.853000::numeric, 3, 3, 3)
+)
+UPDATE room
+SET accommodation_type = sample_locations.accommodation_type,
+    address_line = sample_locations.address_line,
+    ward = sample_locations.ward,
+    district = sample_locations.district,
+    city = sample_locations.city,
+    latitude = sample_locations.latitude,
+    longitude = sample_locations.longitude,
+    bedroom_count = sample_locations.bedroom_count,
+    bed_count = sample_locations.bed_count,
+    bathroom_count = sample_locations.bathroom_count,
+    check_in_radius_m = 100
+FROM sample_locations
+WHERE room.name = sample_locations.room_name;
 
 WITH sample_amenities(room_name, type, name, status, notes) AS (
     VALUES

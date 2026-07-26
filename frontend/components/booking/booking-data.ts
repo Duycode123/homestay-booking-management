@@ -27,7 +27,16 @@ export type BookingRoom = {
   capacity: string
   bedroomCount: number
   bedCount: number
+  bathroomCount: number
   location: string
+  addressLine?: string
+  ward?: string
+  district?: string
+  city?: string
+  latitude?: number
+  longitude?: number
+  checkInRadiusMeters?: number
+  baseNightlyRate?: number
   image?: string
   images?: string[]
   imageClassName: string
@@ -160,10 +169,12 @@ export function mapPracticeRoomToBookingRoom(
     capacity: `Tối đa ${room.capacity} người`,
     bedroomCount: room.bedroomCount ?? 1,
     bedCount: room.bedCount ?? 1,
+    bathroomCount: 1,
     location: room.location || 'The Serene Villa',
     image: safeImage,
     imageClassName: 'object-[62%_center]',
     pricePerHour: room.pricePerHour,
+    baseNightlyRate: room.baseNightlyRate,
     equipments: fallbackEquipments,
     includedEquipments: fallbackEquipments,
     addons: [],
@@ -189,6 +200,7 @@ export const EMPTY_BOOKING_ROOM: BookingRoom = {
   capacity: '',
   bedroomCount: 1,
   bedCount: 1,
+  bathroomCount: 1,
   location: '',
   imageClassName: 'object-center',
   pricePerHour: 0,
@@ -203,7 +215,7 @@ export function formatCurrency(value: number) {
 }
 
 export function getNightlyDisplayPrice(pricePerHour: number) {
-  return Math.max(0, pricePerHour) * FIRST_NIGHT_STAY_HOURS
+  return Math.round(Math.max(0, pricePerHour) * FIRST_NIGHT_STAY_HOURS)
 }
 
 export function maskCustomerName(customerName: string) {
@@ -240,8 +252,24 @@ export function normalizeDuration(value: string | number | null) {
   return Number.isInteger(duration) && duration >= 0 && duration <= 24 * 30 ? duration : DEFAULT_DURATION
 }
 
-export function getRoomSubtotal(room: BookingRoom, duration: number) {
-  return room.pricePerHour * duration
+export function getStayNightCountFromDuration(duration: number) {
+  const normalizedDuration = Number(duration)
+  if (!Number.isFinite(normalizedDuration) || normalizedDuration < FIRST_NIGHT_STAY_HOURS) {
+    return 0
+  }
+
+  return Math.max(1, Math.round((normalizedDuration + 2) / 24))
+}
+
+export function getRoomSubtotal(
+  room: Pick<BookingRoom, 'pricePerHour' | 'baseNightlyRate'>,
+  duration: number,
+) {
+  const nightlyPrice = room.baseNightlyRate && room.baseNightlyRate > 0
+    ? room.baseNightlyRate
+    : getNightlyDisplayPrice(room.pricePerHour)
+
+  return nightlyPrice * getStayNightCountFromDuration(duration)
 }
 
 export function calculateEndTime(startTime: string, duration: number) {

@@ -2,6 +2,8 @@ import {
   detectRoomCategory,
   formatCurrency,
   formatDisplayDate,
+  getNightlyDisplayPrice,
+  getStayNightCountFromDuration,
 } from '@/components/booking/booking-data'
 import { fetchRooms } from '@/lib/booking/bookingApi'
 import { getBookingDetail } from '@/lib/customer-booking-service'
@@ -63,7 +65,8 @@ export function calculateCheckoutSummary(
   booking: CheckoutBooking,
   appliedDiscount?: AppliedDiscount | null,
 ): CheckoutSummary {
-  const roomPrice = booking.pricePerHour * booking.duration
+  const roomPrice = getNightlyDisplayPrice(booking.pricePerHour)
+    * getStayNightCountFromDuration(booking.duration)
   const addonsTotal = booking.addons.reduce((total, addon) => total + addon.price, 0)
   const subtotal = roomPrice + addonsTotal
   const discount = Math.min(appliedDiscount?.discountAmount ?? 0, subtotal)
@@ -269,8 +272,9 @@ function inferCategoryLabel(roomType?: string | null) {
 }
 
 function inferPricePerHour(totalAmount: number, duration: number) {
-  if (duration <= 0) return totalAmount
-  return Math.round(totalAmount / duration)
+  const nightCount = getStayNightCountFromDuration(duration)
+  if (nightCount <= 0) return totalAmount
+  return Math.round(totalAmount / nightCount / 22)
 }
 
 function getSafeImageUrl(value?: string | null) {

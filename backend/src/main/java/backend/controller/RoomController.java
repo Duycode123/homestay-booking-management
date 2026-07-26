@@ -60,9 +60,10 @@ public class RoomController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Integer minCapacity,
             @RequestParam(required = false) Integer page,
-            @RequestParam(required = false) Integer size
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) String district
     ) {
-        ListRoomsQuery query = new ListRoomsQuery(roomTypeId, status, search, minCapacity, page, size);
+        ListRoomsQuery query = new ListRoomsQuery(roomTypeId, status, search, minCapacity, page, size, district);
 
         if (page != null || size != null) {
             PagedResponse<RoomResponse> roomsPage = listRoomsUseCase.getRoomsPage(query);
@@ -100,6 +101,17 @@ public class RoomController {
                 request.getMaxPeople(),
                 request.getBedroomCount(),
                 request.getBedCount(),
+                request.getBathroomCount(),
+                request.getAccommodationType(),
+                request.getDescription(),
+                request.getAddressLine(),
+                request.getWard(),
+                request.getDistrict(),
+                request.getCity(),
+                request.getLatitude(),
+                request.getLongitude(),
+                request.getCheckInRadiusMeters(),
+                request.getBaseNightlyRate(),
                 request.getImageUrl(),
                 request.getAdditionalImageUrls(),
                 request.getStatus(),
@@ -126,6 +138,17 @@ public class RoomController {
                 request.getMaxPeople(),
                 request.getBedroomCount(),
                 request.getBedCount(),
+                request.getBathroomCount(),
+                request.getAccommodationType(),
+                request.getDescription(),
+                request.getAddressLine(),
+                request.getWard(),
+                request.getDistrict(),
+                request.getCity(),
+                request.getLatitude(),
+                request.getLongitude(),
+                request.getCheckInRadiusMeters(),
+                request.getBaseNightlyRate(),
                 request.getImageUrl(),
                 request.getAdditionalImageUrls(),
                 request.getStatus(),

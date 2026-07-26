@@ -134,6 +134,10 @@ public class ShiftRegistrationUseCaseService implements
         }
 
         if (approved) {
+            Integer roomId = requireId(command.roomId(), "Vui lòng chọn căn lưu trú cho ca làm");
+            if (!assignmentPort.isRoomAssignable(roomId)) {
+                throw new ResourceNotFoundException("Căn lưu trú không hoạt động hoặc chưa có tọa độ check-in");
+            }
             ensureSlotDoesNotOverlapAssignedShift(
                     registration.staffId(),
                     registration.workDate(),
@@ -147,7 +151,8 @@ public class ShiftRegistrationUseCaseService implements
                         registration.staffId(),
                         registration.workDate(),
                         registration.startTime(),
-                        registration.endTime()
+                        registration.endTime(),
+                        roomId
                 );
             } catch (DataIntegrityViolationException exception) {
                 throw new IllegalStateException("Nhan vien da co ca lam trung gio", exception);

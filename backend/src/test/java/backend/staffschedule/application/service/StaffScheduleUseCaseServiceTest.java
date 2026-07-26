@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -77,6 +78,12 @@ class StaffScheduleUseCaseServiceTest {
         StaffShift ownedShift = new StaffShift(
                 20,
                 5,
+                8,
+                "Garden Villa",
+                "Dương Nội, Hà Đông, Hà Nội",
+                new BigDecimal("20.9718"),
+                new BigDecimal("105.7501"),
+                100,
                 LocalDate.of(2030, 1, 7),
                 LocalTime.of(9, 0),
                 LocalTime.of(17, 0)
@@ -94,6 +101,7 @@ class StaffScheduleUseCaseServiceTest {
         when(loadStaffSchedulePort.loadStaffIdByAccountEmail("staff@example.com")).thenReturn(Optional.of(5));
         when(loadStaffSchedulePort.loadShift(20)).thenReturn(Optional.of(ownedShift));
         when(loadStaffSchedulePort.loadBookingsInShiftWindow(
+                8,
                 LocalDateTime.of(2030, 1, 7, 9, 0),
                 LocalDateTime.of(2030, 1, 7, 17, 0)
         )).thenReturn(List.of(booking));
@@ -104,6 +112,7 @@ class StaffScheduleUseCaseServiceTest {
 
         assertEquals(List.of(booking), result);
         verify(loadStaffSchedulePort).loadBookingsInShiftWindow(
+                8,
                 LocalDateTime.of(2030, 1, 7, 9, 0),
                 LocalDateTime.of(2030, 1, 7, 17, 0)
         );

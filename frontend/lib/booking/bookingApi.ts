@@ -5,7 +5,7 @@ import type { AddonSelection, BookingAddonItem } from '@/lib/addon-service'
 const OPEN_HOUR = 8
 const CLOSE_HOUR = 24
 
-type RoomStatus = 'AVAILABLE' | 'IN_USE' | 'MAINTENANCE'
+type RoomStatus = 'AVAILABLE' | 'IN_USE' | 'MAINTENANCE' | 'NEED_CLEANING' | 'INACTIVE'
 type BookingPaymentMethod = 'CASH' | 'ONLINE'
 
 type ApiResponse<T> = {
@@ -32,6 +32,12 @@ type RoomResponse = {
   bedCount?: number | null
   status?: RoomStatus | null
   description?: string | null
+  addressLine?: string | null
+  ward?: string | null
+  district?: string | null
+  city?: string | null
+  bathroomCount?: number | null
+  baseNightlyRate?: number | string | null
   imageUrl?: string | null
 }
 
@@ -120,11 +126,21 @@ function parseCapacity(room: RoomResponse) {
 }
 
 function getRoomLocation(room: RoomResponse) {
-  if (typeof room.floor === 'number' && Number.isFinite(room.floor)) {
-    return `Tầng ${room.floor}`
+  const address = [room.addressLine, room.ward, room.district, room.city]
+    .map((part) => part?.trim())
+    .filter((part): part is string => Boolean(part))
+    .filter((part, index, values) => values.indexOf(part) === index)
+    .join(', ')
+
+  if (address) {
+    return address
   }
 
-  return undefined
+  if (typeof room.floor === 'number' && Number.isFinite(room.floor)) {
+    return `Tầng ${room.floor}, The Serene Villa`
+  }
+
+  return 'Hà Nội'
 }
 
 function buildRoomTags(room: RoomResponse): string[] {
@@ -144,7 +160,10 @@ function buildRoomTags(room: RoomResponse): string[] {
 }
 
 function mapRoomToHomestayRoom(room: RoomResponse): HomestayRoom {
-  const pricePerHour = parseAmount(room.roomType?.pricePerHour)
+  const baseNightlyRate = parseAmount(room.baseNightlyRate)
+  const pricePerHour = baseNightlyRate > 0
+    ? baseNightlyRate / 22
+    : parseAmount(room.roomType?.pricePerHour)
   const roomTypeName = room.roomType?.typeName?.trim() || 'Standard'
 
   return {
@@ -154,6 +173,7 @@ function mapRoomToHomestayRoom(room: RoomResponse): HomestayRoom {
     bedroomCount: room.bedroomCount ?? 1,
     bedCount: room.bedCount ?? 1,
     pricePerHour,
+    baseNightlyRate: baseNightlyRate > 0 ? baseNightlyRate : Math.round(pricePerHour * 22),
     equipment: buildRoomTags(room),
     isVip: /vip|premium/i.test(roomTypeName),
     roomTypeId: room.roomType?.id,
@@ -253,7 +273,7 @@ export async function fetchRooms(): Promise<HomestayRoom[]> {
   const rooms = response.data.data ?? []
 
   return rooms
-    .filter((room) => room.status !== 'MAINTENANCE')
+    .filter((room) => room.status !== 'MAINTENANCE' && room.status !== 'INACTIVE')
     .map(mapRoomToHomestayRoom)
 }
 

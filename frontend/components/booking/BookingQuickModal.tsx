@@ -164,6 +164,9 @@ export default function BookingQuickModal({
       }
       params.set('roomHighlights', room.includedEquipments.join(','))
       params.set('pricePerHour', String(room.pricePerHour))
+      if (room.baseNightlyRate && room.baseNightlyRate > 0) {
+        params.set('baseNightlyRate', String(room.baseNightlyRate))
+      }
       if (room.image) {
         params.set('roomImage', room.image)
       }

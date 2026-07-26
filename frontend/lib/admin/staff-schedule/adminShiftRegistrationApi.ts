@@ -105,6 +105,7 @@ export async function decideAdminShiftRegistration(
   registrationId: number,
   approved: boolean,
   rejectionReason?: string,
+  roomId?: number,
 ): Promise<AdminShiftRegistration> {
   const normalizedReason = normalizeText(rejectionReason)
 
@@ -112,11 +113,16 @@ export async function decideAdminShiftRegistration(
     throw new Error('Vui lòng nhập lý do từ chối.')
   }
 
+  if (approved && !roomId) {
+    throw new Error('Vui lòng chọn căn lưu trú cho ca làm.')
+  }
+
   try {
     const response = await api.patch<ApiResponse<AdminShiftRegistration>>(
       `/api/admin/shift-registrations/${registrationId}/decision`,
       {
         approved,
+        roomId: approved ? roomId : undefined,
         rejectionReason: approved ? undefined : normalizedReason,
       },
     )

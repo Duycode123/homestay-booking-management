@@ -51,7 +51,7 @@ public class StaffScheduleUseCaseService implements GetMyStaffScheduleUseCase, G
             throw new ForbiddenException("Ban chi duoc xem lich lam viec cua minh");
         }
 
-        return loadStaffSchedulePort.loadBookingsInShiftWindow(shift.startsAt(), shift.endsAt());
+        return loadStaffSchedulePort.loadBookingsInShiftWindow(shift.roomId(), shift.startsAt(), shift.endsAt());
     }
 
     private Integer currentStaffId(String email) {

@@ -34,6 +34,8 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class AttendanceUseCaseService implements CheckInShiftUseCase, CheckOutShiftUseCase, GetCurrentShiftAttendanceUseCase {
 
+    private static final double EARTH_RADIUS_METERS = 6_371_000;
+
     private final AttendanceActorPort attendanceActorPort;
     private final StaffShiftPort staffShiftPort;
     private final AttendanceRecordPort attendanceRecordPort;
@@ -55,6 +57,7 @@ public class AttendanceUseCaseService implements CheckInShiftUseCase, CheckOutSh
         LocalDateTime now = LocalDateTime.now(clock);
         StaffShift currentShift = staffShiftPort.loadCurrentShift(actor.staffId(), now)
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay ca hien tai"));
+        BigDecimal checkInDistanceMeters = validateCheckInLocation(command, currentShift);
 
         if (attendanceRecordPort.existsWorkingAttendance(actor.staffId(), currentShift.id())) {
             throw new IllegalStateException("Ban da check-in ca nay");
@@ -69,6 +72,10 @@ public class AttendanceUseCaseService implements CheckInShiftUseCase, CheckOutSh
                 .staffId(actor.staffId())
                 .shiftId(currentShift.id())
                 .checkInTime(now)
+                .checkInLatitude(command.latitude())
+                .checkInLongitude(command.longitude())
+                .checkInAccuracyMeters(command.accuracyMeters())
+                .checkInDistanceMeters(checkInDistanceMeters)
                 .status(AttendanceStatus.WORKING)
                 .build();
 
@@ -119,6 +126,47 @@ public class AttendanceUseCaseService implements CheckInShiftUseCase, CheckOutSh
         long seconds = Duration.between(checkInTime, checkOutTime).getSeconds();
         return BigDecimal.valueOf(seconds)
                 .divide(BigDecimal.valueOf(3600), 2, RoundingMode.HALF_UP);
+    }
+
+    private BigDecimal validateCheckInLocation(CheckInShiftCommand command, StaffShift shift) {
+        if (shift.roomId() == null
+                || shift.latitude() == null
+                || shift.longitude() == null
+                || shift.checkInRadiusMeters() == null) {
+            throw new IllegalStateException("Ca làm chưa được gán căn lưu trú có tọa độ hợp lệ");
+        }
+        if (command.latitude() == null || command.longitude() == null) {
+            throw new IllegalArgumentException("Vui lòng bật quyền vị trí để check-in");
+        }
+        if (command.latitude().compareTo(BigDecimal.valueOf(-90)) < 0
+                || command.latitude().compareTo(BigDecimal.valueOf(90)) > 0
+                || command.longitude().compareTo(BigDecimal.valueOf(-180)) < 0
+                || command.longitude().compareTo(BigDecimal.valueOf(180)) > 0) {
+            throw new IllegalArgumentException("Tọa độ check-in không hợp lệ");
+        }
+
+        double distance = haversineMeters(
+                command.latitude().doubleValue(),
+                command.longitude().doubleValue(),
+                shift.latitude().doubleValue(),
+                shift.longitude().doubleValue()
+        );
+        if (distance > shift.checkInRadiusMeters()) {
+            throw new ForbiddenException(
+                    "Bạn đang cách " + Math.round(distance) + " m; cần ở trong bán kính "
+                            + shift.checkInRadiusMeters() + " m của " + shift.roomName()
+            );
+        }
+        return BigDecimal.valueOf(distance).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private double haversineMeters(double lat1, double lng1, double lat2, double lng2) {
+        double latDistance = Math.toRadians(lat2 - lat1);
+        double lngDistance = Math.toRadians(lng2 - lng1);
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(lngDistance / 2) * Math.sin(lngDistance / 2);
+        return EARTH_RADIUS_METERS * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
     private String normalizeRequired(String value, String message) {

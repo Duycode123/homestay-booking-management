@@ -1,6 +1,7 @@
 import api from '@/lib/api'
 
 export type BackendRoomStatus = 'AVAILABLE' | 'IN_USE' | 'MAINTENANCE' | 'NEED_CLEANING' | 'INACTIVE'
+export type BackendAccommodationType = 'VILLA' | 'GARDEN_HOUSE' | 'BUNGALOW' | 'APARTMENT' | 'HOMESTAY'
 
 export type BackendRoomType = {
   id: number
@@ -20,6 +21,16 @@ export type BackendRoom = {
   bedCount?: number | null
   status?: BackendRoomStatus | null
   description?: string | null
+  accommodationType?: BackendAccommodationType | null
+  addressLine?: string | null
+  ward?: string | null
+  district?: string | null
+  city?: string | null
+  latitude?: number | string | null
+  longitude?: number | string | null
+  checkInRadiusMeters?: number | null
+  bathroomCount?: number | null
+  baseNightlyRate?: number | string | null
   imageUrl?: string | null
   imageUrls?: string[] | null
 }
@@ -36,6 +47,17 @@ export type CreateBackendRoomPayload = {
   maxPeople: number
   bedroomCount: number
   bedCount: number
+  bathroomCount: number
+  accommodationType: BackendAccommodationType
+  description?: string | null
+  addressLine: string
+  ward?: string | null
+  district: string
+  city: string
+  latitude: number
+  longitude: number
+  checkInRadiusMeters: number
+  baseNightlyRate: number
   imageUrl?: string | null
   additionalImageUrls?: string[]
   status?: BackendRoomStatus
@@ -47,6 +69,17 @@ export type UpdateBackendRoomPayload = {
   maxPeople: number
   bedroomCount: number
   bedCount: number
+  bathroomCount: number
+  accommodationType: BackendAccommodationType
+  description?: string | null
+  addressLine: string
+  ward?: string | null
+  district: string
+  city: string
+  latitude: number
+  longitude: number
+  checkInRadiusMeters: number
+  baseNightlyRate: number
   imageUrl?: string | null
   additionalImageUrls?: string[]
   status: BackendRoomStatus
@@ -74,6 +107,8 @@ function readApiData<T>(payload: T | ApiResponse<T>): T {
 export async function fetchRooms(params?: {
   roomTypeId?: number
   status?: BackendRoomStatus
+  district?: string
+  search?: string
 }) {
   const response = await api.get<ApiResponse<BackendRoom[]> | BackendRoom[]>('/api/rooms', {
     params,

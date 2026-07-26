@@ -1,6 +1,7 @@
 package backend.room.application.service;
 
 import backend.entity.Role;
+import backend.entity.AccommodationType;
 import backend.entity.Room;
 import backend.entity.RoomStatus;
 import backend.entity.RoomType;
@@ -11,6 +12,7 @@ import backend.dto.response.RoomResponse;
 import backend.dto.response.RoomTypeResponse;
 import backend.room.application.model.PageResult;
 import backend.room.application.port.in.command.DeleteRoomCommand;
+import backend.room.application.port.in.command.CreateRoomCommand;
 import backend.room.application.port.in.command.CreateRoomTypeCommand;
 import backend.room.application.port.in.command.DeleteRoomTypeCommand;
 import backend.room.application.port.in.command.UpdateRoomTypeCommand;
@@ -52,6 +54,57 @@ class RoomUseCaseServiceTest {
 
     @Mock
     private RoomActorPort roomActorPort;
+
+    @Test
+    void createRoomPersistsWholeAccommodationLocationAndNightlyRate() {
+        RoomUseCaseService service = new RoomUseCaseService(roomCatalogPort, roomMutationPort, roomActorPort);
+        RoomType standardType = roomType(2, "Standard");
+
+        when(roomActorPort.loadUserByEmail("admin@example.com")).thenReturn(Optional.of(adminUser()));
+        when(roomCatalogPort.existsRoomName("Standard Garden 101")).thenReturn(false);
+        when(roomCatalogPort.loadRoomTypeForUpdate(2)).thenReturn(Optional.of(standardType));
+        when(roomMutationPort.saveRoom(any(Room.class))).thenAnswer(invocation -> {
+            Room room = invocation.getArgument(0);
+            room.setId(21);
+            return room;
+        });
+
+        RoomResponse response = service.createRoom(new CreateRoomCommand(
+                " Standard Garden 101 ",
+                2,
+                6,
+                3,
+                4,
+                2,
+                AccommodationType.APARTMENT,
+                "Căn hộ nguyên căn phù hợp cho gia đình.",
+                "CT8B Khu Đô Thị Dương Nội, Yên Lộ",
+                "Dương Nội",
+                "Hà Đông",
+                "Hà Nội",
+                new BigDecimal("20.962536"),
+                new BigDecimal("105.745203"),
+                100,
+                new BigDecimal("2200000.00"),
+                "/images/rooms/standard-garden-101/main.jpg",
+                List.of(),
+                RoomStatus.AVAILABLE,
+                "admin@example.com"
+        ));
+
+        ArgumentCaptor<Room> roomCaptor = ArgumentCaptor.forClass(Room.class);
+        verify(roomMutationPort).saveRoom(roomCaptor.capture());
+        Room savedRoom = roomCaptor.getValue();
+        assertEquals("Standard Garden 101", savedRoom.getRoomName());
+        assertEquals(AccommodationType.APARTMENT, savedRoom.getAccommodationType());
+        assertEquals("CT8B Khu Đô Thị Dương Nội, Yên Lộ", savedRoom.getAddressLine());
+        assertEquals("Hà Đông", savedRoom.getDistrict());
+        assertEquals(new BigDecimal("20.962536"), savedRoom.getLatitude());
+        assertEquals(new BigDecimal("105.745203"), savedRoom.getLongitude());
+        assertEquals(new BigDecimal("2200000.00"), savedRoom.getBaseNightlyRate());
+        assertEquals(2, savedRoom.getBathroomCount());
+        assertEquals(21, response.getId());
+    }
 
     @Test
     void updateRoomRejectsRoomTypeArchivedWhileRequestIsInProgress() {

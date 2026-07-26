@@ -14,6 +14,10 @@ public record AttendanceResponse(
         LocalDateTime checkInTime,
         LocalDateTime checkOutTime,
         BigDecimal workDuration,
+        BigDecimal checkInLatitude,
+        BigDecimal checkInLongitude,
+        BigDecimal checkInAccuracyMeters,
+        BigDecimal checkInDistanceMeters,
         AttendanceStatus status
 ) {
     public static AttendanceResponse from(AttendanceRecord attendanceRecord) {
@@ -24,6 +28,10 @@ public record AttendanceResponse(
                 attendanceRecord.checkInTime(),
                 attendanceRecord.checkOutTime(),
                 attendanceRecord.workDurationHours(),
+                attendanceRecord.checkInLatitude(),
+                attendanceRecord.checkInLongitude(),
+                attendanceRecord.checkInAccuracyMeters(),
+                attendanceRecord.checkInDistanceMeters(),
                 attendanceRecord.status()
         );
     }

@@ -84,6 +84,11 @@ export default function StaffCheckInPage() {
   const [loadingAction, setLoadingAction] = useState<ActionLoading>(null)
   const [locationStatus, setLocationStatus] = useState<VerificationStatus>('IDLE')
   const [locationDistance, setLocationDistance] = useState<number | null>(null)
+  const [verifiedLocation, setVerifiedLocation] = useState<{
+    latitude: number
+    longitude: number
+    accuracyMeters: number
+  } | null>(null)
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([])
   const [toast, setToast] = useState<ToastState | null>(null)
 
@@ -200,6 +205,7 @@ export default function StaffCheckInPage() {
     }
 
     setLocationStatus('CHECKING')
+    setVerifiedLocation(null)
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const distance = calculateDistanceMeters(
@@ -212,6 +218,11 @@ export default function StaffCheckInPage() {
 
         if (distance <= STAFF_LOCATION.radiusMeters) {
           setLocationStatus('VALID')
+          setVerifiedLocation({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracyMeters: position.coords.accuracy,
+          })
           showToast({ type: 'success', message: 'Vị trí hợp lệ. Bạn đang ở trong khu vực chấm công.' })
           return
         }
@@ -254,14 +265,14 @@ export default function StaffCheckInPage() {
       return
     }
 
-    if (!hasValidVerification) {
+    if (!hasValidVerification || !verifiedLocation) {
       showToast({ type: 'error', message: 'Vui lòng xác minh vị trí gần homestay để check-in.' })
       return
     }
 
     try {
       setLoadingAction('CHECK_IN')
-      const attendance = await checkInCurrentShift()
+      const attendance = await checkInCurrentShift(verifiedLocation)
       const checkInTime = formatBackendTime(attendance.checkInTime) ?? formatTime(new Date())
       setShift((current) =>
         mergeAttendanceIntoShift(

@@ -14,5 +14,22 @@ public interface ShiftAssignmentPort {
             LocalTime endTime
     );
 
-    void createAssignedShift(Integer staffId, LocalDate workDate, LocalTime startTime, LocalTime endTime);
+    void createAssignedShift(
+            Integer staffId,
+            LocalDate workDate,
+            LocalTime startTime,
+            LocalTime endTime,
+            Integer roomId
+    );
+
+    default void createAssignedShift(
+            Integer staffId,
+            LocalDate workDate,
+            LocalTime startTime,
+            LocalTime endTime
+    ) {
+        createAssignedShift(staffId, workDate, startTime, endTime, null);
+    }
+
+    boolean isRoomAssignable(Integer roomId);
 }

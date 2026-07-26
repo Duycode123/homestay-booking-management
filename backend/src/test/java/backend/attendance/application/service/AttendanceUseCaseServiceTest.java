@@ -74,7 +74,7 @@ class AttendanceUseCaseServiceTest {
         when(attendanceRecordPort.save(any(AttendanceRecord.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         AttendanceRecord attendanceRecord = attendanceUseCaseService.checkIn(
-                new CheckInShiftCommand("staff@example.com")
+                validCheckInCommand()
         );
 
         ArgumentCaptor<AttendanceRecord> attendanceCaptor = ArgumentCaptor.forClass(AttendanceRecord.class);
@@ -84,6 +84,9 @@ class AttendanceUseCaseServiceTest {
         assertEquals(3, attendanceRecord.staffId());
         assertEquals(12, attendanceRecord.shiftId());
         assertEquals(NOW, attendanceRecord.checkInTime());
+        assertEquals(new BigDecimal("20.97181"), attendanceRecord.checkInLatitude());
+        assertEquals(new BigDecimal("105.75011"), attendanceRecord.checkInLongitude());
+        assertTrue(attendanceRecord.checkInDistanceMeters().compareTo(BigDecimal.valueOf(100)) < 0);
         assertEquals(AttendanceStatus.WORKING, attendanceRecord.status());
         assertEquals(AttendanceStatus.WORKING, attendanceCaptor.getValue().status());
     }
@@ -97,7 +100,7 @@ class AttendanceUseCaseServiceTest {
 
         assertThrows(
                 IllegalStateException.class,
-                () -> attendanceUseCaseService.checkIn(new CheckInShiftCommand("staff@example.com"))
+                () -> attendanceUseCaseService.checkIn(validCheckInCommand())
         );
         verify(attendanceRecordPort, never()).save(any());
     }
@@ -112,7 +115,25 @@ class AttendanceUseCaseServiceTest {
 
         assertThrows(
                 IllegalStateException.class,
-                () -> attendanceUseCaseService.checkIn(new CheckInShiftCommand("staff@example.com"))
+                () -> attendanceUseCaseService.checkIn(validCheckInCommand())
+        );
+        verify(attendanceRecordPort, never()).save(any());
+    }
+
+    @Test
+    void checkInRejectsLocationOutsideAssignedAccommodationRadius() {
+        when(attendanceActorPort.loadActorByEmail("staff@example.com"))
+                .thenReturn(Optional.of(new AttendanceActor(7, 3, Role.STAFF)));
+        when(staffShiftPort.loadCurrentShift(3, NOW)).thenReturn(Optional.of(currentShift()));
+
+        assertThrows(
+                ForbiddenException.class,
+                () -> attendanceUseCaseService.checkIn(new CheckInShiftCommand(
+                        "staff@example.com",
+                        new BigDecimal("21.0285"),
+                        new BigDecimal("105.8542"),
+                        BigDecimal.valueOf(12)
+                ))
         );
         verify(attendanceRecordPort, never()).save(any());
     }
@@ -183,9 +204,23 @@ class AttendanceUseCaseServiceTest {
         return new StaffShift(
                 12,
                 3,
+                8,
+                "Garden Villa",
+                new BigDecimal("20.9718"),
+                new BigDecimal("105.7501"),
+                100,
                 LocalDate.of(2026, 7, 3),
                 LocalTime.of(8, 0),
                 LocalTime.of(12, 0)
+        );
+    }
+
+    private CheckInShiftCommand validCheckInCommand() {
+        return new CheckInShiftCommand(
+                "staff@example.com",
+                new BigDecimal("20.97181"),
+                new BigDecimal("105.75011"),
+                BigDecimal.valueOf(8)
         );
     }
 }

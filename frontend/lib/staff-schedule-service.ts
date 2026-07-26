@@ -15,6 +15,12 @@ export type BackendAttendanceStatus = 'WORKING' | 'DONE' | 'MISSING_CHECKOUT'
 
 export type StaffScheduleShift = {
   shiftId: number
+  roomId?: number | null
+  roomName?: string | null
+  roomAddress?: string | null
+  roomLatitude?: number | string | null
+  roomLongitude?: number | string | null
+  checkInRadiusMeters?: number | null
   date: string
   startTime: string
   endTime: string
@@ -37,6 +43,10 @@ export type StaffAttendanceRecord = {
   checkInTime: string
   checkOutTime?: string | null
   workDuration?: number | string | null
+  checkInLatitude?: number | string | null
+  checkInLongitude?: number | string | null
+  checkInAccuracyMeters?: number | string | null
+  checkInDistanceMeters?: number | string | null
   status: BackendAttendanceStatus
 }
 
@@ -129,9 +139,13 @@ export async function fetchCurrentAttendance(): Promise<StaffAttendanceRecord | 
   }
 }
 
-export async function checkInCurrentShift(): Promise<StaffAttendanceRecord> {
+export async function checkInCurrentShift(location: {
+  latitude: number
+  longitude: number
+  accuracyMeters?: number | null
+}): Promise<StaffAttendanceRecord> {
   try {
-    const response = await api.post<ApiResponse<StaffAttendanceRecord>>('/api/staff/attendance/check-in')
+    const response = await api.post<ApiResponse<StaffAttendanceRecord>>('/api/staff/attendance/check-in', location)
     return response.data.data
   } catch (error) {
     throw new Error(getApiErrorMessage(error, 'Không thể check-in ca làm.'))

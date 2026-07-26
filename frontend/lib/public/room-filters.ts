@@ -9,6 +9,7 @@ export type RoomFilters = {
   search: string
   roomName: string
   roomTierId: 'all' | string
+  district: 'all' | string
   capacity: RoomCapacityFilter
   minGuests: number
   minBedrooms: number
@@ -28,6 +29,8 @@ export function filterRooms(rooms: Room[], filters: RoomFilters) {
     const matchesSearch = !query || [room.name, room.categoryLabel, room.type, room.description, room.location, ...room.equipments].join(' ').toLowerCase().includes(query)
     const matchesRoomName = !roomNameQuery || room.name.toLocaleLowerCase('vi-VN').includes(roomNameQuery)
     const matchesRoomTier = filters.roomTierId === 'all' || String(room.roomTierId) === filters.roomTierId
+    const matchesDistrict = filters.district === 'all'
+      || normalizeFilterValue(room.district ?? '') === normalizeFilterValue(filters.district)
     const matchesAvailability = filters.availability === 'all' || room.availabilityStatus === filters.availability
     const matchesCapacity = filters.capacity === 'all' || (filters.capacity === 'small' && capacity <= 4) || (filters.capacity === 'medium' && capacity >= 5 && capacity <= 8) || (filters.capacity === 'large' && capacity >= 9)
     const matchesGuestCount = filters.minGuests === 0 || capacity >= filters.minGuests
@@ -38,7 +41,7 @@ export function filterRooms(rooms: Room[], filters: RoomFilters) {
     const nightlyPrice = getNightlyDisplayPrice(room.pricePerHour)
     const matchesPrice = nightlyPrice >= filters.minNightlyPrice && nightlyPrice <= filters.maxNightlyPrice
 
-    return matchesSearch && matchesRoomName && matchesRoomTier && matchesAvailability && matchesCapacity && matchesGuestCount && matchesBedrooms && matchesAmenities && matchesRating && matchesPrice
+    return matchesSearch && matchesRoomName && matchesRoomTier && matchesDistrict && matchesAvailability && matchesCapacity && matchesGuestCount && matchesBedrooms && matchesAmenities && matchesRating && matchesPrice
   })
 }
 

@@ -12,6 +12,12 @@ public class StaffScheduleWebMapper {
     public StaffShiftResponse toResponse(StaffShift shift) {
         return new StaffShiftResponse(
                 shift.id(),
+                shift.roomId(),
+                shift.roomName(),
+                shift.roomAddress(),
+                shift.roomLatitude(),
+                shift.roomLongitude(),
+                shift.checkInRadiusMeters(),
                 shift.date(),
                 shift.startTime(),
                 shift.endTime()

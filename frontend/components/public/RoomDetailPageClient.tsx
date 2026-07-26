@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import BookingQuickModal from '@/components/booking/BookingQuickModal'
@@ -19,8 +20,11 @@ import type { BookingReview } from '@/lib/review-service'
 import { mapBackendRoomToBookingRoom } from '@/lib/room-mappers'
 import { fetchRoom, fetchRooms, type BackendRoom } from '@/lib/rooms-api'
 
+const RoomMap = dynamic(() => import('@/components/public/RoomMap'), { ssr: false })
+
 export default function RoomDetailPageClient({ roomId }: { roomId: string }) {
   const searchParams = useSearchParams()
+  const { locale } = useI18n()
   const { isAuthenticated } = useAuth()
   const { favoriteIds, toggleFavorite } = useFavorites()
   const [room, setRoom] = useState<BookingRoom | null>(null)
@@ -55,7 +59,7 @@ export default function RoomDetailPageClient({ roomId }: { roomId: string }) {
     ]).then(async ([backendRoom, equipment, roomReviews, amenities, allRooms, addons]) => {
       if (!mounted) return
       if (!backendRoom) {
-        setError('Không tìm thấy phòng homestay.')
+        setError('Không tìm thấy căn lưu trú.')
         return
       }
       const averageRating = roomReviews.length
@@ -78,7 +82,7 @@ export default function RoomDetailPageClient({ roomId }: { roomId: string }) {
       }))
       if (mounted) setSimilarRooms(recommendations)
     }).catch(() => {
-      if (mounted) setError('Không thể tải chi tiết phòng. Vui lòng thử lại.')
+      if (mounted) setError('Không thể tải chi tiết căn lưu trú. Vui lòng thử lại.')
     }).finally(() => {
       if (mounted) setIsLoading(false)
     })
@@ -88,7 +92,7 @@ export default function RoomDetailPageClient({ roomId }: { roomId: string }) {
   const gallery = useMemo(() => room?.images?.slice(0, 4) ?? (room?.image ? [room.image] : []), [room])
 
   if (isLoading) return <div className="mx-auto min-h-screen max-w-[1400px] animate-pulse px-5 py-12 sm:px-8"><div className="h-[560px] rounded-[28px] bg-surface-container" /></div>
-  if (!room || error) return <div className="mx-auto min-h-[60vh] max-w-3xl px-5 py-24 text-center"><h1 className="font-editorial text-4xl text-secondary">Không thể mở phòng</h1><p className="mt-4 text-on-surface-variant">{error}</p><Link href="/rooms" className="btn-primary mt-8 inline-flex">Quay lại danh sách phòng</Link></div>
+  if (!room || error) return <div className="mx-auto min-h-[60vh] max-w-3xl px-5 py-24 text-center"><h1 className="font-editorial text-4xl text-secondary">Không thể mở căn lưu trú</h1><p className="mt-4 text-on-surface-variant">{error}</p><Link href="/rooms" className="btn-primary mt-8 inline-flex">Quay lại danh sách</Link></div>
 
   const toggle = async () => {
     if (!isAuthenticated) {
@@ -101,11 +105,11 @@ export default function RoomDetailPageClient({ roomId }: { roomId: string }) {
   return (
     <main className="min-h-screen bg-[#f8f5ef] pb-20 text-on-surface">
       <section className="mx-auto max-w-[1400px] px-5 py-8 sm:px-8 sm:py-12">
-        <nav className="mb-6 flex items-center gap-2 text-sm text-on-surface-variant"><Link href="/rooms" className="hover:text-brand-orange">Phòng homestay</Link><span>/</span><span className="font-semibold text-on-surface">{room.name}</span></nav>
+        <nav className="mb-6 flex items-center gap-2 text-sm text-on-surface-variant"><Link href="/rooms" className="hover:text-brand-orange">Căn lưu trú</Link><span>/</span><span className="font-semibold text-on-surface">{room.name}</span></nav>
 
         <div className="mb-7 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div><p className="eyebrow text-brand-orange">{room.categoryLabel}</p><h1 className="font-editorial mt-2 text-4xl font-semibold tracking-tight text-secondary sm:text-6xl">{room.name}</h1><div className="mt-4 flex flex-wrap gap-4 text-sm"><span>★ {room.rating ? `${room.rating.toFixed(1)} · ${room.reviews} đánh giá` : 'Chưa có đánh giá'}</span><span>⌖ {room.location}</span><span>👥 {room.capacity}</span></div></div>
-          <button type="button" onClick={() => void toggle()} className={['inline-flex h-12 items-center gap-2 rounded-full border px-5 font-bold shadow-sm transition', isFavorite ? 'border-red-200 bg-red-50 text-red-600' : 'border-outline bg-white text-on-surface hover:text-red-500'].join(' ')}><HeartIcon filled={isFavorite} className="h-5 w-5" />{isFavorite ? 'Đã yêu thích' : 'Lưu phòng'}</button>
+          <button type="button" onClick={() => void toggle()} className={['inline-flex h-12 items-center gap-2 rounded-full border px-5 font-bold shadow-sm transition', isFavorite ? 'border-red-200 bg-red-50 text-red-600' : 'border-outline bg-white text-on-surface hover:text-red-500'].join(' ')}><HeartIcon filled={isFavorite} className="h-5 w-5" />{isFavorite ? 'Đã yêu thích' : 'Lưu căn'}</button>
         </div>
 
         <Gallery images={gallery} roomName={room.name} />
@@ -115,19 +119,51 @@ export default function RoomDetailPageClient({ roomId }: { roomId: string }) {
             <section className="rounded-[26px] border border-outline-variant bg-white p-6 shadow-[var(--shadow-card)] sm:p-8">
               <h2 className="font-editorial text-3xl font-semibold text-secondary">Không gian lưu trú</h2>
               <p className="mt-4 text-base leading-8 text-on-surface-variant">{room.description}</p>
-              <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-                <Info label="Hạng phòng" value={room.type} />
+              <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <Info label="Hạng lưu trú" value={room.type} />
                 <Info label="Sức chứa" value={room.capacity} />
                 <Info label="Phòng ngủ" value={`${room.bedroomCount} phòng`} />
                 <Info label="Giường ngủ" value={`${room.bedCount} giường`} />
+                <Info label="Phòng tắm" value={`${room.bathroomCount} phòng`} />
                 <Info label="Lưu trú tối thiểu" value="1 đêm" />
               </div>
             </section>
 
             <AmenitiesTabs
-              privateItems={room.includedEquipments.map((name) => ({ name, description: 'Sẵn sàng phục vụ trong phòng.', iconName: 'private' }))}
+              privateItems={room.includedEquipments.map((name) => ({ name, description: 'Sẵn sàng phục vụ trong căn.', iconName: 'private' }))}
               commonItems={commonAmenities}
             />
+
+            <section className="overflow-hidden rounded-[26px] border border-outline-variant bg-white shadow-[var(--shadow-card)]">
+              <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-end sm:justify-between sm:p-8">
+                <div>
+                  <p className="eyebrow text-brand-orange">{locale === 'en' ? 'LOCATION' : 'VỊ TRÍ CĂN LƯU TRÚ'}</p>
+                  <h2 className="mt-1 font-editorial text-3xl font-semibold text-secondary">
+                    {locale === 'en' ? 'Know exactly where you will stay' : 'Biết rõ nơi bạn sẽ lưu trú'}
+                  </h2>
+                  <p className="mt-3 max-w-2xl text-sm leading-6 text-on-surface-variant">{room.location}</p>
+                </div>
+                {room.latitude != null && room.longitude != null ? (
+                  <a
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${room.latitude},${room.longitude}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex shrink-0 items-center justify-center rounded-full border border-[#cdbda8] bg-white px-5 py-3 text-sm font-bold text-secondary transition hover:border-[#a77442] hover:bg-[#fbf5ec]"
+                  >
+                    {locale === 'en' ? 'Get directions ↗' : 'Mở chỉ đường ↗'}
+                  </a>
+                ) : null}
+              </div>
+              <RoomMap
+                rooms={[room]}
+                selectedRoomId={room.id}
+                locale={locale}
+                compact
+                onSelect={() => undefined}
+                onBook={() => setBookingOpen(true)}
+              />
+            </section>
+
             <AddonServicesSection items={addonServices} />
 
             <section className="rounded-[26px] border border-outline-variant bg-white p-6 sm:p-8"><h2 className="font-editorial text-3xl font-semibold text-secondary">Chính sách lưu trú</h2><div className="mt-5 grid gap-4 sm:grid-cols-2"><Policy title="Khung lưu trú" text="Nhận phòng từ 14:00 và trả phòng trước 12:00 ngày cuối cùng; thời gian tối thiểu 1 đêm." /><Policy title="Nhận phòng" text="Khách có thể check-in sớm tối đa 5 phút khi phòng đã sẵn sàng." /><Policy title="Hủy phòng" text="Gửi yêu cầu trước ít nhất 24 giờ để được admin xem xét hoàn tiền." /><Policy title="Sử dụng tiện ích chung" text="Giữ gìn vệ sinh, tuân thủ giờ hoạt động và hướng dẫn an toàn tại từng khu vực." /></div></section>
@@ -213,7 +249,7 @@ function SimilarStaysSection({ rooms }: { rooms: BookingRoom[] }) {
           <p className="mt-2 max-w-2xl text-sm text-on-surface-variant">Một vài lựa chọn có trải nghiệm lưu trú tương đương.</p>
         </div>
         <Link href="/rooms" className="inline-flex items-center gap-2 self-start text-sm font-bold text-secondary transition hover:text-brand-orange sm:self-auto">
-          Xem tất cả phòng
+          Xem tất cả căn
           <ArrowIcon />
         </Link>
       </div>
@@ -224,8 +260,8 @@ function SimilarStaysSection({ rooms }: { rooms: BookingRoom[] }) {
         </div>
       ) : (
         <div className="mt-8 rounded-[24px] border border-dashed border-[#d8cbbb] bg-white/70 px-6 py-10 text-center">
-          <p className="font-display text-base font-bold text-secondary">Chưa có phòng cùng hạng để gợi ý</p>
-          <p className="mt-2 text-sm text-on-surface-variant">Bạn có thể xem thêm các hạng phòng khác trong danh sách phòng homestay.</p>
+          <p className="font-display text-base font-bold text-secondary">Chưa có căn cùng hạng để gợi ý</p>
+          <p className="mt-2 text-sm text-on-surface-variant">Bạn có thể xem thêm các hạng lưu trú khác trong danh sách.</p>
         </div>
       )}
     </section>
@@ -267,7 +303,7 @@ function SimilarStayCard({ room }: { room: BookingRoom }) {
               <p className="mt-0.5 font-editorial text-xl font-semibold text-brand-orange">{formatCurrency(nightlyPrice)}<span className="font-display text-[10px] font-medium text-on-surface-variant"> / đêm</span></p>
             </div>
             <span className={['inline-flex min-h-9 items-center rounded-full px-3 text-[10px] font-bold transition', isUnavailableToday ? 'border border-[#d6c9bb] bg-[#f6f1ea] text-on-surface-variant' : 'bg-secondary text-white group-hover:bg-brand-orange'].join(' ')}>
-              {isUnavailableToday ? 'Chọn ngày khác' : 'Xem phòng'}
+              {isUnavailableToday ? 'Chọn ngày khác' : 'Xem căn'}
             </span>
           </div>
         </div>
@@ -617,12 +653,12 @@ function ReviewSection({ reviews }: { reviews: BookingReview[] }) {
   if (reviews.length === 0) {
     return (
       <section className="rounded-[26px] border border-outline-variant bg-white p-6 sm:p-8" id="reviews">
-        <p className="eyebrow text-brand-orange">Đánh giá phòng</p>
+        <p className="eyebrow text-brand-orange">Đánh giá căn lưu trú</p>
         <div className="mt-5 flex flex-col items-center rounded-[22px] border border-dashed border-[#d9cbb8] bg-[#fcfaf6] px-6 py-10 text-center">
           <span className="flex h-16 w-16 items-center justify-center rounded-full bg-[#f2e5d3] text-[#b28455]" aria-hidden>
             <svg viewBox="0 0 24 24" className="h-8 w-8" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z" strokeLinejoin="round" /></svg>
           </span>
-          <h2 className="font-editorial mt-5 text-3xl font-semibold text-secondary">Chưa có ai đánh giá phòng này</h2>
+          <h2 className="font-editorial mt-5 text-3xl font-semibold text-secondary">Chưa có ai đánh giá căn này</h2>
           <p className="mt-3 max-w-lg text-sm leading-7 text-on-surface-variant">Đánh giá chỉ được ghi nhận từ khách đã hoàn tất kỳ lưu trú. Hãy là người đầu tiên chia sẻ trải nghiệm sau khi checkout.</p>
           <div className="mt-5 flex items-center gap-1 text-xl text-[#d8d2c9]" aria-label="Chưa có điểm đánh giá"><span>☆</span><span>☆</span><span>☆</span><span>☆</span><span>☆</span></div>
         </div>

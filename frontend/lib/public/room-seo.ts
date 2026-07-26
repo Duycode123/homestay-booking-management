@@ -9,6 +9,14 @@ export type PublicRoomSeoData = {
   maxPeople?: number | null
   bedroomCount?: number | null
   bedCount?: number | null
+  bathroomCount?: number | null
+  baseNightlyRate?: number | string | null
+  addressLine?: string | null
+  ward?: string | null
+  district?: string | null
+  city?: string | null
+  latitude?: number | string | null
+  longitude?: number | string | null
   roomType?: {
     typeName?: string | null
     pricePerHour?: number | string | null
@@ -56,7 +64,7 @@ export function getRoomSocialImage(room: PublicRoomSeoData | null) {
 }
 
 export function getRoomSeoDescription(room: PublicRoomSeoData | null) {
-  if (!room) return 'Xem thông tin phòng, sức chứa, tiện nghi, giá mỗi đêm và lịch trống tại The Serene Villa.'
+  if (!room) return 'Xem vị trí, sức chứa, tiện nghi, giá mỗi đêm và lịch trống của căn lưu trú tại The Serene Villa.'
 
   const details = [
     room.maxPeople ? `tối đa ${room.maxPeople} khách` : '',

@@ -81,6 +81,24 @@ public interface BookingRepository extends JpaRepository<Booking, Integer>, JpaS
     @Query("""
             SELECT b
             FROM Booking b
+            JOIN FETCH b.room
+            JOIN FETCH b.customer
+            WHERE b.room.id = :roomId
+              AND b.status NOT IN :excludedStatuses
+              AND b.startTime < :endTime
+              AND b.endTime > :startTime
+            ORDER BY b.startTime ASC, b.endTime ASC
+            """)
+    List<Booking> findRoomBookingsOverlappingWindow(
+            @Param("roomId") Integer roomId,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime,
+            @Param("excludedStatuses") List<BookingStatus> excludedStatuses
+    );
+
+    @Query("""
+            SELECT b
+            FROM Booking b
             WHERE b.status = :pendingStatus
               AND b.paymentMethod <> :excludedPaymentMethod
               AND b.createdAt IS NOT NULL

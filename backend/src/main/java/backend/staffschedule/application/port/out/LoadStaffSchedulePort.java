@@ -16,5 +16,5 @@ public interface LoadStaffSchedulePort {
 
     Optional<StaffShift> loadShift(Integer shiftId);
 
-    List<StaffShiftBooking> loadBookingsInShiftWindow(LocalDateTime shiftStart, LocalDateTime shiftEnd);
+    List<StaffShiftBooking> loadBookingsInShiftWindow(Integer roomId, LocalDateTime shiftStart, LocalDateTime shiftEnd);
 }

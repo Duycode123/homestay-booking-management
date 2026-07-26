@@ -95,8 +95,40 @@ export function validateRoomForm(data: RoomFormData): RoomFormErrors {
     errors.bedCount = 'Số giường không được nhỏ hơn số phòng ngủ.'
   }
 
-  if (data.description.length > 500) {
-    errors.description = 'Mô tả tối đa 500 ký tự.'
+  if (!Number.isFinite(data.bathroomCount) || data.bathroomCount < 1 || data.bathroomCount > 20) {
+    errors.bathroomCount = 'Số phòng tắm phải nằm trong khoảng 1-20.'
+  }
+
+  if (!Number.isFinite(data.baseNightlyRate) || data.baseNightlyRate <= 0) {
+    errors.baseNightlyRate = 'Giá một đêm phải lớn hơn 0.'
+  }
+
+  if (data.description.length > 2000) {
+    errors.description = 'Mô tả tối đa 2000 ký tự.'
+  }
+
+  if (data.addressLine.trim().length < 5 || data.addressLine.trim().length > 255) {
+    errors.addressLine = 'Vui lòng nhập địa chỉ cụ thể của căn lưu trú.'
+  }
+
+  if (!data.district.trim()) {
+    errors.district = 'Vui lòng nhập quận/huyện.'
+  }
+
+  if (!data.city.trim()) {
+    errors.city = 'Vui lòng nhập tỉnh/thành.'
+  }
+
+  if (data.latitude == null || !Number.isFinite(data.latitude) || data.latitude < -90 || data.latitude > 90) {
+    errors.latitude = 'Vĩ độ phải nằm trong khoảng -90 đến 90.'
+  }
+
+  if (data.longitude == null || !Number.isFinite(data.longitude) || data.longitude < -180 || data.longitude > 180) {
+    errors.longitude = 'Kinh độ phải nằm trong khoảng -180 đến 180.'
+  }
+
+  if (!Number.isFinite(data.checkInRadiusMeters) || data.checkInRadiusMeters < 20 || data.checkInRadiusMeters > 1000) {
+    errors.checkInRadiusMeters = 'Bán kính check-in phải nằm trong khoảng 20-1000 m.'
   }
 
   const invalidImagePath = [data.image, ...data.additionalImages]
@@ -246,6 +278,17 @@ export async function createAdminRoom(data: RoomFormData): Promise<AdminRoom> {
       maxPeople: data.capacity,
       bedroomCount: data.bedroomCount,
       bedCount: data.bedCount,
+      bathroomCount: data.bathroomCount,
+      accommodationType: data.accommodationType,
+      description: normalizeOptionalText(data.description),
+      addressLine: data.addressLine.trim(),
+      ward: normalizeOptionalText(data.ward),
+      district: data.district.trim(),
+      city: data.city.trim(),
+      latitude: data.latitude as number,
+      longitude: data.longitude as number,
+      checkInRadiusMeters: data.checkInRadiusMeters,
+      baseNightlyRate: data.baseNightlyRate,
       imageUrl: normalizeOptionalImageUrl(data.image),
       additionalImageUrls: data.additionalImages.map(normalizeOptionalImageUrl).filter((value): value is string => Boolean(value)),
       status: mapAdminStatusToBackendStatus(data.status || 'active'),
@@ -278,6 +321,17 @@ export async function updateAdminRoom(id: string, data: RoomFormData): Promise<A
       maxPeople: data.capacity,
       bedroomCount: data.bedroomCount,
       bedCount: data.bedCount,
+      bathroomCount: data.bathroomCount,
+      accommodationType: data.accommodationType,
+      description: normalizeOptionalText(data.description),
+      addressLine: data.addressLine.trim(),
+      ward: normalizeOptionalText(data.ward),
+      district: data.district.trim(),
+      city: data.city.trim(),
+      latitude: data.latitude as number,
+      longitude: data.longitude as number,
+      checkInRadiusMeters: data.checkInRadiusMeters,
+      baseNightlyRate: data.baseNightlyRate,
       imageUrl: normalizeOptionalImageUrl(data.image),
       additionalImageUrls: data.additionalImages.map(normalizeOptionalImageUrl).filter((value): value is string => Boolean(value)),
       status: mapAdminStatusToBackendStatus(data.status || 'active'),
@@ -318,7 +372,17 @@ export function toRoomFormData(room: AdminRoom): RoomFormData {
     capacity: room.capacity,
     bedroomCount: room.bedroomCount,
     bedCount: room.bedCount,
+    bathroomCount: room.bathroomCount,
     pricePerHour: room.pricePerHour,
+    baseNightlyRate: room.baseNightlyRate,
+    accommodationType: room.accommodationType,
+    addressLine: room.addressLine,
+    ward: room.ward,
+    district: room.district,
+    city: room.city,
+    latitude: room.latitude,
+    longitude: room.longitude,
+    checkInRadiusMeters: room.checkInRadiusMeters,
     status: room.status,
     description: room.description,
     equipments: room.equipments.join('\n'),
@@ -377,6 +441,9 @@ export function getDefaultRoomForm(roomTypes: AdminRoomTypeOption[] = []): RoomF
     category,
     capacity: roomType?.capacity ?? EMPTY_ROOM_FORM.capacity,
     pricePerHour: roomType?.pricePerHour ?? EMPTY_ROOM_FORM.pricePerHour,
+    baseNightlyRate: roomType?.pricePerHour
+      ? roomType.pricePerHour * 22
+      : EMPTY_ROOM_FORM.baseNightlyRate,
   }
 }
 
@@ -388,7 +455,17 @@ export const EMPTY_ROOM_FORM: RoomFormData = {
   capacity: 1,
   bedroomCount: 1,
   bedCount: 1,
+  bathroomCount: 1,
   pricePerHour: 0,
+  baseNightlyRate: 2_200_000,
+  accommodationType: 'VILLA',
+  addressLine: '',
+  ward: '',
+  district: '',
+  city: 'Hà Nội',
+  latitude: null,
+  longitude: null,
+  checkInRadiusMeters: 100,
   status: 'active',
   description: '',
   equipments: '',

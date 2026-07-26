@@ -6,6 +6,8 @@ import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { uploadAdminRoomImage, validateRoomForm } from '@/lib/admin/rooms/adminRoomApi'
 import type { AdminRoomTypeOption, RoomEquipmentOption, RoomFormData, RoomFormErrors } from '@/lib/admin/rooms/types'
 import {
+  accommodationTypeLabels,
+  accommodationTypeOptions,
   roomCategoryLabels,
   roomCategoryOptions,
   roomStatusLabels,
@@ -216,7 +218,7 @@ export default function RoomFormModal({
           role="dialog"
           aria-modal="true"
           aria-labelledby="room-form-title"
-          className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl border border-outline-variant bg-white shadow-[var(--shadow-elevated)] sm:rounded-3xl"
+          className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-t-3xl border border-outline-variant bg-white shadow-[var(--shadow-elevated)] sm:rounded-3xl"
         >
           <header className="relative overflow-hidden border-b border-outline-variant bg-gradient-to-r from-brand-greenDark to-brand-greenLight px-6 py-5 text-white">
             <p className="font-display text-[10px] font-medium uppercase tracking-[0.15em] text-brand-orange">
@@ -317,7 +319,7 @@ export default function RoomFormModal({
                 </label>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-3">
                 <label className="block">
                   <span className={labelClass}>
                     Số phòng ngủ <span className="text-error">*</span>
@@ -349,7 +351,165 @@ export default function RoomFormModal({
                   />
                   {errors.bedCount && <p className="mt-1 text-xs text-error">{errors.bedCount}</p>}
                 </label>
+
+                <label className="block">
+                  <span className={labelClass}>
+                    Số phòng tắm <span className="text-error">*</span>
+                  </span>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={20}
+                    value={form.bathroomCount}
+                    onChange={(event) => set({ bathroomCount: Number(event.target.value) })}
+                    className={inputClass}
+                  />
+                  {errors.bathroomCount && <p className="mt-1 text-xs text-error">{errors.bathroomCount}</p>}
+                </label>
               </div>
+
+              <section className="rounded-2xl border border-outline-variant bg-surface-container-low/45 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className={labelClass}>Thông tin căn lưu trú</p>
+                    <p className="text-xs leading-5 text-on-surface-variant">
+                      Mỗi mục bên dưới mô tả một căn được khách thuê nguyên căn, không phải từng phòng ngủ bên trong.
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-white px-3 py-1 text-[11px] font-bold text-secondary shadow-sm">
+                    Thuê nguyên căn
+                  </span>
+                </div>
+
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <label className="block">
+                    <span className={labelClass}>Loại hình</span>
+                    <ProjectSelect
+                      value={form.accommodationType}
+                      onChange={(event) => set({ accommodationType: event.target.value as RoomFormData['accommodationType'] })}
+                      className={inputClass}
+                    >
+                      {accommodationTypeOptions.map((type) => (
+                        <option key={type} value={type}>{accommodationTypeLabels[type]}</option>
+                      ))}
+                    </ProjectSelect>
+                  </label>
+
+                  <label className="block">
+                    <span className={labelClass}>
+                      Giá nguyên căn mỗi đêm <span className="text-error">*</span>
+                    </span>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      step={50_000}
+                      value={form.baseNightlyRate}
+                      onChange={(event) => set({ baseNightlyRate: Number(event.target.value) })}
+                      className={inputClass}
+                    />
+                    {errors.baseNightlyRate && <p className="mt-1 text-xs text-error">{errors.baseNightlyRate}</p>}
+                  </label>
+                </div>
+
+                <label className="mt-4 block">
+                  <span className={labelClass}>Mô tả</span>
+                  <textarea
+                    rows={3}
+                    value={form.description}
+                    onChange={(event) => set({ description: event.target.value })}
+                    className="w-full resize-y rounded-xl border border-outline bg-surface-container-lowest px-3 py-2.5 text-sm leading-6 text-on-surface outline-none transition-all focus:border-brand-orange focus:bg-white focus:ring-2 focus:ring-brand-orange/15"
+                    placeholder="Điểm nổi bật, không gian và nhóm khách phù hợp..."
+                  />
+                  <div className="mt-1 flex justify-between gap-3 text-[11px] text-on-surface-variant">
+                    {errors.description ? <span className="text-error">{errors.description}</span> : <span>Không liệt kê phòng ngủ như các phòng có thể đặt riêng.</span>}
+                    <span>{form.description.length}/2000</span>
+                  </div>
+                </label>
+              </section>
+
+              <section className="rounded-2xl border border-outline-variant bg-white p-4 shadow-sm">
+                <div>
+                  <p className={labelClass}>Địa điểm & check-in</p>
+                  <p className="text-xs leading-5 text-on-surface-variant">
+                    Tọa độ tạo ghim bản đồ cho khách và là tâm bán kính chấm công của nhân viên.
+                  </p>
+                </div>
+
+                <label className="mt-4 block">
+                  <span className={labelClass}>
+                    Địa chỉ cụ thể <span className="text-error">*</span>
+                  </span>
+                  <input
+                    type="text"
+                    value={form.addressLine}
+                    onChange={(event) => set({ addressLine: event.target.value })}
+                    className={inputClass}
+                    placeholder="VD: CT8B Khu Đô Thị Dương Nội, Yên Lộ"
+                  />
+                  {errors.addressLine && <p className="mt-1 text-xs text-error">{errors.addressLine}</p>}
+                </label>
+
+                <div className="mt-4 grid gap-4 sm:grid-cols-3">
+                  <label className="block">
+                    <span className={labelClass}>Phường/xã</span>
+                    <input type="text" value={form.ward} onChange={(event) => set({ ward: event.target.value })} className={inputClass} />
+                  </label>
+                  <label className="block">
+                    <span className={labelClass}>Quận/huyện <span className="text-error">*</span></span>
+                    <input type="text" value={form.district} onChange={(event) => set({ district: event.target.value })} className={inputClass} />
+                    {errors.district && <p className="mt-1 text-xs text-error">{errors.district}</p>}
+                  </label>
+                  <label className="block">
+                    <span className={labelClass}>Tỉnh/thành <span className="text-error">*</span></span>
+                    <input type="text" value={form.city} onChange={(event) => set({ city: event.target.value })} className={inputClass} />
+                    {errors.city && <p className="mt-1 text-xs text-error">{errors.city}</p>}
+                  </label>
+                </div>
+
+                <div className="mt-4 grid gap-4 sm:grid-cols-3">
+                  <label className="block">
+                    <span className={labelClass}>Vĩ độ <span className="text-error">*</span></span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.000001"
+                      value={form.latitude ?? ''}
+                      onChange={(event) => set({ latitude: event.target.value === '' ? null : Number(event.target.value) })}
+                      className={inputClass}
+                      placeholder="20.971800"
+                    />
+                    {errors.latitude && <p className="mt-1 text-xs text-error">{errors.latitude}</p>}
+                  </label>
+                  <label className="block">
+                    <span className={labelClass}>Kinh độ <span className="text-error">*</span></span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.000001"
+                      value={form.longitude ?? ''}
+                      onChange={(event) => set({ longitude: event.target.value === '' ? null : Number(event.target.value) })}
+                      className={inputClass}
+                      placeholder="105.750100"
+                    />
+                    {errors.longitude && <p className="mt-1 text-xs text-error">{errors.longitude}</p>}
+                  </label>
+                  <label className="block">
+                    <span className={labelClass}>Bán kính check-in (m)</span>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min={20}
+                      max={1000}
+                      value={form.checkInRadiusMeters}
+                      onChange={(event) => set({ checkInRadiusMeters: Number(event.target.value) })}
+                      className={inputClass}
+                    />
+                    {errors.checkInRadiusMeters && <p className="mt-1 text-xs text-error">{errors.checkInRadiusMeters}</p>}
+                  </label>
+                </div>
+              </section>
 
               <section>
                 <div className="flex items-end justify-between gap-3">

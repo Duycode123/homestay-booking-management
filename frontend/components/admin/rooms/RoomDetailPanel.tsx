@@ -46,19 +46,30 @@ export default function RoomDetailPanel({ room, onClose, onEdit }: RoomDetailPan
 
         <div className="flex-1 overflow-y-auto px-5 py-5">
           <div className="grid gap-3 sm:grid-cols-2">
+            <MetricCard label="Loại hình" value={formatAccommodationType(room.accommodationType)} />
             <MetricCard label="Sức chứa" value={`${room.capacity} người`} />
             <MetricCard label="Phòng ngủ" value={`${room.bedroomCount} phòng`} />
             <MetricCard label="Giường ngủ" value={`${room.bedCount} giường`} />
-            <MetricCard label="Giá/giờ" value={formatRoomPrice(room.pricePerHour)} accent="price" />
+            <MetricCard label="Phòng tắm" value={`${room.bathroomCount} phòng`} />
+            <MetricCard label="Giá/đêm" value={formatRoomPrice(room.baseNightlyRate)} accent="price" />
             <MetricCard label="Tiện nghi" value={`${room.equipmentCount} món`} />
             <MetricCard label="Đánh giá TB" value={room.averageRating ? `${room.averageRating}/5` : 'Chưa có'} />
           </div>
+
+          <Section title="Vị trí căn lưu trú">
+            <p className="text-sm font-medium leading-relaxed text-on-surface">
+              {[room.addressLine, room.ward, room.district, room.city].filter(Boolean).join(', ')}
+            </p>
+            <p className="mt-2 text-xs leading-relaxed text-on-surface-variant">
+              Tọa độ {room.latitude}, {room.longitude} · Bán kính chấm công {room.checkInRadiusMeters} m
+            </p>
+          </Section>
 
           <Section title="Mô tả">
             <p className="text-sm leading-relaxed text-on-surface-variant">{room.description}</p>
           </Section>
 
-          <Section title="Tiện nghi trong phòng">
+          <Section title="Tiện nghi của căn">
             <div className="flex flex-wrap gap-2">
               {room.equipments.map((equipment) => (
                 <span
@@ -104,6 +115,16 @@ export default function RoomDetailPanel({ room, onClose, onEdit }: RoomDetailPan
       </aside>
     </>
   )
+}
+
+function formatAccommodationType(type: AdminRoom['accommodationType']) {
+  return {
+    VILLA: 'Villa nguyên căn',
+    GARDEN_HOUSE: 'Nhà vườn',
+    BUNGALOW: 'Bungalow',
+    APARTMENT: 'Căn hộ',
+    HOMESTAY: 'Homestay nguyên căn',
+  }[type]
 }
 
 function Section({ title, children }: { title: string; children: ReactNode }) {

@@ -24,6 +24,7 @@ The first pass in this repository focuses on flows that already exist in the bac
 - authentication
 - current user profile and avatar management
 - room listing and room detail
+- multi-location whole-accommodation catalog, map, and staff assignment
 - create booking
 - customer checkout and payment session handoff
 - customer booking history
@@ -37,4 +38,4 @@ The first pass in this repository focuses on flows that already exist in the bac
 
 ## Traceability
 
-See [traceability.md](/C:/Users/phamt/Downloads/CODE/IOC/homestay-booking-management/docs/use-cases/traceability.md) for the mapping between backlog UC IDs and current backend coverage.
+See [traceability.md](./traceability.md) for the mapping between backlog UC IDs and current backend coverage.

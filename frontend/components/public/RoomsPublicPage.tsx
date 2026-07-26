@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import { motion, useReducedMotion } from 'framer-motion'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
@@ -56,17 +57,19 @@ import type { Locale } from '@/i18n/config'
 const MIN_NIGHTLY_PRICE = 1_000_000
 const MAX_NIGHTLY_PRICE = 5_000_000
 const NIGHTLY_PRICE_STEP = 100_000
+const RoomMap = dynamic(() => import('@/components/public/RoomMap'), { ssr: false })
 
 type RoomSortOption = 'recommended' | 'rating_desc' | 'price_asc' | 'price_desc' | 'capacity_desc'
+type CatalogViewMode = 'list' | 'map'
 
 function getRoomsCopy(locale: Locale) {
   if (locale === 'en') {
     return {
       heroEyebrow: 'STAY COLLECTION',
       heroTitle: 'Find the stay that feels right for you',
-      heroDescription: 'Compare room capacity, amenities, nightly price and live availability before you decide.',
-      heroImageAlt: 'Premium homestay room with a large bed, timber furnishings and a garden view',
-      scheduleTitle: 'Today\'s room availability',
+      heroDescription: 'Compare whole-stay capacity, location, amenities, nightly price and live availability before you decide.',
+      heroImageAlt: 'Premium whole-stay accommodation with timber furnishings and a garden view',
+      scheduleTitle: 'Today\'s stay availability',
       scheduleDescription: `Live booking data · 1 night = ${FIRST_NIGHT_STAY_HOURS} hours`,
       refreshSchedule: 'Refresh room availability',
       available: 'Available',
@@ -74,15 +77,17 @@ function getRoomsCopy(locale: Locale) {
       fullyBooked: 'Booked',
       paused: 'Paused',
       checkingSchedule: 'Checking availability…',
-      availableRooms: (available: number, total: number) => `${available}/${total} rooms available`,
-      scheduleSyncFailed: (count: number) => `${count} room${count === 1 ? '' : 's'} could not be synchronized`,
+      availableRooms: (available: number, total: number) => `${available}/${total} stays available`,
+      scheduleSyncFailed: (count: number) => `${count} stay${count === 1 ? '' : 's'} could not be synchronized`,
       scheduleUpdated: (time: string) => `Updated ${time} · refreshes every 60 seconds`,
       connectingSchedule: 'Connecting to live availability',
       filterEyebrow: 'DETAILED FILTERS',
       filterTitle: 'Refine your stay',
       filterDescription: 'Filter by room tier, size, guest rating, budget and amenities.',
-      roomType: 'Room type',
-      allRoomTypes: 'All room types',
+      roomType: 'Accommodation type',
+      allRoomTypes: 'All accommodation types',
+      location: 'Area',
+      allLocations: 'All areas',
       bedrooms: 'Bedrooms',
       capacity: 'Capacity',
       rating: 'Guest rating',
@@ -90,31 +95,33 @@ function getRoomsCopy(locale: Locale) {
       requiredAmenities: 'Required amenities',
       resetFilters: 'Reset detailed filters',
       collectionEyebrow: 'STAY COLLECTION',
-      loadingRooms: 'Loading rooms…',
+      loadingRooms: 'Loading stays…',
       checkingStay: 'Checking availability…',
-      matchingRooms: (count: number) => `${count} matching ${count === 1 ? 'room' : 'rooms'}`,
+      matchingRooms: (count: number) => `${count} matching ${count === 1 ? 'stay' : 'stays'}`,
       checkingDateRange: (checkIn: string, checkOut: string) => `Checking availability from ${checkIn} to ${checkOut}.`,
-      roomsUnavailableToCheck: (count: number) => `${count} room${count === 1 ? '' : 's'} could not be checked.`,
+      roomsUnavailableToCheck: (count: number) => `${count} stay${count === 1 ? '' : 's'} could not be checked.`,
       refreshingCatalog: 'Refreshing the latest information…',
-      catalogSynchronized: 'Room and review data are synchronized from the system.',
-      catalogUnavailable: 'Unable to load room information from the system.',
+      catalogSynchronized: 'Stay and review data are synchronized from the system.',
+      catalogUnavailable: 'Unable to load accommodation information from the system.',
       guests: (adults: number, children: number) => `${adults} adult${adults === 1 ? '' : 's'}${children ? ` · ${children} child${children === 1 ? '' : 'ren'}` : ''}`,
       bedroomsFrom: (count: number) => `${count}+ bedroom${count === 1 ? '' : 's'}`,
       starsFrom: (rating: number) => `${rating.toFixed(1)}+ stars`,
       amenitiesMore: (count: number) => `+${count} amenities`,
       filtersHint: 'Use the filters to refine the list',
-      noRooms: 'No suitable rooms found',
+      noRooms: 'No suitable stays found',
       noRoomsDescription: 'Try changing your stay dates, removing required amenities, or widening your budget to see more options.',
-      viewAllRooms: 'View all rooms',
+      viewAllRooms: 'View all stays',
+      listView: 'List',
+      mapView: 'Map',
     }
   }
 
   return {
     heroEyebrow: 'DANH MỤC LƯU TRÚ',
-    heroTitle: 'Tìm căn phòng của bạn',
-    heroDescription: 'So sánh sức chứa, tiện nghi, mức giá và lịch trống để chọn không gian phù hợp.',
-    heroImageAlt: 'Phòng homestay cao cấp với giường lớn, nội thất gỗ và cửa nhìn ra vườn',
-    scheduleTitle: 'Lịch phòng hôm nay',
+    heroTitle: 'Tìm căn lưu trú phù hợp với bạn',
+    heroDescription: 'So sánh vị trí, sức chứa nguyên căn, tiện nghi, mức giá và lịch trống trước khi quyết định.',
+    heroImageAlt: 'Căn lưu trú cao cấp với nội thất gỗ và khoảng xanh riêng',
+    scheduleTitle: 'Lịch các căn hôm nay',
     scheduleDescription: `Dữ liệu booking thật · 1 đêm = ${FIRST_NIGHT_STAY_HOURS} giờ`,
     refreshSchedule: 'Cập nhật lại lịch phòng',
     available: 'Còn trống',
@@ -122,15 +129,17 @@ function getRoomsCopy(locale: Locale) {
     fullyBooked: 'Kín lịch',
     paused: 'Tạm ngưng',
     checkingSchedule: 'Đang đối chiếu lịch…',
-    availableRooms: (available: number, total: number) => `${available}/${total} phòng có thể đặt`,
-    scheduleSyncFailed: (count: number) => `${count} phòng chưa đồng bộ được lịch`,
+    availableRooms: (available: number, total: number) => `${available}/${total} căn có thể đặt`,
+    scheduleSyncFailed: (count: number) => `${count} căn chưa đồng bộ được lịch`,
     scheduleUpdated: (time: string) => `Cập nhật ${time} · tự động mỗi 60 giây`,
     connectingSchedule: 'Đang kết nối dữ liệu lịch phòng',
     filterEyebrow: 'BỘ LỌC CHI TIẾT',
     filterTitle: 'Tinh chỉnh lựa chọn',
-    filterDescription: 'Lọc thêm theo loại phòng, quy mô, đánh giá, ngân sách và tiện nghi.',
-    roomType: 'Loại phòng',
-    allRoomTypes: 'Tất cả loại phòng',
+    filterDescription: 'Lọc thêm theo loại căn, khu vực, quy mô, đánh giá, ngân sách và tiện nghi.',
+    roomType: 'Loại căn',
+    allRoomTypes: 'Tất cả loại căn',
+    location: 'Khu vực',
+    allLocations: 'Tất cả khu vực',
     bedrooms: 'Số phòng ngủ',
     capacity: 'Sức chứa',
     rating: 'Điểm đánh giá',
@@ -138,14 +147,14 @@ function getRoomsCopy(locale: Locale) {
     requiredAmenities: 'Tiện nghi cần có',
     resetFilters: 'Đặt lại bộ lọc chi tiết',
     collectionEyebrow: 'DANH SÁCH LƯU TRÚ',
-    loadingRooms: 'Đang tải phòng…',
+    loadingRooms: 'Đang tải các căn…',
     checkingStay: 'Đang kiểm tra lịch…',
-    matchingRooms: (count: number) => `${count} phòng phù hợp`,
+    matchingRooms: (count: number) => `${count} căn phù hợp`,
     checkingDateRange: (checkIn: string, checkOut: string) => `Đang đối chiếu từ ${checkIn} đến ${checkOut}.`,
-    roomsUnavailableToCheck: (count: number) => `${count} phòng chưa thể đối chiếu lịch.`,
+    roomsUnavailableToCheck: (count: number) => `${count} căn chưa thể đối chiếu lịch.`,
     refreshingCatalog: 'Đang cập nhật dữ liệu mới nhất…',
-    catalogSynchronized: 'Dữ liệu phòng và đánh giá được đồng bộ từ hệ thống.',
-    catalogUnavailable: 'Không thể tải dữ liệu phòng từ hệ thống.',
+    catalogSynchronized: 'Dữ liệu căn lưu trú và đánh giá được đồng bộ từ hệ thống.',
+    catalogUnavailable: 'Không thể tải dữ liệu căn lưu trú từ hệ thống.',
     guests: (adults: number, children: number) => `${adults} người lớn${children ? ` · ${children} trẻ em` : ''}`,
     bedroomsFrom: (count: number) => `Từ ${count} phòng ngủ`,
     starsFrom: (rating: number) => `Từ ${rating.toFixed(1)} sao`,
@@ -153,7 +162,9 @@ function getRoomsCopy(locale: Locale) {
     filtersHint: 'Chọn bộ lọc để tinh chỉnh danh sách',
     noRooms: 'Chưa tìm thấy căn phù hợp',
     noRoomsDescription: 'Hãy thay đổi ngày lưu trú, giảm số tiện nghi bắt buộc hoặc nới rộng ngân sách để xem thêm lựa chọn.',
-    viewAllRooms: 'Xem lại tất cả phòng',
+    viewAllRooms: 'Xem lại tất cả căn',
+    listView: 'Danh sách',
+    mapView: 'Bản đồ',
   }
 }
 
@@ -179,8 +190,8 @@ function getRoomCardCopy(locale: Locale) {
       todayAt: (time?: string) => time ? `Today, ${time}` : 'Available today',
       awaitingPaymentUntil: (time: string) => `Awaiting payment${time}`,
       chooseStayDates: 'Choose suitable stay dates',
-      bookingsPaused: 'Bookings are temporarily paused for this room',
-      syncingSchedule: 'Synchronizing room availability',
+      bookingsPaused: 'Bookings are temporarily paused for this stay',
+      syncingSchedule: 'Synchronizing stay availability',
       bookedToday: (time?: string) => `Booked today${time ? ` · ${time}` : ''}`,
       viewDetail: (roomName: string) => `View details for ${roomName}`,
       availabilityUpdating: 'Updating availability',
@@ -193,6 +204,7 @@ function getRoomCardCopy(locale: Locale) {
       liveAvailability: 'Live availability verified',
       bedrooms: (count: number) => `${count} bedroom${count === 1 ? '' : 's'}`,
       beds: (count: number) => `${count} bed${count === 1 ? '' : 's'}`,
+      bathrooms: (count: number) => `${count} bathroom${count === 1 ? '' : 's'}`,
       amenitiesMore: (count: number) => `+${count} amenities`,
       nightlyPrice: 'Nightly price',
       stayHours: `includes ${FIRST_NIGHT_STAY_HOURS} stay hours`,
@@ -204,14 +216,14 @@ function getRoomCardCopy(locale: Locale) {
   return {
     checking: 'Đang kiểm tra',
     paymentHeld: 'Đang giữ chỗ',
-    bookNow: 'Đặt phòng',
+    bookNow: 'Đặt căn',
     paused: 'Tạm ngưng',
     chooseAnotherDate: 'Chọn ngày khác',
     todayAt: (time?: string) => time ? `Hôm nay, ${time}` : 'Còn trống hôm nay',
     awaitingPaymentUntil: (time: string) => `Đang giữ chỗ chờ thanh toán${time}`,
     chooseStayDates: 'Chọn ngày lưu trú phù hợp',
-    bookingsPaused: 'Phòng đang tạm ngưng nhận lịch',
-    syncingSchedule: 'Đang đồng bộ lịch phòng',
+    bookingsPaused: 'Căn đang tạm ngưng nhận lịch',
+    syncingSchedule: 'Đang đồng bộ lịch căn',
     bookedToday: (time?: string) => `Hôm nay đã có lịch${time ? ` · ${time}` : ''}`,
     viewDetail: (roomName: string) => `Xem chi tiết ${roomName}`,
     availabilityUpdating: 'Đang cập nhật lịch',
@@ -224,6 +236,7 @@ function getRoomCardCopy(locale: Locale) {
     liveAvailability: 'Xác nhận lịch theo thời gian thực',
     bedrooms: (count: number) => `${count} phòng ngủ`,
     beds: (count: number) => `${count} giường`,
+    bathrooms: (count: number) => `${count} phòng tắm`,
     amenitiesMore: (count: number) => `+${count} tiện nghi`,
     nightlyPrice: 'Giá cho một đêm',
     stayHours: `đã gồm trọn ${FIRST_NIGHT_STAY_HOURS} giờ lưu trú`,
@@ -243,6 +256,7 @@ const defaultFilters: RoomFilters = {
   search: '',
   roomName: '',
   roomTierId: 'all',
+  district: 'all',
   capacity: 'all',
   minGuests: 0,
   minBedrooms: 0,
@@ -281,6 +295,8 @@ export default function RoomsPublicPage() {
   const capacityOptions = useMemo(() => getCapacityOptions(locale), [locale])
   const [filters, setFilters] = useState<RoomFilters>(defaultFilters)
   const [sortBy, setSortBy] = useState<RoomSortOption>('recommended')
+  const [viewMode, setViewMode] = useState<CatalogViewMode>('list')
+  const [selectedMapRoomId, setSelectedMapRoomId] = useState<string | null>(null)
   const [stayCriteria, setStayCriteria] = useState<StaySearchCriteria | null>(null)
   const [stayAvailabilityByRoomId, setStayAvailabilityByRoomId] = useState<StayAvailabilityByRoomId>({})
   const [isStayAvailabilityLoading, setIsStayAvailabilityLoading] = useState(false)
@@ -305,6 +321,14 @@ export default function RoomsPublicPage() {
   )
   const availableAmenities = useMemo(() => Array.from(new Set(liveRooms.flatMap((room) => room.equipments).filter(Boolean)))
     .sort((left, right) => left.localeCompare(right, locale === 'en' ? 'en' : 'vi')), [liveRooms, locale])
+  const availableDistricts = useMemo(
+    () => Array.from(new Set(
+      liveRooms
+        .map((room) => room.district?.trim())
+        .filter((value): value is string => Boolean(value)),
+    )).sort((left, right) => left.localeCompare(right, locale === 'en' ? 'en' : 'vi')),
+    [liveRooms, locale],
+  )
   const filteredRooms = useMemo(() => {
     const matchesDetailFilters = filterRooms(liveRooms, filters)
     const availableMatches = !stayCriteria || isStayAvailabilityLoading
@@ -337,6 +361,7 @@ export default function RoomsPublicPage() {
   const hasActiveFilters =
     filters.roomName.trim().length > 0 ||
     filters.roomTierId !== 'all' ||
+    filters.district !== 'all' ||
     filters.capacity !== 'all' ||
     filters.minBedrooms > 0 || filters.amenities.length > 0 || filters.minRating > 0 ||
     filters.availability !== 'all' ||
@@ -761,6 +786,17 @@ export default function RoomsPublicPage() {
                   onChange={(value) => updateFilter('roomName', value)}
                 />
 
+                <FilterDivider title={copy.location} />
+                <SidebarSingleChoiceFilter
+                  value={filters.district}
+                  onChange={(value) => updateFilter('district', value)}
+                  options={[
+                    { value: 'all', label: copy.allLocations },
+                    ...availableDistricts.map((district) => ({ value: district, label: district })),
+                  ]}
+                  collapsedAfter={5}
+                />
+
                 <FilterDivider title={copy.roomType} />
                 <SidebarSingleChoiceFilter
                   value={filters.roomTierId}
@@ -845,12 +881,46 @@ export default function RoomsPublicPage() {
                           : catalogError || copy.catalogUnavailable}
                   </p>
                 </div>
-                <SortSelect value={sortBy} onChange={setSortBy} />
+                <div className="flex flex-wrap items-center gap-2">
+                  <div
+                    className="inline-flex rounded-full border border-[#d8cdbf] bg-[#f8f4ee] p-1"
+                    aria-label={locale === 'en' ? 'Catalog view' : 'Kiểu hiển thị'}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('list')}
+                      aria-pressed={viewMode === 'list'}
+                      className={[
+                        'rounded-full px-3.5 py-2 text-xs font-bold transition',
+                        viewMode === 'list'
+                          ? 'bg-secondary text-white shadow-sm'
+                          : 'text-on-surface-variant hover:text-secondary',
+                      ].join(' ')}
+                    >
+                      {copy.listView}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('map')}
+                      aria-pressed={viewMode === 'map'}
+                      className={[
+                        'rounded-full px-3.5 py-2 text-xs font-bold transition',
+                        viewMode === 'map'
+                          ? 'bg-secondary text-white shadow-sm'
+                          : 'text-on-surface-variant hover:text-secondary',
+                      ].join(' ')}
+                    >
+                      {copy.mapView}
+                    </button>
+                  </div>
+                  <SortSelect value={sortBy} onChange={setSortBy} />
+                </div>
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2 border-t border-[#ece4da] pt-4">
                 {stayCriteria ? <FilterSummaryChip label={`${formatShortStayDate(stayCriteria.checkIn, locale)} → ${formatShortStayDate(stayCriteria.checkOut, locale)}`} /> : null}
                 {stayCriteria ? <FilterSummaryChip label={copy.guests(stayCriteria.adults, stayCriteria.children)} /> : null}
+                {filters.district !== 'all' ? <FilterSummaryChip label={filters.district} /> : null}
                 {filters.minBedrooms > 0 ? <FilterSummaryChip label={copy.bedroomsFrom(filters.minBedrooms)} /> : null}
                 {filters.minRating > 0 ? <FilterSummaryChip label={copy.starsFrom(filters.minRating)} /> : null}
                 {filters.amenities.slice(0, 2).map((amenity) => <FilterSummaryChip key={amenity} label={amenity} />)}
@@ -861,6 +931,23 @@ export default function RoomsPublicPage() {
 
             {isLoading || isStayAvailabilityLoading ? (
               <RoomCatalogSkeleton count={4} variant="list" />
+            ) : filteredRooms.length > 0 && viewMode === 'map' ? (
+              <div className="mt-5">
+                <RoomMap
+                  rooms={filteredRooms}
+                  selectedRoomId={selectedMapRoomId}
+                  locale={locale}
+                  onSelect={(room) => setSelectedMapRoomId(room.id)}
+                  onBook={(room) => setQuickBooking({
+                    room,
+                    initialDate: stayCriteria?.checkIn,
+                    initialEndDate: stayCriteria?.checkOut,
+                  })}
+                  onViewDetail={(room) => router.push(localizedHref(
+                    `/rooms/${room.id}${stayCriteria ? `?${buildStaySearchParams(stayCriteria).toString()}` : ''}`,
+                  ))}
+                />
+              </div>
             ) : filteredRooms.length > 0 ? (
               <div className="mt-5 space-y-5">
                 {filteredRooms.map((room, index) => (
@@ -1076,6 +1163,7 @@ function RoomCard({
             <span className="inline-flex items-center gap-1.5"><GuestsMiniIcon />{room.capacity}</span>
             <span className="inline-flex items-center gap-1.5"><BedroomIcon />{cardCopy.bedrooms(room.bedroomCount)}</span>
             <span className="inline-flex items-center gap-1.5"><BedIcon />{cardCopy.beds(room.bedCount)}</span>
+            <span className="inline-flex items-center gap-1.5"><BathMiniIcon />{cardCopy.bathrooms(room.bathroomCount)}</span>
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
@@ -1754,6 +1842,7 @@ function InfoPill({ label, value }: { label: string; value: string }) {
 
 function BedroomIcon() { return <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4 text-[#9b6b3c]" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M4 20V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v15M8 20v-5h8v5M9 8h6" strokeLinecap="round" strokeLinejoin="round" /></svg> }
 function BedIcon() { return <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4 text-[#9b6b3c]" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M3 19v-8M21 19v-5a3 3 0 0 0-3-3H9v8M3 15h18M7 11V8h5a3 3 0 0 1 3 3" strokeLinecap="round" strokeLinejoin="round" /></svg> }
+function BathMiniIcon() { return <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4 text-[#9b6b3c]" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M4 13h16v2a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-2ZM7 13V7a3 3 0 0 1 6 0M7 19v2M17 19v2" strokeLinecap="round" strokeLinejoin="round" /></svg> }
 function GuestsMiniIcon() { return <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4 text-[#9b6b3c]" fill="none" stroke="currentColor" strokeWidth="1.7"><circle cx="9" cy="8" r="3" /><path d="M3.5 20v-1.5A4.5 4.5 0 0 1 8 14h2a4.5 4.5 0 0 1 4.5 4.5V20M16 7a2.5 2.5 0 0 1 0 5M17 14.5a4 4 0 0 1 3 3.8V20" strokeLinecap="round" /></svg> }
 
 function sortPublicRooms(rooms: Room[], sortBy: RoomSortOption) {

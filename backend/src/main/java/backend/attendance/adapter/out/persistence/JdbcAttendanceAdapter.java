@@ -52,20 +52,35 @@ public class JdbcAttendanceAdapter implements AttendanceActorPort, StaffShiftPor
     @Override
     public Optional<StaffShift> loadCurrentShift(Integer staffId, LocalDateTime currentTime) {
         String sql = """
-                SELECT id, staff_id, date, start_time, end_time
+                SELECT shift.id,
+                       shift.staff_id,
+                       shift.room_id,
+                       room.name AS room_name,
+                       room.latitude,
+                       room.longitude,
+                       room.check_in_radius_m,
+                       shift.date,
+                       shift.start_time,
+                       shift.end_time
                 FROM shift
-                WHERE staff_id = ?
-                  AND date = ?
-                  AND start_time <= ?
-                  AND end_time >= ?
-                  AND status IN ('ASSIGNED', 'IN_PROGRESS')
-                ORDER BY start_time DESC
+                LEFT JOIN room ON room.id = shift.room_id
+                WHERE shift.staff_id = ?
+                  AND shift.date = ?
+                  AND shift.start_time <= ?
+                  AND shift.end_time >= ?
+                  AND shift.status IN ('ASSIGNED', 'IN_PROGRESS')
+                ORDER BY shift.start_time DESC
                 LIMIT 1
                 """;
 
         return jdbcTemplate.query(sql, (rs, rowNum) -> new StaffShift(
                 rs.getInt("id"),
                 rs.getInt("staff_id"),
+                rs.getObject("room_id", Integer.class),
+                rs.getString("room_name"),
+                rs.getBigDecimal("latitude"),
+                rs.getBigDecimal("longitude"),
+                rs.getObject("check_in_radius_m", Integer.class),
                 rs.getDate("date").toLocalDate(),
                 rs.getTime("start_time").toLocalTime(),
                 rs.getTime("end_time").toLocalTime()
@@ -104,7 +119,9 @@ public class JdbcAttendanceAdapter implements AttendanceActorPort, StaffShiftPor
     @Override
     public Optional<AttendanceRecord> loadWorkingAttendance(Integer staffId) {
         String sql = """
-                SELECT id, staff_id, shift_id, check_in_time, check_out_time, work_duration_hours, status
+                SELECT id, staff_id, shift_id, check_in_time, check_out_time, work_duration_hours,
+                       check_in_latitude, check_in_longitude, check_in_accuracy_m, check_in_distance_m,
+                       status
                 FROM staff_attendance
                 WHERE staff_id = ?
                   AND status = 'WORKING'
@@ -119,7 +136,9 @@ public class JdbcAttendanceAdapter implements AttendanceActorPort, StaffShiftPor
     @Override
     public Optional<AttendanceRecord> loadLatestAttendanceForShift(Integer staffId, Integer shiftId) {
         String sql = """
-                SELECT id, staff_id, shift_id, check_in_time, check_out_time, work_duration_hours, status
+                SELECT id, staff_id, shift_id, check_in_time, check_out_time, work_duration_hours,
+                       check_in_latitude, check_in_longitude, check_in_accuracy_m, check_in_distance_m,
+                       status
                 FROM staff_attendance
                 WHERE staff_id = ?
                   AND shift_id = ?
@@ -163,9 +182,11 @@ public class JdbcAttendanceAdapter implements AttendanceActorPort, StaffShiftPor
     private void insert(AttendanceRecord attendanceRecord) {
         String sql = """
                 INSERT INTO staff_attendance (
-                    id, staff_id, shift_id, check_in_time, check_out_time, work_duration_hours, status
+                    id, staff_id, shift_id, check_in_time, check_out_time, work_duration_hours,
+                    check_in_latitude, check_in_longitude, check_in_accuracy_m, check_in_distance_m,
+                    status
                 )
-                VALUES (?, ?, ?, ?, ?, ?, CAST(? AS attendance_status))
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CAST(? AS attendance_status))
                 """;
 
         jdbcTemplate.update(
@@ -176,6 +197,10 @@ public class JdbcAttendanceAdapter implements AttendanceActorPort, StaffShiftPor
                 attendanceRecord.checkInTime(),
                 attendanceRecord.checkOutTime(),
                 attendanceRecord.workDurationHours(),
+                attendanceRecord.checkInLatitude(),
+                attendanceRecord.checkInLongitude(),
+                attendanceRecord.checkInAccuracyMeters(),
+                attendanceRecord.checkInDistanceMeters(),
                 attendanceRecord.status().name()
         );
     }
@@ -188,6 +213,10 @@ public class JdbcAttendanceAdapter implements AttendanceActorPort, StaffShiftPor
                     check_in_time = ?,
                     check_out_time = ?,
                     work_duration_hours = ?,
+                    check_in_latitude = ?,
+                    check_in_longitude = ?,
+                    check_in_accuracy_m = ?,
+                    check_in_distance_m = ?,
                     status = CAST(? AS attendance_status)
                 WHERE id = ?
                 """;
@@ -199,6 +228,10 @@ public class JdbcAttendanceAdapter implements AttendanceActorPort, StaffShiftPor
                 attendanceRecord.checkInTime(),
                 attendanceRecord.checkOutTime(),
                 attendanceRecord.workDurationHours(),
+                attendanceRecord.checkInLatitude(),
+                attendanceRecord.checkInLongitude(),
+                attendanceRecord.checkInAccuracyMeters(),
+                attendanceRecord.checkInDistanceMeters(),
                 attendanceRecord.status().name(),
                 attendanceRecord.id()
         );
@@ -214,6 +247,10 @@ public class JdbcAttendanceAdapter implements AttendanceActorPort, StaffShiftPor
                         ? null
                         : rs.getTimestamp("check_out_time").toLocalDateTime())
                 .workDurationHours(rs.getBigDecimal("work_duration_hours"))
+                .checkInLatitude(rs.getBigDecimal("check_in_latitude"))
+                .checkInLongitude(rs.getBigDecimal("check_in_longitude"))
+                .checkInAccuracyMeters(rs.getBigDecimal("check_in_accuracy_m"))
+                .checkInDistanceMeters(rs.getBigDecimal("check_in_distance_m"))
                 .status(AttendanceStatus.valueOf(rs.getString("status")))
                 .build();
     }

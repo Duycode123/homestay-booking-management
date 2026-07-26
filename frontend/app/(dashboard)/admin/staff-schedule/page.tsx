@@ -7,6 +7,7 @@ import { IconRefresh } from '@/components/admin/AdminIcons'
 import StaffScheduleApprovalQueue from '@/components/admin/staff-schedule/StaffScheduleApprovalQueue'
 import StaffScheduleHourGrid from '@/components/admin/staff-schedule/StaffScheduleHourGrid'
 import StaffScheduleRejectDialog from '@/components/admin/staff-schedule/StaffScheduleRejectDialog'
+import StaffShiftRoomAssignmentDialog from '@/components/admin/staff-schedule/StaffShiftRoomAssignmentDialog'
 import StaffScheduleToolbar from '@/components/admin/staff-schedule/StaffScheduleToolbar'
 import {
   decideAdminShiftRegistration,
@@ -14,6 +15,7 @@ import {
   type AdminShiftRegistration,
   type ShiftRegistrationFilters,
 } from '@/lib/admin/staff-schedule/adminShiftRegistrationApi'
+import { fetchRooms, type BackendRoom } from '@/lib/rooms-api'
 import {
   getNextWeekRange,
   getThisWeekRange,
@@ -42,6 +44,11 @@ export default function AdminStaffSchedulePage() {
   const [statusFilter, setStatusFilter] = useState<QueueStatusFilter>('ALL')
   const [highlightDate, setHighlightDate] = useState<string | null>(null)
   const [rejectingRegistration, setRejectingRegistration] = useState<AdminShiftRegistration | null>(null)
+  const [approvingRegistrations, setApprovingRegistrations] = useState<AdminShiftRegistration[] | null>(null)
+  const [rooms, setRooms] = useState<BackendRoom[]>([])
+  const [selectedRoomId, setSelectedRoomId] = useState('')
+  const [approvalError, setApprovalError] = useState('')
+  const [isLoadingRooms, setIsLoadingRooms] = useState(true)
   const [registrations, setRegistrations] = useState<AdminShiftRegistration[]>([])
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [isLoading, setIsLoading] = useState(true)
@@ -88,6 +95,39 @@ export default function AdminStaffSchedulePage() {
   }, [loadRegistrations])
 
   useEffect(() => {
+    let isActive = true
+
+    const loadRooms = async () => {
+      setIsLoadingRooms(true)
+      try {
+        const data = await fetchRooms()
+        if (!isActive) return
+        setRooms(
+          data.filter(
+            (room) =>
+              room.status !== 'INACTIVE' &&
+              room.latitude !== null &&
+              room.latitude !== undefined &&
+              room.longitude !== null &&
+              room.longitude !== undefined,
+          ),
+        )
+      } catch (error) {
+        if (!isActive) return
+        setRooms([])
+        setErrorMessage(error instanceof Error ? error.message : 'Không thể tải danh sách căn lưu trú.')
+      } finally {
+        if (isActive) setIsLoadingRooms(false)
+      }
+    }
+
+    void loadRooms()
+    return () => {
+      isActive = false
+    }
+  }, [])
+
+  useEffect(() => {
     if (!toast) return
     const timer = setTimeout(() => setToast(''), 3500)
     return () => clearTimeout(timer)
@@ -116,29 +156,55 @@ export default function AdminStaffSchedulePage() {
     [registrations, visibleDays.length],
   )
 
-  const approveRegistrations = async (items: AdminShiftRegistration[]) => {
+  const approveRegistrations = (items: AdminShiftRegistration[]) => {
     if (items.length === 0) {
       setErrorMessage('Không có ca nào để duyệt.')
       return
     }
 
+    setSelectedRoomId('')
+    setApprovalError('')
+    setApprovingRegistrations(items)
+    setErrorMessage('')
+  }
+
+  const confirmApproveRegistrations = async () => {
+    if (!approvingRegistrations?.length) return
+    const roomId = Number(selectedRoomId)
+    if (!Number.isInteger(roomId) || roomId <= 0) {
+      setApprovalError('Vui lòng chọn căn lưu trú cho ca làm.')
+      return
+    }
+
     setIsSaving(true)
     setErrorMessage('')
+    let approvedCount = 0
 
     try {
-      for (const registration of items) {
-        await decideAdminShiftRegistration(registration.id, true)
+      for (const registration of approvingRegistrations) {
+        await decideAdminShiftRegistration(registration.id, true, undefined, roomId)
+        approvedCount += 1
       }
 
       setSelectedIds(new Set())
       setToast(
-        items.length === 1
-          ? `Đã duyệt ca ${items[0].startTime}–${items[0].endTime} của ${items[0].staffName}.`
-          : `Đã duyệt ${items.length} ca — nhân viên sẽ thấy trên lịch làm việc.`,
+        approvingRegistrations.length === 1
+          ? `Đã duyệt ca ${approvingRegistrations[0].startTime}–${approvingRegistrations[0].endTime} của ${approvingRegistrations[0].staffName}.`
+          : `Đã duyệt ${approvingRegistrations.length} ca — nhân viên sẽ thấy căn được phân công trên lịch.`,
       )
+      setApprovingRegistrations(null)
+      setSelectedRoomId('')
+      setApprovalError('')
       await loadRegistrations()
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Không thể duyệt ca.')
+      const reason = error instanceof Error ? error.message : 'Không thể duyệt ca.'
+      if (approvedCount > 0) {
+        const remaining = approvingRegistrations.slice(approvedCount)
+        setApprovingRegistrations(remaining.length > 0 ? remaining : null)
+        setToast(`Đã duyệt ${approvedCount}/${approvingRegistrations.length} ca. Các ca còn lại cần kiểm tra lại.`)
+        await loadRegistrations()
+      }
+      setApprovalError(reason)
     } finally {
       setIsSaving(false)
     }
@@ -148,11 +214,11 @@ export default function AdminStaffSchedulePage() {
     const items = registrations.filter(
       (registration) => selectedIds.has(registration.id) && registration.status === 'PENDING',
     )
-    void approveRegistrations(items)
+    approveRegistrations(items)
   }
 
   const handleApproveOne = (registration: AdminShiftRegistration) => {
-    void approveRegistrations([registration])
+    approveRegistrations([registration])
   }
 
   const handleReject = async (reason: string) => {
@@ -291,7 +357,7 @@ export default function AdminStaffSchedulePage() {
               onClearSelection={() => setSelectedIds(new Set())}
               onApproveOne={handleApproveOne}
               onRejectOne={setRejectingRegistration}
-              onApproveMany={(items) => void approveRegistrations(items)}
+              onApproveMany={approveRegistrations}
               onApproveSelected={handleApproveSelected}
             />
 
@@ -301,7 +367,7 @@ export default function AdminStaffSchedulePage() {
               isLoading={isLoading}
               isSaving={isSaving}
               onApprove={handleApproveOne}
-              onApproveMany={(items) => void approveRegistrations(items)}
+              onApproveMany={approveRegistrations}
               onReject={setRejectingRegistration}
             />
           </div>
@@ -312,6 +378,26 @@ export default function AdminStaffSchedulePage() {
           isSaving={isSaving}
           onClose={() => setRejectingRegistration(null)}
           onConfirm={(reason) => void handleReject(reason)}
+        />
+
+        <StaffShiftRoomAssignmentDialog
+          registrations={approvingRegistrations}
+          rooms={rooms}
+          selectedRoomId={selectedRoomId}
+          errorMessage={approvalError}
+          isLoadingRooms={isLoadingRooms}
+          isSaving={isSaving}
+          onRoomChange={(roomId) => {
+            setSelectedRoomId(roomId)
+            setApprovalError('')
+          }}
+          onClose={() => {
+            if (isSaving) return
+            setApprovingRegistrations(null)
+            setSelectedRoomId('')
+            setApprovalError('')
+          }}
+          onConfirm={() => void confirmApproveRegistrations()}
         />
     </>
   )

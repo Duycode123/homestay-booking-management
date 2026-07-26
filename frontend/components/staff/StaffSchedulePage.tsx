@@ -4,11 +4,9 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import AuthGuard from '@/components/AuthGuard'
 import { EmptyState, StaffPageShell, Toast } from '@/components/staff/StaffShared'
 import {
-  STAFF_LOCATION,
   calculateDistanceMeters,
   formatDistance,
   getCurrentPosition,
-  isWithinStaffLocation,
 } from '@/components/staff/staff-location'
 import {
   checkInCurrentShift,
@@ -50,6 +48,12 @@ type ShiftRow = {
 type StaffShiftCell = {
   cellId: string
   shiftId: number | null
+  roomId?: number | null
+  roomName?: string | null
+  roomAddress?: string | null
+  roomLatitude?: number | null
+  roomLongitude?: number | null
+  checkInRadiusMeters?: number | null
   dayKey: DayKey
   date: string
   shiftName: ShiftName
@@ -117,6 +121,11 @@ export default function StaffSchedulePage() {
   const [isAttendanceOpen, setIsAttendanceOpen] = useState(false)
   const [locationStatus, setLocationStatus] = useState<VerificationStatus>('IDLE')
   const [locationDistance, setLocationDistance] = useState<number | null>(null)
+  const [verifiedLocation, setVerifiedLocation] = useState<{
+    latitude: number
+    longitude: number
+    accuracyMeters: number
+  } | null>(null)
   const [attendanceError, setAttendanceError] = useState('')
   const [isAttendanceLoading, setIsAttendanceLoading] = useState(false)
   const [shiftDetail, setShiftDetail] = useState<ShiftDetailState | null>(null)
@@ -371,10 +380,27 @@ export default function StaffSchedulePage() {
     setAttendanceError('')
     setLocationStatus('CHECKING')
     setLocationDistance(null)
+    setVerifiedLocation(null)
 
     if (!navigator.geolocation) {
       setLocationStatus('BLOCKED')
       setAttendanceError('Không thể truy cập vị trí trên trình duyệt này.')
+      return
+    }
+
+    const assignedLatitude = currentShift?.roomLatitude
+    const assignedLongitude = currentShift?.roomLongitude
+    const allowedRadius = currentShift?.checkInRadiusMeters
+    if (
+      !currentShift?.roomId ||
+      assignedLatitude === null ||
+      assignedLatitude === undefined ||
+      assignedLongitude === null ||
+      assignedLongitude === undefined ||
+      !allowedRadius
+    ) {
+      setLocationStatus('BLOCKED')
+      setAttendanceError('Ca làm chưa được gắn với một căn có tọa độ hợp lệ. Vui lòng liên hệ admin.')
       return
     }
 
@@ -383,18 +409,23 @@ export default function StaffSchedulePage() {
       const distance = calculateDistanceMeters(
         position.coords.latitude,
         position.coords.longitude,
-        STAFF_LOCATION.lat,
-        STAFF_LOCATION.lng,
+        assignedLatitude,
+        assignedLongitude,
       )
 
       setLocationDistance(distance)
-      if (isWithinStaffLocation(distance)) {
+      if (distance <= allowedRadius) {
         setLocationStatus('VALID')
+        setVerifiedLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracyMeters: position.coords.accuracy,
+        })
         return
       }
 
       setLocationStatus('INVALID')
-      setAttendanceError('Bạn chưa ở gần homestay để điểm danh.')
+      setAttendanceError(`Bạn chưa ở trong bán kính điểm danh của ${currentShift.roomName ?? 'căn được phân công'}.`)
     } catch {
       setLocationStatus('BLOCKED')
       setAttendanceError('Không thể truy cập vị trí. Vui lòng bật quyền vị trí và thử lại.')
@@ -414,14 +445,14 @@ export default function StaffSchedulePage() {
       return
     }
 
-    if (locationStatus !== 'VALID') {
-      setAttendanceError('Vui lòng xác minh vị trí gần homestay trước khi check-in.')
+    if (locationStatus !== 'VALID' || !verifiedLocation) {
+      setAttendanceError('Vui lòng xác minh vị trí tại căn được phân công trước khi check-in.')
       return
     }
 
     setIsAttendanceLoading(true)
     try {
-      const attendance = await checkInCurrentShift()
+      const attendance = await checkInCurrentShift(verifiedLocation)
       setCurrentAttendance(attendance)
       setToast('Check-in thành công.')
       setAttendanceError('')
@@ -558,6 +589,7 @@ export default function StaffSchedulePage() {
                   setAttendanceError('')
                   setLocationStatus('IDLE')
                   setLocationDistance(null)
+                  setVerifiedLocation(null)
                   setIsAttendanceOpen(true)
                 }}
                 className="inline-flex min-h-12 items-center gap-2 rounded-full border border-secondary/20 bg-white px-6 font-display text-sm font-bold text-secondary shadow-sm transition hover:-translate-y-0.5 hover:border-secondary/35 hover:bg-[#f2f7f4]"
@@ -625,6 +657,9 @@ export default function StaffSchedulePage() {
             onClose={() => {
               setIsAttendanceOpen(false)
               setAttendanceError('')
+              setLocationStatus('IDLE')
+              setLocationDistance(null)
+              setVerifiedLocation(null)
             }}
           />
         )}
@@ -957,7 +992,8 @@ function AttendanceModal({
               <div>
                 <h3 className="font-display text-base font-bold text-on-surface">Xác minh vị trí</h3>
                 <p className="mt-1 text-sm text-on-surface-variant">
-                  {STAFF_LOCATION.name} · {STAFF_LOCATION.address} · bán kính {STAFF_LOCATION.radiusMeters}m
+                  {shift.roomName ?? 'Chưa gán căn'} · {shift.roomAddress ?? 'Chưa có địa chỉ'} · bán kính{' '}
+                  {shift.checkInRadiusMeters ?? '--'}m
                 </p>
                 {locationDistance !== null && (
                   <p className="mt-1 text-sm font-semibold text-on-surface">
@@ -1309,6 +1345,18 @@ function mapShiftToCell(
   return {
     cellId: `${dayKey}-${shiftName}`,
     shiftId: shift.shiftId,
+    roomId: shift.roomId,
+    roomName: shift.roomName,
+    roomAddress: shift.roomAddress,
+    roomLatitude:
+      shift.roomLatitude === null || shift.roomLatitude === undefined
+        ? null
+        : Number(shift.roomLatitude),
+    roomLongitude:
+      shift.roomLongitude === null || shift.roomLongitude === undefined
+        ? null
+        : Number(shift.roomLongitude),
+    checkInRadiusMeters: shift.checkInRadiusMeters,
     dayKey,
     date: shift.date,
     shiftName,
@@ -1319,7 +1367,9 @@ function mapShiftToCell(
         ? 'IN_PROGRESS'
         : 'COMPLETED'
       : 'ASSIGNED',
-    note: 'Đồng bộ từ lịch backend. Mở chi tiết để xem booking trong ca.',
+    note: shift.roomName
+      ? `Phụ trách ${shift.roomName}. Mở chi tiết để xem booking của căn trong ca.`
+      : 'Ca chưa được gán căn lưu trú. Vui lòng liên hệ admin.',
     checkInTime: currentAttendance?.checkInTime ? formatTimeFromIso(currentAttendance.checkInTime) : undefined,
     checkOutTime: currentAttendance?.checkOutTime ? formatTimeFromIso(currentAttendance.checkOutTime) : undefined,
   }

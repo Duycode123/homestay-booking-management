@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -44,8 +45,39 @@ public class Room {
     @Column(name = "status", nullable = false, columnDefinition = "room_status")
     private RoomStatus status;
 
-    @Transient
+    @Column(name = "description", length = 2000)
     private String description;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "accommodation_type", nullable = false, length = 30)
+    private AccommodationType accommodationType;
+
+    @Column(name = "address_line", length = 255)
+    private String addressLine;
+
+    @Column(name = "ward", length = 120)
+    private String ward;
+
+    @Column(name = "district", length = 120)
+    private String district;
+
+    @Column(name = "city", nullable = false, length = 120)
+    private String city;
+
+    @Column(name = "latitude", precision = 9, scale = 6)
+    private BigDecimal latitude;
+
+    @Column(name = "longitude", precision = 9, scale = 6)
+    private BigDecimal longitude;
+
+    @Column(name = "check_in_radius_m", nullable = false)
+    private Integer checkInRadiusMeters;
+
+    @Column(name = "bathroom_count", nullable = false)
+    private Integer bathroomCount;
+
+    @Column(name = "base_nightly_rate", nullable = false, precision = 12, scale = 2)
+    private BigDecimal baseNightlyRate;
 
     @Column(name = "image_url", length = 500)
     private String imageUrl;
@@ -78,6 +110,21 @@ public class Room {
         }
         if (bedCount == null) {
             bedCount = 1;
+        }
+        if (bathroomCount == null) {
+            bathroomCount = 1;
+        }
+        if (accommodationType == null) {
+            accommodationType = AccommodationType.VILLA;
+        }
+        if (city == null || city.isBlank()) {
+            city = "Hà Nội";
+        }
+        if (checkInRadiusMeters == null) {
+            checkInRadiusMeters = 100;
+        }
+        if (baseNightlyRate == null && roomType != null && roomType.getPricePerHour() != null) {
+            baseNightlyRate = roomType.getPricePerHour().multiply(BigDecimal.valueOf(22));
         }
     }
 

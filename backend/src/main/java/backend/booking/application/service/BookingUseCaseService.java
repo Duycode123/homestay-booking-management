@@ -83,6 +83,7 @@ import java.time.Duration;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -156,8 +157,14 @@ public class BookingUseCaseService implements
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay phong homestay"));
 
         BigDecimal totalHours = calculateTotalHours(command.startTime(), command.endTime());
-        BigDecimal pricePerHour = room.getRoomType().getPricePerHour();
-        BigDecimal originalAmount = totalHours.multiply(pricePerHour);
+        BigDecimal pricePerHour = resolveEffectiveHourlyRate(room);
+        BigDecimal originalAmount = calculateAccommodationAmount(
+                room,
+                command.startTime(),
+                command.endTime(),
+                totalHours,
+                pricePerHour
+        );
         CostBreakdown costBreakdown = calculateCostBreakdown(
                 command.couponCode(), originalAmount, command.customerEmail(), null
         );
@@ -200,8 +207,14 @@ public class BookingUseCaseService implements
         }
 
         BigDecimal totalHours = calculateTotalHours(command.startTime(), command.endTime());
-        BigDecimal pricePerHour = room.getRoomType().getPricePerHour();
-        BigDecimal originalAmount = totalHours.multiply(pricePerHour);
+        BigDecimal pricePerHour = resolveEffectiveHourlyRate(room);
+        BigDecimal originalAmount = calculateAccommodationAmount(
+                room,
+                command.startTime(),
+                command.endTime(),
+                totalHours,
+                pricePerHour
+        );
         CostBreakdown costBreakdown = calculateCostBreakdown(
                 command.couponCode(), originalAmount, command.customerEmail(), null
         );
@@ -879,6 +892,31 @@ public class BookingUseCaseService implements
 
     private BigDecimal normalizeMoney(BigDecimal value) {
         return (value == null ? BigDecimal.ZERO : value).setScale(MONEY_SCALE, RoundingMode.HALF_UP);
+    }
+
+    private BigDecimal resolveEffectiveHourlyRate(Room room) {
+        if (room.getBaseNightlyRate() != null
+                && room.getBaseNightlyRate().compareTo(BigDecimal.ZERO) > 0) {
+            return room.getBaseNightlyRate()
+                    .divide(BigDecimal.valueOf(FIRST_NIGHT_STAY_HOURS), MONEY_SCALE, RoundingMode.HALF_UP);
+        }
+        return room.getRoomType().getPricePerHour();
+    }
+
+    private BigDecimal calculateAccommodationAmount(
+            Room room,
+            LocalDateTime startTime,
+            LocalDateTime endTime,
+            BigDecimal totalHours,
+            BigDecimal effectiveHourlyRate
+    ) {
+        if (room.getBaseNightlyRate() != null
+                && room.getBaseNightlyRate().compareTo(BigDecimal.ZERO) > 0) {
+            long nightCount = ChronoUnit.DAYS.between(startTime.toLocalDate(), endTime.toLocalDate());
+            return room.getBaseNightlyRate().multiply(BigDecimal.valueOf(nightCount));
+        }
+
+        return totalHours.multiply(effectiveHourlyRate);
     }
 
     private AvailabilityBlock resolveAvailabilityBlock(List<Booking> blockingBookings) {

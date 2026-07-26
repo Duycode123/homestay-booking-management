@@ -37,6 +37,7 @@ type RoomApiItem = {
   } | null
   maxPeople?: number | null
   status?: string | null
+  baseNightlyRate?: number | string | null
   imageUrl?: string | null
 }
 
@@ -355,6 +356,13 @@ function buildBookingAgentFallbackReply(
 }
 
 function normalizeRoomPrice(room: RoomApiItem) {
+  const nightlyValue = typeof room.baseNightlyRate === 'string'
+    ? Number(room.baseNightlyRate)
+    : room.baseNightlyRate
+  if (Number.isFinite(nightlyValue) && Number(nightlyValue) > 0) {
+    return Number(nightlyValue)
+  }
+
   const value = room.roomType?.pricePerHour
   const numberValue = typeof value === 'string' ? Number(value) : value
   return Number.isFinite(numberValue)
@@ -398,7 +406,7 @@ function isAskingPrice(normalized: string) {
 async function buildPriceDbFallbackReply(): Promise<ChatbotReply | null> {
   const response = await api.get<ApiEnvelope<RoomApiItem[]>>('/api/rooms')
   const rooms = (response.data.data ?? [])
-    .filter((room) => room.status !== 'MAINTENANCE')
+    .filter((room) => room.status !== 'MAINTENANCE' && room.status !== 'INACTIVE')
     .filter((room) => normalizeRoomPrice(room) !== Number.MAX_SAFE_INTEGER)
     .sort((first, second) => normalizeRoomPrice(first) - normalizeRoomPrice(second))
 
@@ -417,15 +425,15 @@ async function buildPriceDbFallbackReply(): Promise<ChatbotReply | null> {
 
   const typeLines = Array.from(byType.values())
     .slice(0, 4)
-    .map((room) => `**${room.roomType?.typeName ?? room.roomName}** từ ${formatMoney(room.roomType?.pricePerHour)}`)
+    .map((room) => `**${room.roomType?.typeName ?? room.roomName}** từ ${formatMoney(normalizeRoomPrice(room))}/đêm`)
     .join('; ')
 
   return {
     content:
-      `Giá thuê hiện dao động khoảng **${formatMoney(cheapest.roomType?.pricePerHour)} đến ${formatMoney(highest.roomType?.pricePerHour)}** tùy loại phòng. Một vài mức tham khảo: ${typeLines}. Nếu bạn cho mình số người, ngân sách và khung giờ, mình sẽ gợi ý phòng hợp nhất.`,
+      `Giá nguyên căn hiện dao động khoảng **${formatMoney(normalizeRoomPrice(cheapest))} đến ${formatMoney(normalizeRoomPrice(highest))} mỗi đêm**. Một vài mức tham khảo: ${typeLines}. Nếu bạn cho mình số người, ngân sách và ngày lưu trú, mình sẽ gợi ý căn phù hợp nhất.`,
     quickReplies: [
-      { id: 'qr-price-budget', label: 'Dưới 300k', message: 'Có phòng nào dưới 300k một giờ không?' },
-      { id: 'qr-price-people', label: 'Cho 4 người', message: 'Nhóm 4 người nên chọn phòng nào?' },
+      { id: 'qr-price-budget', label: 'Dưới 3 triệu', message: 'Có căn nào dưới 3 triệu một đêm không?' },
+      { id: 'qr-price-people', label: 'Cho 4 người', message: 'Nhóm 4 người nên chọn căn nào?' },
     ],
     mode: 'FRONTEND_DB_FALLBACK',
   }

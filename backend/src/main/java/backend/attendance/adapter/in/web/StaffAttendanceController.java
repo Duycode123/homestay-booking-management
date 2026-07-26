@@ -1,6 +1,7 @@
 package backend.attendance.adapter.in.web;
 
 import backend.attendance.adapter.in.web.dto.AttendanceResponse;
+import backend.attendance.adapter.in.web.dto.CheckInShiftRequest;
 import backend.attendance.application.port.in.CheckInShiftUseCase;
 import backend.attendance.application.port.in.CheckOutShiftUseCase;
 import backend.attendance.application.port.in.GetCurrentShiftAttendanceUseCase;
@@ -15,6 +16,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestBody;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/staff/attendance")
@@ -40,9 +43,17 @@ public class StaffAttendanceController {
     }
 
     @PostMapping("/check-in")
-    public ResponseEntity<ApiResponse<AttendanceResponse>> checkIn(Authentication authentication) {
+    public ResponseEntity<ApiResponse<AttendanceResponse>> checkIn(
+            Authentication authentication,
+            @Valid @RequestBody CheckInShiftRequest request
+    ) {
         AttendanceResponse data = AttendanceResponse.from(
-                checkInShiftUseCase.checkIn(new CheckInShiftCommand(authentication.getName()))
+                checkInShiftUseCase.checkIn(new CheckInShiftCommand(
+                        authentication.getName(),
+                        request.latitude(),
+                        request.longitude(),
+                        request.accuracyMeters()
+                ))
         );
 
         return ResponseEntity.ok(success("Da check-in luc " + data.checkInTime().toLocalTime(), data));

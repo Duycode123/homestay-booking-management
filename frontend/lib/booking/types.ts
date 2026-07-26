@@ -7,6 +7,7 @@ export type HomestayRoom = {
   bedroomCount?: number
   bedCount?: number
   pricePerHour: number
+  baseNightlyRate?: number
   equipment: string[]
   isVip?: boolean
   roomTypeId?: number
@@ -15,7 +16,7 @@ export type HomestayRoom = {
   location?: string
   description?: string
   imageUrl?: string
-  status?: 'AVAILABLE' | 'IN_USE' | 'MAINTENANCE'
+  status?: 'AVAILABLE' | 'IN_USE' | 'MAINTENANCE' | 'NEED_CLEANING' | 'INACTIVE'
 }
 
 export type TimeSlot = {

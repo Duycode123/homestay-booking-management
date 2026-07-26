@@ -13,6 +13,7 @@ import {
   detectRoomCategory,
   formatCurrency,
   getNightlyDisplayPrice,
+  getRoomSubtotal,
   formatDisplayDate,
   normalizeDuration,
   type BookingRoom,
@@ -43,7 +44,7 @@ export default function BookingConfirmationClient() {
   const [isLoadingAddons, setIsLoadingAddons] = useState(false)
 
   const displayRoom = apiRoom ?? room
-  const roomSubtotal = displayRoom.pricePerHour * getBookingDuration(searchParams)
+  const roomSubtotal = getRoomSubtotal(displayRoom, getBookingDuration(searchParams))
   const paymentMethod = 'bank_transfer' as const
   const selectionHref = '/rooms'
   const date = searchParams.get('date') || DEFAULT_BOOKING_DATE
@@ -464,6 +465,10 @@ function getApiBookingRoom(searchParams: { get(name: string): string | null }): 
   const roomHighlights = parseCsvParam(searchParams.get('roomHighlights'))
   const rawPrice = Number(searchParams.get('pricePerHour'))
   const pricePerHour = Number.isFinite(rawPrice) && rawPrice > 0 ? rawPrice : 0
+  const rawNightlyRate = Number(searchParams.get('baseNightlyRate'))
+  const baseNightlyRate = Number.isFinite(rawNightlyRate) && rawNightlyRate > 0
+    ? rawNightlyRate
+    : undefined
   const roomImage = searchParams.get('roomImage')?.trim()
   const safeImage = roomImage?.startsWith('/') ? roomImage : undefined
   const category = detectRoomCategory(roomType)
@@ -484,10 +489,12 @@ function getApiBookingRoom(searchParams: { get(name: string): string | null }): 
     capacity: formatCapacityLabel(searchParams.get('roomCapacity'), 'Chưa rõ sức chứa'),
     bedroomCount: 1,
     bedCount: 1,
+    bathroomCount: 1,
     location: searchParams.get('roomLocation')?.trim() || 'The Serene Villa',
     image: safeImage,
     imageClassName: 'object-center',
     pricePerHour,
+    baseNightlyRate,
     equipments: roomHighlights,
     includedEquipments: roomHighlights.length > 0 ? roomHighlights : [roomType],
     addons: [],

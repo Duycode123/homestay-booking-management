@@ -8,6 +8,8 @@ public record DecideShiftRegistrationRequest(
         Boolean approved,
 
         @Size(max = 500, message = "Ly do tu choi khong duoc vuot qua 500 ky tu")
-        String rejectionReason
+        String rejectionReason,
+
+        Integer roomId
 ) {
 }

@@ -8,6 +8,7 @@ import backend.staffschedule.application.port.out.ShiftRegistrationActorPort;
 import backend.staffschedule.application.port.out.ShiftRegistrationPort;
 import backend.staffschedule.domain.model.ShiftRegistration;
 import backend.staffschedule.domain.model.ShiftRegistrationStatus;
+import backend.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -101,6 +102,47 @@ class ShiftRegistrationUseCaseServiceTest {
                 org.mockito.ArgumentMatchers.any(),
                 org.mockito.ArgumentMatchers.any()
         );
+    }
+
+    @Test
+    void approvalAssignsTheSelectedAccommodationToTheNewShift() {
+        ShiftRegistration pending = registration(ShiftRegistrationStatus.PENDING, null);
+        when(actorPort.loadAccountIdByEmail("admin@example.com")).thenReturn(Optional.of(92));
+        when(registrationPort.loadRegistration(44)).thenReturn(Optional.of(pending));
+        when(registrationPort.loadRegistrationForUpdate(44)).thenReturn(Optional.of(pending));
+        when(assignmentPort.isRoomAssignable(8)).thenReturn(true);
+        when(registrationPort.updateDecision(org.mockito.ArgumentMatchers.any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.decideShiftRegistration(
+                new DecideShiftRegistrationCommand(44, "admin@example.com", true, null, 8)
+        );
+
+        verify(assignmentPort).createAssignedShift(
+                5,
+                pending.workDate(),
+                pending.startTime(),
+                pending.endTime(),
+                8
+        );
+    }
+
+    @Test
+    void approvalRejectsAccommodationWithoutValidCheckInLocation() {
+        ShiftRegistration pending = registration(ShiftRegistrationStatus.PENDING, null);
+        when(actorPort.loadAccountIdByEmail("admin@example.com")).thenReturn(Optional.of(92));
+        when(registrationPort.loadRegistration(44)).thenReturn(Optional.of(pending));
+        when(registrationPort.loadRegistrationForUpdate(44)).thenReturn(Optional.of(pending));
+        when(assignmentPort.isRoomAssignable(8)).thenReturn(false);
+
+        assertThrows(
+                ResourceNotFoundException.class,
+                () -> service.decideShiftRegistration(
+                        new DecideShiftRegistrationCommand(44, "admin@example.com", true, null, 8)
+                )
+        );
+
+        verify(registrationPort, never()).updateDecision(org.mockito.ArgumentMatchers.any());
     }
 
     private ShiftRegistration registration(ShiftRegistrationStatus status, Integer reviewerId) {

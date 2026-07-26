@@ -62,7 +62,8 @@ public class AdminShiftRegistrationController {
                         registrationId,
                         authentication.getName(),
                         request.approved(),
-                        request.rejectionReason()
+                        request.rejectionReason(),
+                        request.roomId()
                 ))
         );
 

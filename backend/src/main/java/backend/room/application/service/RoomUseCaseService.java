@@ -7,6 +7,7 @@ import backend.entity.Role;
 import backend.entity.Room;
 import backend.entity.RoomStatus;
 import backend.entity.RoomType;
+import backend.entity.AccommodationType;
 import backend.entity.User;
 import backend.exception.ForbiddenException;
 import backend.exception.ResourceNotFoundException;
@@ -66,6 +67,9 @@ public class RoomUseCaseService implements
 
     private static final int DEFAULT_PAGE_SIZE = 10;
     private static final int MAX_PAGE_SIZE = 100;
+    private static final int DEFAULT_CHECK_IN_RADIUS_METERS = 100;
+    private static final int DEFAULT_STAY_HOURS = 22;
+    private static final String DEFAULT_CITY = "Hà Nội";
 
     private final RoomCatalogPort roomCatalogPort;
     private final RoomMutationPort roomMutationPort;
@@ -111,6 +115,7 @@ public class RoomUseCaseService implements
         String search = query.search() == null || query.search().trim().isBlank()
                 ? null
                 : query.search().trim();
+        String district = normalizeOptionalText(query.district(), 120, "Quận/huyện");
 
         return new RoomSearchCriteria(
                 query.roomTypeId(),
@@ -118,7 +123,8 @@ public class RoomUseCaseService implements
                 search,
                 query.minCapacity(),
                 page,
-                size
+                size,
+                district
         );
     }
 
@@ -147,6 +153,9 @@ public class RoomUseCaseService implements
         }
         validateMaxPeople(command.maxPeople());
         validateSleepingLayout(command.bedroomCount(), command.bedCount());
+        validateBathroomCount(command.bathroomCount());
+        validateCoordinates(command.latitude(), command.longitude());
+        validateCheckInRadius(command.checkInRadiusMeters());
 
         if (roomCatalogPort.existsRoomName(roomName)) {
             throw new IllegalArgumentException("Tên phòng đã tồn tại");
@@ -160,6 +169,19 @@ public class RoomUseCaseService implements
                 .maxPeople(command.maxPeople())
                 .bedroomCount(command.bedroomCount())
                 .bedCount(command.bedCount())
+                .bathroomCount(command.bathroomCount() == null ? 1 : command.bathroomCount())
+                .accommodationType(command.accommodationType() == null ? AccommodationType.VILLA : command.accommodationType())
+                .description(normalizeOptionalText(command.description(), 2000, "Mô tả"))
+                .addressLine(normalizeOptionalText(command.addressLine(), 255, "Địa chỉ"))
+                .ward(normalizeOptionalText(command.ward(), 120, "Phường/xã"))
+                .district(normalizeOptionalText(command.district(), 120, "Quận/huyện"))
+                .city(defaultIfBlank(command.city(), DEFAULT_CITY))
+                .latitude(command.latitude())
+                .longitude(command.longitude())
+                .checkInRadiusMeters(command.checkInRadiusMeters() == null
+                        ? DEFAULT_CHECK_IN_RADIUS_METERS
+                        : command.checkInRadiusMeters())
+                .baseNightlyRate(resolveNightlyRate(command.baseNightlyRate(), roomType))
                 .imageUrl(normalizeOptionalImageUrl(command.imageUrl()))
                 .status(command.status() == null ? RoomStatus.AVAILABLE : command.status())
                 .build();
@@ -186,6 +208,9 @@ public class RoomUseCaseService implements
         }
         validateMaxPeople(command.maxPeople());
         validateSleepingLayout(command.bedroomCount(), command.bedCount());
+        validateBathroomCount(command.bathroomCount());
+        validateCoordinates(command.latitude(), command.longitude());
+        validateCheckInRadius(command.checkInRadiusMeters());
 
         Room room = roomCatalogPort.loadRoomForUpdate(command.roomId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phòng homestay"));
@@ -202,6 +227,21 @@ public class RoomUseCaseService implements
         room.setMaxPeople(command.maxPeople());
         room.setBedroomCount(command.bedroomCount());
         room.setBedCount(command.bedCount());
+        room.setBathroomCount(command.bathroomCount() == null ? room.getBathroomCount() : command.bathroomCount());
+        room.setAccommodationType(command.accommodationType() == null
+                ? room.getAccommodationType()
+                : command.accommodationType());
+        room.setDescription(normalizeOptionalText(command.description(), 2000, "Mô tả"));
+        room.setAddressLine(normalizeOptionalText(command.addressLine(), 255, "Địa chỉ"));
+        room.setWard(normalizeOptionalText(command.ward(), 120, "Phường/xã"));
+        room.setDistrict(normalizeOptionalText(command.district(), 120, "Quận/huyện"));
+        room.setCity(defaultIfBlank(command.city(), DEFAULT_CITY));
+        room.setLatitude(command.latitude());
+        room.setLongitude(command.longitude());
+        room.setCheckInRadiusMeters(command.checkInRadiusMeters() == null
+                ? DEFAULT_CHECK_IN_RADIUS_METERS
+                : command.checkInRadiusMeters());
+        room.setBaseNightlyRate(resolveNightlyRate(command.baseNightlyRate(), roomType));
         room.setImageUrl(normalizeOptionalImageUrl(command.imageUrl()));
         applyAdditionalImages(room, command.additionalImageUrls());
         room.setStatus(command.status());
@@ -437,6 +477,62 @@ public class RoomUseCaseService implements
         if (bedCount < bedroomCount) {
             throw new IllegalArgumentException("So giuong khong duoc nho hon so phong ngu");
         }
+    }
+
+    private void validateBathroomCount(Integer bathroomCount) {
+        if (bathroomCount != null && (bathroomCount < 1 || bathroomCount > 20)) {
+            throw new IllegalArgumentException("Số phòng tắm phải nằm trong khoảng 1-20");
+        }
+    }
+
+    private void validateCoordinates(BigDecimal latitude, BigDecimal longitude) {
+        if ((latitude == null) != (longitude == null)) {
+            throw new IllegalArgumentException("Vĩ độ và kinh độ phải được nhập cùng nhau");
+        }
+        if (latitude != null
+                && (latitude.compareTo(BigDecimal.valueOf(-90)) < 0
+                || latitude.compareTo(BigDecimal.valueOf(90)) > 0)) {
+            throw new IllegalArgumentException("Vĩ độ phải nằm trong khoảng -90 đến 90");
+        }
+        if (longitude != null
+                && (longitude.compareTo(BigDecimal.valueOf(-180)) < 0
+                || longitude.compareTo(BigDecimal.valueOf(180)) > 0)) {
+            throw new IllegalArgumentException("Kinh độ phải nằm trong khoảng -180 đến 180");
+        }
+    }
+
+    private void validateCheckInRadius(Integer checkInRadiusMeters) {
+        if (checkInRadiusMeters != null
+                && (checkInRadiusMeters < 20 || checkInRadiusMeters > 1000)) {
+            throw new IllegalArgumentException("Bán kính check-in phải nằm trong khoảng 20-1000 m");
+        }
+    }
+
+    private BigDecimal resolveNightlyRate(BigDecimal baseNightlyRate, RoomType roomType) {
+        BigDecimal value = baseNightlyRate;
+        if (value == null && roomType != null && roomType.getPricePerHour() != null) {
+            value = roomType.getPricePerHour().multiply(BigDecimal.valueOf(DEFAULT_STAY_HOURS));
+        }
+        if (value == null || value.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Giá mỗi đêm phải lớn hơn 0");
+        }
+        return value;
+    }
+
+    private String normalizeOptionalText(String value, int maxLength, String fieldName) {
+        if (value == null || value.trim().isBlank()) {
+            return null;
+        }
+        String normalized = value.trim();
+        if (normalized.length() > maxLength) {
+            throw new IllegalArgumentException(fieldName + " tối đa " + maxLength + " ký tự");
+        }
+        return normalized;
+    }
+
+    private String defaultIfBlank(String value, String defaultValue) {
+        String normalized = normalizeOptionalText(value, 120, "Tỉnh/thành");
+        return normalized == null ? defaultValue : normalized;
     }
 
     private void applyAdditionalImages(Room room, List<String> imageUrls) {

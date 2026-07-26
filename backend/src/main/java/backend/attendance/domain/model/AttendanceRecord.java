@@ -14,6 +14,10 @@ public record AttendanceRecord(
         LocalDateTime checkInTime,
         LocalDateTime checkOutTime,
         BigDecimal workDurationHours,
+        BigDecimal checkInLatitude,
+        BigDecimal checkInLongitude,
+        BigDecimal checkInAccuracyMeters,
+        BigDecimal checkInDistanceMeters,
         AttendanceStatus status
 ) {
 }

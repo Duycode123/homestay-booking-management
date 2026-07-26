@@ -27,18 +27,18 @@ public class DefaultRoomTypeSeeder implements ApplicationRunner {
         roomTypeRepository.saveAll(List.of(
                 RoomType.builder()
                         .typeName("Standard")
-                        .description("Phòng tiện nghi cơ bản, phù hợp cho 1-2 khách.")
-                        .pricePerHour(new BigDecimal("350000"))
+                        .description("Căn lưu trú tiện nghi, phù hợp cho 1-2 khách.")
+                        .pricePerHour(new BigDecimal("100000"))
                         .build(),
                 RoomType.builder()
                         .typeName("Deluxe")
-                        .description("Phòng rộng rãi, có ban công và tiện nghi nâng cấp.")
-                        .pricePerHour(new BigDecimal("550000"))
+                        .description("Căn rộng rãi, có không gian riêng và tiện nghi nâng cấp.")
+                        .pricePerHour(new BigDecimal("150000"))
                         .build(),
                 RoomType.builder()
                         .typeName("Family")
-                        .description("Phòng gia đình có không gian sinh hoạt và sức chứa lớn.")
-                        .pricePerHour(new BigDecimal("750000"))
+                        .description("Căn nguyên căn cho gia đình, có khu sinh hoạt chung và sức chứa lớn.")
+                        .pricePerHour(new BigDecimal("200000"))
                         .build()
         ));
     }

@@ -285,9 +285,20 @@ public class JdbcShiftRegistrationAdapter implements
 
     @Override
     public void createAssignedShift(Integer staffId, LocalDate workDate, LocalTime startTime, LocalTime endTime) {
+        createAssignedShift(staffId, workDate, startTime, endTime, null);
+    }
+
+    @Override
+    public void createAssignedShift(
+            Integer staffId,
+            LocalDate workDate,
+            LocalTime startTime,
+            LocalTime endTime,
+            Integer roomId
+    ) {
         String sql = """
-                INSERT INTO shift (staff_id, date, start_time, end_time, status)
-                SELECT ?, ?, ?, ?, CAST('ASSIGNED' AS shift_status)
+                INSERT INTO shift (staff_id, room_id, date, start_time, end_time, status)
+                SELECT ?, ?, ?, ?, ?, CAST('ASSIGNED' AS shift_status)
                 WHERE NOT EXISTS (
                     SELECT 1
                     FROM shift
@@ -298,7 +309,39 @@ public class JdbcShiftRegistrationAdapter implements
                 )
                 """;
 
-        jdbcTemplate.update(sql, staffId, workDate, startTime, endTime, staffId, workDate, startTime, endTime);
+        jdbcTemplate.update(
+                sql,
+                staffId,
+                roomId,
+                workDate,
+                startTime,
+                endTime,
+                staffId,
+                workDate,
+                startTime,
+                endTime
+        );
+    }
+
+    @Override
+    public boolean isRoomAssignable(Integer roomId) {
+        if (roomId == null) {
+            return false;
+        }
+        Integer count = jdbcTemplate.queryForObject(
+                """
+                SELECT COUNT(*)
+                FROM room
+                WHERE id = ?
+                  AND status <> CAST('INACTIVE' AS room_status)
+                  AND latitude IS NOT NULL
+                  AND longitude IS NOT NULL
+                  AND check_in_radius_m IS NOT NULL
+                """,
+                Integer.class,
+                roomId
+        );
+        return count != null && count > 0;
     }
 
     private ShiftRegistration mapRegistration(ResultSet rs, int rowNum) throws SQLException {

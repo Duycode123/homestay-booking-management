@@ -38,11 +38,22 @@ public class StaffSchedulePersistenceAdapter implements LoadStaffSchedulePort {
     @Override
     public List<StaffShift> loadShifts(Integer staffId, LocalDate fromDate, LocalDate toDate) {
         String sql = """
-                SELECT id, staff_id, date, start_time, end_time
+                SELECT shift.id,
+                       shift.staff_id,
+                       shift.room_id,
+                       room.name AS room_name,
+                       CONCAT_WS(', ', room.address_line, room.ward, room.district, room.city) AS room_address,
+                       room.latitude,
+                       room.longitude,
+                       room.check_in_radius_m,
+                       shift.date,
+                       shift.start_time,
+                       shift.end_time
                 FROM shift
-                WHERE staff_id = ?
-                  AND date BETWEEN ? AND ?
-                ORDER BY date ASC, start_time ASC
+                LEFT JOIN room ON room.id = shift.room_id
+                WHERE shift.staff_id = ?
+                  AND shift.date BETWEEN ? AND ?
+                ORDER BY shift.date ASC, shift.start_time ASC
                 """;
 
         return jdbcTemplate.query(
@@ -50,6 +61,12 @@ public class StaffSchedulePersistenceAdapter implements LoadStaffSchedulePort {
                 (rs, rowNum) -> new StaffShift(
                         rs.getInt("id"),
                         rs.getInt("staff_id"),
+                        rs.getObject("room_id", Integer.class),
+                        rs.getString("room_name"),
+                        rs.getString("room_address"),
+                        rs.getBigDecimal("latitude"),
+                        rs.getBigDecimal("longitude"),
+                        rs.getObject("check_in_radius_m", Integer.class),
                         rs.getDate("date").toLocalDate(),
                         rs.getTime("start_time").toLocalTime(),
                         rs.getTime("end_time").toLocalTime()
@@ -66,12 +83,20 @@ public class StaffSchedulePersistenceAdapter implements LoadStaffSchedulePort {
     }
 
     @Override
-    public List<StaffShiftBooking> loadBookingsInShiftWindow(LocalDateTime shiftStart, LocalDateTime shiftEnd) {
-        List<Booking> bookings = bookingRepository.findBookingsOverlappingWindow(
-                shiftStart,
-                shiftEnd,
-                List.of(BookingStatus.CANCELLED, BookingStatus.EXPIRED)
-        );
+    public List<StaffShiftBooking> loadBookingsInShiftWindow(
+            Integer roomId,
+            LocalDateTime shiftStart,
+            LocalDateTime shiftEnd
+    ) {
+        List<BookingStatus> excludedStatuses = List.of(BookingStatus.CANCELLED, BookingStatus.EXPIRED);
+        List<Booking> bookings = roomId == null
+                ? bookingRepository.findBookingsOverlappingWindow(shiftStart, shiftEnd, excludedStatuses)
+                : bookingRepository.findRoomBookingsOverlappingWindow(
+                        roomId,
+                        shiftStart,
+                        shiftEnd,
+                        excludedStatuses
+                );
 
         return bookings.stream()
                 .map(mapper::toShiftBooking)

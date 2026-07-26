@@ -8,6 +8,7 @@ public record RoomSearchCriteria(
         String search,
         Integer minCapacity,
         Integer page,
-        Integer size
+        Integer size,
+        String district
 ) {
 }

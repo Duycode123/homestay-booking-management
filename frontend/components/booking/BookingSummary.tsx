@@ -1,6 +1,11 @@
 import type { TimeSlot } from '@/lib/booking/types'
 import type { HomestayRoom } from '@/lib/booking/types'
 import { formatPrice } from '@/lib/booking/bookingApi'
+import {
+  getNightlyDisplayPrice,
+  getRoomSubtotal,
+  getStayNightCountFromDuration,
+} from '@/components/booking/booking-data'
 import { formatDateLong } from '@/lib/booking/dateUtils'
 import { formatSlotRange } from '@/lib/booking/slotSelection'
 
@@ -22,8 +27,9 @@ export default function BookingSummary({
   onConfirm,
 }: BookingSummaryProps) {
   const selectedHours = selectedSlots.length
+  const nightCount = getStayNightCountFromDuration(selectedHours)
   const total =
-    room && selectedHours > 0 ? formatPrice(room.pricePerHour * selectedHours) : null
+    room && selectedHours > 0 ? formatPrice(getRoomSubtotal(room, selectedHours)) : null
 
   const isSuccess = message.includes('thành công')
 
@@ -52,7 +58,7 @@ export default function BookingSummary({
         />
         {selectedHours > 0 && room && (
           <p className="-mt-2 text-xs text-on-surface-variant">
-            {selectedHours} giờ × {formatPrice(room.pricePerHour)}/giờ
+            {nightCount} đêm × {formatPrice(room.baseNightlyRate ?? getNightlyDisplayPrice(room.pricePerHour))}/đêm
           </p>
         )}
 

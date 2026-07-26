@@ -1,4 +1,5 @@
 export type RoomCategory = 'standard' | 'deluxe' | 'family'
+export type AccommodationType = 'VILLA' | 'GARDEN_HOUSE' | 'BUNGALOW' | 'APARTMENT' | 'HOMESTAY'
 
 export type RoomStatus = 'active' | 'occupied' | 'maintenance' | 'inactive'
 
@@ -13,7 +14,17 @@ export type AdminRoom = {
   capacity: number
   bedroomCount: number
   bedCount: number
+  bathroomCount: number
   pricePerHour: number
+  baseNightlyRate: number
+  accommodationType: AccommodationType
+  addressLine: string
+  ward: string
+  district: string
+  city: string
+  latitude: number | null
+  longitude: number | null
+  checkInRadiusMeters: number
   status: RoomStatus
   image: string
   imageUrl?: string
@@ -45,7 +56,17 @@ export type RoomFormData = {
   capacity: number
   bedroomCount: number
   bedCount: number
+  bathroomCount: number
   pricePerHour: number
+  baseNightlyRate: number
+  accommodationType: AccommodationType
+  addressLine: string
+  ward: string
+  district: string
+  city: string
+  latitude: number | null
+  longitude: number | null
+  checkInRadiusMeters: number
   status: RoomStatus | ''
   description: string
   equipments: string
@@ -82,6 +103,15 @@ export type RoomTypeFormErrors = Partial<Record<keyof RoomTypeFormData, string>>
 export const roomCategoryOptions: RoomCategory[] = ['standard', 'deluxe', 'family']
 
 export const roomStatusOptions: RoomStatus[] = ['active', 'occupied', 'maintenance', 'inactive']
+export const accommodationTypeOptions: AccommodationType[] = ['VILLA', 'GARDEN_HOUSE', 'BUNGALOW', 'APARTMENT', 'HOMESTAY']
+
+export const accommodationTypeLabels: Record<AccommodationType, string> = {
+  VILLA: 'Biệt thự',
+  GARDEN_HOUSE: 'Nhà vườn',
+  BUNGALOW: 'Bungalow',
+  APARTMENT: 'Căn hộ',
+  HOMESTAY: 'Homestay nguyên căn',
+}
 
 export const roomCategoryLabels: Record<RoomCategory, string> = {
   standard: 'Phòng homestay tiêu chuẩn',

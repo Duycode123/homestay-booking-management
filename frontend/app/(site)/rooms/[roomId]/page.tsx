@@ -44,7 +44,10 @@ export default async function RoomDetailPage({ params }: { params: Promise<{ roo
   const room = await getPublicRoomForSeo(roomId)
   const roomPath = `/rooms/${roomId}`
   const roomUrl = new URL(roomPath, siteUrl).toString()
-  const pricePerNight = Number(room?.roomType?.pricePerHour ?? 0) * 22
+  const directNightlyRate = Number(room?.baseNightlyRate ?? 0)
+  const pricePerNight = directNightlyRate > 0
+    ? directNightlyRate
+    : Number(room?.roomType?.pricePerHour ?? 0) * 22
   const structuredData = room ? {
     '@context': 'https://schema.org',
     '@graph': [
@@ -57,11 +60,23 @@ export default async function RoomDetailPage({ params }: { params: Promise<{ roo
         ],
       },
       {
-        '@type': 'HotelRoom',
+        '@type': 'VacationRental',
         name: room.roomName,
         description: getRoomSeoDescription(room),
         image: [room.imageUrl, ...(room.imageUrls ?? [])].filter(Boolean),
         url: roomUrl,
+        address: room.addressLine ? {
+          '@type': 'PostalAddress',
+          streetAddress: [room.addressLine, room.ward].filter(Boolean).join(', '),
+          addressLocality: room.district || undefined,
+          addressRegion: room.city || undefined,
+          addressCountry: 'VN',
+        } : undefined,
+        geo: room.latitude != null && room.longitude != null ? {
+          '@type': 'GeoCoordinates',
+          latitude: Number(room.latitude),
+          longitude: Number(room.longitude),
+        } : undefined,
         occupancy: room.maxPeople ? {
           '@type': 'QuantitativeValue',
           maxValue: room.maxPeople,

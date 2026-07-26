@@ -1237,3 +1237,61 @@ body::-webkit-scrollbar-corner {
     transform: none !important;
   }
 }
+/* OpenStreetMap stay-price markers */
+.serene-map-marker-shell {
+  background: transparent;
+  border: 0;
+}
+
+.serene-map-price-marker {
+  align-items: center;
+  background: #fffdfa;
+  border: 1px solid rgba(35, 77, 66, 0.2);
+  border-radius: 999px;
+  box-shadow: 0 8px 22px rgba(23, 58, 49, 0.22);
+  color: #234d42;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 800;
+  height: 34px;
+  justify-content: center;
+  min-width: 64px;
+  padding: 0 12px;
+  position: relative;
+  transition: transform 160ms ease, background-color 160ms ease, color 160ms ease;
+}
+
+.serene-map-price-marker::after {
+  background: inherit;
+  border-bottom: 1px solid rgba(35, 77, 66, 0.18);
+  border-right: 1px solid rgba(35, 77, 66, 0.18);
+  bottom: -5px;
+  content: '';
+  height: 10px;
+  left: calc(50% - 5px);
+  position: absolute;
+  transform: rotate(45deg);
+  width: 10px;
+}
+
+.serene-map-price-marker:hover,
+.serene-map-price-marker.is-selected {
+  background: #234d42;
+  color: #fff;
+  transform: translateY(-2px) scale(1.04);
+}
+
+.leaflet-popup-content-wrapper {
+  border: 1px solid rgba(216, 205, 191, 0.9);
+  border-radius: 20px;
+  box-shadow: 0 22px 60px rgba(23, 58, 49, 0.2);
+  padding: 5px;
+}
+
+.leaflet-popup-content {
+  margin: 7px;
+}
+
+.leaflet-popup-tip {
+  box-shadow: 3px 3px 5px rgba(23, 58, 49, 0.08);
+}

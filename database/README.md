@@ -102,6 +102,8 @@ Core model/entity classes currently present in backend source:
 - `database/migrations/20260715_add_checkout_payment_operator.sql`
 - `database/migrations/20260716_add_room_sleeping_layout.sql`
 - `database/migrations/20260716_serialize_open_payment_sessions.sql`
+- `database/migrations/20260726_add_multi_location_whole_unit_stays.sql`
+- `database/migrations/20260726_assign_shifts_to_accommodations.sql`
 - `database/sample-data/seed_accounts_and_customers.sql`
 - `database/sample-data/seed_rooms_and_equipment.sql`
 - `database/sample-data/seed_bookings_and_reviews.sql`
@@ -114,6 +116,35 @@ Core model/entity classes currently present in backend source:
 - Payment state changes lock booking first and payment transaction second; provider webhooks, polling, replacement QR creation, and expiry cleanup use the same order.
 - Shift registration and attendance use transaction-scoped PostgreSQL advisory locks around check-then-write rules; existing database exclusion/unique constraints remain final safeguards.
 - Add-on delivery locks the selected `booking_addon` row before changing status. Only the first valid transition to `DELIVERED` can add a during-stay service amount to the booking, preventing duplicate staff clicks from charging twice.
+
+## Multi-location Whole-unit Stays
+
+The booking inventory uses the existing `room` table as a whole-accommodation
+catalog. One row represents one villa, garden house, bungalow, apartment, or
+homestay at one physical address. `bedroom_count`, `bed_count`, and
+`bathroom_count` describe the inside of that accommodation; they are never
+independent inventory and cannot be booked separately.
+
+Important fields:
+
+- `accommodation_type`: `VILLA`, `GARDEN_HOUSE`, `BUNGALOW`, `APARTMENT`, or `HOMESTAY`.
+- `address_line`, `ward`, `district`, `city`: customer-facing address and search data.
+- `latitude`, `longitude`: map marker and server-side attendance target.
+- `base_nightly_rate`: whole-unit price for one calendar night (14:00 to 12:00 the next day).
+- `check_in_radius_m`: allowed distance for a staff GPS check-in, normally 100 m.
+
+All existing booking, payment, favorite, review, and incident relationships keep
+using `room_id`; no nested bookable bedroom table is introduced. This preserves
+the current booking lifecycle while allowing every accommodation to have a
+different address.
+
+An approved `shift` is assigned to one `room_id`. The staff schedule and booking
+list are scoped to that accommodation. At check-in, the client submits latitude,
+longitude, and reported accuracy; the server calculates the Haversine distance
+to the assigned accommodation and rejects attendance outside its configured
+radius. `staff_attendance` stores both the submitted evidence and server-calculated
+distance for later audit. Historical shifts may retain a nullable `room_id`
+during migration, but the application requires a room for every new approval.
 
 ## Booking Add-on Services
 
@@ -160,11 +191,17 @@ For local development or demo setup, `database/sample-data/seed_rooms_and_equipm
 - `room`
 - `equipment`
 
-The room catalog contains 12 rooms with tier-specific equipment and amenities:
+The catalog contains 12 whole accommodations at different Hà Nội locations with
+tier-specific equipment and amenities:
 
-- 4 Standard rooms at `350,000 VND/hour`
-- 4 Deluxe rooms at `550,000 VND/hour`
-- 4 Family rooms at `750,000 VND/hour`
+- 4 Standard stays at `2,200,000 VND/night`
+- 4 Deluxe stays at `3,300,000 VND/night`
+- 4 Family stays at `4,400,000 VND/night`
+
+The existing `room_tier.hourly_rate` remains as a compatibility reference for
+older records. New booking totals use each accommodation's
+`base_nightly_rate × number of calendar nights`, so a two-night stay is charged
+exactly twice the nightly rate rather than by elapsed clock hours.
 
 Each room includes the four core equipment records plus additional amenities by tier. Standard rooms receive essential work and refreshment items; Deluxe rooms add minibar, safe and lounge comforts; Family rooms add dining, food-warming and child-friendly amenities.
 
