@@ -6,13 +6,15 @@ import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { uploadAdminRoomImage, validateRoomForm } from '@/lib/admin/rooms/adminRoomApi'
 import type { AdminRoomTypeOption, RoomEquipmentOption, RoomFormData, RoomFormErrors } from '@/lib/admin/rooms/types'
 import {
-  accommodationTypeLabels,
-  accommodationTypeOptions,
   roomCategoryLabels,
   roomCategoryOptions,
   roomStatusLabels,
   roomStatusOptions,
 } from '@/lib/admin/rooms/types'
+import {
+  HOMESTAY_CITY,
+  SUPPORTED_HOMESTAY_DISTRICTS,
+} from '@/lib/accommodation-scope'
 
 type RoomFormModalProps = {
   open: boolean
@@ -383,18 +385,15 @@ export default function RoomFormModal({
                 </div>
 
                 <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                  <label className="block">
+                  <div className="block">
                     <span className={labelClass}>Loại hình</span>
-                    <ProjectSelect
-                      value={form.accommodationType}
-                      onChange={(event) => set({ accommodationType: event.target.value as RoomFormData['accommodationType'] })}
-                      className={inputClass}
-                    >
-                      {accommodationTypeOptions.map((type) => (
-                        <option key={type} value={type}>{accommodationTypeLabels[type]}</option>
-                      ))}
-                    </ProjectSelect>
-                  </label>
+                    <div className="flex h-11 items-center justify-between gap-3 rounded-xl border border-outline bg-surface-container-lowest px-3">
+                      <span className="text-sm font-semibold text-on-surface">Homestay nguyên căn</span>
+                      <span className="rounded-full bg-secondary/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-secondary">
+                        Cố định
+                      </span>
+                    </div>
+                  </div>
 
                   <label className="block">
                     <span className={labelClass}>
@@ -446,7 +445,7 @@ export default function RoomFormModal({
                     value={form.addressLine}
                     onChange={(event) => set({ addressLine: event.target.value })}
                     className={inputClass}
-                    placeholder="VD: CT8B Khu Đô Thị Dương Nội, Yên Lộ"
+                    placeholder="VD: 54 Ngõ 82 Chùa Láng, Láng Thượng"
                   />
                   {errors.addressLine && <p className="mt-1 text-xs text-error">{errors.addressLine}</p>}
                 </label>
@@ -458,14 +457,24 @@ export default function RoomFormModal({
                   </label>
                   <label className="block">
                     <span className={labelClass}>Quận/huyện <span className="text-error">*</span></span>
-                    <input type="text" value={form.district} onChange={(event) => set({ district: event.target.value })} className={inputClass} />
+                    <ProjectSelect
+                      value={form.district}
+                      onChange={(event) => set({ district: event.target.value })}
+                      className={inputClass}
+                    >
+                      {SUPPORTED_HOMESTAY_DISTRICTS.map((district) => (
+                        <option key={district.value} value={district.value}>{district.vi}</option>
+                      ))}
+                    </ProjectSelect>
                     {errors.district && <p className="mt-1 text-xs text-error">{errors.district}</p>}
                   </label>
-                  <label className="block">
+                  <div className="block">
                     <span className={labelClass}>Tỉnh/thành <span className="text-error">*</span></span>
-                    <input type="text" value={form.city} onChange={(event) => set({ city: event.target.value })} className={inputClass} />
+                    <div className="flex h-11 items-center rounded-xl border border-outline bg-surface-container-low px-3 text-sm font-semibold text-on-surface">
+                      {HOMESTAY_CITY}
+                    </div>
                     {errors.city && <p className="mt-1 text-xs text-error">{errors.city}</p>}
-                  </label>
+                  </div>
                 </div>
 
                 <div className="mt-4 grid gap-4 sm:grid-cols-3">
@@ -478,7 +487,7 @@ export default function RoomFormModal({
                       value={form.latitude ?? ''}
                       onChange={(event) => set({ latitude: event.target.value === '' ? null : Number(event.target.value) })}
                       className={inputClass}
-                      placeholder="20.971800"
+                      placeholder="21.023700"
                     />
                     {errors.latitude && <p className="mt-1 text-xs text-error">{errors.latitude}</p>}
                   </label>
@@ -491,7 +500,7 @@ export default function RoomFormModal({
                       value={form.longitude ?? ''}
                       onChange={(event) => set({ longitude: event.target.value === '' ? null : Number(event.target.value) })}
                       className={inputClass}
-                      placeholder="105.750100"
+                      placeholder="105.806900"
                     />
                     {errors.longitude && <p className="mt-1 text-xs text-error">{errors.longitude}</p>}
                   </label>

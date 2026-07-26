@@ -124,7 +124,7 @@ CREATE TABLE IF NOT EXISTS room (
   bathroom_count INT NOT NULL DEFAULT 1,
   status room_status NOT NULL DEFAULT 'AVAILABLE',
   description VARCHAR(2000),
-  accommodation_type VARCHAR(30) NOT NULL DEFAULT 'VILLA',
+  accommodation_type VARCHAR(30) NOT NULL DEFAULT 'HOMESTAY',
   address_line VARCHAR(255),
   ward VARCHAR(120),
   district VARCHAR(120),
@@ -142,7 +142,7 @@ CREATE TABLE IF NOT EXISTS room (
   CONSTRAINT chk_room_bed_count_range CHECK (bed_count BETWEEN 1 AND 50),
   CONSTRAINT chk_room_bathroom_count_range CHECK (bathroom_count BETWEEN 1 AND 20),
   CONSTRAINT chk_room_accommodation_type
-    CHECK (accommodation_type IN ('VILLA', 'GARDEN_HOUSE', 'BUNGALOW', 'APARTMENT', 'HOMESTAY')),
+    CHECK (accommodation_type = 'HOMESTAY'),
   CONSTRAINT chk_room_coordinate_pair
     CHECK ((latitude IS NULL AND longitude IS NULL) OR (latitude IS NOT NULL AND longitude IS NOT NULL)),
   CONSTRAINT chk_room_latitude_range CHECK (latitude IS NULL OR latitude BETWEEN -90 AND 90),

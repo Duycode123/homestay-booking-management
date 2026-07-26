@@ -46,7 +46,7 @@ export default function RoomDetailPanel({ room, onClose, onEdit }: RoomDetailPan
 
         <div className="flex-1 overflow-y-auto px-5 py-5">
           <div className="grid gap-3 sm:grid-cols-2">
-            <MetricCard label="Loại hình" value={formatAccommodationType(room.accommodationType)} />
+            <MetricCard label="Loại hình" value="Homestay nguyên căn" />
             <MetricCard label="Sức chứa" value={`${room.capacity} người`} />
             <MetricCard label="Phòng ngủ" value={`${room.bedroomCount} phòng`} />
             <MetricCard label="Giường ngủ" value={`${room.bedCount} giường`} />
@@ -115,16 +115,6 @@ export default function RoomDetailPanel({ room, onClose, onEdit }: RoomDetailPan
       </aside>
     </>
   )
-}
-
-function formatAccommodationType(type: AdminRoom['accommodationType']) {
-  return {
-    VILLA: 'Villa nguyên căn',
-    GARDEN_HOUSE: 'Nhà vườn',
-    BUNGALOW: 'Bungalow',
-    APARTMENT: 'Căn hộ',
-    HOMESTAY: 'Homestay nguyên căn',
-  }[type]
 }
 
 function Section({ title, children }: { title: string; children: ReactNode }) {

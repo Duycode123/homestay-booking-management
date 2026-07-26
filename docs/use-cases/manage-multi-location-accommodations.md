@@ -1,10 +1,10 @@
-# Manage Multi-location Whole-unit Accommodations
+# Manage Multi-location Whole-unit Homestays
 
 ## Business goal
 
-Operate The Serene Villa as a collection of whole accommodations distributed
-across Hà Nội while keeping one consistent booking, payment, review, and staff
-workflow.
+Operate The Serene Villa as a collection of whole homestays distributed across
+Đống Đa, Ba Vì, Sơn Tây, and Sóc Sơn in Hà Nội while keeping one consistent
+booking, payment, review, and staff workflow.
 
 ## Actors
 
@@ -22,7 +22,7 @@ workflow.
 ## Main customer flow
 
 1. The customer opens the accommodation catalog.
-2. The system lists active whole accommodations and allows filtering by district.
+2. The system lists active whole homestays and allows filtering by the four supported areas.
 3. The customer switches between list and map views.
 4. Each map marker and card shows the accommodation name, area, image, capacity, internal bedroom/bathroom details, and nightly price.
 5. The customer opens one accommodation, reviews its exact address and map, then chooses a stay period.
@@ -32,8 +32,8 @@ workflow.
 ## Main administration flow
 
 1. The admin creates or edits one accommodation.
-2. The admin enters its type, whole-unit nightly price, internal bedroom/bed/bathroom counts, address, coordinates, and staff check-in radius.
-3. The system validates coordinate ranges, positive price, and capacity fields.
+2. The type is fixed to Homestay; the admin enters its tier, whole-unit nightly price, internal bedroom/bed/bathroom counts, supported area, address, coordinates, and staff check-in radius.
+3. The system validates the supported area, Hà Nội city scope, coordinate ranges, positive price, and capacity fields.
 4. The accommodation becomes searchable and visible on the map according to its operational status.
 5. When approving a staff shift registration, the admin must select the accommodation that the employee will cover.
 
@@ -67,6 +67,8 @@ workflow.
 6. Booking visibility during a shift is restricted to the assigned accommodation.
 7. The backend, not the browser, is authoritative for attendance distance validation.
 8. Existing business records remain linked by `room_id`; no duplicate property/room hierarchy is introduced.
+9. The accommodation type is always `HOMESTAY`; Standard, Deluxe, and Family are presentation and pricing tiers, not other property types.
+10. Customer-visible homestays are limited to Đống Đa, Ba Vì, Sơn Tây, and Sóc Sơn.
 
 ## Related endpoints
 
@@ -98,6 +100,7 @@ workflow.
 - Migrations:
   - `V14__multi_location_whole_unit_stays.sql`
   - `V15__assign_shifts_to_accommodations.sql`
+  - `V16__restrict_catalog_to_homestays_and_supported_areas.sql`
 
 ## Known gaps
 

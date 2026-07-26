@@ -76,14 +76,14 @@ class RoomUseCaseServiceTest {
                 3,
                 4,
                 2,
-                AccommodationType.APARTMENT,
-                "Căn hộ nguyên căn phù hợp cho gia đình.",
-                "CT8B Khu Đô Thị Dương Nội, Yên Lộ",
-                "Dương Nội",
-                "Hà Đông",
+                AccommodationType.HOMESTAY,
+                "Homestay nguyên căn phù hợp cho gia đình.",
+                "54 Ngõ 82 Chùa Láng",
+                "Láng Thượng",
+                "Đống Đa",
                 "Hà Nội",
-                new BigDecimal("20.962536"),
-                new BigDecimal("105.745203"),
+                new BigDecimal("21.023700"),
+                new BigDecimal("105.806900"),
                 100,
                 new BigDecimal("2200000.00"),
                 "/images/rooms/standard-garden-101/main.jpg",
@@ -96,14 +96,51 @@ class RoomUseCaseServiceTest {
         verify(roomMutationPort).saveRoom(roomCaptor.capture());
         Room savedRoom = roomCaptor.getValue();
         assertEquals("Standard Garden 101", savedRoom.getRoomName());
-        assertEquals(AccommodationType.APARTMENT, savedRoom.getAccommodationType());
-        assertEquals("CT8B Khu Đô Thị Dương Nội, Yên Lộ", savedRoom.getAddressLine());
-        assertEquals("Hà Đông", savedRoom.getDistrict());
-        assertEquals(new BigDecimal("20.962536"), savedRoom.getLatitude());
-        assertEquals(new BigDecimal("105.745203"), savedRoom.getLongitude());
+        assertEquals(AccommodationType.HOMESTAY, savedRoom.getAccommodationType());
+        assertEquals("54 Ngõ 82 Chùa Láng", savedRoom.getAddressLine());
+        assertEquals("Đống Đa", savedRoom.getDistrict());
+        assertEquals(new BigDecimal("21.023700"), savedRoom.getLatitude());
+        assertEquals(new BigDecimal("105.806900"), savedRoom.getLongitude());
         assertEquals(new BigDecimal("2200000.00"), savedRoom.getBaseNightlyRate());
         assertEquals(2, savedRoom.getBathroomCount());
         assertEquals(21, response.getId());
+    }
+
+    @Test
+    void createRoomRejectsAreaOutsideSupportedHomestayDistricts() {
+        RoomUseCaseService service = new RoomUseCaseService(roomCatalogPort, roomMutationPort, roomActorPort);
+
+        when(roomActorPort.loadUserByEmail("admin@example.com")).thenReturn(Optional.of(adminUser()));
+
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class, () ->
+                service.createRoom(new CreateRoomCommand(
+                        "Central Homestay",
+                        2,
+                        4,
+                        2,
+                        2,
+                        1,
+                        AccommodationType.HOMESTAY,
+                        "Homestay nguyên căn.",
+                        "12 Phố Hàng Vôi",
+                        "Lý Thái Tổ",
+                        "Hoàn Kiếm",
+                        "Hà Nội",
+                        new BigDecimal("21.027800"),
+                        new BigDecimal("105.852300"),
+                        100,
+                        new BigDecimal("2200000.00"),
+                        null,
+                        List.of(),
+                        RoomStatus.AVAILABLE,
+                        "admin@example.com"
+                )));
+
+        assertEquals(
+                "Khu vực chỉ hỗ trợ Đống Đa, Ba Vì, Sơn Tây hoặc Sóc Sơn",
+                error.getMessage()
+        );
+        verify(roomMutationPort, never()).saveRoom(any(Room.class));
     }
 
     @Test

@@ -1,7 +1,7 @@
 import api from '@/lib/api'
 
 export type BackendRoomStatus = 'AVAILABLE' | 'IN_USE' | 'MAINTENANCE' | 'NEED_CLEANING' | 'INACTIVE'
-export type BackendAccommodationType = 'VILLA' | 'GARDEN_HOUSE' | 'BUNGALOW' | 'APARTMENT' | 'HOMESTAY'
+export type BackendAccommodationType = 'HOMESTAY'
 
 export type BackendRoomType = {
   id: number

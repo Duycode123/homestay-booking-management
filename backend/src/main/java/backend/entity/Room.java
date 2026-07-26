@@ -115,7 +115,7 @@ public class Room {
             bathroomCount = 1;
         }
         if (accommodationType == null) {
-            accommodationType = AccommodationType.VILLA;
+            accommodationType = AccommodationType.HOMESTAY;
         }
         if (city == null || city.isBlank()) {
             city = "Hà Nội";

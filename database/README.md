@@ -117,18 +117,18 @@ Core model/entity classes currently present in backend source:
 - Shift registration and attendance use transaction-scoped PostgreSQL advisory locks around check-then-write rules; existing database exclusion/unique constraints remain final safeguards.
 - Add-on delivery locks the selected `booking_addon` row before changing status. Only the first valid transition to `DELIVERED` can add a during-stay service amount to the booking, preventing duplicate staff clicks from charging twice.
 
-## Multi-location Whole-unit Stays
+## Multi-location Homestays
 
 The booking inventory uses the existing `room` table as a whole-accommodation
-catalog. One row represents one villa, garden house, bungalow, apartment, or
-homestay at one physical address. `bedroom_count`, `bed_count`, and
+catalog. One row represents one whole homestay at one physical address.
+`bedroom_count`, `bed_count`, and
 `bathroom_count` describe the inside of that accommodation; they are never
 independent inventory and cannot be booked separately.
 
 Important fields:
 
-- `accommodation_type`: `VILLA`, `GARDEN_HOUSE`, `BUNGALOW`, `APARTMENT`, or `HOMESTAY`.
-- `address_line`, `ward`, `district`, `city`: customer-facing address and search data.
+- `accommodation_type`: fixed to `HOMESTAY`; Standard, Deluxe, and Family remain room tiers.
+- `address_line`, `ward`, `district`, `city`: customer-facing address and search data. The supported customer areas are Đống Đa, Ba Vì, Sơn Tây, and Sóc Sơn in Hà Nội.
 - `latitude`, `longitude`: map marker and server-side attendance target.
 - `base_nightly_rate`: whole-unit price for one calendar night (14:00 to 12:00 the next day).
 - `check_in_radius_m`: allowed distance for a staff GPS check-in, normally 100 m.
@@ -191,7 +191,8 @@ For local development or demo setup, `database/sample-data/seed_rooms_and_equipm
 - `room`
 - `equipment`
 
-The catalog contains 12 whole accommodations at different Hà Nội locations with
+The catalog contains 12 whole homestays across Đống Đa, Ba Vì, Sơn Tây, and
+Sóc Sơn with
 tier-specific equipment and amenities:
 
 - 4 Standard stays at `2,200,000 VND/night`

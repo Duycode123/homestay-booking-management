@@ -8,6 +8,11 @@ import api from '@/lib/api'
 import { invalidatePublicRoomCatalog } from '@/lib/public/room-catalog-cache'
 import { fetchRoomReviewSummaries } from '@/lib/public-room-review-service'
 import {
+  HOMESTAY_ACCOMMODATION_TYPE,
+  HOMESTAY_CITY,
+  isSupportedHomestayDistrict,
+} from '@/lib/accommodation-scope'
+import {
   createRoomType,
   createRoom,
   deleteRoomType,
@@ -111,12 +116,8 @@ export function validateRoomForm(data: RoomFormData): RoomFormErrors {
     errors.addressLine = 'Vui lòng nhập địa chỉ cụ thể của căn lưu trú.'
   }
 
-  if (!data.district.trim()) {
-    errors.district = 'Vui lòng nhập quận/huyện.'
-  }
-
-  if (!data.city.trim()) {
-    errors.city = 'Vui lòng nhập tỉnh/thành.'
+  if (!isSupportedHomestayDistrict(data.district)) {
+    errors.district = 'Chỉ hỗ trợ Đống Đa, Ba Vì, Sơn Tây hoặc Sóc Sơn.'
   }
 
   if (data.latitude == null || !Number.isFinite(data.latitude) || data.latitude < -90 || data.latitude > 90) {
@@ -279,12 +280,12 @@ export async function createAdminRoom(data: RoomFormData): Promise<AdminRoom> {
       bedroomCount: data.bedroomCount,
       bedCount: data.bedCount,
       bathroomCount: data.bathroomCount,
-      accommodationType: data.accommodationType,
+      accommodationType: HOMESTAY_ACCOMMODATION_TYPE,
       description: normalizeOptionalText(data.description),
       addressLine: data.addressLine.trim(),
       ward: normalizeOptionalText(data.ward),
       district: data.district.trim(),
-      city: data.city.trim(),
+      city: HOMESTAY_CITY,
       latitude: data.latitude as number,
       longitude: data.longitude as number,
       checkInRadiusMeters: data.checkInRadiusMeters,
@@ -322,12 +323,12 @@ export async function updateAdminRoom(id: string, data: RoomFormData): Promise<A
       bedroomCount: data.bedroomCount,
       bedCount: data.bedCount,
       bathroomCount: data.bathroomCount,
-      accommodationType: data.accommodationType,
+      accommodationType: HOMESTAY_ACCOMMODATION_TYPE,
       description: normalizeOptionalText(data.description),
       addressLine: data.addressLine.trim(),
       ward: normalizeOptionalText(data.ward),
       district: data.district.trim(),
-      city: data.city.trim(),
+      city: HOMESTAY_CITY,
       latitude: data.latitude as number,
       longitude: data.longitude as number,
       checkInRadiusMeters: data.checkInRadiusMeters,
@@ -458,11 +459,11 @@ export const EMPTY_ROOM_FORM: RoomFormData = {
   bathroomCount: 1,
   pricePerHour: 0,
   baseNightlyRate: 2_200_000,
-  accommodationType: 'VILLA',
+  accommodationType: HOMESTAY_ACCOMMODATION_TYPE,
   addressLine: '',
   ward: '',
-  district: '',
-  city: 'Hà Nội',
+  district: 'Đống Đa',
+  city: HOMESTAY_CITY,
   latitude: null,
   longitude: null,
   checkInRadiusMeters: 100,

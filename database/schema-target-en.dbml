@@ -154,10 +154,10 @@ Table room {
   bathroom_count        int         [not null, default: 1]
   status                room_status [not null, default: 'AVAILABLE']
   description           varchar(2000)
-  accommodation_type    varchar(30) [not null, default: 'VILLA']
+  accommodation_type    varchar(30) [not null, default: 'HOMESTAY', note: 'Fixed project scope: homestay only']
   address_line          varchar(255)
   ward                  varchar(120)
-  district              varchar(120)
+  district              varchar(120) [note: 'Customer scope: Đống Đa, Ba Vì, Sơn Tây, or Sóc Sơn']
   city                  varchar(120) [not null, default: 'Hà Nội']
   latitude              decimal
   longitude             decimal

@@ -98,18 +98,18 @@ WITH sample_locations(
     bathroom_count
 ) AS (
     VALUES
-        ('Standard Garden 101', 'APARTMENT', 'CT8B Khu Đô Thị Dương Nội, Yên Lộ', 'Dương Nội', 'Hà Đông', 'Hà Nội', 20.962536::numeric, 105.745203::numeric, 1, 1, 2),
-        ('Standard Garden 102', 'GARDEN_HOUSE', 'Đường Vườn Quốc Gia Ba Vì', 'Tản Lĩnh', 'Ba Vì', 'Hà Nội', 21.098700::numeric, 105.382600::numeric, 1, 1, 1),
+        ('Standard Garden 101', 'HOMESTAY', '54 Ngõ 82 Chùa Láng', 'Láng Thượng', 'Đống Đa', 'Hà Nội', 21.023700::numeric, 105.806900::numeric, 1, 1, 2),
+        ('Standard Garden 102', 'HOMESTAY', 'Đường Vườn Quốc Gia Ba Vì', 'Tản Lĩnh', 'Ba Vì', 'Hà Nội', 21.098700::numeric, 105.382600::numeric, 1, 1, 1),
         ('Standard Courtyard 103', 'HOMESTAY', 'Thôn Lâm Trường', 'Minh Phú', 'Sóc Sơn', 'Hà Nội', 21.305500::numeric, 105.833900::numeric, 1, 1, 1),
-        ('Standard Quiet 104', 'APARTMENT', 'Phố Quảng Khánh', 'Quảng An', 'Tây Hồ', 'Hà Nội', 21.066200::numeric, 105.826300::numeric, 1, 1, 1),
-        ('Deluxe Balcony 201', 'APARTMENT', 'Đường Hồng Tiến', 'Bồ Đề', 'Long Biên', 'Hà Nội', 21.046600::numeric, 105.873600::numeric, 2, 2, 2),
-        ('Deluxe City View 202', 'APARTMENT', 'Phố Hàng Vôi', 'Lý Thái Tổ', 'Hoàn Kiếm', 'Hà Nội', 21.027800::numeric, 105.852300::numeric, 2, 2, 1),
-        ('Deluxe Garden View 203', 'GARDEN_HOUSE', 'Đường Đa Tốn', 'Đa Tốn', 'Gia Lâm', 'Hà Nội', 20.995800::numeric, 105.944600::numeric, 2, 2, 2),
-        ('Deluxe Corner 204', 'APARTMENT', 'Đường Võ Chí Công', 'Xuân La', 'Tây Hồ', 'Hà Nội', 21.066900::numeric, 105.802800::numeric, 2, 2, 2),
-        ('Family Suite 301', 'VILLA', 'Thôn Muồng Cháu', 'Vân Hòa', 'Ba Vì', 'Hà Nội', 21.073800::numeric, 105.381800::numeric, 3, 3, 3),
-        ('Family Garden 302', 'VILLA', 'Thôn Phú Ninh', 'Minh Phú', 'Sóc Sơn', 'Hà Nội', 21.316000::numeric, 105.834000::numeric, 3, 3, 3),
-        ('Family Loft 303', 'BUNGALOW', 'Khu sinh thái Đồng Mô', 'Sơn Đông', 'Sơn Tây', 'Hà Nội', 21.055500::numeric, 105.430500::numeric, 3, 3, 2),
-        ('Family Pool View 304', 'VILLA', 'Đường Võ Nguyên Giáp', 'Vĩnh Ngọc', 'Đông Anh', 'Hà Nội', 21.137000::numeric, 105.853000::numeric, 3, 3, 3)
+        ('Standard Quiet 104', 'HOMESTAY', 'Khu nghỉ dưỡng Đồng Mô', 'Sơn Đông', 'Sơn Tây', 'Hà Nội', 21.055500::numeric, 105.430500::numeric, 1, 1, 1),
+        ('Deluxe Balcony 201', 'HOMESTAY', '12 Phố Cát Linh', 'Cát Linh', 'Đống Đa', 'Hà Nội', 21.027400::numeric, 105.828000::numeric, 2, 2, 2),
+        ('Deluxe City View 202', 'HOMESTAY', '68 Phố Tây Sơn', 'Quang Trung', 'Đống Đa', 'Hà Nội', 21.010800::numeric, 105.825800::numeric, 2, 2, 1),
+        ('Deluxe Garden View 203', 'HOMESTAY', 'Thôn Mít Mái', 'Yên Bài', 'Ba Vì', 'Hà Nội', 21.030500::numeric, 105.362500::numeric, 2, 2, 2),
+        ('Deluxe Corner 204', 'HOMESTAY', 'Đường Thanh Vị', 'Sơn Lộc', 'Sơn Tây', 'Hà Nội', 21.137500::numeric, 105.504000::numeric, 2, 2, 2),
+        ('Family Suite 301', 'HOMESTAY', 'Thôn Muồng Cháu', 'Vân Hòa', 'Ba Vì', 'Hà Nội', 21.073800::numeric, 105.381800::numeric, 3, 3, 3),
+        ('Family Garden 302', 'HOMESTAY', 'Thôn Phú Ninh', 'Minh Phú', 'Sóc Sơn', 'Hà Nội', 21.316000::numeric, 105.834000::numeric, 3, 3, 3),
+        ('Family Loft 303', 'HOMESTAY', 'Khu sinh thái Đồng Mô', 'Sơn Đông', 'Sơn Tây', 'Hà Nội', 21.062500::numeric, 105.446500::numeric, 3, 3, 2),
+        ('Family Pool View 304', 'HOMESTAY', 'Thôn Lâm Trường', 'Minh Phú', 'Sóc Sơn', 'Hà Nội', 21.301000::numeric, 105.820500::numeric, 3, 3, 3)
 )
 UPDATE room
 SET accommodation_type = sample_locations.accommodation_type,

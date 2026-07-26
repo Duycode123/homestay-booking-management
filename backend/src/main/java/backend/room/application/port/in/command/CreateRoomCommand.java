@@ -41,7 +41,7 @@ public record CreateRoomCommand(
     ) {
         this(
                 roomName, roomTypeId, maxPeople, bedroomCount, bedCount,
-                1, AccommodationType.VILLA, null, null, null, null, "Hà Nội",
+                1, AccommodationType.HOMESTAY, null, null, null, null, "Hà Nội",
                 null, null, 100, null,
                 imageUrl, additionalImageUrls, status, currentUserEmail
         );

@@ -70,6 +70,12 @@ public class RoomUseCaseService implements
     private static final int DEFAULT_CHECK_IN_RADIUS_METERS = 100;
     private static final int DEFAULT_STAY_HOURS = 22;
     private static final String DEFAULT_CITY = "Hà Nội";
+    private static final List<String> SUPPORTED_DISTRICTS = List.of(
+            "Đống Đa",
+            "Ba Vì",
+            "Sơn Tây",
+            "Sóc Sơn"
+    );
 
     private final RoomCatalogPort roomCatalogPort;
     private final RoomMutationPort roomMutationPort;
@@ -115,7 +121,7 @@ public class RoomUseCaseService implements
         String search = query.search() == null || query.search().trim().isBlank()
                 ? null
                 : query.search().trim();
-        String district = normalizeOptionalText(query.district(), 120, "Quận/huyện");
+        String district = normalizeSupportedDistrict(query.district());
 
         return new RoomSearchCriteria(
                 query.roomTypeId(),
@@ -156,6 +162,8 @@ public class RoomUseCaseService implements
         validateBathroomCount(command.bathroomCount());
         validateCoordinates(command.latitude(), command.longitude());
         validateCheckInRadius(command.checkInRadiusMeters());
+        String district = normalizeSupportedDistrict(command.district());
+        String city = normalizeHanoiCity(command.city());
 
         if (roomCatalogPort.existsRoomName(roomName)) {
             throw new IllegalArgumentException("Tên phòng đã tồn tại");
@@ -170,12 +178,12 @@ public class RoomUseCaseService implements
                 .bedroomCount(command.bedroomCount())
                 .bedCount(command.bedCount())
                 .bathroomCount(command.bathroomCount() == null ? 1 : command.bathroomCount())
-                .accommodationType(command.accommodationType() == null ? AccommodationType.VILLA : command.accommodationType())
+                .accommodationType(AccommodationType.HOMESTAY)
                 .description(normalizeOptionalText(command.description(), 2000, "Mô tả"))
                 .addressLine(normalizeOptionalText(command.addressLine(), 255, "Địa chỉ"))
                 .ward(normalizeOptionalText(command.ward(), 120, "Phường/xã"))
-                .district(normalizeOptionalText(command.district(), 120, "Quận/huyện"))
-                .city(defaultIfBlank(command.city(), DEFAULT_CITY))
+                .district(district)
+                .city(city)
                 .latitude(command.latitude())
                 .longitude(command.longitude())
                 .checkInRadiusMeters(command.checkInRadiusMeters() == null
@@ -221,6 +229,12 @@ public class RoomUseCaseService implements
         }
 
         RoomType roomType = loadActiveRoomTypeForUpdateRequired(command.roomTypeId());
+        String district = command.district() == null
+                ? room.getDistrict()
+                : normalizeSupportedDistrict(command.district());
+        String city = command.city() == null
+                ? defaultIfBlank(room.getCity(), DEFAULT_CITY)
+                : normalizeHanoiCity(command.city());
 
         room.setRoomName(roomName);
         room.setRoomType(roomType);
@@ -228,14 +242,12 @@ public class RoomUseCaseService implements
         room.setBedroomCount(command.bedroomCount());
         room.setBedCount(command.bedCount());
         room.setBathroomCount(command.bathroomCount() == null ? room.getBathroomCount() : command.bathroomCount());
-        room.setAccommodationType(command.accommodationType() == null
-                ? room.getAccommodationType()
-                : command.accommodationType());
+        room.setAccommodationType(AccommodationType.HOMESTAY);
         room.setDescription(normalizeOptionalText(command.description(), 2000, "Mô tả"));
         room.setAddressLine(normalizeOptionalText(command.addressLine(), 255, "Địa chỉ"));
         room.setWard(normalizeOptionalText(command.ward(), 120, "Phường/xã"));
-        room.setDistrict(normalizeOptionalText(command.district(), 120, "Quận/huyện"));
-        room.setCity(defaultIfBlank(command.city(), DEFAULT_CITY));
+        room.setDistrict(district);
+        room.setCity(city);
         room.setLatitude(command.latitude());
         room.setLongitude(command.longitude());
         room.setCheckInRadiusMeters(command.checkInRadiusMeters() == null
@@ -533,6 +545,28 @@ public class RoomUseCaseService implements
     private String defaultIfBlank(String value, String defaultValue) {
         String normalized = normalizeOptionalText(value, 120, "Tỉnh/thành");
         return normalized == null ? defaultValue : normalized;
+    }
+
+    private String normalizeSupportedDistrict(String value) {
+        String normalized = normalizeOptionalText(value, 120, "Quận/huyện");
+        if (normalized == null) {
+            return null;
+        }
+
+        return SUPPORTED_DISTRICTS.stream()
+                .filter(district -> district.equalsIgnoreCase(normalized))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Khu vực chỉ hỗ trợ Đống Đa, Ba Vì, Sơn Tây hoặc Sóc Sơn"
+                ));
+    }
+
+    private String normalizeHanoiCity(String value) {
+        String normalized = defaultIfBlank(value, DEFAULT_CITY);
+        if (!DEFAULT_CITY.equalsIgnoreCase(normalized)) {
+            throw new IllegalArgumentException("Hệ thống hiện chỉ hỗ trợ homestay tại Hà Nội");
+        }
+        return DEFAULT_CITY;
     }
 
     private void applyAdditionalImages(Room room, List<String> imageUrls) {

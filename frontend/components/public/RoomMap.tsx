@@ -109,7 +109,7 @@ export default function RoomMap({
         scrollWheelZoom
         className={compact
           ? 'h-[360px] w-full sm:h-[420px]'
-          : 'h-[560px] w-full lg:h-[calc(100vh-150px)] lg:min-h-[640px] lg:max-h-[860px]'}
+          : 'h-[520px] w-full lg:h-[calc(100vh-190px)] lg:min-h-[600px] lg:max-h-[760px]'}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'

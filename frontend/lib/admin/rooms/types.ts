@@ -1,5 +1,5 @@
 export type RoomCategory = 'standard' | 'deluxe' | 'family'
-export type AccommodationType = 'VILLA' | 'GARDEN_HOUSE' | 'BUNGALOW' | 'APARTMENT' | 'HOMESTAY'
+export type AccommodationType = 'HOMESTAY'
 
 export type RoomStatus = 'active' | 'occupied' | 'maintenance' | 'inactive'
 
@@ -103,13 +103,7 @@ export type RoomTypeFormErrors = Partial<Record<keyof RoomTypeFormData, string>>
 export const roomCategoryOptions: RoomCategory[] = ['standard', 'deluxe', 'family']
 
 export const roomStatusOptions: RoomStatus[] = ['active', 'occupied', 'maintenance', 'inactive']
-export const accommodationTypeOptions: AccommodationType[] = ['VILLA', 'GARDEN_HOUSE', 'BUNGALOW', 'APARTMENT', 'HOMESTAY']
-
 export const accommodationTypeLabels: Record<AccommodationType, string> = {
-  VILLA: 'Biệt thự',
-  GARDEN_HOUSE: 'Nhà vườn',
-  BUNGALOW: 'Bungalow',
-  APARTMENT: 'Căn hộ',
   HOMESTAY: 'Homestay nguyên căn',
 }
 

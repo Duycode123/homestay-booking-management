@@ -241,7 +241,7 @@ export function mapBackendRoomToAdminRoom(
     bathroomCount: room.bathroomCount ?? 1,
     pricePerHour: getRoomPrice(room, category),
     baseNightlyRate: asNumber(room.baseNightlyRate, getRoomPrice(room, category) * 22),
-    accommodationType: room.accommodationType ?? 'VILLA',
+    accommodationType: 'HOMESTAY',
     addressLine: room.addressLine?.trim() ?? '',
     ward: room.ward?.trim() ?? '',
     district: room.district?.trim() ?? '',

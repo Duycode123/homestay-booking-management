@@ -34,6 +34,10 @@ import { shouldBypassImageOptimization } from '@/lib/image-optimization'
 import { fetchRoomTypes, type BackendRoomType } from '@/lib/rooms-api'
 import { getPublicRoomTierLabel, inferRoomCategoryFromTypeName } from '@/lib/room-mappers'
 import {
+  getSupportedHomestayDistrictOptions,
+  isSupportedHomestayDistrict,
+} from '@/lib/accommodation-scope'
+import {
   OPEN_QUICK_BOOKING_EVENT,
   type OpenQuickBookingEventDetail,
 } from '@/lib/quick-booking-navigation'
@@ -83,9 +87,9 @@ function getRoomsCopy(locale: Locale) {
       connectingSchedule: 'Connecting to live availability',
       filterEyebrow: 'DETAILED FILTERS',
       filterTitle: 'Refine your stay',
-      filterDescription: 'Filter by room tier, size, guest rating, budget and amenities.',
-      roomType: 'Accommodation type',
-      allRoomTypes: 'All accommodation types',
+      filterDescription: 'Filter homestays by area, tier, size, guest rating, budget and amenities.',
+      roomType: 'Homestay tier',
+      allRoomTypes: 'All tiers',
       location: 'Area',
       allLocations: 'All areas',
       bedrooms: 'Bedrooms',
@@ -135,9 +139,9 @@ function getRoomsCopy(locale: Locale) {
     connectingSchedule: 'Đang kết nối dữ liệu lịch phòng',
     filterEyebrow: 'BỘ LỌC CHI TIẾT',
     filterTitle: 'Tinh chỉnh lựa chọn',
-    filterDescription: 'Lọc thêm theo loại căn, khu vực, quy mô, đánh giá, ngân sách và tiện nghi.',
-    roomType: 'Loại căn',
-    allRoomTypes: 'Tất cả loại căn',
+    filterDescription: 'Lọc homestay theo khu vực, hạng phòng, quy mô, đánh giá, ngân sách và tiện nghi.',
+    roomType: 'Hạng homestay',
+    allRoomTypes: 'Tất cả hạng phòng',
     location: 'Khu vực',
     allLocations: 'Tất cả khu vực',
     bedrooms: 'Số phòng ngủ',
@@ -310,25 +314,21 @@ export default function RoomsPublicPage() {
   const [scheduleUpdatedAt, setScheduleUpdatedAt] = useState<Date | null>(null)
   const [scheduleErrorCount, setScheduleErrorCount] = useState(0)
   const [scheduleRefreshKey, setScheduleRefreshKey] = useState(0)
+  const scopedRooms = useMemo(
+    () => rooms.filter((room) => isSupportedHomestayDistrict(room.district)),
+    [rooms],
+  )
   const liveRooms = useMemo(
-    () => rooms.map((room) => applyTodayAvailability(
+    () => scopedRooms.map((room) => applyTodayAvailability(
       room,
       todaySlotsByRoomId[room.id],
       new Date(),
       tomorrowSlotsByRoomId[room.id],
     )),
-    [rooms, todaySlotsByRoomId, tomorrowSlotsByRoomId],
+    [scopedRooms, todaySlotsByRoomId, tomorrowSlotsByRoomId],
   )
   const availableAmenities = useMemo(() => Array.from(new Set(liveRooms.flatMap((room) => room.equipments).filter(Boolean)))
     .sort((left, right) => left.localeCompare(right, locale === 'en' ? 'en' : 'vi')), [liveRooms, locale])
-  const availableDistricts = useMemo(
-    () => Array.from(new Set(
-      liveRooms
-        .map((room) => room.district?.trim())
-        .filter((value): value is string => Boolean(value)),
-    )).sort((left, right) => left.localeCompare(right, locale === 'en' ? 'en' : 'vi')),
-    [liveRooms, locale],
-  )
   const filteredRooms = useMemo(() => {
     const matchesDetailFilters = filterRooms(liveRooms, filters)
     const availableMatches = !stayCriteria || isStayAvailabilityLoading
@@ -792,7 +792,7 @@ export default function RoomsPublicPage() {
                   onChange={(value) => updateFilter('district', value)}
                   options={[
                     { value: 'all', label: copy.allLocations },
-                    ...availableDistricts.map((district) => ({ value: district, label: district })),
+                    ...getSupportedHomestayDistrictOptions(locale),
                   ]}
                   collapsedAfter={5}
                 />
