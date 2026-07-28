@@ -37,7 +37,7 @@ Allow an administrator to create, update, change status, and archive homestay ro
 3. Admin may upload a JPG, PNG, or WebP room image from the form.
 4. Frontend checks file type, size, and pixel dimensions before upload; backend repeats the validation as the authoritative boundary.
 5. Backend uploads the original image bytes to Cloudinary without a destructive resize and returns a secure URL.
-6. Admin creates or edits a room by sending room name, room type, maximum capacity, image URL, and room status.
+6. Admin creates or edits a room by sending room name, room type, capacity, sleeping layout, location, whole-unit nightly rate, image URLs, and room status.
 7. Backend validates permissions, room existence, room type existence, duplicate room names, capacity range, and image URL shape.
 8. Backend persists the change and returns the updated room DTO.
 9. Admin may update room status directly from the list.
@@ -65,6 +65,7 @@ Allow an administrator to create, update, change status, and archive homestay ro
 - Only administrators can mutate room data.
 - Room names must remain unique.
 - Room maximum capacity is stored per room and must be between 1 and 100.
+- The whole-unit nightly rate and room-tier hourly rate accept any positive amount; neither value is restricted to a 1,000 or 50,000 VND increment.
 - Room image URLs are stored as HTTP(S) URLs after Cloudinary upload.
 - Room images must be landscape JPG, PNG, or WebP, at most 12MB, and at least 1200x900px. A 1600x1200px source with a 4:3 ratio is recommended for the room-detail gallery.
 - The database stores only the Cloudinary URL or safe static asset path. It does not contain or improve the underlying image pixels.
@@ -89,10 +90,10 @@ Allow an administrator to create, update, change status, and archive homestay ro
 ## Current Implementation Notes
 
 - Current backend persistence for room management is intentionally narrow.
-- The mutation flow persists `room.name`, `room.room_tier_id`, `room.max_people`, `room.image_url`, and `room.status`.
+- The mutation flow persists the room identity, tier, capacity and sleeping layout, homestay location, whole-unit nightly rate, image gallery, and operational status.
 - Room tier CRUD persists `room_tier.name`, `room_tier.description`, and `room_tier.hourly_rate`.
 - Archived rooms use `room.status = INACTIVE`; archived tiers use `room_tier.active = false` and are excluded from default catalog queries.
-- Frontend fields such as generated room code, derived price, description, and equipment summary are still display-oriented.
+- Generated room code and equipment summaries remain display-oriented; the nightly rate is backend-owned and persisted in `room.base_nightly_rate`.
 - Application logic lives in `RoomUseCaseService` and is exposed through `RoomController` and `RoomTypeController`.
 - Room mutations use pessimistic row locks for the affected room and room tier; this prevents lost updates and closes the create-room-versus-archive-tier check-then-write race.
 - Cloudinary upload orchestration lives in `RoomImageUploadUseCaseService` and is exposed through `AdminRoomImageController`.

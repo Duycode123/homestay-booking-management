@@ -31,81 +31,6 @@ type StaffNotification = {
   equipment?: string[]
 }
 
-const initialNotifications: StaffNotification[] = [
-  {
-    id: 'n1',
-    type: 'BOOKING_REMINDER',
-    title: 'Khách sắp đến trong 20 phút',
-    message: 'Gia đình Nguyễn chuẩn bị vào Deluxe Balcony 201. Kiểm tra Wi-Fi, điều hòa, TV và máy nước nóng trước khi khách đến.',
-    createdAt: '5 phút trước',
-    priority: 'HIGH',
-    isRead: false,
-    isResolved: false,
-    bookingId: 'BK-0701-60',
-    customerName: 'Gia đình Nguyễn',
-    roomName: 'Deluxe Balcony 201',
-    bookingTime: '08:00 - 09:30',
-    equipment: ['Wi-Fi tốc độ cao', 'Điều hòa', 'Smart TV'],
-  },
-  {
-    id: 'n2',
-    type: 'NEW_BOOKING',
-    title: 'Booking mới cần xác nhận',
-    message: 'Gia đình Trần vừa đặt Family Garden 302 cho ca 09:00.',
-    createdAt: '12 phút trước',
-    priority: 'MEDIUM',
-    isRead: false,
-    isResolved: false,
-    bookingId: 'BK-0701-61',
-    customerName: 'Gia đình Trần',
-    roomName: 'Family Garden 302',
-    bookingTime: '09:00 - 10:30',
-  },
-  {
-    id: 'n3',
-    type: 'ROOM_STATUS',
-    title: 'Family Suite 301 cần vệ sinh',
-    message: 'Phòng vừa kết thúc ca trước, cần kiểm tra sàn và khu TV.',
-    createdAt: '25 phút trước',
-    priority: 'MEDIUM',
-    isRead: true,
-    isResolved: false,
-    roomName: 'Family Suite 301',
-  },
-  {
-    id: 'n4',
-    type: 'EQUIPMENT_ISSUE',
-    title: 'Smart TV Deluxe City View 202 mất kết nối',
-    message: 'TV không kết nối được Wi-Fi. Ưu tiên kiểm tra trước ca chiều.',
-    createdAt: '40 phút trước',
-    priority: 'URGENT',
-    isRead: false,
-    isResolved: false,
-    roomName: 'Deluxe City View 202',
-    equipment: ['Smart TV 50 inch'],
-  },
-  {
-    id: 'n5',
-    type: 'SHIFT_REMINDER',
-    title: 'Nhắc ca làm chiều',
-    message: 'Ca chiều bắt đầu lúc 13:00. Hãy check-in đúng khung giờ.',
-    createdAt: '1 giờ trước',
-    priority: 'LOW',
-    isRead: true,
-    isResolved: true,
-  },
-  {
-    id: 'n6',
-    type: 'SYSTEM',
-    title: 'Đồng bộ dữ liệu hoàn tất',
-    message: 'Danh sách đặt phòng hôm nay đã được cập nhật trong khu vực nhân viên.',
-    createdAt: '2 giờ trước',
-    priority: 'LOW',
-    isRead: true,
-    isResolved: true,
-  },
-]
-
 const tabs: Array<{ id: NotificationTab; label: string }> = [
   { id: 'ALL', label: 'Tất cả' },
   { id: 'UNREAD', label: 'Chưa đọc' },
@@ -116,23 +41,30 @@ const tabs: Array<{ id: NotificationTab; label: string }> = [
 ]
 
 export default function StaffNotificationsPage() {
-  const [notifications, setNotifications] = useState(initialNotifications)
+  const [notifications, setNotifications] = useState<StaffNotification[]>([])
   const [activeTab, setActiveTab] = useState<NotificationTab>('ALL')
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<StaffNotification | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
 
   useEffect(() => {
     let isMounted = true
 
     async function loadNotifications() {
+      setIsLoading(true)
       try {
         const data = await fetchStaffNotifications()
         if (!isMounted) return
         setNotifications(data.map(mapBackendNotification))
+        setLoadError('')
       } catch (error) {
         if (!isMounted) return
-        setToast(error instanceof Error ? error.message : 'Khong the tai thong bao nhan vien.')
+        setNotifications([])
+        setLoadError(error instanceof Error ? error.message : 'Không thể tải thông báo nhân viên.')
+      } finally {
+        if (isMounted) setIsLoading(false)
       }
     }
 
@@ -158,6 +90,7 @@ export default function StaffNotificationsPage() {
     message: string,
     request?: () => Promise<BackendStaffNotification>,
   ) => {
+    const previous = notifications.find((item) => item.id === id)
     setNotifications((current) => current.map((item) => (item.id === id ? { ...item, ...patch } : item)))
     setSelected((current) => (current?.id === id ? { ...current, ...patch } : current))
     try {
@@ -167,11 +100,16 @@ export default function StaffNotificationsPage() {
       setSelected((current) => (current?.id === id ? { ...current, ...saved } : current))
       setToast(message)
     } catch (error) {
+      if (previous) {
+        setNotifications((current) => current.map((item) => (item.id === id ? previous : item)))
+        setSelected((current) => (current?.id === id ? previous : current))
+      }
       setToast(error instanceof Error ? error.message : 'Khong the cap nhat thong bao.')
     }
   }
 
   const markAllRead = async () => {
+    const previous = notifications
     setNotifications((current) => current.map((item) => ({ ...item, isRead: true })))
     try {
       const data = await markAllStaffNotificationsRead()
@@ -179,10 +117,10 @@ export default function StaffNotificationsPage() {
       setToast('Da danh dau tat ca thong bao la da doc.')
       return
     } catch (error) {
+      setNotifications(previous)
       setToast(error instanceof Error ? error.message : 'Khong the danh dau tat ca thong bao da doc.')
       return
     }
-    setToast('Đã đánh dấu tất cả thông báo là đã đọc.')
   }
 
   return (
@@ -193,7 +131,7 @@ export default function StaffNotificationsPage() {
             <p className="font-display text-sm font-bold uppercase tracking-wide text-brand-orange">Trung tâm vận hành</p>
             <h1 className="mt-2 font-display text-[32px] font-bold leading-10 text-on-surface">Thông báo</h1>
           </div>
-          <button type="button" onClick={markAllRead} className="btn-warm">
+          <button type="button" onClick={markAllRead} disabled={isLoading || notifications.length === 0} className="btn-warm disabled:cursor-not-allowed disabled:opacity-50">
             Đánh dấu tất cả đã đọc
           </button>
         </header>
@@ -231,7 +169,20 @@ export default function StaffNotificationsPage() {
           </div>
         </section>
 
-        {filtered.length > 0 ? (
+        {isLoading ? (
+          <section className="grid gap-4">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="h-40 animate-pulse rounded-3xl border border-outline-variant bg-white shadow-[var(--homestay-shadow-card)]" />
+            ))}
+          </section>
+        ) : loadError ? (
+          <EmptyState
+            title="Không thể tải thông báo"
+            description={loadError}
+            actionLabel="Thử tải lại"
+            onAction={() => window.location.reload()}
+          />
+        ) : filtered.length > 0 ? (
           <section className="grid gap-4">
             {filtered.map((notification) => (
               <NotificationCard

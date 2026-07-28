@@ -30,70 +30,23 @@ type ReportDataset = {
   summary: StaffReportSummary
   shifts: ShiftPerformance[]
   bookingStatus: Record<string, number>
-  roomStatus: {
-    topRoom: string
-    cleaning: number
-    maintenance: number
-    issue: number
-  }
   issueStatus: Record<string, number>
   hourlyBookings: Array<{ label: string; value: number }>
 }
 
-const reportData: Record<ReportRange, ReportDataset> = {
-  TODAY: {
-    summary: { totalShifts: 1, handledBookings: 18, checkInRate: 92, noShowCount: 2, reportedIssues: 4, resolvedIssues: 2 },
-    shifts: [
-      { name: 'Ca sáng', checkIn: '07:54', checkOut: '12:04', duration: '4 giờ 10 phút', status: 'DONE' },
-      { name: 'Ca chiều', checkIn: '13:06', checkOut: '--:--', duration: 'Đang làm', status: 'MISSING_CHECKOUT' },
-    ],
-    bookingStatus: { 'Chờ xác nhận': 3, 'Đã xác nhận': 5, 'Đã check-in': 4, 'Hoàn tất': 4, 'Đã hủy': 1, 'Không đến': 1 },
-    roomStatus: { topRoom: 'Deluxe Balcony 201', cleaning: 2, maintenance: 1, issue: 1 },
-    issueStatus: { 'Sự cố mới': 2, 'Đang xử lý': 1, 'Đã xử lý': 2, 'Khẩn cấp': 1 },
-    hourlyBookings: [
-      { label: '08:00', value: 4 },
-      { label: '10:00', value: 6 },
-      { label: '13:00', value: 3 },
-      { label: '16:00', value: 5 },
-      { label: '19:00', value: 7 },
-    ],
+const EMPTY_REPORT_DATA: ReportDataset = {
+  summary: {
+    totalShifts: 0,
+    handledBookings: 0,
+    checkInRate: 0,
+    noShowCount: 0,
+    reportedIssues: 0,
+    resolvedIssues: 0,
   },
-  THIS_WEEK: {
-    summary: { totalShifts: 7, handledBookings: 96, checkInRate: 88, noShowCount: 9, reportedIssues: 18, resolvedIssues: 14 },
-    shifts: [
-      { name: 'Thứ 2 - Ca sáng', checkIn: '07:55', checkOut: '12:00', duration: '4 giờ 05 phút', status: 'DONE' },
-      { name: 'Thứ 3 - Ca tối', checkIn: '18:10', checkOut: '22:02', duration: '3 giờ 52 phút', status: 'LATE' },
-      { name: 'Thứ 4 - Ca sáng', checkIn: '07:58', checkOut: '12:08', duration: '4 giờ 10 phút', status: 'ON_TIME' },
-    ],
-    bookingStatus: { 'Chờ xác nhận': 12, 'Đã xác nhận': 24, 'Đã check-in': 18, 'Hoàn tất': 31, 'Đã hủy': 5, 'Không đến': 6 },
-    roomStatus: { topRoom: 'Family Garden 302', cleaning: 8, maintenance: 3, issue: 4 },
-    issueStatus: { 'Sự cố mới': 5, 'Đang xử lý': 4, 'Đã xử lý': 14, 'Khẩn cấp': 2 },
-    hourlyBookings: [
-      { label: '08:00', value: 18 },
-      { label: '10:00', value: 22 },
-      { label: '13:00', value: 15 },
-      { label: '16:00', value: 19 },
-      { label: '19:00', value: 24 },
-    ],
-  },
-  THIS_MONTH: {
-    summary: { totalShifts: 26, handledBookings: 412, checkInRate: 91, noShowCount: 31, reportedIssues: 67, resolvedIssues: 58 },
-    shifts: [
-      { name: 'Tuần 1', checkIn: 'Đủ', checkOut: 'Đủ', duration: '38 giờ', status: 'DONE' },
-      { name: 'Tuần 2', checkIn: '1 ca muộn', checkOut: 'Đủ', duration: '41 giờ', status: 'LATE' },
-      { name: 'Tuần 3', checkIn: 'Đủ', checkOut: '1 ca thiếu', duration: '36 giờ', status: 'MISSING_CHECKOUT' },
-    ],
-    bookingStatus: { 'Chờ xác nhận': 42, 'Đã xác nhận': 90, 'Đã check-in': 78, 'Hoàn tất': 169, 'Đã hủy': 18, 'Không đến': 15 },
-    roomStatus: { topRoom: 'Family Suite 301', cleaning: 32, maintenance: 9, issue: 14 },
-    issueStatus: { 'Sự cố mới': 13, 'Đang xử lý': 9, 'Đã xử lý': 58, 'Khẩn cấp': 6 },
-    hourlyBookings: [
-      { label: '08:00', value: 70 },
-      { label: '10:00', value: 95 },
-      { label: '13:00', value: 68 },
-      { label: '16:00', value: 83 },
-      { label: '19:00', value: 104 },
-    ],
-  },
+  shifts: [],
+  bookingStatus: {},
+  issueStatus: {},
+  hourlyBookings: [],
 }
 
 const ranges: Array<{ value: ReportRange; label: string }> = [
@@ -105,7 +58,7 @@ const ranges: Array<{ value: ReportRange; label: string }> = [
 export default function StaffReportsPage() {
   const [range, setRange] = useState<ReportRange>('TODAY')
   const [toast, setToast] = useState<string | null>(null)
-  const [data, setData] = useState<ReportDataset>(() => reportData.TODAY)
+  const [data, setData] = useState<ReportDataset>(EMPTY_REPORT_DATA)
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
 
@@ -130,8 +83,8 @@ export default function StaffReportsPage() {
       } catch (error) {
         if (cancelled) return
 
-        setData(reportData[range])
-        setErrorMessage(error instanceof Error ? error.message : 'Khong the tai bao cao hieu suat nhan vien.')
+        setData(EMPTY_REPORT_DATA)
+        setErrorMessage(error instanceof Error ? error.message : 'Không thể tải báo cáo hiệu suất nhân viên.')
       } finally {
         if (!cancelled) {
           setIsLoading(false)
@@ -149,11 +102,11 @@ export default function StaffReportsPage() {
   const cards = useMemo(
     () => [
       { label: 'Tổng ca đã làm', value: data.summary.totalShifts, helper: 'Ca trong kỳ', icon: <IconClock />, className: 'bg-secondary text-on-secondary' },
-      { label: 'Booking xử lý', value: data.summary.handledBookings, helper: 'Tổng booking vận hành', icon: <IconCalendar />, className: 'bg-primary-container text-brand-orange' },
-      { label: 'Tỷ lệ check-in', value: `${data.summary.checkInRate}%`, helper: 'Khách đến đúng quy trình', icon: <IconTrend />, className: 'bg-on-secondary-container text-[#001A0D]' },
-      { label: 'No-show', value: data.summary.noShowCount, helper: 'Khách không đến', icon: <IconAlert />, className: 'bg-error-container text-error' },
-      { label: 'Sự cố đã báo', value: data.summary.reportedIssues, helper: 'Phòng/tiện nghi', icon: <IconTool />, className: 'bg-tertiary-container text-tertiary' },
-      { label: 'Sự cố đã xử lý', value: data.summary.resolvedIssues, helper: 'Đã đóng trong kỳ', icon: <IconCheck />, className: 'bg-on-secondary-container text-[#001A0D]' },
+      { label: 'Đánh giá nhận được', value: data.summary.handledBookings, helper: 'Đánh giá gắn với booking', icon: <IconCalendar />, className: 'bg-primary-container text-brand-orange' },
+      { label: 'Tỷ lệ hoàn tất ca', value: `${data.summary.checkInRate}%`, helper: 'Ca có đủ dữ liệu hoàn tất', icon: <IconTrend />, className: 'bg-on-secondary-container text-[#001A0D]' },
+      { label: 'Thiếu check-out', value: data.summary.noShowCount, helper: 'Ca chưa ghi nhận check-out', icon: <IconAlert />, className: 'bg-error-container text-error' },
+      { label: 'Đi muộn', value: data.summary.reportedIssues, helper: 'Số ca check-in muộn', icon: <IconTool />, className: 'bg-tertiary-container text-tertiary' },
+      { label: 'Ca đúng giờ', value: data.summary.resolvedIssues, helper: 'Ca hoàn tất không đi muộn', icon: <IconCheck />, className: 'bg-on-secondary-container text-[#001A0D]' },
     ],
     [data],
   )
@@ -170,7 +123,17 @@ export default function StaffReportsPage() {
             <ProjectSelect value={range} onChange={(event) => setRange(event.target.value as ReportRange)} className="h-11 rounded-xl border border-outline-variant bg-white px-4 font-display text-sm font-bold outline-none focus:border-brand-orange">
               {ranges.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
             </ProjectSelect>
-            <button type="button" onClick={() => setToast('Đã chuẩn bị báo cáo demo.')} className="btn-warm">Xuất báo cáo</button>
+            <button
+              type="button"
+              disabled={isLoading || Boolean(errorMessage) || data.summary.totalShifts === 0}
+              onClick={() => {
+                exportStaffReportCsv(data, range)
+                setToast('Đã tải báo cáo CSV từ dữ liệu thực tế.')
+              }}
+              className="btn-warm disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Xuất CSV
+            </button>
           </div>
         </header>
 
@@ -186,7 +149,7 @@ export default function StaffReportsPage() {
               <div key={index} className="h-32 animate-pulse rounded-3xl border border-outline-variant bg-white shadow-[var(--homestay-shadow-card)]" />
             ))}
           </section>
-        ) : data.summary.totalShifts > 0 || data.summary.handledBookings > 0 ? (
+        ) : !errorMessage && (data.summary.totalShifts > 0 || data.summary.handledBookings > 0) ? (
           <>
             <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {cards.map((card) => <StatCard key={card.label} {...card} />)}
@@ -211,28 +174,19 @@ export default function StaffReportsPage() {
                 </div>
               </ReportSection>
 
-              <ReportSection title="Booking trong ca">
+              <ReportSection title="Tổng quan hiệu suất">
                 <StatusGrid data={data.bookingStatus} />
               </ReportSection>
 
-              <ReportSection title="Booking theo khung giờ">
+              <ReportSection title="Phân bổ ca làm">
                 <BarChart data={data.hourlyBookings} />
               </ReportSection>
 
-              <ReportSection title="Trạng thái booking">
+              <ReportSection title="Chỉ số ca và đánh giá">
                 <BarChart data={Object.entries(data.bookingStatus).map(([label, value]) => ({ label, value }))} compact />
               </ReportSection>
 
-              <ReportSection title="Tình trạng phòng">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Metric label="Phòng dùng nhiều nhất" value={data.roomStatus.topRoom} />
-                  <Metric label="Cần vệ sinh" value={`${data.roomStatus.cleaning}`} />
-                  <Metric label="Bảo trì" value={`${data.roomStatus.maintenance}`} />
-                  <Metric label="Có sự cố" value={`${data.roomStatus.issue}`} />
-                </div>
-              </ReportSection>
-
-              <ReportSection title="Sự cố tiện nghi/phòng">
+              <ReportSection title="Kỷ luật chấm công">
                 <StatusGrid data={data.issueStatus} />
               </ReportSection>
             </section>
@@ -281,12 +235,6 @@ function mapPerformanceReport(report: StaffPerformanceResponse): ReportDataset {
       'Ca hoan tat': completedShifts,
       'Ca thieu checkout': missingCheckout,
     },
-    roomStatus: {
-      topRoom: 'Theo du lieu cham cong',
-      cleaning: 0,
-      maintenance: lateCount,
-      issue: missingCheckout,
-    },
     issueStatus: {
       'Dung gio': onTimeShifts,
       'Di muon': lateCount,
@@ -300,6 +248,44 @@ function mapPerformanceReport(report: StaffPerformanceResponse): ReportDataset {
       { label: 'Thieu checkout', value: missingCheckout },
     ],
   }
+}
+
+function exportStaffReportCsv(data: ReportDataset, range: ReportRange) {
+  const rows: Array<Array<string | number>> = [
+    ['BÁO CÁO HIỆU SUẤT NHÂN VIÊN'],
+    ['Kỳ báo cáo', ranges.find((item) => item.value === range)?.label ?? range],
+    ['Ngày xuất', new Date().toLocaleString('vi-VN')],
+    [],
+    ['CHỈ SỐ', 'GIÁ TRỊ'],
+    ['Tổng ca', data.summary.totalShifts],
+    ['Đánh giá nhận được', data.summary.handledBookings],
+    ['Tỷ lệ hoàn tất ca (%)', data.summary.checkInRate],
+    ['Thiếu check-out', data.summary.noShowCount],
+    ['Đi muộn', data.summary.reportedIssues],
+    ['Ca đúng giờ', data.summary.resolvedIssues],
+    [],
+    ['PHÂN BỔ CA', 'GIÁ TRỊ'],
+    ...data.hourlyBookings.map((item) => [item.label, item.value]),
+    [],
+    ['KỶ LUẬT CHẤM CÔNG', 'GIÁ TRỊ'],
+    ...Object.entries(data.issueStatus),
+  ]
+
+  const csv = `\uFEFF${rows.map((row) => row.map(escapeCsvCell).join(',')).join('\r\n')}`
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = `bao-cao-hieu-suat-${range.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.csv`
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  URL.revokeObjectURL(url)
+}
+
+function escapeCsvCell(value: string | number) {
+  const normalized = String(value).replace(/"/g, '""')
+  return /[",\r\n]/.test(normalized) ? `"${normalized}"` : normalized
 }
 
 function ReportSection({ title, children }: { title: string; children: ReactNode }) {

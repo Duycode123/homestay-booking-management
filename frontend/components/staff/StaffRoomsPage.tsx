@@ -24,190 +24,6 @@ import {
   type StaffIssue, type StaffRoom, type StaffRoomsTab,
 } from './staff-rooms-domain'
 
-const initialRooms: StaffRoom[] = [
-  {
-    id: 'room-a',
-    name: 'Deluxe Balcony 201',
-    category: 'DELUXE',
-    capacity: 6,
-    status: 'IN_USE',
-    currentBooking: { bookingId: 'BK-0702-60', customerName: 'Gia đình Nguyễn', timeRange: '08:00 - 09:30' },
-    equipment: ['Wi-Fi 5G', 'Điều hòa âm trần', 'Smart TV 50 inch', 'Máy nước nóng'],
-    updatedAt: '08:16 hôm nay',
-    assignedStaff: 'Gia Hân',
-    note: 'Ưu tiên kiểm tra điều hòa sau mỗi lượt khách.',
-  },
-  {
-    id: 'room-b',
-    name: 'Deluxe City View 202',
-    category: 'STANDARD',
-    capacity: 4,
-    status: 'AVAILABLE',
-    equipment: ['Wi-Fi 5G', 'Điều hòa âm trần', 'Smart TV 50 inch'],
-    updatedAt: '07:45 hôm nay',
-    assignedStaff: 'Hoàng Nam',
-    note: 'Sẵn sàng nhận booking walk-in.',
-  },
-  {
-    id: 'family-garden-302',
-    name: 'Family Garden 302',
-    category: 'FAMILY',
-    capacity: 10,
-    status: 'CLEANING',
-    currentBooking: { bookingId: 'BK-0702-61', customerName: 'Gia đình Trần', timeRange: '10:00 - 11:30' },
-    equipment: ['Wi-Fi gia đình', 'Hai điều hòa inverter', 'Smart TV 55 inch'],
-    updatedAt: '08:05 hôm nay',
-    assignedStaff: 'Nhân viên',
-    note: 'Khách yêu cầu kiểm tra TV trước khi vào phòng.',
-  },
-  {
-    id: 'standard-garden-102',
-    name: 'Standard Garden 102',
-    category: 'STANDARD',
-    capacity: 3,
-    status: 'ISSUE',
-    equipment: ['Wi-Fi tốc độ cao', 'Điều hòa Panasonic', 'Máy nước nóng'],
-    updatedAt: '07:30 hôm nay',
-    assignedStaff: 'Minh Quân',
-    note: 'Máy nước nóng có tiếng lạ, cần kỹ thuật kiểm tra.',
-  },
-  {
-    id: 'family-suite-301',
-    name: 'Family Suite 301',
-    category: 'FAMILY',
-    capacity: 8,
-    status: 'MAINTENANCE',
-    equipment: ['Wi-Fi gia đình', 'Hai điều hòa inverter', 'Smart TV 55 inch', 'Bình nước nóng'],
-    updatedAt: 'Hôm qua, 21:15',
-    assignedStaff: 'Gia Hân',
-    note: 'Đang bảo trì điều hòa và ổ điện khu TV.',
-  },
-  {
-    id: 'standard-garden-101',
-    name: 'Standard Garden 101',
-    category: 'STANDARD',
-    capacity: 5,
-    status: 'AVAILABLE',
-    equipment: ['Wi-Fi tốc độ cao', 'Điều hòa Daikin', 'Smart TV 43 inch'],
-    updatedAt: '08:00 hôm nay',
-    assignedStaff: 'Hoàng Nam',
-    note: 'Phòng sạch, tiện nghi đủ checklist.',
-  },
-]
-
-const initialEquipment: StaffEquipment[] = [
-  {
-    id: 'eq-wifi-001',
-    code: 'EQ-WIFI-001',
-    name: 'Wi-Fi tốc độ cao',
-    type: 'WIFI',
-    location: 'Deluxe Balcony 201',
-    status: 'AVAILABLE',
-    quantity: 4,
-    lastCheckedAt: '08:00 hôm nay',
-    note: 'Kết nối ổn định trong toàn bộ phòng.',
-  },
-  {
-    id: 'eq-ac-014',
-    code: 'EQ-AC-014',
-    name: 'Điều hòa Daikin',
-    type: 'AIR_CONDITIONER',
-    location: 'Deluxe Balcony 201',
-    status: 'IN_USE',
-    quantity: 1,
-    lastCheckedAt: '07:50 hôm nay',
-    currentBookingId: 'BK-0702-60',
-    note: 'Đang sử dụng trong phòng có khách.',
-  },
-  {
-    id: 'eq-tv-006',
-    code: 'EQ-TV-006',
-    name: 'Smart TV 50 inch',
-    type: 'TV',
-    location: 'Deluxe City View 202',
-    status: 'INSPECTION',
-    quantity: 1,
-    lastCheckedAt: 'Hôm qua, 20:40',
-    note: 'Kết nối Internet đôi lúc không ổn định.',
-  },
-  {
-    id: 'eq-water-heater-002',
-    code: 'EQ-WH-002',
-    name: 'Máy nước nóng Ariston',
-    type: 'WATER_HEATER',
-    location: 'Standard Garden 102',
-    status: 'MAINTENANCE',
-    quantity: 1,
-    lastCheckedAt: 'Hôm qua, 19:10',
-    note: 'Cần kiểm tra bộ chống giật.',
-  },
-  {
-    id: 'eq-fridge-003',
-    code: 'EQ-FRIDGE-003',
-    name: 'Tủ lạnh mini',
-    type: 'OTHER',
-    location: 'Kho tiện nghi',
-    status: 'AVAILABLE',
-    quantity: 1,
-    lastCheckedAt: '07:35 hôm nay',
-    note: 'Đã kiểm tra nguồn và nhiệt độ.',
-  },
-  {
-    id: 'eq-kettle-018',
-    code: 'EQ-KETTLE-018',
-    name: 'Ấm đun nước',
-    type: 'OTHER',
-    location: 'Đang cho thuê',
-    status: 'BROKEN',
-    quantity: 2,
-    lastCheckedAt: 'Hôm qua, 18:20',
-    currentBookingId: 'BK-0701-43',
-    note: 'Một ấm bị lỏng đầu cắm.',
-  },
-]
-
-const initialIssues: StaffIssue[] = [
-  {
-    id: 'ISS-0701-01',
-    title: 'Smart TV Deluxe City View 202 mất kết nối',
-    targetType: 'EQUIPMENT',
-    targetId: 'eq-tv-006',
-    targetName: 'Smart TV 50 inch',
-    issueType: 'AMENITY',
-    priority: 'HIGH',
-    status: 'IN_PROGRESS',
-    reporter: 'Nhân viên',
-    createdAt: '08:10 hôm nay',
-    description: 'TV thường xuyên mất kết nối Internet, cần kỹ thuật kiểm tra trước giờ khách nhận phòng.',
-  },
-  {
-    id: 'ISS-0701-02',
-    title: 'Standard Garden 102 cần kiểm tra máy nước nóng',
-    targetType: 'ROOM',
-    targetId: 'standard-garden-102',
-    targetName: 'Standard Garden 102',
-    issueType: 'DEVICE',
-    priority: 'MEDIUM',
-    status: 'OPEN',
-    reporter: 'Gia Hân',
-    createdAt: '07:32 hôm nay',
-    description: 'Nước nóng không ổn định, khách phản ánh nhiệt độ giảm nhanh khi sử dụng.',
-  },
-  {
-    id: 'ISS-0630-04',
-    title: 'Family Suite 301 bảo trì ổ điện',
-    targetType: 'ROOM',
-    targetId: 'family-suite-301',
-    targetName: 'Family Suite 301',
-    issueType: 'POWER',
-    priority: 'URGENT',
-    status: 'RESOLVED',
-    reporter: 'Minh Quân',
-    createdAt: 'Hôm qua, 21:05',
-    description: 'Ổ điện khu TV chập chờn, đã khóa phòng để bảo trì.',
-  },
-]
-
 const tabs: Array<{ id: StaffRoomsTab; label: string }> = [
   { id: 'ROOMS', label: 'Phòng homestay' },
   { id: 'EQUIPMENT', label: 'Tiện nghi' },
@@ -312,6 +128,7 @@ export default function StaffRoomsPage() {
   const [equipment, setEquipment] = useState<StaffEquipment[]>([])
   const [issues, setIssues] = useState<StaffIssue[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [roomQuery, setRoomQuery] = useState('')
   const [roomStatus, setRoomStatus] = useState<RoomStatus | 'ALL'>('ALL')
   const [roomCategory, setRoomCategory] = useState<RoomCategory | 'ALL'>('ALL')
@@ -430,6 +247,7 @@ export default function StaffRoomsPage() {
       const bookingAssignments = await loadDutyBookingAssignments(shifts)
       setRooms(applyDutyAssignments(mapBackendRoomsToStaffRooms(roomsResult.value, backendEquipment), bookingAssignments))
       setEquipment(backendEquipment.map(mapBackendEquipmentToStaffEquipment))
+      setLoadError('')
 
       if (equipmentResult.status === 'rejected') {
         showToast(equipmentResult.reason instanceof Error ? equipmentResult.reason.message : 'Không thể tải danh sách tiện nghi.')
@@ -439,7 +257,12 @@ export default function StaffRoomsPage() {
         showToast('Đã làm mới dữ liệu vận hành mới nhất.')
       }
     } catch (error) {
-      showToast(error instanceof Error ? error.message : 'Không thể tải dữ liệu vận hành từ backend.')
+      const message = error instanceof Error ? error.message : 'Không thể tải dữ liệu vận hành từ backend.'
+      setRooms([])
+      setEquipment([])
+      setIssues([])
+      setLoadError(message)
+      showToast(message)
     } finally {
       setIsLoading(false)
     }
@@ -458,7 +281,9 @@ export default function StaffRoomsPage() {
     showToast(`Đã cập nhật trạng thái ${room.name} thành ${getRoomStatusMeta(nextStatus).label}.`)
     const backendRoomId = parseBackendId(room.id)
     if (!backendRoomId) {
-      showToast(`Da cap nhat local ${room.name}. Phong nay chua co id backend de dong bo.`)
+      setRooms((current) => current.map((item) => (item.id === room.id ? room : item)))
+      setSelectedRoom((current) => (current?.id === room.id ? room : current))
+      showToast(`Không thể cập nhật ${room.name} vì phòng chưa có mã backend hợp lệ.`)
       return
     }
 
@@ -466,6 +291,8 @@ export default function StaffRoomsPage() {
       await updateStaffRoomStatus(backendRoomId, mapRoomStatusToBackend(nextStatus), `Staff changed status to ${nextStatus}`)
       showToast(`Da dong bo trang thai ${room.name} voi backend.`)
     } catch (error) {
+      setRooms((current) => current.map((item) => (item.id === room.id ? room : item)))
+      setSelectedRoom((current) => (current?.id === room.id ? room : current))
       showToast(error instanceof Error ? error.message : 'Không thể đồng bộ trạng thái phòng.')
     }
   }
@@ -483,7 +310,9 @@ export default function StaffRoomsPage() {
     showToast(`Đã cập nhật ${item.name} thành ${getEquipmentStatusMeta(nextStatus).label}.`)
     const backendEquipmentId = parseBackendId(item.id)
     if (!backendEquipmentId) {
-      showToast(`Da cap nhat local ${item.name}. Thiet bi nay chua co id backend de dong bo.`)
+      setEquipment((current) => current.map((equipmentItem) => (equipmentItem.id === item.id ? item : equipmentItem)))
+      setSelectedEquipment((current) => (current?.id === item.id ? item : current))
+      showToast(`Không thể cập nhật ${item.name} vì tiện nghi chưa có mã backend hợp lệ.`)
       return
     }
 
@@ -495,6 +324,8 @@ export default function StaffRoomsPage() {
       )
       showToast(`Da dong bo tinh trang ${item.name} voi backend.`)
     } catch (error) {
+      setEquipment((current) => current.map((equipmentItem) => (equipmentItem.id === item.id ? item : equipmentItem)))
+      setSelectedEquipment((current) => (current?.id === item.id ? item : current))
       showToast(error instanceof Error ? error.message : 'Không thể đồng bộ tình trạng tiện nghi.')
     }
   }
@@ -521,13 +352,9 @@ export default function StaffRoomsPage() {
       description: draft.description.trim(),
     }
 
-    setIssues((current) => [nextIssue, ...current])
-    setReportTarget(null)
-    setActiveTab('ISSUES')
-    showToast('Đã ghi nhận sự cố. Bộ phận phụ trách sẽ kiểm tra.')
     const backendTargetId = parseBackendId(draft.targetId)
     if (!backendTargetId) {
-      showToast('Da ghi nhan su co local. Doi tuong nay chua co id backend de dong bo.')
+      showToast('Không thể ghi nhận sự cố vì đối tượng chưa có mã backend hợp lệ.')
       return
     }
 
@@ -538,7 +365,10 @@ export default function StaffRoomsPage() {
         await recordStaffEquipmentCondition(backendTargetId, mapIssueTypeToCondition(draft.issueType), draft.description.trim())
       }
 
-      showToast('Da ghi nhan su co va dong bo backend.')
+      setIssues((current) => [nextIssue, ...current])
+      setReportTarget(null)
+      setActiveTab('ISSUES')
+      showToast('Đã ghi nhận sự cố và đồng bộ backend.')
     } catch (error) {
       showToast(error instanceof Error ? error.message : 'Không thể đồng bộ sự cố với backend.')
     }
@@ -595,6 +425,13 @@ export default function StaffRoomsPage() {
 
             {isLoading ? (
               <RoomsSkeleton />
+            ) : loadError ? (
+              <EmptyState
+                title="Không thể tải dữ liệu vận hành"
+                description={loadError}
+                actionLabel="Thử tải lại"
+                onAction={() => void refreshData()}
+              />
             ) : (
               <>
                 <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

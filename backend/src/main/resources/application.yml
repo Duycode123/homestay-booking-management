@@ -1,5 +1,5 @@
 spring:
   sql:
     init:
-      mode: always
+      mode: never
       platform: postgresql

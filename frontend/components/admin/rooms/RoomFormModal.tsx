@@ -403,7 +403,7 @@ export default function RoomFormModal({
                       type="number"
                       inputMode="numeric"
                       min={1}
-                      step={50_000}
+                      step={1}
                       value={form.baseNightlyRate}
                       onChange={(event) => set({ baseNightlyRate: Number(event.target.value) })}
                       className={inputClass}

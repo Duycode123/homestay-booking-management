@@ -76,6 +76,54 @@ npm run dev
 
 Mặc định frontend chạy tại `http://localhost:3000`.
 
+## Chạy toàn bộ hệ thống bằng Docker
+
+```powershell
+Copy-Item .env.example .env
+docker compose up --build
+```
+
+Sau khi các health check hoàn tất:
+
+- Frontend: `http://localhost:3000`
+- Backend health: `http://localhost:8080/api/health`
+- PostgreSQL: `localhost:5432`
+
+Giá trị JWT và mật khẩu trong `.env.example` chỉ dành cho phát triển cục bộ. Khi
+triển khai thật phải tạo giá trị mới và không commit file `.env`.
+
+## Kiểm tra chất lượng
+
+```powershell
+cd backend
+mvn test
+
+cd ../frontend
+npm run check:domain
+npm run lint -- --quiet
+npm run build
+npx playwright install chromium
+npm run test:e2e
+```
+
+GitHub Actions tự động chạy các bước trên khi push hoặc mở pull request. Báo cáo
+Playwright được lưu dưới dạng artifact khi CI kết thúc.
+
+## Bí mật và tích hợp ngoài
+
+Các giá trị sau chỉ được cấu hình bằng biến môi trường:
+
+- `JWT_SECRET`
+- `MAIL_PASSWORD`
+- `CLOUDINARY_URL`
+- `SEPAY_API_ACCESS_TOKEN`
+- `SEPAY_IPN_SECRET`
+- `SEPAY_WEBHOOK_HMAC_SECRET`
+- OAuth client secrets
+
+Nếu một token từng xuất hiện trong file local, log hoặc lịch sử Git, phải thu hồi
+token cũ tại nhà cung cấp rồi tạo token mới. Chỉ xóa token khỏi file là chưa đủ.
+
 ## Dữ liệu mẫu
 
 Sau khi áp dụng schema và migrations, chạy lần lượt:

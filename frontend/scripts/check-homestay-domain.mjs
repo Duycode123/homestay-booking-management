@@ -34,6 +34,39 @@ const forbiddenTerms = [
   /premium studio/i,
 ]
 
+const sourceAssertions = [
+  {
+    file: join(frontendRoot, 'components', 'admin', 'rooms', 'RoomFormModal.tsx'),
+    includes: ['step={1}'],
+    excludes: ['step={50_000}'],
+    description: 'Giá phòng theo đêm phải cho phép nhập theo từng đồng.',
+  },
+  {
+    file: join(frontendRoot, 'components', 'admin', 'rooms', 'RoomTierManager.tsx'),
+    includes: ['step={1}'],
+    excludes: ['step={1000}'],
+    description: 'Giá theo giờ phải cho phép nhập theo từng đồng.',
+  },
+  {
+    file: join(frontendRoot, 'components', 'staff', 'StaffNotificationsPage.tsx'),
+    includes: ['useState<StaffNotification[]>([])', 'loadError'],
+    excludes: ['initialNotifications'],
+    description: 'Thông báo nhân viên không được fallback sang dữ liệu demo.',
+  },
+  {
+    file: join(frontendRoot, 'components', 'staff', 'StaffReportsPage.tsx'),
+    includes: ['exportStaffReportCsv', 'EMPTY_REPORT_DATA'],
+    excludes: ['reportData', 'báo cáo demo'],
+    description: 'Báo cáo nhân viên phải dùng dữ liệu thật và xuất file thật.',
+  },
+  {
+    file: join(frontendRoot, 'components', 'staff', 'StaffRoomsPage.tsx'),
+    includes: ['useState<StaffRoom[]>([])', 'loadError'],
+    excludes: ['initialRooms', 'initialEquipment', 'initialIssues'],
+    description: 'Màn hình vận hành phòng không được chứa dữ liệu runtime giả.',
+  },
+]
+
 function collectFiles(directory) {
   for (const entry of readdirSync(directory)) {
     const absolutePath = join(directory, entry)
@@ -54,6 +87,18 @@ for (const file of files) {
       violations.push(`${relative(repositoryRoot, file)}:${index + 1}: ${line.trim()}`)
     }
   })
+}
+
+for (const assertion of sourceAssertions) {
+  const source = readFileSync(assertion.file, 'utf8')
+  const missing = assertion.includes.filter((value) => !source.includes(value))
+  const forbidden = assertion.excludes.filter((value) => source.includes(value))
+  if (missing.length > 0 || forbidden.length > 0) {
+    violations.push(
+      `${relative(repositoryRoot, assertion.file)}: ${assertion.description} `
+      + `Thiếu [${missing.join(', ')}], còn tồn tại [${forbidden.join(', ')}].`,
+    )
+  }
 }
 
 if (violations.length > 0) {
