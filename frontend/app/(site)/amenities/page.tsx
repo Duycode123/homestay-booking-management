@@ -191,7 +191,8 @@ export async function generateMetadata() {
 
   return createPublicPageMetadata({
     ...content.metadata,
-    path: locale === 'en' ? '/en/amenities' : '/vi/amenities',
+    path: '/amenities',
+    locale,
   })
 }
 
@@ -407,13 +408,13 @@ export default async function AmenitiesPage() {
 
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link
-              href={locale === 'en' ? '/en/rooms' : '/vi/rooms'}
+              href="/rooms"
               className="inline-flex min-h-12 items-center justify-center rounded-full bg-white px-7 font-display text-sm font-semibold text-secondary shadow-[0_14px_30px_rgba(0,0,0,.2)] transition duration-300 hover:-translate-y-0.5 hover:bg-primary-fixed"
             >
               {content.roomsCta}
             </Link>
             <Link
-              href={locale === 'en' ? '/en/support' : '/vi/support'}
+              href="/support"
               className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/30 bg-black/10 px-7 font-display text-sm font-semibold text-white backdrop-blur-md transition duration-300 hover:-translate-y-0.5 hover:bg-white/12"
             >
               {content.supportCta}

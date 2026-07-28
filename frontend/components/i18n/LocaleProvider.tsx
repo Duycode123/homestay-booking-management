@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useMemo } from 'react'
 import { usePathname } from 'next/navigation'
 import { ClientLocaleTextBridge } from '@/components/i18n/ClientLocaleTextBridge'
 import { defaultLocale, getLocaleFromPathname, type Locale, withLocale } from '@/i18n/config'
@@ -27,11 +27,7 @@ function interpolate(message: string, values?: TranslationValues) {
 
 export function LocaleProvider({ initialLocale, children }: { initialLocale: Locale; children: React.ReactNode }) {
   const pathname = usePathname()
-  const [locale, setLocale] = useState<Locale>(initialLocale)
-
-  useEffect(() => {
-    setLocale(getLocaleFromPathname(pathname) ?? initialLocale)
-  }, [initialLocale, pathname])
+  const locale = getLocaleFromPathname(pathname) ?? initialLocale
 
   const t = useCallback(
     (key: string, values?: TranslationValues) => interpolate(messages[locale][key] ?? messages[defaultLocale][key] ?? key, values),

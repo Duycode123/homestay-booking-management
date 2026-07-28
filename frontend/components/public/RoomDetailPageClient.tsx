@@ -42,50 +42,56 @@ export default function RoomDetailPageClient({ roomId }: { roomId: string }) {
   const shouldOpenAgentBooking = searchParams.get('agentBooking') === '1'
 
   useEffect(() => {
-    if (room && shouldOpenAgentBooking) setBookingOpen(true)
+    if (room && shouldOpenAgentBooking) {
+      queueMicrotask(() => setBookingOpen(true))
+    }
   }, [room, shouldOpenAgentBooking])
 
   useEffect(() => {
     let mounted = true
-    setIsLoading(true)
-    setSimilarRooms([])
-    Promise.all([
-      fetchRoom(roomId),
-      fetchPublicRoomEquipment({ roomId }).catch(() => []),
-      fetchPublicReviewsByRoomId(roomId).catch(() => []),
-      fetchCommonAmenities(roomId).catch(() => []),
-      fetchRooms().catch(() => []),
-      fetchAvailableAddons(roomId).catch(() => []),
-    ]).then(async ([backendRoom, equipment, roomReviews, amenities, allRooms, addons]) => {
+    queueMicrotask(() => {
       if (!mounted) return
-      if (!backendRoom) {
-        setError('Không tìm thấy căn lưu trú.')
-        return
-      }
-      const averageRating = roomReviews.length
-        ? roomReviews.reduce((total, review) => total + review.rating, 0) / roomReviews.length
-        : 0
-      setRoom(mapBackendRoomToBookingRoom(backendRoom, 0, { averageRating, reviewCount: roomReviews.length }, equipment))
-      setReviews(roomReviews)
-      setCommonAmenities(amenities)
-      setAddonServices(addons)
-      const candidates = getSimilarRoomCandidates(backendRoom, allRooms).slice(0, 4)
-      const recommendations = await Promise.all(candidates.map(async (candidate, index) => {
-        const candidateReviews = await fetchPublicReviewsByRoomId(String(candidate.id)).catch(() => [])
-        const averageRating = candidateReviews.length
-          ? candidateReviews.reduce((total, review) => total + review.rating, 0) / candidateReviews.length
+      setIsLoading(true)
+      setSimilarRooms([])
+      void Promise.all([
+        fetchRoom(roomId),
+        fetchPublicRoomEquipment({ roomId }).catch(() => []),
+        fetchPublicReviewsByRoomId(roomId).catch(() => []),
+        fetchCommonAmenities(roomId).catch(() => []),
+        fetchRooms().catch(() => []),
+        fetchAvailableAddons(roomId).catch(() => []),
+      ]).then(async ([backendRoom, equipment, roomReviews, amenities, allRooms, addons]) => {
+        if (!mounted) return
+        if (!backendRoom) {
+          setError('Không tìm thấy căn lưu trú.')
+          return
+        }
+        const averageRating = roomReviews.length
+          ? roomReviews.reduce((total, review) => total + review.rating, 0) / roomReviews.length
           : 0
-        return mapBackendRoomToBookingRoom(candidate, index, {
-          averageRating,
-          reviewCount: candidateReviews.length,
-        })
-      }))
-      if (mounted) setSimilarRooms(recommendations)
-    }).catch(() => {
-      if (mounted) setError('Không thể tải chi tiết căn lưu trú. Vui lòng thử lại.')
-    }).finally(() => {
-      if (mounted) setIsLoading(false)
+        setRoom(mapBackendRoomToBookingRoom(backendRoom, { averageRating, reviewCount: roomReviews.length }, equipment))
+        setReviews(roomReviews)
+        setCommonAmenities(amenities)
+        setAddonServices(addons)
+        const candidates = getSimilarRoomCandidates(backendRoom, allRooms).slice(0, 4)
+        const recommendations = await Promise.all(candidates.map(async (candidate) => {
+          const candidateReviews = await fetchPublicReviewsByRoomId(String(candidate.id)).catch(() => [])
+          const averageRating = candidateReviews.length
+            ? candidateReviews.reduce((total, review) => total + review.rating, 0) / candidateReviews.length
+            : 0
+          return mapBackendRoomToBookingRoom(candidate, {
+            averageRating,
+            reviewCount: candidateReviews.length,
+          })
+        }))
+        if (mounted) setSimilarRooms(recommendations)
+      }).catch(() => {
+        if (mounted) setError('Không thể tải chi tiết căn lưu trú. Vui lòng thử lại.')
+      }).finally(() => {
+        if (mounted) setIsLoading(false)
+      })
     })
+
     return () => { mounted = false }
   }, [roomId])
 

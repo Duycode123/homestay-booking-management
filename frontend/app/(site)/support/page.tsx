@@ -81,7 +81,8 @@ export async function generateMetadata() {
 
   return createPublicPageMetadata({
     ...content.metadata,
-    path: locale === 'en' ? '/en/support' : '/vi/support',
+    path: '/support',
+    locale,
   })
 }
 

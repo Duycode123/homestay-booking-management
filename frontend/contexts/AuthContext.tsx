@@ -23,6 +23,17 @@ function clearClientUserCaches() {
   keys.forEach((key) => window.localStorage.removeItem(key))
 }
 
+function isSameAuthUser(current: AuthUser | null, next: AuthUser) {
+  if (!current) return false
+  return current.id === next.id
+    && current.role === next.role
+    && current.name === next.name
+    && current.fullName === next.fullName
+    && current.email === next.email
+    && current.phone === next.phone
+    && current.avatarUrl === next.avatarUrl
+}
+
 function getSameOriginRedirectUrl(redirectTo: string) {
   if (typeof window === 'undefined') return redirectTo
 
@@ -62,17 +73,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   useEffect(() => {
-    void refreshSession()
+    queueMicrotask(() => void refreshSession())
   }, [refreshSession])
 
-  const login = (sessionUser: AuthUser) => {
+  const login = useCallback((sessionUser: AuthUser) => {
     authOperationId.current += 1
     clearStoredCustomerProfile()
     clearClientUserCaches()
-    setUser(sessionUser)
+    setUser((current) => isSameAuthUser(current, sessionUser) ? current : sessionUser)
     setIsLoading(false)
     setIsLoggingOut(false)
-  }
+  }, [])
 
   const logout = async (redirectTo?: string) => {
     authOperationId.current += 1

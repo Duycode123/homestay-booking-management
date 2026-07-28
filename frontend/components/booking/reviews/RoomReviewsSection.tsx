@@ -57,38 +57,34 @@ export default function RoomReviewsSection({ roomId }: RoomReviewsSectionProps) 
 
   useEffect(() => {
     let active = true
-    setIsLoading(true)
-    setErrorMessage('')
-    setPage(0)
+    queueMicrotask(() => {
+      if (!active) return
+      setIsLoading(true)
+      setErrorMessage('')
+      setPage(0)
 
-    void fetchPublicReviewsByRoomId(roomId)
-      .then((roomReviews) => {
-        if (!active) return
-
-        setReviews(roomReviews)
-        setStats(buildRoomReviewStats(roomReviews))
-      })
-      .catch(() => {
-        if (!active) return
-
-        setReviews([])
-        setStats(emptyStats)
-        setErrorMessage('Không thể tải đánh giá. Vui lòng thử lại sau.')
-      })
-      .finally(() => {
-        if (!active) return
-
-        setIsLoading(false)
-      })
+      void fetchPublicReviewsByRoomId(roomId)
+        .then((roomReviews) => {
+          if (!active) return
+          setReviews(roomReviews)
+          setStats(buildRoomReviewStats(roomReviews))
+        })
+        .catch(() => {
+          if (!active) return
+          setReviews([])
+          setStats(emptyStats)
+          setErrorMessage('Không thể tải đánh giá. Vui lòng thử lại sau.')
+        })
+        .finally(() => {
+          if (!active) return
+          setIsLoading(false)
+        })
+    })
 
     return () => {
       active = false
     }
   }, [roomId])
-
-  useEffect(() => {
-    setPage(0)
-  }, [ratingFilter, sortBy, roomId])
 
   const filteredReviews = useMemo(
     () => sortReviews(filterReviewsByRating(reviews, ratingFilter), sortBy),
@@ -143,6 +139,7 @@ export default function RoomReviewsSection({ roomId }: RoomReviewsSectionProps) 
                 onChange={(event) => {
                   const value = event.target.value
                   setRatingFilter(value === 'all' ? 'all' : Number(value))
+                  setPage(0)
                 }}
                 className="h-11 w-full rounded-xl border border-outline bg-surface-container-lowest px-3 text-sm text-on-surface outline-none focus:border-brand-orange focus:ring-2 focus:ring-brand-orange/15"
               >
@@ -160,7 +157,10 @@ export default function RoomReviewsSection({ roomId }: RoomReviewsSectionProps) 
               </span>
               <ProjectSelect
                 value={sortBy}
-                onChange={(event) => setSortBy(event.target.value as ReviewSortOption)}
+                onChange={(event) => {
+                  setSortBy(event.target.value as ReviewSortOption)
+                  setPage(0)
+                }}
                 className="h-11 w-full rounded-xl border border-outline bg-surface-container-lowest px-3 text-sm text-on-surface outline-none focus:border-brand-orange focus:ring-2 focus:ring-brand-orange/15"
               >
                 {sortOptions.map((option) => (

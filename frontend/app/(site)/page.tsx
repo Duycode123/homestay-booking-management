@@ -198,113 +198,13 @@ const homeCopy = {
 
 type HomeCopy = (typeof homeCopy)[keyof typeof homeCopy];
 
-const stats = [
-  { value: "Rõ ràng", label: "Lịch trống & giá" },
-  { value: "Linh hoạt", label: "Khung giờ lưu trú" },
-  { value: "Chu đáo", label: "Hỗ trợ tại chỗ" },
-];
-
-const equipmentCategories = [
-  {
-    icon: "wifi",
-    eyebrow: "Kết nối liền mạch",
-    title: "Wi‑Fi tốc độ cao",
-    description:
-      "Kết nối ổn định trong từng không gian, phù hợp cho một buổi làm việc yên tĩnh hoặc giờ phút thư giãn riêng.",
-    items: ["Wi‑Fi riêng", "Phủ sóng tốt", "Làm việc thoải mái"],
-    featured: true,
-    layout: "sm:col-span-2 lg:col-span-5",
-  },
-  {
-    icon: "air",
-    eyebrow: "Nghỉ ngơi dễ chịu",
-    title: "Điều hòa sạch, mát lành",
-    description:
-      "Điều hòa inverter được vệ sinh và kiểm tra định kỳ trước mỗi lượt đón khách.",
-    items: ["Làm lạnh nhanh", "Điều khiển riêng", "Tiết kiệm điện"],
-    featured: false,
-    layout: "lg:col-span-4",
-  },
-  {
-    icon: "tv",
-    eyebrow: "Giải trí tại phòng",
-    title: "Smart TV",
-    description:
-      "Màn hình lớn kết nối Internet cho những giờ nghỉ ngơi trọn vẹn hơn.",
-    items: ["YouTube", "Trình chiếu", "Màn hình lớn"],
-    featured: false,
-    layout: "lg:col-span-3",
-  },
-  {
-    icon: "sliders",
-    eyebrow: "Thư giãn riêng tư",
-    title: "Nước nóng ổn định",
-    description:
-      "Hệ thống nước nóng riêng, vận hành an toàn và được kiểm tra thường xuyên.",
-    items: ["Nhiệt độ ổn định", "Chống giật", "Phòng tắm riêng"],
-    featured: false,
-    layout: "lg:col-span-4",
-  },
-  {
-    icon: "amenities",
-    eyebrow: "Những điều nhỏ bé",
-    title: "Tiện nghi sẵn sàng",
-    description:
-      "Tủ lạnh mini, ấm đun nước và các vật dụng cơ bản được bố trí gọn gàng trong phòng.",
-    items: ["Tủ lạnh mini", "Ấm đun nước", "Vật dụng cơ bản"],
-    featured: false,
-    layout: "lg:col-span-3",
-  },
-  {
-    icon: "shield",
-    eyebrow: "Chỉn chu trước khi đến",
-    title: "Sẵn sàng cho check‑in",
-    description:
-      "Phòng được kiểm tra vệ sinh, thiết bị và ghi chú yêu cầu trước giờ nhận phòng.",
-    items: ["Kiểm tra phòng", "Đối chiếu booking", "Hỗ trợ tại chỗ"],
-    featured: false,
-    layout: "sm:col-span-2 lg:col-span-5",
-  },
-] as const;
-
-const homestayStandards = [
-  {
-    icon: "bed" as const,
-    title: "Không gian nghỉ dưỡng",
-    description:
-      "Phòng sạch sẽ, yên tĩnh và được chuẩn bị kỹ trước mỗi lượt khách.",
-  },
-  {
-    icon: "sliders" as const,
-    title: "Tiện nghi bảo trì định kỳ",
-    description:
-      "Wi-Fi, điều hòa, TV và máy nước nóng được kiểm tra trước mỗi lượt nhận phòng.",
-  },
-  {
-    icon: "users" as const,
-    title: "Đội ngũ hỗ trợ tại chỗ",
-    description:
-      "Nhân viên homestay hỗ trợ check-in và xử lý thay đổi lịch trong giờ vận hành.",
-  },
-] as const;
-
-const experienceCommitments = [
-  {
-    name: "Trước khi nhận phòng",
-    role: "Chuẩn bị chỉn chu",
-    quote:
-      "Thông tin phòng, tiện nghi và mức giá được trình bày rõ trước khi bạn xác nhận.",
-  },
-  {
-    name: "Trong kỳ lưu trú",
-    role: "Hỗ trợ đúng lúc",
-    quote:
-      "Đội ngũ vận hành theo dõi lịch nhận phòng và tiếp nhận sự cố ngay trên hệ thống.",
-  },
-];
 
 type IconName =
-  | (typeof equipmentCategories)[number]["icon"]
+  | "wifi"
+  | "air"
+  | "tv"
+  | "amenities"
+  | "shield"
   | "bed"
   | "users"
   | "clock"
@@ -882,99 +782,6 @@ function ChevronIcon({ className = "h-5 w-5" }: { className?: string }) {
   );
 }
 
-function TrustSpotlight() {
-  const { locale, localizedHref } = useI18n();
-  const copy = homeCopy[locale];
-  const promises = copy.promises;
-
-  return (
-    <section
-      id="why-serene"
-      className="scroll-mt-24 bg-[#EFEAE1] py-16 sm:py-20 lg:py-24"
-    >
-      <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
-        <div className="relative overflow-hidden rounded-[28px] border border-secondary/10 bg-secondary px-6 py-8 text-white shadow-[0_28px_70px_rgba(23,58,49,0.2)] sm:px-9 sm:py-11 lg:px-12 lg:py-14">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -left-28 -top-36 h-[28rem] w-[28rem] rounded-full border border-white/10"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -bottom-44 right-10 h-[30rem] w-[30rem] rounded-full border border-brand-orange/20"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute right-[30%] top-0 h-full w-px bg-gradient-to-b from-transparent via-white/10 to-transparent"
-          />
-
-          <div className="relative grid gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-14">
-            <div className="flex flex-col justify-between">
-              <div>
-                <p className="eyebrow text-primary-fixed">
-                  {copy.whyEyebrow}
-                </p>
-                <h2 className="font-editorial mt-4 max-w-xl text-4xl font-semibold leading-[1.06] text-white sm:text-5xl lg:text-[3.5rem]">
-                  {copy.whyTitle}
-                </h2>
-                <p className="mt-5 max-w-xl text-base leading-8 text-white/72 sm:text-[1.05rem]">
-                  {copy.whyDescription}
-                </p>
-              </div>
-
-              <div className="mt-9 flex flex-wrap gap-3">
-                <Link
-                  href={localizedHref("/rooms")}
-                  className="inline-flex h-12 items-center justify-center rounded-full bg-white px-6 font-display text-sm font-semibold text-secondary transition-[background-color,color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:bg-primary-fixed hover:shadow-[0_14px_28px_rgba(0,0,0,0.18)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white motion-reduce:transform-none"
-                >
-                  {copy.exploreRooms}
-                </Link>
-                <Link
-                  href={localizedHref("/process")}
-                  className="inline-flex h-12 items-center justify-center rounded-full border border-white/25 bg-white/[0.03] px-6 font-display text-sm font-semibold text-white transition-[background-color,border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-white/45 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white motion-reduce:transform-none"
-                >
-                  {copy.process}
-                </Link>
-              </div>
-            </div>
-
-            <div className="grid gap-3 self-center">
-              {promises.map((promise, index) => (
-                <article
-                  key={promise.title}
-                  className="group relative overflow-hidden rounded-2xl border border-white/12 bg-white/[0.055] p-5 transition-[background-color,border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-white/28 hover:bg-white/[0.09] motion-reduce:transform-none sm:p-6"
-                >
-                  <div
-                    aria-hidden
-                    className="absolute inset-y-0 left-0 w-1 origin-bottom scale-y-0 bg-primary-fixed transition-transform duration-200 group-hover:scale-y-100"
-                  />
-                  <div className="relative flex gap-4">
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/10 text-primary-fixed transition-transform duration-200 group-hover:scale-105 motion-reduce:transform-none">
-                      <Icon name={promise.icon as IconName} className="h-5 w-5" />
-                    </span>
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-fixed">
-                        0{index + 1}
-                      </p>
-                      <h3 className="mt-1 font-display text-base font-bold text-white sm:text-[1.05rem]">
-                        {promise.title}
-                      </h3>
-                      <p className="mt-1.5 text-sm leading-6 text-white/64">
-                        {promise.description}
-                      </p>
-                    </div>
-                  </div>
-                </article>
-              ))}
-              <p className="pt-2 text-xs leading-5 text-white/52">
-                {copy.whyFootnote}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
 
 const seasons = [
   {
@@ -1697,142 +1504,6 @@ function GuestStoriesSection() {
   );
 }
 
-function EquipmentShowcase() {
-  const { locale, localizedHref } = useI18n();
-  const copy = homeCopy[locale];
-
-  return (
-    <section
-      id="equipment"
-      className="scroll-mt-20 bg-[#EFEAE1] pb-20 pt-14 sm:pb-24 sm:pt-20"
-    >
-      <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
-        <div className="grid gap-8 border-b border-outline-variant pb-9 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-          <div className="max-w-3xl">
-            <p className="eyebrow text-brand-orange">{copy.amenitiesEyebrow}</p>
-            <h2 className="font-editorial mt-3 max-w-2xl text-4xl font-semibold leading-[1.08] text-secondary sm:text-5xl">
-              {copy.amenitiesTitle}
-            </h2>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-on-surface-variant">
-              {copy.amenitiesDescription}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-4 lg:justify-end">
-            <p className="hidden max-w-44 text-right text-xs leading-5 text-on-surface-variant sm:block">
-              {copy.amenitiesNote}
-            </p>
-            <span
-              className="flex h-12 min-w-12 items-center justify-center rounded-full border border-outline bg-[#F7F3EC] px-3 font-display text-sm font-bold text-secondary"
-              aria-label="6 nhóm tiện nghi chính"
-            >
-              06
-            </span>
-          </div>
-        </div>
-
-        <div className="mt-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <p className="max-w-xl text-sm leading-6 text-on-surface-variant">
-            {copy.amenitiesSummary}
-          </p>
-          <Link
-            href={localizedHref("/amenities")}
-            className="inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-outline bg-transparent px-5 font-display text-sm font-semibold text-secondary transition-[background-color,border-color,color,transform] duration-200 hover:-translate-y-0.5 hover:border-secondary hover:bg-secondary hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-secondary motion-reduce:transform-none"
-          >
-            {copy.viewAmenities}
-          </Link>
-        </div>
-
-        <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-12 lg:gap-5">
-          {equipmentCategories.map((category) => (
-            <article
-              key={category.title}
-              className={[
-                "group relative overflow-hidden rounded-[20px] border p-6 sm:p-7",
-                "transition-[transform,border-color,background-color,box-shadow] duration-200 ease-out",
-                "focus-within:ring-2 focus-within:ring-secondary/35",
-                category.layout,
-                category.featured
-                  ? "border-secondary bg-secondary text-white shadow-[0_22px_50px_rgba(20,57,47,0.18)] hover:-translate-y-0.5 hover:bg-[#173B32]"
-                  : "border-outline-variant bg-white/90 shadow-[0_12px_30px_rgba(63,51,35,0.06)] hover:-translate-y-0.5 hover:border-brand-orange/50 hover:bg-[#FFFEFB] hover:shadow-[0_18px_36px_rgba(63,51,35,0.09)]",
-              ].join(" ")}
-            >
-              {category.featured && (
-                <div
-                  aria-hidden
-                  className="absolute -right-20 -top-20 h-56 w-56 rounded-full border border-white/10"
-                />
-              )}
-              <div
-                className={[
-                  "relative mb-6 flex h-11 w-11 items-center justify-center rounded-full",
-                  "transition-[background-color,color,transform] duration-200 group-hover:scale-105 motion-reduce:transform-none",
-                  category.featured
-                    ? "bg-white/12 text-primary-fixed"
-                    : "bg-primary-container text-brand-orange group-hover:bg-brand-orange group-hover:text-white",
-                ].join(" ")}
-              >
-                <Icon name={category.icon} />
-              </div>
-              <p
-                className={
-                  category.featured
-                    ? "relative text-xs font-semibold uppercase tracking-[0.16em] text-primary-fixed"
-                    : "text-xs font-semibold uppercase tracking-[0.16em] text-brand-orange"
-                }
-              >
-                {category.eyebrow}
-              </p>
-              <h3
-                className={
-                  category.featured
-                    ? "relative mt-3 font-editorial text-3xl font-semibold leading-tight text-white sm:text-[2rem]"
-                    : "mt-3 font-editorial text-2xl font-semibold leading-tight text-secondary"
-                }
-              >
-                {category.title}
-              </h3>
-              <p
-                className={
-                  category.featured
-                    ? "relative mt-3 max-w-lg text-sm leading-6 text-white/72"
-                    : "mt-3 text-sm leading-6 text-on-surface-variant"
-                }
-              >
-                {category.description}
-              </p>
-              <div
-                className={
-                  category.featured
-                    ? "relative mt-6 flex flex-wrap gap-2 border-t border-white/15 pt-4"
-                    : "mt-6 flex flex-wrap gap-2 border-t border-outline-variant pt-4"
-                }
-              >
-                {category.items.map((item) => (
-                  <span
-                    key={item}
-                    className={
-                      category.featured
-                        ? "rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-medium text-white/88"
-                        : "rounded-full border border-outline-variant bg-surface-container-low px-3 py-1.5 text-xs font-medium text-on-surface-variant"
-                    }
-                  >
-                    {item}
-                  </span>
-                ))}
-              </div>
-            </article>
-          ))}
-        </div>
-
-        <p className="mt-6 border-l-2 border-brand-orange/55 pl-4 text-xs leading-5 text-on-surface-variant sm:text-sm">
-          Tiện nghi riêng có thể khác theo từng hạng phòng. Vui lòng xem trang
-          chi tiết phòng để kiểm tra danh sách chính xác trước khi đặt.
-        </p>
-      </div>
-    </section>
-  );
-}
 
 type QuickBookingState = {
   room: BookingRoom;
@@ -1874,16 +1545,18 @@ export default function HomePage() {
       rooms.find((room) => room.id === draftRoom?.id) ?? draftRoom;
 
     if (restoredRoom) {
-      setQuickBooking({
-        room: restoredRoom,
-        initialDate: draft.selectedDate ?? draft.initialDate,
-        initialEndDate: draft.selectedEndDate ?? draft.initialEndDate,
-        initialStartTime:
-          draft.selectedStartTime ??
-          draft.selectedSlot?.startTime ??
-          draft.initialStartTime,
-        initialDuration: draft.selectedDuration ?? draft.initialDuration,
-        initialNote: draft.customerNote ?? draft.initialNote,
+      queueMicrotask(() => {
+        setQuickBooking({
+          room: restoredRoom,
+          initialDate: draft.selectedDate ?? draft.initialDate,
+          initialEndDate: draft.selectedEndDate ?? draft.initialEndDate,
+          initialStartTime:
+            draft.selectedStartTime ??
+            draft.selectedSlot?.startTime ??
+            draft.initialStartTime,
+          initialDuration: draft.selectedDuration ?? draft.initialDuration,
+          initialNote: draft.customerNote ?? draft.initialNote,
+        });
       });
     }
 

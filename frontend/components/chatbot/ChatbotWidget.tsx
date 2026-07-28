@@ -272,29 +272,36 @@ export default function ChatbotWidget() {
   const hotlineHref = hotlineNumber ? `tel:${hotlineNumber.replace(/[^+\d]/g, '')}` : '/support'
 
   useEffect(() => {
-    try {
-      const storedSession = window.sessionStorage.getItem(CHATBOT_SESSION_KEY)
-      if (storedSession) {
-        const session = JSON.parse(storedSession) as PersistedChatbotSession
-        if (session.version === 2) {
-          const restoredMessages = Array.isArray(session.messages)
-            ? session.messages.slice(-MAX_PERSISTED_MESSAGES)
-            : []
-          setMessages(restoredMessages)
-          setQuickReplies(Array.isArray(session.quickReplies) ? session.quickReplies : [])
-          setAgentContext(session.context)
-          setWelcomed(restoredMessages.length > 0)
+    let active = true
+    queueMicrotask(() => {
+      if (!active) return
+      try {
+        const storedSession = window.sessionStorage.getItem(CHATBOT_SESSION_KEY)
+        if (storedSession) {
+          const session = JSON.parse(storedSession) as PersistedChatbotSession
+          if (session.version === 2) {
+            const restoredMessages = Array.isArray(session.messages)
+              ? session.messages.slice(-MAX_PERSISTED_MESSAGES)
+              : []
+            setMessages(restoredMessages)
+            setQuickReplies(Array.isArray(session.quickReplies) ? session.quickReplies : [])
+            setAgentContext(session.context)
+            setWelcomed(restoredMessages.length > 0)
+          }
+        } else {
+          const storedContext = window.sessionStorage.getItem(CHATBOT_CONTEXT_KEY)
+          if (storedContext) setAgentContext(JSON.parse(storedContext) as ChatbotAgentContext)
         }
-      } else {
-        const storedContext = window.sessionStorage.getItem(CHATBOT_CONTEXT_KEY)
-        if (storedContext) setAgentContext(JSON.parse(storedContext) as ChatbotAgentContext)
+      } catch {
+        window.sessionStorage.removeItem(CHATBOT_SESSION_KEY)
+        window.sessionStorage.removeItem(CHATBOT_CONTEXT_KEY)
+      } finally {
+        window.sessionStorage.removeItem(LEGACY_CHATBOT_SESSION_KEY)
+        if (active) setSessionReady(true)
       }
-    } catch {
-      window.sessionStorage.removeItem(CHATBOT_SESSION_KEY)
-      window.sessionStorage.removeItem(CHATBOT_CONTEXT_KEY)
-    } finally {
-      window.sessionStorage.removeItem(LEGACY_CHATBOT_SESSION_KEY)
-      setSessionReady(true)
+    })
+    return () => {
+      active = false
     }
   }, [])
 
@@ -323,16 +330,18 @@ export default function ChatbotWidget() {
 
   useEffect(() => {
     if (sessionReady && open && !welcomed) {
-      setWelcomed(true)
-      setMessages([
-        {
-          id: createId(),
-          role: 'assistant',
-          content: CHATBOT_WELCOME.content,
-          createdAt: new Date().toISOString(),
-        },
-      ])
-      setQuickReplies(CHATBOT_WELCOME.quickReplies ?? [])
+      queueMicrotask(() => {
+        setWelcomed(true)
+        setMessages([
+          {
+            id: createId(),
+            role: 'assistant',
+            content: CHATBOT_WELCOME.content,
+            createdAt: new Date().toISOString(),
+          },
+        ])
+        setQuickReplies(CHATBOT_WELCOME.quickReplies ?? [])
+      })
     }
   }, [open, sessionReady, welcomed])
 
@@ -433,6 +442,7 @@ export default function ChatbotWidget() {
         role="dialog"
         aria-label="HomeBot trợ lý ảo"
         aria-hidden={!open}
+        inert={!open}
         className={[
           'pointer-events-auto absolute bottom-[calc(100%+0.65rem)] right-0 z-20 flex w-[min(100vw-2rem,400px)] flex-col overflow-hidden rounded-[28px] border border-white/60 bg-white/90 shadow-[var(--shadow-elevated)] backdrop-blur-xl transition-all duration-300 ease-out',
           // Fixed height within viewport: leave room for launcher + safe margins
@@ -460,13 +470,13 @@ export default function ChatbotWidget() {
               </div>
             </div>
             <div className="flex items-center gap-1.5">
-              <button type="button" onClick={resetConversation} className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/25" aria-label="Bắt đầu cuộc trò chuyện mới" title="Làm mới hội thoại">
+              <button type="button" onClick={resetConversation} className="flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/25" aria-label="Bắt đầu cuộc trò chuyện mới" title="Làm mới hội thoại">
                 <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 11a8 8 0 1 0-2.35 5.65M20 4v7h-7" strokeLinecap="round" strokeLinejoin="round" /></svg>
               </button>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/25"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/25"
                 aria-label="Đóng chat"
               >
                 <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">

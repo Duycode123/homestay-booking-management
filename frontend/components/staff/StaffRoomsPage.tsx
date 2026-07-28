@@ -2,7 +2,7 @@
 
 import ProjectSelect from '@/components/ui/ProjectSelect'
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import AuthGuard from '@/components/AuthGuard'
 import { StaffPageShell } from './StaffShared'
 import { fetchAdminEquipment } from '@/lib/admin/equipment/adminEquipmentApi'
@@ -220,9 +220,9 @@ export default function StaffRoomsPage() {
     [equipment, rooms],
   )
 
-  const showToast = (message: string) => setToastMessage(message)
+  const showToast = useCallback((message: string) => setToastMessage(message), [])
 
-  const refreshData = async () => {
+  const refreshData = useCallback(async () => {
     setIsLoading(true)
     try {
       const range = getStaffDutyRange()
@@ -266,11 +266,11 @@ export default function StaffRoomsPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [showToast])
 
   useEffect(() => {
-    void refreshData()
-  }, [])
+    queueMicrotask(() => void refreshData())
+  }, [refreshData])
 
   const updateRoomStatus = async (room: StaffRoom, nextStatus: RoomStatus) => {
     const updatedAt = 'Vừa cập nhật'
@@ -1479,23 +1479,6 @@ function Toast({ message }: { message: string }) {
     <div className="fixed bottom-5 left-1/2 z-[60] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-2xl border border-secondary-container bg-secondary px-4 py-3 text-sm font-semibold text-on-secondary shadow-[var(--homestay-shadow-elevated)]">
       {message}
     </div>
-  )
-}
-
-function IconLogo() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
-      <path d="M4 9v6M8 5v14M12 3v18M16 6v12M20 10v4" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function IconMenuDot({ active }: { active: boolean }) {
-  return (
-    <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" aria-hidden="true">
-      <rect x="4" y="4" width="12" height="12" rx="3" stroke="currentColor" strokeWidth="1.8" opacity={active ? 1 : 0.68} />
-      <path d="M7 10h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" opacity={active ? 1 : 0.68} />
-    </svg>
   )
 }
 

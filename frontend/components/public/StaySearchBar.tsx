@@ -110,7 +110,7 @@ export default function StaySearchBar({
   const router = useRouter()
   const { locale, localizedHref } = useI18n()
   const copy = searchCopy[locale]
-  const earliestCheckIn = useMemo(getEarliestCheckIn, [])
+  const earliestCheckIn = useMemo(() => getEarliestCheckIn(), [])
   const defaultCheckIn = normalizeDate(initialValues?.checkIn, earliestCheckIn)
   const defaultCheckOutCandidate = normalizeDate(initialValues?.checkOut, addDays(defaultCheckIn, 1))
   const defaultCheckOut = defaultCheckOutCandidate > defaultCheckIn
@@ -132,11 +132,13 @@ export default function StaySearchBar({
     if (!initialValues) return
     const nextCheckIn = normalizeDate(initialValues.checkIn, earliestCheckIn)
     const nextCheckOutCandidate = normalizeDate(initialValues.checkOut, addDays(nextCheckIn, 1))
-    setKeyword(initialValues.keyword ?? '')
-    setCheckIn(nextCheckIn)
-    setCheckOut(nextCheckOutCandidate > nextCheckIn ? nextCheckOutCandidate : addDays(nextCheckIn, 1))
-    setAdults(clamp(initialValues.adults ?? 2, 1, 20))
-    setChildren(clamp(initialValues.children ?? 0, 0, 12))
+    queueMicrotask(() => {
+      setKeyword(initialValues.keyword ?? '')
+      setCheckIn(nextCheckIn)
+      setCheckOut(nextCheckOutCandidate > nextCheckIn ? nextCheckOutCandidate : addDays(nextCheckIn, 1))
+      setAdults(clamp(initialValues.adults ?? 2, 1, 20))
+      setChildren(clamp(initialValues.children ?? 0, 0, 12))
+    })
   }, [earliestCheckIn, initialValues])
 
   useEffect(() => {

@@ -18,7 +18,8 @@ const copy = {
     empty: 'Hiện chưa có tiện ích đi kèm để hiển thị.',
     errorTitle: 'Không thể hiển thị tiện ích đi kèm',
     errorDescription:
-      'Đã xảy ra lỗi khi tải dữ liệu. Vui lòng thử tải lại trang.',
+      'Kết nối dữ liệu đang gián đoạn. Bạn có thể thử lại mà không cần tải lại trang.',
+    retry: 'Thử kết nối lại',
     availableAt: 'Có tại',
     homestay: 'homestay',
   },
@@ -31,7 +32,8 @@ const copy = {
     empty: 'There are currently no included amenities to display.',
     errorTitle: 'Unable to display included amenities',
     errorDescription:
-      'An error occurred while loading the data. Please refresh the page.',
+      'The data connection was interrupted. You can retry without refreshing the page.',
+    retry: 'Try again',
     availableAt: 'Available at',
     homestay: 'homestay',
   },
@@ -41,6 +43,7 @@ export default function CommonAmenitiesShowcase() {
   const [items, setItems] = useState<CommonAmenity[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
 
   const { locale } = useI18n()
   const content = copy[locale]
@@ -58,9 +61,7 @@ export default function CommonAmenitiesShowcase() {
         if (!cancelled) {
           setItems(Array.isArray(data) ? data : [])
         }
-      } catch (err) {
-        console.error('Failed to load common amenities:', err)
-
+      } catch {
         if (!cancelled) {
           setItems([])
           setError(true)
@@ -77,7 +78,7 @@ export default function CommonAmenitiesShowcase() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [reloadKey])
 
   return (
     <section className="relative overflow-hidden bg-[#F7F3EC] py-20 sm:py-24 lg:py-28">
@@ -121,6 +122,13 @@ export default function CommonAmenitiesShowcase() {
             <p className="mt-2 text-sm leading-6 text-on-surface-variant">
               {content.errorDescription}
             </p>
+            <button
+              type="button"
+              onClick={() => setReloadKey((key) => key + 1)}
+              className="mt-6 inline-flex min-h-11 items-center justify-center rounded-full bg-secondary px-5 font-display text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-secondary-container focus-visible:ring-4 focus-visible:ring-brand-orange/20"
+            >
+              {content.retry}
+            </button>
           </div>
         )}
 

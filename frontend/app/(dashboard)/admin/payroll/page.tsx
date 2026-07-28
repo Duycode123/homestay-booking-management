@@ -55,7 +55,9 @@ export default function AdminPayrollPage() {
     }
   }, [period])
 
-  useEffect(() => { void load() }, [load])
+  useEffect(() => {
+    queueMicrotask(() => void load())
+  }, [load])
 
   const paidStaff = useMemo(() => report?.staff.filter((item) => item.workHours > 0).length ?? 0, [report])
 

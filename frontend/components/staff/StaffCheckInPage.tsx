@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import AuthGuard from '@/components/AuthGuard'
 import { StaffPageShell } from './StaffShared'
 import { calculateDistanceMeters, STAFF_LOCATION } from './staff-location'
@@ -104,7 +104,9 @@ export default function StaffCheckInPage() {
   }, [toast])
 
   useEffect(() => {
-    setShift((current) => ({ ...current, staffName: getDisplayName(user) }))
+    queueMicrotask(() => {
+      setShift((current) => ({ ...current, staffName: getDisplayName(user) }))
+    })
   }, [user])
 
   useEffect(() => {
@@ -151,7 +153,7 @@ export default function StaffCheckInPage() {
     ? calculateWorkingDuration(shift.checkInTime, shift.checkOutTime, now)
     : 'Chưa ghi nhận'
 
-  const actionConfig = useMemo(() => {
+  const actionConfig = (() => {
     if (shift.status === 'NOT_STARTED') {
       return {
         label: 'Check-in',
@@ -185,12 +187,13 @@ export default function StaffCheckInPage() {
       disabled: true,
       onClick: handleCheckIn,
     }
-  }, [canCheckIn, shift.status])
+  })()
 
-  const buttonText = isLoading ? actionConfig.loadingLabel : actionConfig.label
   const actionHelper = getActionHelper(shift, timeWindow, hasValidVerification)
 
-  const showToast = (nextToast: ToastState) => setToast(nextToast)
+  function showToast(nextToast: ToastState) {
+    setToast(nextToast)
+  }
 
   function handleVerifyLocation() {
     if (!canVerify) {
@@ -883,23 +886,6 @@ function formatShiftDate(dateKey: string) {
   return todayFormatter.format(new Date(year, month - 1, day))
 }
 
-function IconLogo() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
-      <path d="M4 9v6M8 5v14M12 3v18M16 6v12M20 10v4" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function IconMenuDot({ active }: { active: boolean }) {
-  return (
-    <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" aria-hidden="true">
-      <rect x="4" y="4" width="12" height="12" rx="3" stroke="currentColor" strokeWidth="1.8" opacity={active ? 1 : 0.68} />
-      <path d="M7 10h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" opacity={active ? 1 : 0.68} />
-    </svg>
-  )
-}
-
 function IconUser() {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
@@ -962,14 +948,6 @@ function IconMinus() {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
       <path d="M5 12h14" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function IconClose() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
-      <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
     </svg>
   )
 }

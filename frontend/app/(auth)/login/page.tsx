@@ -156,7 +156,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => router.push('/forgot-password')}
-              className="cursor-pointer font-medium text-brand-orange hover:underline focus:outline-none"
+              className="cursor-pointer font-medium text-brand-orangeHover hover:text-brand-greenDark hover:underline focus:outline-none"
             >
               Quên mật khẩu?
             </button>
@@ -214,7 +214,7 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={() => router.push('/register')}
-            className="cursor-pointer font-display font-semibold text-brand-orange hover:underline"
+            className="cursor-pointer font-display font-semibold text-brand-orangeHover hover:text-brand-greenDark hover:underline"
           >
             Đăng ký ngay
           </button>

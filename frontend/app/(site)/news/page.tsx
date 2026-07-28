@@ -3,21 +3,24 @@ import Link from 'next/link'
 import { createPublicPageMetadata } from '@/lib/seo'
 import { formatNewsDate, getTravelNews, NEWS_HERO_IMAGE } from '@/lib/travel-news'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 1800
 
 export const metadata = createPublicPageMetadata({
   title: 'Tin tức & cảm hứng du lịch',
   description: 'Các tin tức và cảm hứng du lịch, nghỉ dưỡng được The Serene Villa tuyển chọn từ nguồn báo công khai.',
-  path: '/images/New6.jpg',
+  path: '/news',
 })
 
 function ArticleImage({ src, alt, large = false }: { src: string; alt: string; large?: boolean }) {
   return (
-    <img
+    <Image
       src={src}
       alt={alt}
+      width={large ? 1120 : 720}
+      height={large ? 700 : 540}
+      sizes={large ? '(min-width: 1024px) 54vw, 100vw' : '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw'}
+      priority={large}
       className="block h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03] motion-reduce:transform-none"
-      loading={large ? 'eager' : 'lazy'}
     />
   )
 }
@@ -51,12 +54,7 @@ export default async function NewsPage() {
               <span className="mt-7 inline-flex items-center gap-2 font-display text-sm font-semibold text-secondary">Đọc tóm lược <span aria-hidden>→</span></span>
             </div>
           </Link>
-        ) : (
-          <div className="rounded-[26px] border border-dashed border-[#cdbfae] bg-white px-6 py-16 text-center">
-            <h2 className="font-editorial text-3xl font-semibold text-secondary">Tin tức đang được cập nhật</h2>
-            <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-on-surface-variant">Nguồn Google News hiện chưa phản hồi. Bạn có thể quay lại sau để xem các bài viết mới nhất.</p>
-          </div>
-        )}
+        ) : null}
 
         {rest.length > 0 ? (
           <div className="mt-14">

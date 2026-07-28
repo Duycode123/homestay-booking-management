@@ -43,10 +43,12 @@ export default function EquipmentFormModal({
   useEffect(() => {
     if (!open) return
 
-    setForm(initialData)
-    setErrors({})
-    setServerError('')
-    setIsSaving(false)
+    queueMicrotask(() => {
+      setForm(initialData)
+      setErrors({})
+      setServerError('')
+      setIsSaving(false)
+    })
   }, [initialData, open])
 
   if (!open) return null

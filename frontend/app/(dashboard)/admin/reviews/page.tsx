@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import AdminPageHeader from '@/components/admin/AdminPageHeader'
 import AdminToast from '@/components/admin/AdminToast'
-import { IconRefresh, IconReviews } from '@/components/admin/AdminIcons'
+import { IconRefresh } from '@/components/admin/AdminIcons'
 import ReviewDetailPanel from '@/components/admin/reviews/ReviewDetailPanel'
 import ReviewFiltersBar from '@/components/admin/reviews/ReviewFiltersBar'
 import ReviewStatsOverview from '@/components/admin/reviews/ReviewStatsOverview'
@@ -97,7 +97,7 @@ export default function AdminReviewsPage() {
   }, [loadReviews])
 
   useEffect(() => {
-    void loadStats()
+    queueMicrotask(() => void loadStats())
   }, [loadStats])
 
   useEffect(() => {

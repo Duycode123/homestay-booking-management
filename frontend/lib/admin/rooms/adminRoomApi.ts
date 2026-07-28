@@ -228,10 +228,9 @@ export async function getAdminRooms(): Promise<AdminRoom[]> {
       fetchRoomReviewSummaries().catch(() => new Map()),
     ])
 
-    return rooms.map((room, index) =>
+    return rooms.map((room) =>
       mapBackendRoomToAdminRoom(
         room,
-        index,
         currentMonthRevenueByRoomId.get(room.id) ?? 0,
         reviewSummaries.get(String(room.id)),
       ),

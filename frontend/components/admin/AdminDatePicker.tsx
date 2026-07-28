@@ -42,10 +42,6 @@ export default function AdminDatePicker({
   const cells = useMemo(() => getMonthCells(viewMonth), [viewMonth])
 
   useEffect(() => {
-    if (value) setViewMonth(startOfMonth(value))
-  }, [value])
-
-  useEffect(() => {
     if (!open) return
 
     const updatePosition = () => {

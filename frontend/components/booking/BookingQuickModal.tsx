@@ -74,15 +74,17 @@ export default function BookingQuickModal({
   useEffect(() => {
     if (!open) return
 
-    setDate(initialDate || getTodayDateString())
-    setEndDate(initialEndDate || '')
-    const shouldPrefillTime = Boolean(initialStartTime && initialDuration && initialDuration > 0)
-    setStartTime(shouldPrefillTime ? initialStartTime || '' : '')
-    setDuration(shouldPrefillTime ? normalizeDuration(initialDuration ?? DEFAULT_DURATION) : 0)
-    setEndTime('')
-    setSelectedSlots([])
-    setNote(initialNote ?? '')
-    setError('')
+    queueMicrotask(() => {
+      setDate(initialDate || getTodayDateString())
+      setEndDate(initialEndDate || '')
+      const shouldPrefillTime = Boolean(initialStartTime && initialDuration && initialDuration > 0)
+      setStartTime(shouldPrefillTime ? initialStartTime || '' : '')
+      setDuration(shouldPrefillTime ? normalizeDuration(initialDuration ?? DEFAULT_DURATION) : 0)
+      setEndTime('')
+      setSelectedSlots([])
+      setNote(initialNote ?? '')
+      setError('')
+    })
   }, [initialDate, initialDuration, initialEndDate, initialNote, initialStartTime, open, room.id])
 
   const handleScheduleChange = useCallback((value: BookingScheduleValue) => {

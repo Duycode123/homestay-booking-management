@@ -64,17 +64,20 @@ export default function RoomDetailModal({ room, open, onClose, onBook }: RoomDet
     if (!open || !room?.id) return
 
     let active = true
-    setTodayAvailability({ status: 'loading', slots: [] })
+    queueMicrotask(() => {
+      if (!active) return
+      setTodayAvailability({ status: 'loading', slots: [] })
 
-    void fetchAvailableSlots(room.id, getTodayDateString())
-      .then((slots) => {
-        if (!active) return
-        setTodayAvailability({ status: 'ready', slots, updatedAt: new Date() })
-      })
-      .catch(() => {
-        if (!active) return
-        setTodayAvailability({ status: 'error', slots: [] })
-      })
+      void fetchAvailableSlots(room.id, getTodayDateString())
+        .then((slots) => {
+          if (!active) return
+          setTodayAvailability({ status: 'ready', slots, updatedAt: new Date() })
+        })
+        .catch(() => {
+          if (!active) return
+          setTodayAvailability({ status: 'error', slots: [] })
+        })
+    })
 
     return () => {
       active = false

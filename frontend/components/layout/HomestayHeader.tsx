@@ -38,7 +38,9 @@ export default function HomestayHeader() {
   const [scrolled, setScrolled] = useState(false)
   const activeHomeSection = useHomepageActiveSection()
 
-  useEffect(() => setMenuOpen(false), [pathname])
+  useEffect(() => {
+    queueMicrotask(() => setMenuOpen(false))
+  }, [pathname])
 
   useEffect(() => {
     const updateHeaderState = () => {

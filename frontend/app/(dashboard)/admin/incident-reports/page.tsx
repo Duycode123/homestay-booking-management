@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import ProjectSelect from '@/components/ui/ProjectSelect'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -413,9 +414,16 @@ function IncidentDetailDrawer({
 
   useEffect(() => {
     if (!report) return
-    setStatus(report.status)
-    setAdminNote(report.adminNote)
-    setMessage('')
+    let isActive = true
+    queueMicrotask(() => {
+      if (!isActive) return
+      setStatus(report.status)
+      setAdminNote(report.adminNote)
+      setMessage('')
+    })
+    return () => {
+      isActive = false
+    }
   }, [report])
 
   if (!report) return null
@@ -478,10 +486,13 @@ function IncidentDetailDrawer({
             {evidenceImages.length > 0 ? (
               <div className="grid gap-3 sm:grid-cols-2">
                 {evidenceImages.map((image) => (
-                  <img
+                  <Image
                     key={image}
                     src={image}
                     alt={`Ảnh minh chứng ${report.reportCode}`}
+                    width={640}
+                    height={256}
+                    unoptimized
                     className="h-32 w-full rounded-xl border border-outline-variant object-cover"
                   />
                 ))}

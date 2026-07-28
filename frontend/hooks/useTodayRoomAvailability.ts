@@ -21,35 +21,37 @@ export function useTodayRoomAvailability(rooms: Room[]) {
   const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
-    if (rooms.length === 0) {
-      setAvailabilityByRoomId({})
-      setIsLoading(false)
-      return
-    }
-
     let mounted = true
-    const today = getTodayKey()
-    const tomorrow = addDays(today, 1)
-    setIsLoading(true)
-
-    void Promise.all(rooms.map(async (room) => {
-      if (isRoomTemporarilyUnavailable(room) || !/^\d+$/.test(room.id)) {
-        return [room.id, { today: [] as TimeSlot[], tomorrow: [] as TimeSlot[] }] as const
-      }
-
-      try {
-        const [todaySlots, tomorrowSlots] = await Promise.all([
-          fetchAvailableSlots(room.id, today),
-          fetchAvailableSlots(room.id, tomorrow),
-        ])
-        return [room.id, { today: todaySlots, tomorrow: tomorrowSlots }] as const
-      } catch {
-        return [room.id, { today: undefined, tomorrow: undefined }] as const
-      }
-    })).then((entries) => {
+    queueMicrotask(() => {
       if (!mounted) return
-      setAvailabilityByRoomId(Object.fromEntries(entries))
-      setIsLoading(false)
+      if (rooms.length === 0) {
+        setAvailabilityByRoomId({})
+        setIsLoading(false)
+        return
+      }
+
+      const today = getTodayKey()
+      const tomorrow = addDays(today, 1)
+      setIsLoading(true)
+      void Promise.all(rooms.map(async (room) => {
+        if (isRoomTemporarilyUnavailable(room) || !/^\d+$/.test(room.id)) {
+          return [room.id, { today: [] as TimeSlot[], tomorrow: [] as TimeSlot[] }] as const
+        }
+
+        try {
+          const [todaySlots, tomorrowSlots] = await Promise.all([
+            fetchAvailableSlots(room.id, today),
+            fetchAvailableSlots(room.id, tomorrow),
+          ])
+          return [room.id, { today: todaySlots, tomorrow: tomorrowSlots }] as const
+        } catch {
+          return [room.id, { today: undefined, tomorrow: undefined }] as const
+        }
+      })).then((entries) => {
+        if (!mounted) return
+        setAvailabilityByRoomId(Object.fromEntries(entries))
+        setIsLoading(false)
+      })
     })
 
     return () => {

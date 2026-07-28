@@ -16,12 +16,6 @@ import type { PublicRoomEquipment } from '@/lib/public-room-equipment-service'
 
 const fallbackImage = '/images/homestay-luxury-hero.webp'
 
-const categoryBadges: Record<RoomCategory, string> = {
-  standard: 'Standard',
-  deluxe: 'Deluxe',
-  family: 'Family',
-}
-
 const categoryDescriptions: Record<RoomCategory, string> = {
   standard: 'Phòng tiện nghi cơ bản, phù hợp cho 1-2 khách.',
   deluxe: 'Phòng Deluxe rộng rãi, có ban công và tiện nghi nâng cấp.',
@@ -65,11 +59,10 @@ function getRoomTypeName(room: BackendRoom, category: RoomCategory) {
 
 export function getPublicRoomTierLabel(
   typeName?: string | null,
-  options: { category?: RoomCategory; capacity?: number | null } = {},
+  options: { category?: RoomCategory } = {},
 ) {
   const rawTypeName = typeName?.trim()
   const category = options.category ?? inferRoomCategoryFromTypeName(rawTypeName)
-  const capacity = options.capacity ?? null
   const normalized = normalizeSearchText(rawTypeName)
   const isDefaultSeededTier = ['standard', 'deluxe', 'family'].includes(normalized)
 
@@ -82,7 +75,7 @@ export function getPublicRoomTierLabel(
   return 'Phòng Standard'
 }
 
-function getPublicRoomBadge(category: RoomCategory, capacity: number) {
+function getPublicRoomBadge(category: RoomCategory) {
   if (category === 'family') return 'Family'
   if (category === 'deluxe') return 'Deluxe'
   return 'Standard'
@@ -92,7 +85,7 @@ function getRoomDescription(room: BackendRoom, category: RoomCategory) {
   return room.description?.trim() || room.roomType?.description?.trim() || categoryDescriptions[category]
 }
 
-function getRoomCapacity(room: BackendRoom, category: RoomCategory) {
+function getRoomCapacity(room: BackendRoom) {
   return room.maxPeople ?? room.roomType?.capacity ?? 0
 }
 
@@ -107,7 +100,7 @@ function getRoomImages(room: BackendRoom) {
   return images.length > 0 ? images : [fallbackImage]
 }
 
-function getRoomPrice(room: BackendRoom, category: RoomCategory) {
+function getRoomPrice(room: BackendRoom) {
   const nightlyRate = asNumber(room.baseNightlyRate, 0)
   return nightlyRate > 0 ? nightlyRate / 22 : asNumber(room.roomType?.pricePerHour, 0)
 }
@@ -214,7 +207,6 @@ export function mapRoomTypeToAdminOption(roomType: BackendRoomType): AdminRoomTy
 
 export function mapBackendRoomToAdminRoom(
   room: BackendRoom,
-  index = 0,
   monthlyRevenue = 0,
   reviewSummary?: BookingRoomReviewSummary,
   equipment?: PublicRoomEquipment[],
@@ -235,12 +227,12 @@ export function mapBackendRoomToAdminRoom(
     roomTypeName: room.roomType?.typeName,
     category,
     categoryLabel: getRoomTypeName(room, category),
-    capacity: getRoomCapacity(room, category),
+    capacity: getRoomCapacity(room),
     bedroomCount: room.bedroomCount ?? 1,
     bedCount: room.bedCount ?? 1,
     bathroomCount: room.bathroomCount ?? 1,
-    pricePerHour: getRoomPrice(room, category),
-    baseNightlyRate: asNumber(room.baseNightlyRate, getRoomPrice(room, category) * 22),
+    pricePerHour: getRoomPrice(room),
+    baseNightlyRate: asNumber(room.baseNightlyRate, getRoomPrice(room) * 22),
     accommodationType: 'HOMESTAY',
     addressLine: room.addressLine?.trim() ?? '',
     ward: room.ward?.trim() ?? '',
@@ -267,7 +259,6 @@ export function mapBackendRoomToAdminRoom(
 
 export function mapBackendRoomToBookingRoom(
   room: BackendRoom,
-  index = 0,
   reviewSummary?: BookingRoomReviewSummary,
   equipment?: PublicRoomEquipment[],
 ): BookingRoom {
@@ -276,7 +267,7 @@ export function mapBackendRoomToBookingRoom(
   )
   const equipments = getRoomEquipmentNames(equipment)
   const availability = getAvailability(room.status)
-  const capacity = getRoomCapacity(room, category)
+  const capacity = getRoomCapacity(room)
   const roomTypeName = getRoomTypeName(room, category)
   const images = getRoomImages(room)
 
@@ -288,9 +279,9 @@ export function mapBackendRoomToBookingRoom(
     roomTierId: room.roomType?.id,
     roomTierName: roomTypeName,
     roomTierDescription: room.roomType?.description?.trim() || undefined,
-    categoryLabel: getPublicRoomTierLabel(roomTypeName, { category, capacity }),
+    categoryLabel: getPublicRoomTierLabel(roomTypeName, { category }),
     type: roomTypeName,
-    badge: getPublicRoomBadge(category, capacity),
+    badge: getPublicRoomBadge(category),
     rating: reviewSummary?.reviewCount ? reviewSummary.averageRating : undefined,
     reviews: reviewSummary?.reviewCount ?? 0,
     capacity: `Tối đa ${capacity} người`,
@@ -305,11 +296,11 @@ export function mapBackendRoomToBookingRoom(
     latitude: room.latitude == null ? undefined : asNumber(room.latitude, 0),
     longitude: room.longitude == null ? undefined : asNumber(room.longitude, 0),
     checkInRadiusMeters: room.checkInRadiusMeters ?? 100,
-    baseNightlyRate: asNumber(room.baseNightlyRate, getRoomPrice(room, category) * 22),
+    baseNightlyRate: asNumber(room.baseNightlyRate, getRoomPrice(room) * 22),
     image: images[0],
     images,
     imageClassName: '',
-    pricePerHour: getRoomPrice(room, category),
+    pricePerHour: getRoomPrice(room),
     equipments: equipments.slice(0, 3),
     includedEquipments: equipments,
     addons: [],

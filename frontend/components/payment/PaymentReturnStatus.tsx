@@ -42,49 +42,51 @@ export default function PaymentReturnStatus() {
   })
 
   useEffect(() => {
-    if (!paymentId || returnStatus !== 'success') {
-      setVerifiedStatus(null)
-      setVerifiedAmount(null)
-      setVerificationMessage('')
-      return
-    }
-
     let cancelled = false
-    const verifiedPaymentId = paymentId
+    queueMicrotask(() => {
+      if (cancelled) return
+      if (!paymentId || returnStatus !== 'success') {
+        setVerifiedStatus(null)
+        setVerifiedAmount(null)
+        setVerificationMessage('')
+        return
+      }
 
-    async function verifyPayment() {
-      setIsVerifying(true)
-      setVerificationMessage('')
+      const verifiedPaymentId = paymentId
+      async function verifyPayment() {
+        setIsVerifying(true)
+        setVerificationMessage('')
 
-      for (let attempt = 0; attempt < 5; attempt += 1) {
-        try {
-          const transaction = await getPaymentTransactionDetail(verifiedPaymentId)
-          if (cancelled) return
+        for (let attempt = 0; attempt < 5; attempt += 1) {
+          try {
+            const transaction = await getPaymentTransactionDetail(verifiedPaymentId)
+            if (cancelled) return
 
-          setVerifiedStatus(transaction.status)
-          setVerifiedAmount(transaction.amount)
+            setVerifiedStatus(transaction.status)
+            setVerifiedAmount(transaction.amount)
 
-          if (transaction.status !== 'pending') {
-            setVerificationMessage('')
+            if (transaction.status !== 'pending') {
+              setVerificationMessage('')
+              return
+            }
+          } catch {
+            if (cancelled) return
+            setVerificationMessage('Chưa thể kiểm tra lại giao dịch. Bạn có thể xem trạng thái mới nhất trong lịch sử đặt phòng.')
             return
           }
-        } catch {
-          if (cancelled) return
-          setVerificationMessage('Chưa thể kiểm tra lại giao dịch. Bạn có thể xem trạng thái mới nhất trong lịch sử đặt phòng.')
-          return
+
+          await new Promise((resolve) => window.setTimeout(resolve, 1500))
         }
 
-        await new Promise((resolve) => window.setTimeout(resolve, 1500))
+        if (!cancelled) {
+          setVerifiedStatus('pending')
+          setVerificationMessage('Giao dịch đang được đối soát. Trạng thái sẽ tự động cập nhật khi ngân hàng xác nhận.')
+        }
       }
 
-      if (!cancelled) {
-        setVerifiedStatus('pending')
-        setVerificationMessage('Giao dịch đang được đối soát. Trạng thái sẽ tự động cập nhật khi ngân hàng xác nhận.')
-      }
-    }
-
-    void verifyPayment().finally(() => {
-      if (!cancelled) setIsVerifying(false)
+      void verifyPayment().finally(() => {
+        if (!cancelled) setIsVerifying(false)
+      })
     })
 
     return () => {

@@ -46,7 +46,7 @@ export default function LanguageSwitcher({ compact = false }: { compact?: boolea
         className={`${compact ? 'h-7 min-w-8 px-2' : 'h-8 min-w-10 px-3'
           } inline-flex items-center justify-center rounded-full transition-all duration-200 ${locale === 'vi'
             ? 'bg-[#31584E] text-white shadow-[0_3px_10px_rgba(49,88,78,0.18)]'
-            : 'text-[#31584E]/70 group-hover:text-[#31584E]'
+            : 'text-[#31584E] group-hover:text-[#173A31]'
           }`}
         aria-hidden="true"
       >
@@ -57,7 +57,7 @@ export default function LanguageSwitcher({ compact = false }: { compact?: boolea
         className={`${compact ? 'h-7 min-w-8 px-2' : 'h-8 min-w-10 px-3'
           } inline-flex items-center justify-center rounded-full transition-all duration-200 ${locale === 'en'
             ? 'bg-[#31584E] text-white shadow-[0_3px_10px_rgba(49,88,78,0.18)]'
-            : 'text-[#31584E]/70 group-hover:text-[#31584E]'
+            : 'text-[#31584E] group-hover:text-[#173A31]'
           }`}
         aria-hidden="true"
       >

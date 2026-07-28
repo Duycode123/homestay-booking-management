@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -89,21 +90,22 @@ export default function AccountMenu({
 
   useEffect(() => {
     let mounted = true
+    queueMicrotask(() => {
+      if (!mounted) return
+      if (!user) {
+        setProfile(null)
+        return
+      }
 
-    if (!user) {
       setProfile(null)
-      return
-    }
-
-    setProfile(null)
-
-    void fetchCurrentUser(user)
-      .then((currentUser) => {
-        if (mounted) setProfile(currentUser)
-      })
-      .catch(() => {
-        if (mounted) setProfile(null)
-      })
+      void fetchCurrentUser(user)
+        .then((currentUser) => {
+          if (mounted) setProfile(currentUser)
+        })
+        .catch(() => {
+          if (mounted) setProfile(null)
+        })
+    })
 
     return () => {
       mounted = false
@@ -387,12 +389,12 @@ function AccountAvatar({
       className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#234D42] font-display font-bold text-white ${classes}`}
     >
       {avatarUrl ? (
-        <img
+        <Image
           src={avatarUrl}
           alt={alt}
           width={size === 'menu' ? 56 : 36}
           height={size === 'menu' ? 56 : 36}
-          decoding="async"
+          unoptimized
           className="h-full w-full object-cover"
         />
       ) : (

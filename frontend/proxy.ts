@@ -12,6 +12,7 @@ const LOGIN_PATH = '/login'
 const ACCESS_COOKIE_NAME = 'access_token'
 const AUTH_COOKIE_NAMES = [ACCESS_COOKIE_NAME, 'refresh_token']
 const TOKEN_EXPIRY_SKEW_SECONDS = 5
+const ENFORCE_HTTPS = process.env.NODE_ENV === 'production' && process.env.ENFORCE_HTTPS === 'true'
 
 function hasAuthCookie(request: NextRequest) {
   return AUTH_COOKIE_NAMES.some((name) => request.cookies.has(name))
@@ -91,6 +92,15 @@ function applyLocaleCookie(response: NextResponse, locale: Locale) {
 
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl
+
+  const forwardedProtocol = request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim()
+  if (ENFORCE_HTTPS && forwardedProtocol === 'http') {
+    const secureUrl = request.nextUrl.clone()
+    secureUrl.protocol = 'https'
+    secureUrl.port = ''
+    return NextResponse.redirect(secureUrl, 308)
+  }
+
   const locale = resolveLocale(request)
   const rawPathname = stripLocalePrefix(pathname)
 

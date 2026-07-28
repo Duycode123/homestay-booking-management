@@ -86,7 +86,7 @@ export default function AdminStaffPage() {
   }, [])
 
   useEffect(() => {
-    void loadStaff()
+    queueMicrotask(() => void loadStaff())
   }, [loadStaff])
 
   useEffect(() => {

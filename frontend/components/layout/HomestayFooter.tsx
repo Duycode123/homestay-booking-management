@@ -219,7 +219,7 @@ export default function HomestayFooter() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-3 pt-7 text-xs text-white/48 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 pt-7 text-xs text-white/70 sm:flex-row sm:items-center sm:justify-between">
             <p>{t('footer.copyright', { year: new Date().getFullYear() })}</p>
             <p>
               {t('footer.activeBooking')} &middot;{' '}
@@ -233,6 +233,8 @@ export default function HomestayFooter() {
         type="button"
         onClick={handleBackToTop}
         aria-label={backToTopLabel}
+        aria-hidden={!showBackToTop}
+        tabIndex={showBackToTop ? 0 : -1}
         title={backToTopLabel}
         className={[
           'group fixed right-[6.5rem] z-[65] flex h-14 w-14 items-center justify-center rounded-full border border-white/80 bg-[#fbf8f2]/92 text-secondary shadow-[0_18px_42px_rgba(23,58,49,.2)] backdrop-blur-xl transition-[opacity,transform,box-shadow,background-color] duration-300 sm:right-[7rem]',

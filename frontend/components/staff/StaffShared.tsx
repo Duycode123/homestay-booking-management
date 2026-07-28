@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, type ReactNode } from 'react'
@@ -42,7 +43,7 @@ export function StaffSidebar() {
           <div className="rounded-xl border border-white/10 bg-white/[0.05] px-3 py-3">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-primary-container font-display text-sm font-semibold text-on-primary-container">
-                {user?.avatarUrl ? <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" /> : avatarInitial}
+                {user?.avatarUrl ? <Image src={user.avatarUrl} alt={`Ảnh đại diện ${displayName}`} width={44} height={44} unoptimized className="h-full w-full object-cover" /> : avatarInitial}
               </div>
               <div className="min-w-0">
                 <p className="truncate font-display text-sm font-semibold text-inverse-on-surface">{displayName}</p>
@@ -99,7 +100,7 @@ export function StaffSidebar() {
         </Link>
         <div className="flex items-center gap-2">
           <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-white/15 bg-white/[0.06] text-xs font-semibold text-white" aria-label={displayName}>
-            {user?.avatarUrl ? <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" /> : avatarInitial}
+            {user?.avatarUrl ? <Image src={user.avatarUrl} alt={`Ảnh đại diện ${displayName}`} width={36} height={36} unoptimized className="h-full w-full object-cover" /> : avatarInitial}
           </span>
           <button
             type="button"

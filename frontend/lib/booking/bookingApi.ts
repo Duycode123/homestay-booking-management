@@ -349,7 +349,8 @@ export function formatPrice(amount: number) {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount)
 }
 
-export function mapPaymentMethodToBackend(_method: 'bank_transfer'): BookingPaymentMethod {
+export function mapPaymentMethodToBackend(method: 'bank_transfer'): BookingPaymentMethod {
+  void method
   return 'ONLINE'
 }
 

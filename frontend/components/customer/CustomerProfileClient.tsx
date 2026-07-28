@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
 import { CustomerCard, CustomerPageShell } from '@/components/customer/CustomerPageShell'
@@ -375,12 +376,12 @@ function AvatarPreview({
       ].join(' ')}
     >
       {avatarUrl ? (
-        <img
+        <Image
           src={avatarUrl}
           alt="Ảnh đại diện"
           width={size === 'large' ? 96 : 56}
           height={size === 'large' ? 96 : 56}
-          decoding="async"
+          unoptimized
           className="h-full w-full object-cover"
         />
       ) : (

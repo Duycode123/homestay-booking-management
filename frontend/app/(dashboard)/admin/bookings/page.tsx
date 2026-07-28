@@ -68,7 +68,7 @@ export default function AdminBookingsPage() {
   }, [loadBookings])
 
   useEffect(() => {
-    void loadRooms()
+    queueMicrotask(() => void loadRooms())
   }, [loadRooms])
 
   useEffect(() => {

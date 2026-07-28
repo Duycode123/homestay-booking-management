@@ -21,8 +21,8 @@ export async function fetchPublicBookingRoomCatalog(): Promise<PublicBookingRoom
   const equipmentByRoomId = groupEquipmentByRoomId(equipment)
 
   return {
-    rooms: rooms.map((room, index) =>
-      mapBackendRoomToBookingRoom(room, index, reviewSummaries.get(String(room.id)), equipmentByRoomId.get(room.id)),
+    rooms: rooms.map((room) =>
+      mapBackendRoomToBookingRoom(room, reviewSummaries.get(String(room.id)), equipmentByRoomId.get(room.id)),
     ),
     source: 'backend',
   }
@@ -52,7 +52,7 @@ export async function resolveBookingRoom(roomId: string | null, catalog: Booking
 
     const equipment = await fetchPublicRoomEquipment({ roomId: room.id }).catch(() => [])
 
-    return mapBackendRoomToBookingRoom(room, 0, reviewSummaries.get(String(room.id)), equipment)
+    return mapBackendRoomToBookingRoom(room, reviewSummaries.get(String(room.id)), equipment)
   } catch {
     return null
   }

@@ -43,7 +43,7 @@ export default function BookingDetailPanel({ booking, onClose, onStatusChange, o
   const [addonSavingId, setAddonSavingId] = useState<number | null>(null)
 
   useEffect(() => {
-    setAddonItems(booking?.addons ?? [])
+    queueMicrotask(() => setAddonItems(booking?.addons ?? []))
   }, [booking])
 
   if (!booking) return null

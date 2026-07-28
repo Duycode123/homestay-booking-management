@@ -53,7 +53,9 @@ export default function CheckoutPageClient() {
   useEffect(() => {
     const draft = readQuickBookingDraft()
 
-    setMissingCheckoutReturnHref(draft ? getQuickBookingRestoreHref(draft.sourceRoute) : '/')
+    queueMicrotask(() => {
+      setMissingCheckoutReturnHref(draft ? getQuickBookingRestoreHref(draft.sourceRoute) : '/')
+    })
   }, [])
 
   useEffect(() => {
@@ -131,7 +133,7 @@ export default function CheckoutPageClient() {
       }
     }
 
-    void loadBooking()
+    queueMicrotask(() => void loadBooking())
 
     return () => {
       mounted = false

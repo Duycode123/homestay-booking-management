@@ -326,7 +326,7 @@ function RefundTransferCard({ refund }: { refund: RefundRecord }) {
       </div>
       <div className="grid gap-5 p-5 sm:grid-cols-[170px_1fr]">
         <div className="rounded-2xl border border-[#e7ded2] bg-[#fbfaf7] p-3">
-          {refund.transferQrUrl ? <img src={refund.transferQrUrl} alt={`VietQR hoàn tiền ${refund.bookingCode}`} className="aspect-square w-full object-contain" /> : <div className="flex aspect-square items-center justify-center text-center text-xs text-on-surface-variant">Chưa tạo được mã QR</div>}
+          {refund.transferQrUrl ? <Image src={refund.transferQrUrl} alt={`VietQR hoàn tiền ${refund.bookingCode}`} width={160} height={160} unoptimized className="aspect-square w-full object-contain" /> : <div className="flex aspect-square items-center justify-center text-center text-xs text-on-surface-variant">Chưa tạo được mã QR</div>}
           <p className="mt-2 text-center text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">VietQR · {formatCurrency(refund.amount)}</p>
         </div>
         <div className="space-y-2.5">

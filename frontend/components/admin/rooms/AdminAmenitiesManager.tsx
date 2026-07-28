@@ -44,7 +44,9 @@ export default function AdminAmenitiesManager({
     finally { setLoading(false) }
   }
 
-  useEffect(() => { void load() }, [])
+  useEffect(() => {
+    queueMicrotask(() => void load())
+  }, [])
 
   const remove = async (id: number) => {
     if (!window.confirm('Xóa tiện ích đi kèm này?')) return

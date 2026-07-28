@@ -16,9 +16,11 @@ export function useAccessibilitySettings() {
 
   useEffect(() => {
     const storedSettings = loadAccessibilitySettings()
-    setSettings(storedSettings)
     applyAccessibilitySettings(storedSettings)
-    setIsLoaded(true)
+    queueMicrotask(() => {
+      setSettings(storedSettings)
+      setIsLoaded(true)
+    })
   }, [])
 
   const updateSetting = useCallback(

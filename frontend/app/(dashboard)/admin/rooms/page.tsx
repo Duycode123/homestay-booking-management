@@ -175,7 +175,7 @@ export default function AdminRoomsPage() {
   }, [])
 
   useEffect(() => {
-    void loadRooms()
+    queueMicrotask(() => void loadRooms())
   }, [loadRooms])
 
   useEffect(() => {

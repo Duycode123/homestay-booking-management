@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { AdminBooking } from '@/lib/admin/types'
 import { settleAdminBookingAtCheckout } from '@/lib/admin/adminBookingApi'
@@ -62,14 +63,14 @@ export default function StaffCheckoutSettlementDialog({
 
   useEffect(() => {
     if (!session?.expiresAt) {
-      setSecondsLeft(0)
+      queueMicrotask(() => setSecondsLeft(0))
       return
     }
     const update = () => {
       const remaining = Math.max(0, Math.ceil((new Date(session.expiresAt!).getTime() - Date.now()) / 1000))
       setSecondsLeft(remaining)
     }
-    update()
+    queueMicrotask(update)
     const timer = window.setInterval(update, 1000)
     return () => window.clearInterval(timer)
   }, [session])
@@ -147,7 +148,7 @@ export default function StaffCheckoutSettlementDialog({
           ) : session ? (
             <div className="grid items-center gap-5 rounded-2xl border border-[#bcd5ca] bg-[#f2f8f5] p-4 sm:grid-cols-[190px_1fr]">
               <div className="mx-auto overflow-hidden rounded-2xl border border-white bg-white p-2 shadow-sm">
-                {session.paymentUrl ? <img src={session.paymentUrl} alt={`QR thanh toán ${booking.bookingCode}`} className="h-[174px] w-[174px] object-contain" /> : <div className="flex h-[174px] w-[174px] items-center justify-center text-center text-xs text-error">Không có ảnh QR</div>}
+                {session.paymentUrl ? <Image src={session.paymentUrl} alt={`QR thanh toán ${booking.bookingCode}`} width={174} height={174} unoptimized className="h-[174px] w-[174px] object-contain" /> : <div className="flex h-[174px] w-[174px] items-center justify-center text-center text-xs text-error">Không có ảnh QR</div>}
               </div>
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-secondary">Đang chờ chuyển khoản</p>

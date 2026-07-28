@@ -49,8 +49,10 @@ export default function BookingDatePicker({ value, onChange }: BookingDatePicker
       return
     }
     const selected = parseDateKey(clamped)
-    setWindowStart(selected)
-    setViewMonth(new Date(selected.getFullYear(), selected.getMonth(), 1))
+    queueMicrotask(() => {
+      setWindowStart(selected)
+      setViewMonth(new Date(selected.getFullYear(), selected.getMonth(), 1))
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps -- sync window when value changes only
   }, [value])
 

@@ -1,4 +1,11 @@
+import type { Metadata } from 'next'
 import PublicSiteLayout from '@/components/layout/PublicSiteLayout'
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: '/',
+  },
+}
 
 const siteUrl = new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000')
 const structuredData = {

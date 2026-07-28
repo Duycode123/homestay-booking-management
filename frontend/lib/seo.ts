@@ -9,6 +9,8 @@ type PublicPageMetadataInput = {
   description: string
   path: `/${string}`
   locale?: Locale
+  image?: string
+  imageAlt?: string
 }
 
 function stripLocalePrefix(path: string) {
@@ -16,32 +18,25 @@ function stripLocalePrefix(path: string) {
   return unprefixed || '/'
 }
 
-function localizedPath(path: string, locale: Locale) {
-  const basePath = stripLocalePrefix(path)
-  return `/${locale}${basePath === '/' ? '' : basePath}`
-}
-
 export function createPublicPageMetadata({
   title,
   description,
   path,
   locale = path.startsWith('/en') ? 'en' : 'vi',
+  image = socialImage,
+  imageAlt,
 }: PublicPageMetadataInput): Metadata {
   const socialTitle = `${title} | ${siteName}`
-  const canonicalPath = localizedPath(path, locale)
-  const socialImageAlt = locale === 'en'
+  const canonicalPath = stripLocalePrefix(path)
+  const socialImageAlt = imageAlt ?? (locale === 'en'
     ? 'A refined homestay stay at The Serene Villa'
-    : 'Không gian homestay sang trọng tại The Serene Villa'
+    : 'Không gian homestay sang trọng tại The Serene Villa')
 
   return {
     title,
     description,
     alternates: {
       canonical: canonicalPath,
-      languages: {
-        'vi-VN': localizedPath(path, 'vi'),
-        'en-US': localizedPath(path, 'en'),
-      },
     },
     openGraph: {
       type: 'website',
@@ -52,7 +47,7 @@ export function createPublicPageMetadata({
       description,
       images: [
         {
-          url: socialImage,
+          url: image,
           width: 1200,
           height: 630,
           alt: socialImageAlt,
@@ -63,7 +58,7 @@ export function createPublicPageMetadata({
       card: 'summary_large_image',
       title: socialTitle,
       description,
-      images: [socialImage],
+      images: [image],
     },
     robots: {
       index: true,

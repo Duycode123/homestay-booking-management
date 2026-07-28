@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next'
 import { getPublicRoomsForSeo } from '@/lib/public/room-seo'
+import { getTravelNews } from '@/lib/travel-news'
 
 export const revalidate = 3600
 
@@ -9,6 +10,7 @@ const publicRoutes = [
   { path: '/amenities', changeFrequency: 'monthly', priority: 0.8 },
   { path: '/about', changeFrequency: 'monthly', priority: 0.7 },
   { path: '/news', changeFrequency: 'daily', priority: 0.7 },
+  { path: '/process', changeFrequency: 'monthly', priority: 0.7 },
   { path: '/support', changeFrequency: 'monthly', priority: 0.7 },
   { path: '/booking-policy', changeFrequency: 'monthly', priority: 0.5 },
   { path: '/cancellation-policy', changeFrequency: 'monthly', priority: 0.5 },
@@ -18,7 +20,10 @@ const publicRoutes = [
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000')
-  const rooms = await getPublicRoomsForSeo()
+  const [rooms, articles] = await Promise.all([
+    getPublicRoomsForSeo(),
+    getTravelNews(),
+  ])
 
   const staticRoutes: MetadataRoute.Sitemap = publicRoutes.map(({ path, changeFrequency, priority }) => ({
     url: new URL(path, siteUrl).toString(),
@@ -35,5 +40,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       images: [room.imageUrl, ...(room.imageUrls ?? [])].filter((image): image is string => Boolean(image)),
     }))
 
-  return [...staticRoutes, ...roomRoutes]
+  const newsRoutes: MetadataRoute.Sitemap = articles.map((article) => {
+    const publishedAt = new Date(article.publishedAt)
+
+    return {
+      url: new URL(`/news/${article.slug}`, siteUrl).toString(),
+      lastModified: Number.isNaN(publishedAt.getTime()) ? undefined : publishedAt,
+      changeFrequency: 'weekly',
+      priority: 0.6,
+      images: article.imageUrl ? [new URL(article.imageUrl, siteUrl).toString()] : undefined,
+    }
+  })
+
+  return [...staticRoutes, ...roomRoutes, ...newsRoutes]
 }

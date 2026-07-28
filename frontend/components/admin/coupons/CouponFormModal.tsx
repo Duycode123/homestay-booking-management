@@ -49,12 +49,14 @@ export default function CouponFormModal({
   useEffect(() => {
     if (!open) return
 
-    setForm(initialData)
-    setApplyToAllRooms(initialData.roomIds.length === 0)
-    setErrors({})
-    setServerError('')
-    setPreviewMessage('')
-    setPreviewDiscount(null)
+    queueMicrotask(() => {
+      setForm(initialData)
+      setApplyToAllRooms(initialData.roomIds.length === 0)
+      setErrors({})
+      setServerError('')
+      setPreviewMessage('')
+      setPreviewDiscount(null)
+    })
   }, [initialData, open])
 
   if (!open) return null

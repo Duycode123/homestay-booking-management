@@ -49,11 +49,13 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isAuthLoading) return
     if (!isAuthenticated) {
-      setFavorites([])
-      setPanelOpen(false)
+      queueMicrotask(() => {
+        setFavorites([])
+        setPanelOpen(false)
+      })
       return
     }
-    void refreshFavorites()
+    queueMicrotask(() => void refreshFavorites())
   }, [isAuthLoading, isAuthenticated, refreshFavorites])
 
   const favoriteIds = useMemo(() => new Set(favorites.map((favorite) => favorite.roomId)), [favorites])

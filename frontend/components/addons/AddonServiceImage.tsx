@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import Image from 'next/image'
+import { useState } from 'react'
 
 type AddonServiceImageProps = {
   imageUrl?: string | null
@@ -29,26 +30,23 @@ export default function AddonServiceImage({
   className = 'aspect-[16/10] w-full',
   eager = false,
 }: AddonServiceImageProps) {
-  const [failed, setFailed] = useState(false)
+  const [failedUrl, setFailedUrl] = useState<string | null>(null)
   const trimmedUrl = imageUrl?.trim() || getDefaultAddonImage(name)
   const resolvedUrl = trimmedUrl?.startsWith('images/') ? `/${trimmedUrl}` : trimmedUrl
-
-  useEffect(() => {
-    setFailed(false)
-  }, [resolvedUrl])
+  const failed = Boolean(resolvedUrl && failedUrl === resolvedUrl)
 
   return (
     <div className={`relative shrink-0 overflow-hidden bg-[#eee4d6] ${className}`}>
       {resolvedUrl && !failed ? (
-        // Native img supports admin-provided HTTPS hosts without requiring a Next.js host allowlist.
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <Image
           src={resolvedUrl}
           alt={`Dịch vụ ${name}`}
+          fill
+          unoptimized
           loading={eager ? 'eager' : 'lazy'}
-          decoding="async"
+          sizes="(max-width: 640px) 100vw, 480px"
           className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
-          onError={() => setFailed(true)}
+          onError={() => setFailedUrl(resolvedUrl)}
         />
       ) : (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[radial-gradient(circle_at_top,#f8efe3,#e9ddcc)] px-4 text-center text-[#234D42]">

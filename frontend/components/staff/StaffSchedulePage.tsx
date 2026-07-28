@@ -149,12 +149,10 @@ export default function StaffSchedulePage() {
     return () => window.clearTimeout(timer)
   }, [toast])
 
-  const weekDays = useMemo(() => getWeekDays(now), [now.getFullYear(), now.getMonth(), now.getDate()])
-  const nextWeekDays = useMemo(() => {
-    const nextWeekDate = new Date(now)
-    nextWeekDate.setDate(now.getDate() + 7)
-    return getWeekDays(nextWeekDate)
-  }, [now.getFullYear(), now.getMonth(), now.getDate()])
+  const weekDays = getWeekDays(now)
+  const nextWeekDate = new Date(now)
+  nextWeekDate.setDate(now.getDate() + 7)
+  const nextWeekDays = getWeekDays(nextWeekDate)
   const weekRange = useMemo(
     () => ({
       fromDate: weekDays[0]?.isoDate ?? '',
@@ -1406,24 +1404,6 @@ function findCurrentShiftCell(
   }
 
   return cells.find((cell) => isShiftHappeningNow(cell, now)) ?? null
-}
-
-function createEmptyCell(day: WeekDay, row: ShiftRow): StaffShiftCell {
-  return {
-    cellId: `${day.key}-${row.name}`,
-    shiftId: null,
-    dayKey: day.key,
-    date: day.isoDate,
-    shiftName: row.name,
-    startTime: row.startTime,
-    endTime: row.endTime,
-    status: 'EMPTY',
-    note: 'Chưa có ca được phân công ở khung giờ này.',
-  }
-}
-
-function getCellKey(dayKey: DayKey, shiftName: ShiftName) {
-  return `${dayKey}-${shiftName}`
 }
 
 function getSlotKey(workDate: string, startTime: string, endTime: string) {

@@ -29,15 +29,17 @@ export default function CheckoutCouponInput({
   const [feedback, setFeedback] = useState('')
 
   useEffect(() => {
-    if (appliedDiscount) {
-      setCode(appliedDiscount.code)
-      setStatus('success')
-      setFeedback(`Đã áp dụng mã ${appliedDiscount.code}. Giảm ${formatCurrency(appliedDiscount.discountAmount)}.`)
-      return
-    }
+    queueMicrotask(() => {
+      if (appliedDiscount) {
+        setCode(appliedDiscount.code)
+        setStatus('success')
+        setFeedback(`Đã áp dụng mã ${appliedDiscount.code}. Giảm ${formatCurrency(appliedDiscount.discountAmount)}.`)
+        return
+      }
 
-    setStatus('idle')
-    setFeedback('')
+      setStatus('idle')
+      setFeedback('')
+    })
   }, [appliedDiscount])
 
   const handleApply = async () => {

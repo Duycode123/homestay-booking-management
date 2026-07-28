@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import ProjectSelect from '@/components/ui/ProjectSelect'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -54,7 +55,7 @@ export default function AdminFacilityReportsPanel() {
   }, [maintenanceOnly])
 
   useEffect(() => {
-    void loadReports()
+    queueMicrotask(() => void loadReports())
   }, [loadReports])
 
   const stats = useMemo(() => getFacilityReportStats(reports), [reports])
@@ -222,9 +223,11 @@ function FacilityReportDrawer({
 
   useEffect(() => {
     if (!report) return
-    setStatus(report.status)
-    setAdminNote(report.adminNote)
-    setMessage('')
+    queueMicrotask(() => {
+      setStatus(report.status)
+      setAdminNote(report.adminNote)
+      setMessage('')
+    })
   }, [report])
 
   if (!report) return null
@@ -265,7 +268,7 @@ function FacilityReportDrawer({
           <InfoBlock label="Tình trạng" value={conditionLabels[report.condition ?? ''] ?? 'Chưa rõ'} />
           <InfoBlock label="Ghi chú nhân viên" value={report.note || 'Không có ghi chú'} />
           <InfoBlock label="Thời gian ghi nhận" value={formatFacilityReportDateTime(report.createdAt)} />
-          {report.imageUrl && <img src={report.imageUrl} alt="Ảnh báo cáo cơ sở vật chất" className="mt-4 h-44 w-full rounded-xl border border-outline-variant object-cover" />}
+          {report.imageUrl && <Image src={report.imageUrl} alt="Ảnh báo cáo cơ sở vật chất" width={720} height={352} unoptimized className="mt-4 h-44 w-full rounded-xl border border-outline-variant object-cover" />}
 
           <div className="mt-5 rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
             <label className="block">

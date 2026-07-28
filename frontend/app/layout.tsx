@@ -50,14 +50,9 @@ export async function generateMetadata(): Promise<Metadata> {
     creator: siteName,
     publisher: siteName,
     category: 'travel',
-    alternates: {
-      canonical: locale === 'vi' ? '/vi' : '/en',
-      languages: { 'vi-VN': '/vi', 'en-US': '/en' },
-    },
     openGraph: {
       type: 'website',
       locale: localeCode,
-      url: locale === 'vi' ? '/vi' : '/en',
       siteName,
       title: `${siteName} | ${content.title}`,
       description: content.description,
@@ -68,11 +63,6 @@ export async function generateMetadata(): Promise<Metadata> {
       title: `${siteName} | ${content.title}`,
       description: content.description,
       images: ['/images/homestay-social.webp'],
-    },
-    robots: {
-      index: true,
-      follow: true,
-      googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1, 'max-video-preview': -1 },
     },
     icons: { icon: '/serene-favicon.svg', shortcut: '/serene-favicon.svg', apple: '/serene-favicon.svg' },
     manifest: '/manifest.webmanifest',

@@ -1829,6 +1829,14 @@ function translateValue(value: string, dictionary: Map<string, string>) {
     // Keep branded room names such as "Standard Garden 101" in English on
     // Vietnamese pages, while still translating the standalone amenity label.
     if (dictionary === byLocale.vi && source === 'Garden') continue
+    // "Journal" is part of the branded eyebrow "The Serene Journal". Replacing
+    // only that word creates mixed-language copy and can mutate streamed HTML
+    // before React finishes hydrating the news route.
+    if (
+      dictionary === byLocale.vi
+      && source === 'Journal'
+      && next.includes('The Serene Journal')
+    ) continue
     if (next.includes(source)) {
       next = next.split(source).join(target)
     }

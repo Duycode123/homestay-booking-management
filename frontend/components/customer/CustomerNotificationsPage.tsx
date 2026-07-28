@@ -41,7 +41,9 @@ export default function CustomerNotificationsPage() {
     }
   }
 
-  useEffect(() => { void load() }, [])
+  useEffect(() => {
+    queueMicrotask(() => void load())
+  }, [])
 
   const unreadCount = items.filter((item) => !item.isRead).length
   const visibleItems = useMemo(() => items.filter((item) => matchesFilter(item, filter)), [filter, items])

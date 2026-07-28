@@ -598,10 +598,13 @@ function StaffAddonPanel({ booking, onChanged }: { booking: AdminBooking; onChan
 
   useEffect(() => {
     let active = true
-    setItems(booking.addons ?? [])
-    void fetchManagementBookingAddons(booking.bookingId)
-      .then((data) => { if (active) setItems(data) })
-      .catch(() => undefined)
+    queueMicrotask(() => {
+      if (!active) return
+      setItems(booking.addons ?? [])
+      void fetchManagementBookingAddons(booking.bookingId)
+        .then((data) => { if (active) setItems(data) })
+        .catch(() => undefined)
+    })
     return () => { active = false }
   }, [booking.addons, booking.bookingId])
 
@@ -845,10 +848,6 @@ function formatBookingWindow(startTime: string, endTime: string) {
   const start = new Date(startTime)
   const end = new Date(endTime)
   return `${start.toLocaleDateString('vi-VN')} · ${start.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} - ${end.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`
-}
-
-function formatHours(value: number) {
-  return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/\.00$/, '')
 }
 
 function formatCurrency(amount: number) {

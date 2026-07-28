@@ -1,10 +1,11 @@
 'use client'
 
+import Image from 'next/image'
 import { useEffect, useMemo, useState, type ChangeEvent } from 'react'
 import AuthGuard from '@/components/AuthGuard'
 import { StaffPageShell, Toast } from './StaffShared'
 import { useAuth } from '@/contexts/AuthContext'
-import { clearStaffAuthCaches, getDisplayName, getInitials, getProfileValue, getRoleLabel } from '@/lib/staff-profile'
+import { clearStaffAuthCaches, getDisplayName, getInitials, getRoleLabel } from '@/lib/staff-profile'
 import {
   applyUiPreferences,
   changePassword,
@@ -68,40 +69,70 @@ export default function StaffSettingsPage() {
   const [savingNotificationKey, setSavingNotificationKey] = useState<keyof StaffNotificationSettings | null>(null)
   const [isPasswordSaving, setIsPasswordSaving] = useState(false)
 
+  const stableUser = useMemo(() => {
+    if (!user) return null
+    return {
+      id: user.id,
+      role: user.role,
+      name: user.name,
+      fullName: user.fullName,
+      email: user.email,
+      phone: user.phone,
+      avatarUrl: user.avatarUrl,
+    }
+  }, [user])
   const cardPadding = appearance.displayDensity === 'compact' ? 'p-4 sm:p-5' : 'p-5 sm:p-6'
   const profileInitials = useMemo(() => getInitials(profile.fullName || profile.email || getDisplayName(user)), [profile.email, profile.fullName, user])
 
   useEffect(() => {
     const preferences = loadUiPreferences()
-    setAppearance(preferences)
+    queueMicrotask(() => setAppearance(preferences))
     applyUiPreferences(preferences)
   }, [])
 
   useEffect(() => {
-    if (!user) return
-
-    setIsProfileLoading(true)
-    setPageError('')
-    void getCurrentUser(user)
-      .then((currentUser) => {
-        setProfile(currentUser)
-        login({
-          ...user,
-          ...currentUser,
-          name: currentUser.fullName,
-          role: currentUser.role || user.role,
+    if (!stableUser) return
+    let active = true
+    queueMicrotask(() => {
+      if (!active) return
+      setIsProfileLoading(true)
+      setPageError('')
+      void getCurrentUser(stableUser)
+        .then((currentUser) => {
+          if (!active) return
+          setProfile(currentUser)
+          login({
+            ...stableUser,
+            ...currentUser,
+            name: currentUser.fullName,
+            role: currentUser.role || stableUser.role,
+          })
         })
-      })
-      .catch((error) => setPageError(error instanceof Error ? error.message : 'Không thể tải hồ sơ nhân viên.'))
-      .finally(() => setIsProfileLoading(false))
-  }, [user?.id, user?.email])
+        .catch((error) => {
+          if (active) setPageError(error instanceof Error ? error.message : 'Không thể tải hồ sơ nhân viên.')
+        })
+        .finally(() => {
+          if (active) setIsProfileLoading(false)
+        })
+    })
+    return () => {
+      active = false
+    }
+  }, [login, stableUser])
 
   useEffect(() => {
-    setIsNotificationLoading(true)
-    void getNotificationSettings()
-      .then(setNotificationSettings)
-      .catch((error) => showToast('error', error instanceof Error ? error.message : 'Không thể tải tùy chọn thông báo.'))
-      .finally(() => setIsNotificationLoading(false))
+    let active = true
+    queueMicrotask(() => {
+      if (!active) return
+      setIsNotificationLoading(true)
+      void getNotificationSettings()
+        .then((settings) => { if (active) setNotificationSettings(settings) })
+        .catch((error) => { if (active) showToast('error', error instanceof Error ? error.message : 'Không thể tải tùy chọn thông báo.') })
+        .finally(() => { if (active) setIsNotificationLoading(false) })
+    })
+    return () => {
+      active = false
+    }
   }, [])
 
   useEffect(() => {
@@ -110,7 +141,7 @@ export default function StaffSettingsPage() {
     return () => window.clearTimeout(timer)
   }, [toast])
 
-  const showToast = (type: ToastState['type'], text: string) => {
+  function showToast(type: ToastState['type'], text: string) {
     setToast({ type, text })
   }
 
@@ -275,7 +306,7 @@ export default function StaffSettingsPage() {
               <>
                 <div className="flex flex-col gap-5 lg:flex-row">
                   <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-3xl bg-primary-container font-display text-3xl font-bold text-on-primary-container">
-                    {profile.avatarUrl ? <img src={profile.avatarUrl} alt="" className="h-full w-full object-cover" /> : profileInitials}
+                    {profile.avatarUrl ? <Image src={profile.avatarUrl} alt="Ảnh đại diện nhân viên" width={96} height={96} unoptimized className="h-full w-full object-cover" /> : profileInitials}
                   </div>
                   <div className="lg:max-w-[240px]">
                     <label className="block">

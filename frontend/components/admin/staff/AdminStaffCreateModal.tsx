@@ -31,10 +31,12 @@ export default function AdminStaffCreateModal({ open, onClose, onSubmit }: Admin
   useEffect(() => {
     if (!open) return
 
-    setForm(EMPTY_STAFF_ACCOUNT_FORM)
-    setErrors({})
-    setCreatedStaff(null)
-    setServerError('')
+    queueMicrotask(() => {
+      setForm(EMPTY_STAFF_ACCOUNT_FORM)
+      setErrors({})
+      setCreatedStaff(null)
+      setServerError('')
+    })
   }, [open])
 
   if (!open) return null

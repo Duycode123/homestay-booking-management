@@ -62,14 +62,16 @@ export default function BookingCalendarView({
 
   useEffect(() => {
     const selectedDate = parseFilterDate(filterDate)
-    if (selectedDate) setVisibleWeekStart(startOfWeek(selectedDate))
+    if (selectedDate) {
+      queueMicrotask(() => setVisibleWeekStart(startOfWeek(selectedDate)))
+    }
   }, [filterDate])
 
-  const weekStart = startOfWeek(visibleWeekStart)
-  const weekEnd = addDays(weekStart, DAYS_PER_WEEK)
+  const weekStart = useMemo(() => startOfWeek(visibleWeekStart), [visibleWeekStart])
+  const weekEnd = useMemo(() => addDays(weekStart, DAYS_PER_WEEK), [weekStart])
   const days = useMemo(
     () => Array.from({ length: DAYS_PER_WEEK }, (_, index) => addDays(weekStart, index)),
-    [weekStart.getTime()],
+    [weekStart],
   )
 
   const visibleBookings = useMemo(
@@ -77,7 +79,7 @@ export default function BookingCalendarView({
       new Date(booking.startTime) < weekEnd
       && new Date(booking.endTime) > weekStart
     )),
-    [bookings, weekEnd.getTime(), weekStart.getTime()],
+    [bookings, weekEnd, weekStart],
   )
 
   const calendarRooms = useMemo(() => buildCalendarRooms(rooms, bookings)

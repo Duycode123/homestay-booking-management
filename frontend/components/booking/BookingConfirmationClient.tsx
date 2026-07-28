@@ -26,6 +26,10 @@ import { shouldBypassImageOptimization } from '@/lib/image-optimization'
 import { fetchAvailableAddons, type AddonCatalogItem, type AddonSelection } from '@/lib/addon-service'
 import AddonServiceImage from '@/components/addons/AddonServiceImage'
 
+function createCheckoutDraftId(roomId: string) {
+  return `DRAFT-${roomId}-${Date.now()}`
+}
+
 export default function BookingConfirmationClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -62,28 +66,28 @@ export default function BookingConfirmationClient() {
   }, 0), [addonCatalog, selectedAddons])
   const grandTotal = roomSubtotal + addonTotal
   useEffect(() => {
-    if (apiRoom) {
-      setRoom(apiRoom)
-      setRoomMissing(false)
-      setIsResolvingRoom(false)
-      return
-    }
-
     let active = true
-    setRoom(EMPTY_BOOKING_ROOM)
-    setRoomMissing(!roomId)
-    setIsResolvingRoom(shouldResolveBackendRoom)
-
-    async function loadRoom() {
-      const resolvedRoom = await resolveBookingRoom(roomId)
+    queueMicrotask(() => {
       if (!active) return
 
-      setRoom(resolvedRoom ?? EMPTY_BOOKING_ROOM)
-      setRoomMissing(!resolvedRoom)
-      setIsResolvingRoom(false)
-    }
+      if (apiRoom) {
+        setRoom(apiRoom)
+        setRoomMissing(false)
+        setIsResolvingRoom(false)
+        return
+      }
 
-    void loadRoom()
+      setRoom(EMPTY_BOOKING_ROOM)
+      setRoomMissing(!roomId)
+      setIsResolvingRoom(shouldResolveBackendRoom)
+
+      void resolveBookingRoom(roomId).then((resolvedRoom) => {
+        if (!active) return
+        setRoom(resolvedRoom ?? EMPTY_BOOKING_ROOM)
+        setRoomMissing(!resolvedRoom)
+        setIsResolvingRoom(false)
+      })
+    })
 
     return () => {
       active = false
@@ -93,11 +97,14 @@ export default function BookingConfirmationClient() {
   useEffect(() => {
     if (!displayRoom.id || !isNumericRoomId(displayRoom.id)) return
     let active = true
-    setIsLoadingAddons(true)
-    void fetchAvailableAddons(displayRoom.id)
-      .then((items) => { if (active) setAddonCatalog(items) })
-      .catch(() => { if (active) setAddonCatalog([]) })
-      .finally(() => { if (active) setIsLoadingAddons(false) })
+    queueMicrotask(() => {
+      if (!active) return
+      setIsLoadingAddons(true)
+      void fetchAvailableAddons(displayRoom.id)
+        .then((items) => { if (active) setAddonCatalog(items) })
+        .catch(() => { if (active) setAddonCatalog([]) })
+        .finally(() => { if (active) setIsLoadingAddons(false) })
+    })
     return () => { active = false }
   }, [displayRoom.id])
 
@@ -131,7 +138,7 @@ export default function BookingConfirmationClient() {
     setIsSubmitting(true)
 
     try {
-      const checkoutDraftId = `DRAFT-${displayRoom.id}-${Date.now()}`
+      const checkoutDraftId = createCheckoutDraftId(displayRoom.id)
       savePendingBooking({
         bookingId: checkoutDraftId,
         roomId: displayRoom.id,

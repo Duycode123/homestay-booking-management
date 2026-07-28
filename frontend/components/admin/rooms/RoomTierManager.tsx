@@ -59,14 +59,16 @@ export default function RoomTierManager({
     if (!editingId) return
     const current = roomTypes.find((roomType) => roomType.id === editingId)
     if (!current) {
-      resetForm()
+      queueMicrotask(resetForm)
       return
     }
 
-    setForm({
-      typeName: current.label,
-      description: current.description,
-      pricePerHour: current.pricePerHour,
+    queueMicrotask(() => {
+      setForm({
+        typeName: current.label,
+        description: current.description,
+        pricePerHour: current.pricePerHour,
+      })
     })
   }, [editingId, roomTypes])
 
@@ -74,7 +76,7 @@ export default function RoomTierManager({
     setForm((current) => ({ ...current, ...patch }))
   }
 
-  const resetForm = () => {
+  function resetForm() {
     setForm(EMPTY_FORM)
     setEditingId(null)
     setErrors({})

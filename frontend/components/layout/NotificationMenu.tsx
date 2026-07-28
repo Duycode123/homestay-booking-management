@@ -35,7 +35,7 @@ export default function NotificationMenu({ onNavigate }: NotificationMenuProps) 
   }, [])
 
   useEffect(() => {
-    void load()
+    queueMicrotask(() => void load())
     const interval = window.setInterval(() => void load(true), 60_000)
     const sync = () => void load(true)
     window.addEventListener(NOTIFICATION_CHANGED_EVENT, sync)
@@ -47,7 +47,7 @@ export default function NotificationMenu({ onNavigate }: NotificationMenuProps) 
 
   useEffect(() => {
     if (!open) return
-    void load(true)
+    queueMicrotask(() => void load(true))
     const closeOutside = (event: MouseEvent) => {
       if (rootRef.current && !rootRef.current.contains(event.target as Node)) setOpen(false)
     }

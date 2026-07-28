@@ -20,7 +20,6 @@ import { findRefundBank, REFUND_BANKS } from '@/lib/refund-banks'
 import {
   canReviewBooking,
   clearReviewDraft,
-  getBookingDetail,
   getBookingRefund,
   loadReviewDraft,
   requestBookingCancellation,
@@ -183,12 +182,21 @@ function StayAddonSection({ booking }: { booking: BookingHistoryItem }) {
   const backendBookingId = booking.backendBookingId
 
   useEffect(() => {
-    setItems(booking.addons ?? [])
-    setQuantities({})
-    setShowPicker(false)
-    setError('')
-    if (!backendBookingId) return
-    void fetchCustomerBookingAddons(backendBookingId).then(setItems).catch(() => undefined)
+    let active = true
+    queueMicrotask(() => {
+      if (!active) return
+      setItems(booking.addons ?? [])
+      setQuantities({})
+      setShowPicker(false)
+      setError('')
+      if (!backendBookingId) return
+      void fetchCustomerBookingAddons(backendBookingId)
+        .then((nextItems) => { if (active) setItems(nextItems) })
+        .catch(() => undefined)
+    })
+    return () => {
+      active = false
+    }
   }, [backendBookingId, booking.addons])
 
   useEffect(() => {
@@ -308,6 +316,7 @@ function addonStatusLabel(status: BookingAddonItem['status']) {
 }
 
 function CancellationSection({ booking }: { booking: BookingHistoryItem }) {
+  const [eligibilityCheckedAt] = useState(() => Date.now())
   const [currentBooking, setCurrentBooking] = useState(booking)
   const [showForm, setShowForm] = useState(false)
   const [reason, setReason] = useState('')
@@ -320,30 +329,36 @@ function CancellationSection({ booking }: { booking: BookingHistoryItem }) {
   const [isLoadingRefund, setIsLoadingRefund] = useState(false)
 
   useEffect(() => {
-    setCurrentBooking(booking)
-    setShowForm(false)
-    setReason('')
-    setRefundBankCode('')
-    setRefundAccountNumber('')
-    setRefundAccountHolder('')
-    setErrorMessage('')
-    setRefund(null)
+    queueMicrotask(() => {
+      setCurrentBooking(booking)
+      setShowForm(false)
+      setReason('')
+      setRefundBankCode('')
+      setRefundAccountNumber('')
+      setRefundAccountHolder('')
+      setErrorMessage('')
+      setRefund(null)
+    })
   }, [booking])
 
   const requestStatus = currentBooking.cancellationRequestStatus
 
   useEffect(() => {
-    if (requestStatus !== 'APPROVED' || !currentBooking.backendBookingId) return
+    const backendBookingId = currentBooking.backendBookingId
+    if (requestStatus !== 'APPROVED' || !backendBookingId) return
     let active = true
-    setIsLoadingRefund(true)
-    void getBookingRefund(currentBooking.backendBookingId)
-      .then((data) => { if (active) setRefund(data) })
-      .catch((error) => { if (active) setErrorMessage(error instanceof Error ? error.message : 'Không thể tải trạng thái hoàn tiền.') })
-      .finally(() => { if (active) setIsLoadingRefund(false) })
+    queueMicrotask(() => {
+      if (!active) return
+      setIsLoadingRefund(true)
+      void getBookingRefund(backendBookingId)
+        .then((data) => { if (active) setRefund(data) })
+        .catch((error) => { if (active) setErrorMessage(error instanceof Error ? error.message : 'Không thể tải trạng thái hoàn tiền.') })
+        .finally(() => { if (active) setIsLoadingRefund(false) })
+    })
     return () => { active = false }
   }, [currentBooking.backendBookingId, requestStatus])
   const startTimestamp = currentBooking.startDateTime ? new Date(currentBooking.startDateTime).getTime() : 0
-  const hoursUntilCheckIn = startTimestamp ? (startTimestamp - Date.now()) / 3_600_000 : 0
+  const hoursUntilCheckIn = startTimestamp ? (startTimestamp - eligibilityCheckedAt) / 3_600_000 : 0
   const canRequest =
     !requestStatus &&
     (currentBooking.status === 'PAID' || currentBooking.status === 'DEPOSIT_PAID') &&
@@ -566,20 +581,21 @@ function ReviewSection({
     if (booking.review) return
 
     const draft = loadReviewDraft(booking.bookingId)
+    queueMicrotask(() => {
+      if (draft) {
+        setRating(draft.rating)
+        setContent(draft.content.slice(0, maxContentLength))
+        setImages(draft.imageUrls.map((url, index) => ({ id: `draft-${index}-${url}`, name: `Ảnh ${index + 1}`, previewUrl: url })))
+        setRestoreMessage('Bản nháp đánh giá đã được khôi phục.')
+      } else {
+        setRating(0)
+        setContent('')
+        setImages([])
+        setRestoreMessage('')
+      }
 
-    if (draft) {
-      setRating(draft.rating)
-      setContent(draft.content.slice(0, maxContentLength))
-      setImages(draft.imageUrls.map((url, index) => ({ id: `draft-${index}-${url}`, name: `Ảnh ${index + 1}`, previewUrl: url })))
-      setRestoreMessage('Bản nháp đánh giá đã được khôi phục.')
-    } else {
-      setRating(0)
-      setContent('')
-      setImages([])
-      setRestoreMessage('')
-    }
-
-    setDraftReady(true)
+      setDraftReady(true)
+    })
   }, [booking.bookingId, booking.review])
 
   const validation = useMemo(() => {

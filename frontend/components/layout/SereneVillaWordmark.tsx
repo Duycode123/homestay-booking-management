@@ -90,7 +90,7 @@ export default function SereneVillaWordmark({
         </span>
         <span
           className={[
-            'mt-1.5 flex items-center justify-center gap-2 font-semibold uppercase leading-none opacity-70',
+            'mt-1.5 flex items-center justify-center gap-2 font-semibold uppercase leading-none opacity-80',
             compact ? 'text-[7px] tracking-[0.28em] sm:text-[8px]' : 'text-[8px] tracking-[0.32em]',
           ].join(' ')}
         >

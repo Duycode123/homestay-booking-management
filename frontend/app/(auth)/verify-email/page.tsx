@@ -172,32 +172,37 @@ function VerifyEmailContent() {
   const [verificationAttempt, setVerificationAttempt] = useState(0)
 
   useEffect(() => {
-    if (!token) {
-      setStatus('awaiting')
-      return
-    }
-
-    if (!UUID_PATTERN.test(token)) {
-      setStatus('error')
-      setVerificationError('Liên kết xác thực bị thiếu mã hợp lệ. Vui lòng mở lại liên kết đầy đủ trong email.')
-      return
-    }
-
     let isActive = true
-    setStatus('checking')
-    setVerificationError('')
 
-    requestEmailVerification(token, verificationAttempt)
-      .then(() => {
-        if (isActive) setStatus('success')
-      })
-      .catch((error: unknown) => {
-        if (!isActive) return
+    queueMicrotask(() => {
+      if (!isActive) return
+
+      if (!token) {
+        setStatus('awaiting')
+        return
+      }
+
+      if (!UUID_PATTERN.test(token)) {
         setStatus('error')
-        setVerificationError(
-          getAuthApiErrorMessage(error, 'Liên kết xác thực không hợp lệ, đã được sử dụng hoặc đã hết hạn.'),
-        )
-      })
+        setVerificationError('Liên kết xác thực bị thiếu mã hợp lệ. Vui lòng mở lại liên kết đầy đủ trong email.')
+        return
+      }
+
+      setStatus('checking')
+      setVerificationError('')
+
+      requestEmailVerification(token, verificationAttempt)
+        .then(() => {
+          if (isActive) setStatus('success')
+        })
+        .catch((error: unknown) => {
+          if (!isActive) return
+          setStatus('error')
+          setVerificationError(
+            getAuthApiErrorMessage(error, 'Liên kết xác thực không hợp lệ, đã được sử dụng hoặc đã hết hạn.'),
+          )
+        })
+    })
 
     return () => {
       isActive = false

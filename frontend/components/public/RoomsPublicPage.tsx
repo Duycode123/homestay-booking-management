@@ -337,9 +337,9 @@ export default function RoomsPublicPage() {
 
     return sortPublicRooms(availableMatches, sortBy)
   }, [filters, isStayAvailabilityLoading, liveRooms, sortBy, stayAvailabilityByRoomId, stayCriteria])
-  const hasPlayedInitialRoomAnimationRef = useRef(false)
+  const [hasPlayedInitialRoomAnimation, setHasPlayedInitialRoomAnimation] = useState(false)
   const shouldAnimateInitialRoomCards =
-    !hasPlayedInitialRoomAnimationRef.current &&
+    !hasPlayedInitialRoomAnimation &&
     !isLoading &&
     !isStayAvailabilityLoading &&
     filteredRooms.length > 0
@@ -397,7 +397,7 @@ export default function RoomsPublicPage() {
     if (!shouldAnimateInitialRoomCards) return
 
     const frameId = window.requestAnimationFrame(() => {
-      hasPlayedInitialRoomAnimationRef.current = true
+      setHasPlayedInitialRoomAnimation(true)
     })
 
     return () => window.cancelAnimationFrame(frameId)
@@ -420,53 +420,56 @@ export default function RoomsPublicPage() {
   }, [])
 
   useEffect(() => {
-    if (rooms.length === 0) {
-      setTodaySlotsByRoomId({})
-      setTomorrowSlotsByRoomId({})
-      setIsTodayScheduleLoading(false)
-      setScheduleUpdatedAt(null)
-      setScheduleErrorCount(0)
-      return
-    }
-
     let isMounted = true
-    const todayKey = getTodayKey()
-    const tomorrowKey = addDays(todayKey, 1)
-    setIsTodayScheduleLoading(true)
-
-    void Promise.all(
-      rooms.map(async (room) => {
-        if (isRoomTemporarilyUnavailable(room) || !/^\d+$/.test(room.id)) {
-          return {
-            roomId: room.id,
-            todaySlots: [] as TimeSlot[],
-            tomorrowSlots: [] as TimeSlot[],
-            failed: false,
-          }
-        }
-
-        try {
-          const [todaySlots, tomorrowSlots] = await Promise.all([
-            fetchAvailableSlots(room.id, todayKey),
-            fetchAvailableSlots(room.id, tomorrowKey),
-          ])
-          return { roomId: room.id, todaySlots, tomorrowSlots, failed: false }
-        } catch {
-          return {
-            roomId: room.id,
-            todaySlots: undefined,
-            tomorrowSlots: undefined,
-            failed: true,
-          }
-        }
-      }),
-    ).then((results) => {
+    queueMicrotask(() => {
       if (!isMounted) return
-      setTodaySlotsByRoomId(Object.fromEntries(results.map((result) => [result.roomId, result.todaySlots])))
-      setTomorrowSlotsByRoomId(Object.fromEntries(results.map((result) => [result.roomId, result.tomorrowSlots])))
-      setScheduleErrorCount(results.filter((result) => result.failed).length)
-      setScheduleUpdatedAt(new Date())
-      setIsTodayScheduleLoading(false)
+      if (rooms.length === 0) {
+        setTodaySlotsByRoomId({})
+        setTomorrowSlotsByRoomId({})
+        setIsTodayScheduleLoading(false)
+        setScheduleUpdatedAt(null)
+        setScheduleErrorCount(0)
+        return
+      }
+
+      const todayKey = getTodayKey()
+      const tomorrowKey = addDays(todayKey, 1)
+      setIsTodayScheduleLoading(true)
+
+      void Promise.all(
+        rooms.map(async (room) => {
+          if (isRoomTemporarilyUnavailable(room) || !/^\d+$/.test(room.id)) {
+            return {
+              roomId: room.id,
+              todaySlots: [] as TimeSlot[],
+              tomorrowSlots: [] as TimeSlot[],
+              failed: false,
+            }
+          }
+
+          try {
+            const [todaySlots, tomorrowSlots] = await Promise.all([
+              fetchAvailableSlots(room.id, todayKey),
+              fetchAvailableSlots(room.id, tomorrowKey),
+            ])
+            return { roomId: room.id, todaySlots, tomorrowSlots, failed: false }
+          } catch {
+            return {
+              roomId: room.id,
+              todaySlots: undefined,
+              tomorrowSlots: undefined,
+              failed: true,
+            }
+          }
+        }),
+      ).then((results) => {
+        if (!isMounted) return
+        setTodaySlotsByRoomId(Object.fromEntries(results.map((result) => [result.roomId, result.todaySlots])))
+        setTomorrowSlotsByRoomId(Object.fromEntries(results.map((result) => [result.roomId, result.tomorrowSlots])))
+        setScheduleErrorCount(results.filter((result) => result.failed).length)
+        setScheduleUpdatedAt(new Date())
+        setIsTodayScheduleLoading(false)
+      })
     })
 
     return () => {
@@ -497,45 +500,49 @@ export default function RoomsPublicPage() {
   useEffect(() => {
     const criteria = readStaySearchCriteria(window.location.search)
     if (!criteria) return
-    setStayCriteria(criteria)
-    setFilters((current) => ({
-      ...current,
-      search: criteria.keyword,
-      minGuests: criteria.adults + criteria.children,
-    }))
+    queueMicrotask(() => {
+      setStayCriteria(criteria)
+      setFilters((current) => ({
+        ...current,
+        search: criteria.keyword,
+        minGuests: criteria.adults + criteria.children,
+      }))
+    })
   }, [])
 
   useEffect(() => {
-    if (!stayCriteria || rooms.length === 0) {
-      setStayAvailabilityByRoomId({})
-      setStayAvailabilityErrorCount(0)
-      setIsStayAvailabilityLoading(false)
-      return
-    }
-
     let isMounted = true
-    setIsStayAvailabilityLoading(true)
-    setStayAvailabilityErrorCount(0)
-
-    void Promise.all(rooms.map(async (room) => {
-      if (!/^\d+$/.test(room.id) || isRoomTemporarilyUnavailable(room)) {
-        return { roomId: room.id, available: false, failed: false }
-      }
-      try {
-        const result = await checkRoomAvailabilityRange(
-          room.id,
-          stayCriteria.checkIn,
-          stayCriteria.checkOut,
-        )
-        return { roomId: room.id, available: result.available, failed: false }
-      } catch {
-        return { roomId: room.id, available: false, failed: true }
-      }
-    })).then((results) => {
+    queueMicrotask(() => {
       if (!isMounted) return
-      setStayAvailabilityByRoomId(Object.fromEntries(results.map((result) => [result.roomId, result.available])))
-      setStayAvailabilityErrorCount(results.filter((result) => result.failed).length)
-      setIsStayAvailabilityLoading(false)
+      if (!stayCriteria || rooms.length === 0) {
+        setStayAvailabilityByRoomId({})
+        setStayAvailabilityErrorCount(0)
+        setIsStayAvailabilityLoading(false)
+        return
+      }
+
+      setIsStayAvailabilityLoading(true)
+      setStayAvailabilityErrorCount(0)
+      void Promise.all(rooms.map(async (room) => {
+        if (!/^\d+$/.test(room.id) || isRoomTemporarilyUnavailable(room)) {
+          return { roomId: room.id, available: false, failed: false }
+        }
+        try {
+          const result = await checkRoomAvailabilityRange(
+            room.id,
+            stayCriteria.checkIn,
+            stayCriteria.checkOut,
+          )
+          return { roomId: room.id, available: result.available, failed: false }
+        } catch {
+          return { roomId: room.id, available: false, failed: true }
+        }
+      })).then((results) => {
+        if (!isMounted) return
+        setStayAvailabilityByRoomId(Object.fromEntries(results.map((result) => [result.roomId, result.available])))
+        setStayAvailabilityErrorCount(results.filter((result) => result.failed).length)
+        setIsStayAvailabilityLoading(false)
+      })
     })
 
     return () => {
@@ -570,13 +577,15 @@ export default function RoomsPublicPage() {
       const restoredRoom = liveRooms.find((room) => room.id === draftRoom?.id) ?? draftRoom
 
       if (restoredRoom) {
-        setQuickBooking({
-          room: restoredRoom,
-          initialDate: draft.selectedDate ?? draft.initialDate,
-          initialEndDate: draft.selectedEndDate ?? draft.initialEndDate,
-          initialStartTime: draft.selectedStartTime ?? draft.selectedSlot?.startTime ?? draft.initialStartTime,
-          initialDuration: draft.selectedDuration ?? draft.initialDuration,
-          initialNote: draft.customerNote ?? draft.initialNote,
+        queueMicrotask(() => {
+          setQuickBooking({
+            room: restoredRoom,
+            initialDate: draft.selectedDate ?? draft.initialDate,
+            initialEndDate: draft.selectedEndDate ?? draft.initialEndDate,
+            initialStartTime: draft.selectedStartTime ?? draft.selectedSlot?.startTime ?? draft.initialStartTime,
+            initialDuration: draft.selectedDuration ?? draft.initialDuration,
+            initialNote: draft.customerNote ?? draft.initialNote,
+          })
         })
       }
     } catch {
@@ -598,12 +607,14 @@ export default function RoomsPublicPage() {
     if (!matchedRoom) return
 
     const durationParam = params.get('duration')
-    setQuickBooking({
-      room: matchedRoom,
-      initialDate: params.get('date') ?? undefined,
-      initialEndDate: params.get('endDate') ?? undefined,
-      initialStartTime: params.get('startTime') ?? undefined,
-      initialDuration: durationParam ? Number(durationParam) : undefined,
+    queueMicrotask(() => {
+      setQuickBooking({
+        room: matchedRoom,
+        initialDate: params.get('date') ?? undefined,
+        initialEndDate: params.get('endDate') ?? undefined,
+        initialStartTime: params.get('startTime') ?? undefined,
+        initialDuration: durationParam ? Number(durationParam) : undefined,
+      })
     })
     window.history.replaceState(window.history.state, '', localizedHref('/rooms'))
   }, [isLoading, liveRooms, localizedHref])
@@ -807,7 +818,6 @@ export default function RoomsPublicPage() {
                       value: String(tier.id),
                       label: getPublicRoomTierLabel(tier.typeName, {
                         category: inferRoomCategoryFromTypeName(`${tier.typeName} ${tier.description ?? ''}`),
-                        capacity: tier.capacity,
                       }),
                     })),
                   ]}
@@ -1443,71 +1453,6 @@ function SortSelect({ value, onChange }: { value: RoomSortOption; onChange: (val
   )
 }
 
-function AmenitiesFilter({ options, selected, onChange }: { options: string[]; selected: string[]; onChange: (values: string[]) => void }) {
-  const { locale } = useI18n()
-  const isEnglish = locale === 'en'
-  const [isOpen, setIsOpen] = useState(false)
-  const wrapperRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!isOpen) return
-    const close = (event: MouseEvent) => {
-      if (!wrapperRef.current?.contains(event.target as Node)) setIsOpen(false)
-    }
-    document.addEventListener('mousedown', close)
-    return () => document.removeEventListener('mousedown', close)
-  }, [isOpen])
-
-  const toggle = (amenity: string) => {
-    onChange(selected.includes(amenity)
-      ? selected.filter((value) => value !== amenity)
-      : [...selected, amenity])
-  }
-
-  return (
-    <div ref={wrapperRef} className="relative">
-      <button
-        type="button"
-        onClick={() => setIsOpen((open) => !open)}
-        className={[
-          'flex min-h-[70px] w-full items-center gap-3 rounded-[18px] border px-3.5 text-left transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b88857]',
-          isOpen ? 'border-[#b88857] bg-white shadow-[0_0_0_3px_rgba(184,136,87,0.10)]' : 'border-[#e6ddd2] bg-[#fcfaf7] hover:border-[#d4c2ad] hover:bg-white',
-        ].join(' ')}
-        aria-expanded={isOpen}
-      >
-        <FilterControlIcon name="amenities" />
-        <span className="min-w-0 flex-1">
-          <span className="block font-display text-[10px] font-bold uppercase tracking-[0.12em] text-[#817970]">{isEnglish ? 'Amenities' : 'Tiện nghi'}</span>
-          <span className="mt-1 block truncate text-sm font-semibold text-on-surface">
-            {selected.length > 0
-              ? (isEnglish ? `${selected.length} selected` : `${selected.length} tiện nghi đã chọn`)
-              : (isEnglish ? 'Choose amenities' : 'Chọn tiện nghi')}
-          </span>
-        </span>
-        <ChevronDownIcon className={['ml-3 h-4 w-4 shrink-0 text-[#8b8278] transition-transform', isOpen ? 'rotate-180' : ''].join(' ')} />
-      </button>
-      {isOpen && (
-        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-40 min-w-[270px] rounded-2xl border border-[#ded3c5] bg-white p-3 shadow-[0_20px_55px_rgba(29,49,41,0.17)]">
-          <div className="flex items-center justify-between border-b border-[#eee7de] pb-2">
-            <p className="font-display text-xs font-bold text-secondary">{isEnglish ? 'Required amenities' : 'Tiện nghi cần có'}</p>
-            {selected.length > 0 && <button type="button" onClick={() => onChange([])} className="text-[11px] font-bold text-[#9a6739]">{isEnglish ? 'Clear' : 'Bỏ chọn'}</button>}
-          </div>
-          <div className="mt-2 max-h-64 space-y-1 overflow-y-auto pr-1">
-            {options.length > 0 ? options.map((amenity) => {
-              const checked = selected.includes(amenity)
-              return (
-                <button key={amenity} type="button" onClick={() => toggle(amenity)} className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left text-sm text-on-surface transition hover:bg-[#faf5ee]">
-                  <span className={['flex h-5 w-5 shrink-0 items-center justify-center rounded-md border', checked ? 'border-secondary bg-secondary text-white' : 'border-[#d8cdbc] bg-white'].join(' ')}>{checked && <SelectedIcon />}</span>
-                  <span className="line-clamp-2">{amenity}</span>
-                </button>
-              )
-            }) : <p className="px-2 py-4 text-center text-xs text-on-surface-variant">{isEnglish ? 'No amenity data yet.' : 'Chưa có dữ liệu tiện nghi.'}</p>}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
 
 function FilterSummaryChip({ label }: { label: string }) {
   return <span className="rounded-full border border-[#ded3c5] bg-[#fbf8f3] px-3 py-1.5 text-[11px] font-semibold text-[#5f665f]">{label}</span>
@@ -1606,131 +1551,6 @@ function CompactFilterSelect({
   )
 }
 
-function NightlyPriceFilter({
-  min,
-  max,
-  onMinChange,
-  onMaxChange,
-  onReset,
-}: {
-  min: number
-  max: number
-  onMinChange: (value: number) => void
-  onMaxChange: (value: number) => void
-  onReset: () => void
-}) {
-  const { locale } = useI18n()
-  const isEnglish = locale === 'en'
-  const [isOpen, setIsOpen] = useState(false)
-  const wrapperRef = useRef<HTMLDivElement>(null)
-  const range = MAX_NIGHTLY_PRICE - MIN_NIGHTLY_PRICE
-  const minPosition = ((min - MIN_NIGHTLY_PRICE) / range) * 100
-  const maxPosition = ((max - MIN_NIGHTLY_PRICE) / range) * 100
-  const sliderClassName =
-    'pointer-events-none absolute inset-x-0 top-0 h-2 w-full appearance-none bg-transparent outline-none [&::-webkit-slider-runnable-track]:h-2 [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:mt-[-6px] [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:cursor-grab [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-[#b28455] [&::-webkit-slider-thumb]:shadow-[0_3px_12px_rgba(79,53,28,.35)] [&::-moz-range-track]:h-2 [&::-moz-range-track]:bg-transparent [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:cursor-grab [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-[3px] [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-[#b28455]'
-
-  useEffect(() => {
-    if (!isOpen) return
-
-    const handlePointerDown = (event: MouseEvent) => {
-      if (!wrapperRef.current?.contains(event.target as Node)) setIsOpen(false)
-    }
-
-    document.addEventListener('mousedown', handlePointerDown)
-    return () => document.removeEventListener('mousedown', handlePointerDown)
-  }, [isOpen])
-
-  return (
-    <div ref={wrapperRef} className="relative">
-      <button
-        type="button"
-        onClick={() => setIsOpen((current) => !current)}
-        aria-expanded={isOpen}
-        className={[
-          'flex min-h-[70px] w-full items-center gap-3 rounded-[18px] border bg-[#fcfaf7] px-3.5 text-left transition',
-          isOpen
-            ? 'border-[#b88857] bg-white shadow-[0_0_0_3px_rgba(184,136,87,0.10)]'
-            : 'border-[#e6ddd2] hover:border-[#cfb99f] hover:bg-white',
-        ].join(' ')}
-      >
-        <FilterControlIcon name="price" />
-        <span className="min-w-0 flex-1">
-          <span className="block font-display text-[10px] font-bold uppercase tracking-[0.12em] text-[#817970]">{isEnglish ? 'Nightly price' : 'Giá mỗi đêm'}</span>
-          <span className="mt-1 block text-sm font-semibold text-on-surface">
-            {formatCompactPrice(min, locale)} – {formatCompactPrice(max, locale)}
-          </span>
-        </span>
-        <ChevronDownIcon className={['h-4 w-4 shrink-0 text-[#8b8278] transition', isOpen ? 'rotate-180' : ''].join(' ')} />
-      </button>
-
-      {isOpen && (
-        <div className="absolute left-0 top-[calc(100%+10px)] z-30 w-[min(420px,calc(100vw-2.5rem))] rounded-[20px] border border-[#ded3c5] bg-white p-5 shadow-[0_24px_70px_rgba(29,49,41,0.18)] xl:left-auto xl:right-0">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="font-display text-sm font-bold text-secondary">{isEnglish ? 'Nightly budget' : 'Ngân sách mỗi đêm'}</p>
-              <p className="mt-1 text-xs text-on-surface-variant">{isEnglish ? 'Drag both handles to choose your preferred range.' : 'Kéo hai đầu để chọn khoảng giá.'}</p>
-            </div>
-            <button
-              type="button"
-              onClick={onReset}
-              className="text-xs font-semibold text-[#9a6739] hover:underline"
-            >
-              {isEnglish ? 'Reset' : 'Đặt lại'}
-            </button>
-          </div>
-
-          <div className="mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-            <PriceBadge label={isEnglish ? 'Minimum' : 'Tối thiểu'} value={min} locale={locale} />
-            <span className="text-[#b5aa9c]">–</span>
-            <PriceBadge label={isEnglish ? 'Maximum' : 'Tối đa'} value={max} locale={locale} />
-          </div>
-
-          <div className="mt-7 px-1">
-            <div className="relative h-2 rounded-full bg-[#e3dbd0]">
-              <div
-                className="absolute h-2 rounded-full bg-[linear-gradient(90deg,#b28455,#234D42)]"
-                style={{ left: `${minPosition}%`, right: `${100 - maxPosition}%` }}
-              />
-              <input
-                type="range"
-                min={MIN_NIGHTLY_PRICE}
-                max={MAX_NIGHTLY_PRICE}
-                step={NIGHTLY_PRICE_STEP}
-                value={min}
-                onChange={(event) => onMinChange(Math.min(Number(event.target.value), max - NIGHTLY_PRICE_STEP))}
-                aria-label={isEnglish ? 'Lowest nightly price' : 'Giá thấp nhất mỗi đêm'}
-                className={`${sliderClassName} z-20`}
-              />
-              <input
-                type="range"
-                min={MIN_NIGHTLY_PRICE}
-                max={MAX_NIGHTLY_PRICE}
-                step={NIGHTLY_PRICE_STEP}
-                value={max}
-                onChange={(event) => onMaxChange(Math.max(Number(event.target.value), min + NIGHTLY_PRICE_STEP))}
-                aria-label={isEnglish ? 'Highest nightly price' : 'Giá cao nhất mỗi đêm'}
-                className={`${sliderClassName} z-30`}
-              />
-            </div>
-            <div className="mt-3 flex justify-between text-[11px] font-semibold text-[#8a847b]">
-              <span>{formatPriceInMillions(1_000_000, locale)}</span>
-              <span>{formatPriceInMillions(3_000_000, locale)}</span>
-              <span>{formatPriceInMillions(5_000_000, locale)}</span>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setIsOpen(false)}
-            className="mt-5 w-full rounded-xl bg-secondary px-4 py-3 font-display text-sm font-bold text-white shadow-[0_10px_24px_rgba(23,58,49,0.18)] transition hover:bg-[#52766B]"
-          >
-            {isEnglish ? 'Apply price range' : 'Áp dụng khoảng giá'}
-          </button>
-        </div>
-      )}
-    </div>
-  )
-}
 
 function PriceBadge({ label, value, locale = 'vi' }: { label: string; value: number; locale?: Locale }) {
   return (
@@ -1739,10 +1559,6 @@ function PriceBadge({ label, value, locale = 'vi' }: { label: string; value: num
       <span className="mt-0.5 block font-display text-sm font-bold text-[#234D42]">{formatPriceInMillions(value, locale)}</span>
     </div>
   )
-}
-
-function formatCompactPrice(value: number, locale: Locale = 'vi') {
-  return formatPriceInMillions(value, locale)
 }
 
 function formatPriceInMillions(value: number, locale: Locale = 'vi') {
@@ -1828,15 +1644,6 @@ function ArrowUpRightIcon({ className }: { className?: string }) {
     <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" className={className}>
       <path d="M6 14 14 6m-6 0h6v6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
-  )
-}
-
-function InfoPill({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-outline-variant bg-surface-container-low px-3 py-3">
-      <p className="font-display text-[11px] font-bold uppercase text-on-surface-variant">{label}</p>
-      <p className="mt-1 font-semibold text-on-surface">{value}</p>
-    </div>
   )
 }
 

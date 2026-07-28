@@ -58,7 +58,9 @@ export default function AdminAddonsPage() {
     }
   }, [])
 
-  useEffect(() => { void load() }, [load])
+  useEffect(() => {
+    queueMicrotask(() => void load())
+  }, [load])
   useEffect(() => {
     if (!toast) return
     const timer = window.setTimeout(() => setToast(''), 3500)

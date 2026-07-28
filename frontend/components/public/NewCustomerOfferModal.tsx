@@ -53,7 +53,7 @@ export default function NewCustomerOfferModal() {
     }
   }, [offer])
 
-  const closeOffer = () => {
+  function closeOffer() {
     dismissNewCustomerOffer()
     setOffer(null)
   }

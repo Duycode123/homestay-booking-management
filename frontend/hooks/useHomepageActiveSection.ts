@@ -17,12 +17,10 @@ export function useHomepageActiveSection() {
   const [activeSection, setActiveSection] = useState<HomepageAnchorSectionId | null>(null)
 
   useEffect(() => {
-    if (publicPathname !== '/') {
-      setActiveSection(null)
-      return
-    }
+    if (publicPathname !== '/') return
 
     let frameId = 0
+    let initialFrameId = 0
 
     const syncActiveSection = () => {
       setActiveSection(getActiveHomeSectionFromScroll())
@@ -41,38 +39,41 @@ export function useHomepageActiveSection() {
       syncActiveSection()
     }
 
-    // Logo click asks for homepage top — never re-apply leftover #equipment / #process.
-    if (consumeForceHomepageTop()) {
-      if (window.location.hash) {
-        window.history.replaceState(window.history.state, '', window.location.pathname)
-      }
-      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
-      setActiveSection(null)
-    } else {
-      const hashSection = readHomepageHashSection()
-      if (hashSection) {
-        window.requestAnimationFrame(() => {
-          if (!readHomepageHashSection()) {
-            syncActiveSection()
-            return
-          }
-          scrollToHomeSection(hashSection, 'instant')
-          syncActiveSection()
-        })
+    initialFrameId = window.requestAnimationFrame(() => {
+      // Logo click asks for homepage top — never re-apply leftover #equipment / #process.
+      if (consumeForceHomepageTop()) {
+        if (window.location.hash) {
+          window.history.replaceState(window.history.state, '', window.location.pathname)
+        }
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+        setActiveSection(null)
       } else {
-        syncActiveSection()
+        const hashSection = readHomepageHashSection()
+        if (hashSection) {
+          window.requestAnimationFrame(() => {
+            if (!readHomepageHashSection()) {
+              syncActiveSection()
+              return
+            }
+            scrollToHomeSection(hashSection, 'instant')
+            syncActiveSection()
+          })
+        } else {
+          syncActiveSection()
+        }
       }
-    }
+    })
 
     window.addEventListener('scroll', onScroll, { passive: true })
     window.addEventListener('hashchange', onHashChange)
 
     return () => {
+      window.cancelAnimationFrame(initialFrameId)
       window.cancelAnimationFrame(frameId)
       window.removeEventListener('scroll', onScroll)
       window.removeEventListener('hashchange', onHashChange)
     }
   }, [publicPathname])
 
-  return activeSection
+  return publicPathname === '/' ? activeSection : null
 }

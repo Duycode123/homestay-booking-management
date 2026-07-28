@@ -37,30 +37,37 @@ export default function NightStayPicker({ roomId, initialDate, initialEndDate, o
 
   useEffect(() => {
     const requestId = ++requestIdRef.current
-    setAvailability('checking')
-    onChange(emptyValue(checkInDate, checkOutDate))
+    queueMicrotask(() => {
+      if (requestId !== requestIdRef.current) return
+      setAvailability('checking')
+      onChange(emptyValue(checkInDate, checkOutDate))
 
-    void checkRoomAvailabilityRange(roomId, checkInDate, checkOutDate, CHECK_IN_TIME, CHECK_OUT_TIME)
-      .then((result) => {
-        if (requestId !== requestIdRef.current) return
-        if (!result.available) {
-          setAvailability('unavailable')
-          return
-        }
-        setAvailability('available')
-        onChange({
-          date: checkInDate,
-          endDate: checkOutDate,
-          startTime: CHECK_IN_TIME,
-          endTime: CHECK_OUT_TIME,
-          duration,
-          selectedSlots: [],
+      void checkRoomAvailabilityRange(roomId, checkInDate, checkOutDate, CHECK_IN_TIME, CHECK_OUT_TIME)
+        .then((result) => {
+          if (requestId !== requestIdRef.current) return
+          if (!result.available) {
+            setAvailability('unavailable')
+            return
+          }
+          setAvailability('available')
+          onChange({
+            date: checkInDate,
+            endDate: checkOutDate,
+            startTime: CHECK_IN_TIME,
+            endTime: CHECK_OUT_TIME,
+            duration,
+            selectedSlots: [],
+          })
         })
-      })
-      .catch(() => {
-        if (requestId !== requestIdRef.current) return
-        setAvailability('error')
-      })
+        .catch(() => {
+          if (requestId !== requestIdRef.current) return
+          setAvailability('error')
+        })
+    })
+
+    return () => {
+      if (requestId === requestIdRef.current) requestIdRef.current += 1
+    }
   }, [checkInDate, checkOutDate, duration, onChange, roomId])
 
   const selectCheckIn = (date: string) => {

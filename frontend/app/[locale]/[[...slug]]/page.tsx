@@ -1,4 +1,4 @@
-import { redirect } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { isLocale, stripLocalePrefix } from '@/i18n/config'
 
 type LocaleFallbackPageProps = {
@@ -13,7 +13,7 @@ export default async function LocaleFallbackPage({ params, searchParams }: Local
   const { locale, slug = [] } = await params
 
   if (!isLocale(locale)) {
-    redirect('/')
+    notFound()
   }
 
   const resolvedSearchParams = await searchParams

@@ -32,9 +32,11 @@ export default function ReviewDetailPanel({
 
   useEffect(() => {
     if (!review) return
-    setReplyContent(review.adminResponse?.content ?? '')
-    setConfirmDelete(false)
-    setMessage('')
+    queueMicrotask(() => {
+      setReplyContent(review.adminResponse?.content ?? '')
+      setConfirmDelete(false)
+      setMessage('')
+    })
   }, [review])
 
   if (!review) return null

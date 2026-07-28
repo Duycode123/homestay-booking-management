@@ -28,8 +28,10 @@ export default function StaffScheduleRejectDialog({
 
   useEffect(() => {
     if (!registration) return
-    setReason('')
-    setErrorMessage('')
+    queueMicrotask(() => {
+      setReason('')
+      setErrorMessage('')
+    })
   }, [registration])
 
   if (!registration) return null

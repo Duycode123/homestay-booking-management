@@ -1,14 +1,27 @@
 import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import RoomDetailPageClient from '@/components/public/RoomDetailPageClient'
 import { getPublicRoomForSeo, getRoomSeoDescription, getRoomSocialImage } from '@/lib/public/room-seo'
 
 const siteName = 'The Serene Villa'
 const siteUrl = new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000')
 
+function isValidRoomId(roomId: string) {
+  return /^[1-9]\d*$/.test(roomId)
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ roomId: string }> }): Promise<Metadata> {
   const { roomId } = await params
+  if (!isValidRoomId(roomId)) {
+    return {
+      title: 'Không tìm thấy căn lưu trú',
+      alternates: { canonical: null },
+      robots: { index: false, follow: true },
+    }
+  }
+
   const room = await getPublicRoomForSeo(roomId)
-  const roomName = room?.roomName || `Phòng homestay ${roomId}`
+  const roomName = room?.roomName || 'Căn lưu trú đang được cập nhật'
   const description = getRoomSeoDescription(room)
   const image = getRoomSocialImage(room)
   const path = `/rooms/${roomId}`
@@ -18,7 +31,6 @@ export async function generateMetadata({ params }: { params: Promise<{ roomId: s
     description,
     alternates: {
       canonical: path,
-      languages: { 'vi-VN': path },
     },
     openGraph: {
       type: 'website',
@@ -35,12 +47,14 @@ export async function generateMetadata({ params }: { params: Promise<{ roomId: s
       description,
       images: [image],
     },
-    robots: { index: true, follow: true },
+    robots: { index: Boolean(room), follow: true },
   }
 }
 
 export default async function RoomDetailPage({ params }: { params: Promise<{ roomId: string }> }) {
   const { roomId } = await params
+  if (!isValidRoomId(roomId)) notFound()
+
   const room = await getPublicRoomForSeo(roomId)
   const roomPath = `/rooms/${roomId}`
   const roomUrl = new URL(roomPath, siteUrl).toString()

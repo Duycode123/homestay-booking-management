@@ -19,8 +19,10 @@ export default function RoomDeleteConfirmModal({
 
   useEffect(() => {
     if (!room) return
-    setError('')
-    setIsDeleting(false)
+    queueMicrotask(() => {
+      setError('')
+      setIsDeleting(false)
+    })
   }, [room])
 
   if (!room) return null

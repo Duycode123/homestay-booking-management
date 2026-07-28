@@ -219,10 +219,13 @@ export default function PaymentSessionPageClient() {
       window.removeEventListener('popstate', handlePopState)
       window.setTimeout(() => {
         // React Strict Mode immediately starts the next effect generation; real navigation does not.
+        // The latest generation check intentionally reads the current ref value
+        // after cleanup so Strict Mode does not release a live payment hold.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         if (releaseEffectGenerationRef.current === generation) releaseWithKeepalive()
       }, 0)
     }
-  }, [releaseWithKeepalive])
+  }, [paymentId, releaseWithKeepalive])
 
   if (isLoading) {
     return (

@@ -53,7 +53,7 @@ export default function HomepageModalShell({
   useEffect(() => {
     if (!open) {
       isClosingRef.current = false
-      setIsClosing(false)
+      queueMicrotask(() => setIsClosing(false))
       return
     }
 

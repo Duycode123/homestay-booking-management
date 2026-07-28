@@ -62,7 +62,7 @@ export function useAvailableSlots(roomId: string | null, date: string) {
 
   useEffect(() => {
     selectedIdsRef.current = new Set()
-    load()
+    queueMicrotask(() => void load())
   }, [load])
 
   useEffect(() => {
